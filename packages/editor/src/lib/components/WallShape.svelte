@@ -1,0 +1,62 @@
+<script lang="ts">
+  import type { Wall } from "@myhome/geometry";
+  import type { ViewportState } from "../viewportStore.svelte";
+
+  let {
+    wall,
+    viewport,
+    selected = false,
+    onselect,
+  }: {
+    wall: Wall;
+    viewport: ViewportState;
+    selected?: boolean;
+    onselect?: (id: string) => void;
+  } = $props();
+
+  const thickness = $derived(wall.thickness ?? 0.1);
+
+  const corners = $derived.by(() => {
+    const dx = wall.end.x - wall.start.x;
+    const dy = wall.end.y - wall.start.y;
+    const len = Math.hypot(dx, dy);
+    if (len < 1e-9) return [];
+    const ux = dx / len;
+    const uy = dy / len;
+    const px = -uy * (thickness / 2);
+    const py = ux * (thickness / 2);
+    const worldCorners = [
+      { x: wall.start.x + px, y: wall.start.y + py },
+      { x: wall.end.x + px, y: wall.end.y + py },
+      { x: wall.end.x - px, y: wall.end.y - py },
+      { x: wall.start.x - px, y: wall.start.y - py },
+    ];
+    return worldCorners.map((p) => ({
+      x: p.x * viewport.zoom + viewport.panX,
+      y: p.y * viewport.zoom + viewport.panY,
+    }));
+  });
+
+  const points = $derived(corners.map((c) => `${c.x},${c.y}`).join(" "));
+
+  function handleClick(event: MouseEvent): void {
+    event.stopPropagation();
+    onselect?.(wall.id);
+  }
+</script>
+
+{#if corners.length > 0}
+  <polygon {points} class="wall" class:selected onclick={handleClick} role="button" tabindex="0" />
+{/if}
+
+<style>
+  .wall {
+    fill: #eeeeee;
+    stroke: #eeeeee;
+    cursor: pointer;
+  }
+  .wall.selected {
+    fill: #5af;
+    stroke: #5af;
+  }
+</style>
