@@ -51,3 +51,63 @@ export function pointOnSegmentInterior(p: Point, a: Point, b: Point): boolean {
   const eps = 1e-9;
   return t > eps && t < 1 - eps;
 }
+
+/** Signed area via the shoelace formula. Positive = counter-clockwise winding. */
+export function polygonSignedArea(points: Point[]): number {
+  let sum = 0;
+  const n = points.length;
+  for (let i = 0; i < n; i++) {
+    const a = points[i];
+    const b = points[(i + 1) % n];
+    sum += a.x * b.y - b.x * a.y;
+  }
+  return sum / 2;
+}
+
+export function polygonArea(points: Point[]): number {
+  return Math.abs(polygonSignedArea(points));
+}
+
+/** Area-weighted centroid of a simple polygon. */
+export function polygonCentroid(points: Point[]): Point {
+  let cx = 0;
+  let cy = 0;
+  let area = 0;
+  const n = points.length;
+  for (let i = 0; i < n; i++) {
+    const a = points[i];
+    const b = points[(i + 1) % n];
+    const cross = a.x * b.y - b.x * a.y;
+    area += cross;
+    cx += (a.x + b.x) * cross;
+    cy += (a.y + b.y) * cross;
+  }
+  area = area / 2;
+  if (Math.abs(area) < 1e-12) {
+    const avgX = points.reduce((s, p) => s + p.x, 0) / n;
+    const avgY = points.reduce((s, p) => s + p.y, 0) / n;
+    return { x: avgX, y: avgY };
+  }
+  cx /= 6 * area;
+  cy /= 6 * area;
+  return { x: cx, y: cy };
+}
+
+/** Ray-casting point-in-polygon test. */
+export function pointInPolygon(point: Point, polygon: Point[]): boolean {
+  let inside = false;
+  const n = polygon.length;
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const xi = polygon[i].x;
+    const yi = polygon[i].y;
+    const xj = polygon[j].x;
+    const yj = polygon[j].y;
+    if (
+      yi > point.y !== yj > point.y &&
+      point.x < ((xj - xi) * (point.y - yi)) / (yj - yi) + xi
+    ) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
