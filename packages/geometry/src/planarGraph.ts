@@ -12,10 +12,6 @@ export interface PlanarGraph {
   adjacency: number[][];
 }
 
-function pointKey(p: Point): string {
-  return `${p.x.toFixed(6)},${p.y.toFixed(6)}`;
-}
-
 function splitSegment(seg: InputSegment, splitPoints: Point[]): InputSegment[] {
   const dx = seg.end.x - seg.start.x;
   const dy = seg.end.y - seg.start.y;
@@ -73,16 +69,11 @@ export function buildPlanarGraph(segments: InputSegment[]): PlanarGraph {
   }
 
   const nodes: Point[] = [];
-  const nodeIndex = new Map<string, number>();
   function getNodeIndex(p: Point): number {
-    const key = pointKey(p);
-    let idx = nodeIndex.get(key);
-    if (idx === undefined) {
-      idx = nodes.length;
-      nodes.push(p);
-      nodeIndex.set(key, idx);
-    }
-    return idx;
+    const idx = nodes.findIndex((n) => pointsEqual(n, p));
+    if (idx !== -1) return idx;
+    nodes.push(p);
+    return nodes.length - 1;
   }
 
   const edgeSet = new Set<string>();

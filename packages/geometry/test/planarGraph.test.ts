@@ -79,4 +79,21 @@ describe("buildPlanarGraph", () => {
     const sharedIdx = graph.nodes.findIndex((p) => p.x === 2 && p.y === 0);
     expect(graph.adjacency[sharedIdx]).toHaveLength(2);
   });
+
+  it("treats near-duplicate points within EPSILON as a single node", () => {
+    // The two "apex" endpoints differ by 2e-7 in x - within pointsEqual's
+    // default EPSILON (1e-6) but mapped to different toFixed(6) keys
+    // ("2.000000" vs "2.000001") by the old pointKey-based deduplication.
+    const segments = [
+      { start: { x: 0, y: 0 }, end: { x: 4, y: 0 } },
+      { start: { x: 4, y: 0 }, end: { x: 2.0000004, y: 3 } },
+      { start: { x: 2.0000006, y: 3 }, end: { x: 0, y: 0 } },
+    ];
+    const graph = buildPlanarGraph(segments);
+
+    expect(graph.nodes).toHaveLength(3);
+    for (const adj of graph.adjacency) {
+      expect(adj).toHaveLength(2);
+    }
+  });
 });
