@@ -210,4 +210,38 @@ describe("App", () => {
 
     vi.useRealTimers();
   });
+
+  it("dragging an endpoint onto its own wall's other endpoint does not collapse the wall", () => {
+    vi.useFakeTimers();
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = mount(App, { target });
+    flushSync();
+
+    const wall1 = target.querySelectorAll("polygon.wall")[0]!;
+    wall1.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+
+    const handle = target.querySelector("circle.handle")!;
+    handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    flushSync();
+
+    // wall-1.end is at world (4,0) -> screen (800,300). Move the cursor to
+    // just within snap radius of it so the dragged start endpoint
+    // (world (0,0)) would snap onto wall-1's own other endpoint.
+    const svg = target.querySelector("svg.canvas")!;
+    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 795, clientY: 300 }));
+    flushSync();
+    svg.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+    flushSync();
+
+    vi.advanceTimersByTime(300);
+
+    // The drag was a no-op (it would have collapsed wall-1 to zero length),
+    // so the floor was never persisted.
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+
+    vi.useRealTimers();
+  });
 });

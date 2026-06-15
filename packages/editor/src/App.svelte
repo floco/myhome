@@ -27,6 +27,14 @@
     }
   }
 
+  function wouldCollapseAWall(dragging: Point, snapped: Point): boolean {
+    return floorStore.floor.walls.some((wall) => {
+      if (pointsEqual(wall.start, dragging)) return pointsEqual(wall.end, snapped);
+      if (pointsEqual(wall.end, dragging)) return pointsEqual(wall.start, snapped);
+      return false;
+    });
+  }
+
   function handleDragMove(worldCursor: Point): void {
     const dragging = toolStore.state.draggingPoint;
     if (!dragging) return;
@@ -36,6 +44,7 @@
     const snapped = findSnapPoint(worldCursor, candidates, snapRadiusWorld) ?? snapToGrid(worldCursor);
 
     if (pointsEqual(snapped, dragging)) return;
+    if (wouldCollapseAWall(dragging, snapped)) return;
 
     floorStore.moveSharedPoint(dragging, snapped);
     toolStore.updateDragPoint(snapped);
