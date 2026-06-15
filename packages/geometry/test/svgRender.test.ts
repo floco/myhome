@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { renderFloorSvg } from "../src/svgRender";
-import type { Floor, Wall, Opening } from "../src/types";
+import type { Floor, Wall, Opening, Room } from "../src/types";
 
 function baseFloor(overrides: Partial<Floor> = {}): Floor {
   return {
@@ -102,5 +102,56 @@ describe("renderFloorSvg - walls and dividers", () => {
     expect(svg).toContain("M 0 0 L 4 0");
     // dividers must not produce wall rectangles
     expect(svg).not.toContain('<path class="wall"');
+  });
+});
+
+describe("renderFloorSvg - rooms", () => {
+  it("renders a room polygon with its id and HA area data attribute", () => {
+    const room: Room = {
+      id: "room-1",
+      label: "Living Room",
+      haAreaId: "living_room",
+      polygon: [
+        { x: 0, y: 0 },
+        { x: 4, y: 0 },
+        { x: 4, y: 3 },
+        { x: 0, y: 3 },
+      ],
+      areaM2: 12,
+    };
+    const svg = renderFloorSvg(baseFloor({ rooms: [room] }));
+
+    expect(svg).toContain('<path id="room-room-1" data-ha-area="living_room" class="room"');
+  });
+
+  it("renders an empty data-ha-area attribute for rooms with no assigned area", () => {
+    const room: Room = {
+      id: "room-2",
+      label: "Unassigned",
+      haAreaId: null,
+      polygon: [
+        { x: 0, y: 0 },
+        { x: 2, y: 0 },
+        { x: 2, y: 2 },
+        { x: 0, y: 2 },
+      ],
+      areaM2: 4,
+    };
+    const svg = renderFloorSvg(baseFloor({ rooms: [room] }));
+
+    expect(svg).toContain('<path id="room-room-2" data-ha-area="" class="room"');
+  });
+
+  it("skips rooms with a null polygon (unresolved rooms)", () => {
+    const room: Room = {
+      id: "room-3",
+      label: "Gone",
+      haAreaId: null,
+      polygon: null,
+      areaM2: 0,
+    };
+    const svg = renderFloorSvg(baseFloor({ rooms: [room] }));
+
+    expect(svg).not.toContain("room-room-3");
   });
 });
