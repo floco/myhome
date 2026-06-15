@@ -1,6 +1,7 @@
-import { describe, it, expect, afterEach, beforeEach } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import App from "../src/App.svelte";
+import { STORAGE_KEY } from "../src/lib/floorStore.svelte";
 
 describe("App", () => {
   let target: HTMLElement;
@@ -175,5 +176,38 @@ describe("App", () => {
     flushSync();
 
     expect(target.querySelector("g.draw-preview line.rubber-band")).toBeNull();
+  });
+
+  it("dragging a selected wall's endpoint moves shared corners", () => {
+    vi.useFakeTimers();
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = mount(App, { target });
+    flushSync();
+
+    const wall1 = target.querySelectorAll("polygon.wall")[0]!;
+    wall1.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+
+    const handle = target.querySelector("circle.handle")!;
+    handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas")!;
+    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 300, clientY: 300 }));
+    flushSync();
+    svg.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+    flushSync();
+
+    vi.advanceTimersByTime(300);
+
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
+    const wall1Data = saved.walls.find((w: { id: string }) => w.id === "wall-1");
+    const wall4Data = saved.walls.find((w: { id: string }) => w.id === "wall-4");
+    expect(wall1Data.start).toEqual({ x: -1, y: 0 });
+    expect(wall4Data.end).toEqual({ x: -1, y: 0 });
+
+    vi.useRealTimers();
   });
 });

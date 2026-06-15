@@ -9,6 +9,7 @@
   import DividerShape from "./DividerShape.svelte";
   import RoomShape from "./RoomShape.svelte";
   import DrawPreview from "./DrawPreview.svelte";
+  import SelectionHandles from "./SelectionHandles.svelte";
 
   let {
     floor,
@@ -23,6 +24,8 @@
     onpointermove,
     onplacepoint,
     ondblclick,
+    ondragstart,
+    ondragend,
   }: {
     floor: Floor;
     viewport: ViewportState;
@@ -36,6 +39,8 @@
     onpointermove?: (point: Point) => void;
     onplacepoint?: (point: Point) => void;
     ondblclick?: () => void;
+    ondragstart?: (point: Point) => void;
+    ondragend?: () => void;
   } = $props();
 
   const snapResult = $derived.by(() => {
@@ -43,6 +48,8 @@
     const radius = SNAP_RADIUS_PX / viewport.zoom;
     return computeSnap(cursorWorld, allEndpoints(floor.walls), drawPoints, radius);
   });
+
+  const selectedWall = $derived(floor.walls.find((w) => w.id === selectedId) ?? null);
 
   function toWorld(event: MouseEvent): Point {
     const rect = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
@@ -54,6 +61,15 @@
 
   function handleMouseMove(event: MouseEvent): void {
     onpointermove?.(toWorld(event));
+  }
+
+  function handleMouseUp(): void {
+    ondragend?.();
+  }
+
+  function handleDragStart(point: Point, event: MouseEvent): void {
+    event.stopPropagation();
+    ondragstart?.(point);
   }
 
   function handleClick(): void {
@@ -71,6 +87,7 @@
   class="canvas"
   onclick={handleClick}
   onmousemove={handleMouseMove}
+  onmouseup={handleMouseUp}
   ondblclick={() => ondblclick?.()}
 >
   <Grid {viewport} {width} {height} />
@@ -91,6 +108,9 @@
       showSnapRing={snapResult ? snapResult.snappedToExisting || snapResult.closesLoop : false}
       {viewport}
     />
+  {/if}
+  {#if selectedWall}
+    <SelectionHandles wall={selectedWall} {viewport} ondragstart={handleDragStart} />
   {/if}
 </svg>
 

@@ -7,6 +7,7 @@ export interface ToolState {
   selectedId: string | null;
   drawPoints: Point[];
   cursorWorld: Point | null;
+  draggingPoint: Point | null;
 }
 
 export function createToolStore() {
@@ -15,6 +16,7 @@ export function createToolStore() {
     selectedId: null,
     drawPoints: [],
     cursorWorld: null,
+    draggingPoint: null,
   });
 
   function setTool(tool: ToolType): void {
@@ -22,6 +24,7 @@ export function createToolStore() {
     state.selectedId = null;
     state.drawPoints = [];
     state.cursorWorld = null;
+    state.draggingPoint = null;
   }
 
   function select(id: string | null): void {
@@ -40,6 +43,18 @@ export function createToolStore() {
     state.drawPoints = [];
   }
 
+  function startDrag(point: Point): void {
+    state.draggingPoint = point;
+  }
+
+  function updateDragPoint(point: Point): void {
+    state.draggingPoint = point;
+  }
+
+  function endDrag(): void {
+    state.draggingPoint = null;
+  }
+
   return {
     get state() {
       return state;
@@ -49,5 +64,8 @@ export function createToolStore() {
     addDrawPoint,
     setCursor,
     resetDraw,
+    startDrag,
+    updateDragPoint,
+    endDrag,
   };
 }

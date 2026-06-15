@@ -143,4 +143,49 @@ describe("Canvas", () => {
 
     expect(placed).toEqual({ x: -1, y: -1 });
   });
+
+  it("notifies on endpoint drag start, pointer move, and drag end", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const floor = createSampleFloor();
+    const events: string[] = [];
+    let dragStartPoint: Point | null = null;
+    let lastPointerWorld: Point | null = null;
+
+    app = mount(Canvas, {
+      target,
+      props: {
+        floor,
+        viewport: { ...DEFAULT_VIEWPORT },
+        width: 800,
+        height: 600,
+        selectedId: "wall-1",
+        onpointermove: (p: Point) => {
+          lastPointerWorld = p;
+          events.push("move");
+        },
+        ondragstart: (p: Point) => {
+          dragStartPoint = p;
+          events.push("dragstart");
+        },
+        ondragend: () => events.push("dragend"),
+      },
+    });
+    flushSync();
+
+    const handle = target.querySelectorAll("circle.handle")[0]!;
+    handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    flushSync();
+    expect(dragStartPoint).toEqual({ x: 0, y: 0 });
+
+    const svg = target.querySelector("svg.canvas")!;
+    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 410, clientY: 300 }));
+    flushSync();
+    expect(lastPointerWorld).toEqual({ x: 0.1, y: 0 });
+
+    svg.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+    flushSync();
+    expect(events).toEqual(["dragstart", "move", "dragend"]);
+  });
 });

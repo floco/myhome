@@ -1,9 +1,11 @@
 <script lang="ts">
   import type { Point, WallType } from "@myhome/geometry";
+  import { pointsEqual } from "@myhome/geometry";
   import { createFloorStore } from "./lib/floorStore.svelte";
   import { createViewportStore } from "./lib/viewportStore.svelte";
   import { createToolStore } from "./lib/toolStore.svelte";
-  import { placePoint } from "./lib/drawingTool";
+  import { placePoint, allEndpoints } from "./lib/drawingTool";
+  import { findSnapPoint, snapToGrid, SNAP_RADIUS_PX } from "./lib/geometry-helpers";
   import Canvas from "./lib/components/Canvas.svelte";
   import Toolbar from "./lib/components/Toolbar.svelte";
 
@@ -25,8 +27,25 @@
     }
   }
 
+  function handleDragMove(worldCursor: Point): void {
+    const dragging = toolStore.state.draggingPoint;
+    if (!dragging) return;
+
+    const candidates = allEndpoints(floorStore.floor.walls).filter((p) => !pointsEqual(p, dragging));
+    const snapRadiusWorld = SNAP_RADIUS_PX / viewportStore.viewport.zoom;
+    const snapped = findSnapPoint(worldCursor, candidates, snapRadiusWorld) ?? snapToGrid(worldCursor);
+
+    if (pointsEqual(snapped, dragging)) return;
+
+    floorStore.moveSharedPoint(dragging, snapped);
+    toolStore.updateDragPoint(snapped);
+  }
+
   function handlePointerMove(world: Point): void {
     toolStore.setCursor(world);
+    if (toolStore.state.draggingPoint) {
+      handleDragMove(world);
+    }
   }
 
   function handlePlacePoint(point: Point): void {
@@ -49,6 +68,14 @@
     if (chainEnds) {
       toolStore.resetDraw();
     }
+  }
+
+  function handleDragStart(point: Point): void {
+    toolStore.startDrag(point);
+  }
+
+  function handleDragEnd(): void {
+    toolStore.endDrag();
   }
 
   function handleKeydown(event: KeyboardEvent): void {
@@ -88,6 +115,8 @@
       onpointermove={handlePointerMove}
       onplacepoint={handlePlacePoint}
       ondblclick={() => toolStore.resetDraw()}
+      ondragstart={handleDragStart}
+      ondragend={handleDragEnd}
     />
   </div>
 </div>

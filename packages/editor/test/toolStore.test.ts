@@ -47,4 +47,25 @@ describe("toolStore", () => {
     store.select(null);
     expect(store.state.selectedId).toBeNull();
   });
+
+  it("tracks the point being dragged via startDrag/updateDragPoint/endDrag", () => {
+    const store = createToolStore();
+    expect(store.state.draggingPoint).toBeNull();
+
+    store.startDrag({ x: 1, y: 1 });
+    expect(store.state.draggingPoint).toEqual({ x: 1, y: 1 });
+
+    store.updateDragPoint({ x: 1.5, y: 1 });
+    expect(store.state.draggingPoint).toEqual({ x: 1.5, y: 1 });
+
+    store.endDrag();
+    expect(store.state.draggingPoint).toBeNull();
+  });
+
+  it("setTool also clears any in-progress drag", () => {
+    const store = createToolStore();
+    store.startDrag({ x: 1, y: 1 });
+    store.setTool("wall");
+    expect(store.state.draggingPoint).toBeNull();
+  });
 });
