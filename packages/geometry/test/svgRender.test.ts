@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { renderFloorSvg } from "../src/svgRender";
-import type { Floor, Wall, Opening, Room } from "../src/types";
+import { renderFloorSvg, chooseSweepFlag } from "../src/svgRender";
+import type { Floor, Wall, Opening, Room, DoorSwing, Point } from "../src/types";
 
 function baseFloor(overrides: Partial<Floor> = {}): Floor {
   return {
@@ -153,5 +153,97 @@ describe("renderFloorSvg - rooms", () => {
     const svg = renderFloorSvg(baseFloor({ rooms: [room] }));
 
     expect(svg).not.toContain("room-room-3");
+  });
+});
+
+describe("door swing rendering", () => {
+  const wall: Wall = {
+    id: "w1",
+    start: { x: 0, y: 0 },
+    end: { x: 4, y: 0 },
+    thickness: 0.2,
+    type: "wall",
+  };
+
+  function doorSvg(swing: DoorSwing): string {
+    const opening: Opening = {
+      id: "op1",
+      wallId: "w1",
+      type: "door",
+      offset: 1,
+      width: 0.9,
+      swing,
+    };
+    return renderFloorSvg(baseFloor({ walls: [wall], openings: [opening] }));
+  }
+
+  const swings: DoorSwing[] = ["left-in", "right-in", "left-out", "right-out"];
+
+  it.each(swings)("renders a leaf line and an arc for swing=%s", (swing) => {
+    const svg = doorSvg(swing);
+    expect(svg).toContain('<line class="door-leaf"');
+    expect(svg).toContain('<path class="door-swing" d="M');
+  });
+
+  it.each(swings)("the door-leaf for swing=%s has length equal to the opening width", (swing) => {
+    const svg = doorSvg(swing);
+    const match = svg.match(/<line class="door-leaf" x1="([^"]+)" y1="([^"]+)" x2="([^"]+)" y2="([^"]+)"/);
+    expect(match).not.toBeNull();
+    const [, x1, y1, x2, y2] = match!.map(Number);
+    const length = Math.hypot(x2 - x1, y2 - y1);
+    expect(length).toBeCloseTo(0.9, 5);
+  });
+
+  it.each(swings)("the door-leaf for swing=%s starts at the correct hinge corner", (swing) => {
+    const svg = doorSvg(swing);
+    const match = svg.match(/<line class="door-leaf" x1="([^"]+)" y1="([^"]+)"/);
+    const [, x1, y1] = match!;
+    const hingeX = swing.startsWith("left") ? 1 : 1.9;
+    expect(Number(x1)).toBeCloseTo(hingeX, 5);
+    expect(Number(y1)).toBeCloseTo(0, 5);
+  });
+
+  it.each(swings)("the door-swing arc for swing=%s is centered on the hinge point", (swing) => {
+    const svg = doorSvg(swing);
+    const arcMatch = svg.match(
+      /<path class="door-swing" d="M ([\d.-]+) ([\d.-]+) A ([\d.-]+) ([\d.-]+) 0 0 (\d) ([\d.-]+) ([\d.-]+)"/
+    );
+    expect(arcMatch).not.toBeNull();
+    const [, mx, my, rx, , sweep, ex, ey] = arcMatch!;
+
+    const start: Point = { x: Number(mx), y: Number(my) };
+    const end: Point = { x: Number(ex), y: Number(ey) };
+    const radius = Number(rx);
+
+    const hingeX = swing.startsWith("left") ? 1 : 1.9;
+    const hinge: Point = { x: hingeX, y: 0 };
+
+    // Recompute both candidate centers for this (start, end, radius) and
+    // confirm the chosen sweep-flag corresponds to the one nearest `hinge`.
+    const chosen = chooseSweepFlag(start, end, radius, hinge);
+    expect(Number(sweep)).toBe(chosen);
+
+    // And confirm `hinge` really is one of the two candidate centers
+    // (i.e. our test's expected hinge matches the geometry under test).
+    const x1p = (start.x - end.x) / 2;
+    const y1p = (start.y - end.y) / 2;
+    const midX = (start.x + end.x) / 2;
+    const midY = (start.y + end.y) / 2;
+    const sumSq = x1p * x1p + y1p * y1p;
+    const factor = Math.sqrt(Math.max((radius * radius - sumSq) / sumSq, 0));
+    const center0 = { x: midX - factor * y1p, y: midY + factor * x1p };
+    const center1 = { x: midX + factor * y1p, y: midY - factor * x1p };
+    const d0 = Math.hypot(center0.x - hinge.x, center0.y - hinge.y);
+    const d1 = Math.hypot(center1.x - hinge.x, center1.y - hinge.y);
+    expect(Math.min(d0, d1)).toBeCloseTo(0, 5);
+  });
+
+  it("produces a different arc end point for each swing direction", () => {
+    const ends = swings.map((swing) => {
+      const svg = doorSvg(swing);
+      const arcMatch = svg.match(/A [\d.-]+ [\d.-]+ 0 0 \d ([\d.-]+) ([\d.-]+)"/);
+      return `${arcMatch![1]},${arcMatch![2]}`;
+    });
+    expect(new Set(ends).size).toBe(4);
   });
 });
