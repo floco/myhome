@@ -1,15 +1,18 @@
 <script lang="ts">
   import type { Wall } from "@myhome/geometry";
   import type { ViewportState } from "../viewportStore.svelte";
+  import type { ToolType } from "../toolStore.svelte";
 
   let {
     wall,
     viewport,
+    tool = "select",
     selected = false,
     onselect,
   }: {
     wall: Wall;
     viewport: ViewportState;
+    tool?: ToolType;
     selected?: boolean;
     onselect?: (id: string) => void;
   } = $props();
@@ -20,6 +23,7 @@
   const y2 = $derived(wall.end.y * viewport.zoom + viewport.panY);
 
   function handleClick(event: MouseEvent): void {
+    if (tool !== "select") return;
     event.stopPropagation();
     onselect?.(wall.id);
   }

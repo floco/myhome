@@ -1,7 +1,9 @@
 <script lang="ts">
+  import type { Point, WallType } from "@myhome/geometry";
   import { createFloorStore } from "./lib/floorStore.svelte";
   import { createViewportStore } from "./lib/viewportStore.svelte";
   import { createToolStore } from "./lib/toolStore.svelte";
+  import { placePoint } from "./lib/drawingTool";
   import Canvas from "./lib/components/Canvas.svelte";
   import Toolbar from "./lib/components/Toolbar.svelte";
 
@@ -23,7 +25,37 @@
     }
   }
 
+  function handlePointerMove(world: Point): void {
+    toolStore.setCursor(world);
+  }
+
+  function handlePlacePoint(point: Point): void {
+    const tool = toolStore.state.tool;
+    if (tool === "select") return;
+
+    const chain = toolStore.state.drawPoints;
+    if (chain.length === 0) {
+      toolStore.addDrawPoint(point);
+      return;
+    }
+
+    const { segment, chainEnds } = placePoint(chain, point, tool as WallType, () =>
+      crypto.randomUUID(),
+    );
+    if (segment) {
+      floorStore.addWall(segment);
+      toolStore.addDrawPoint(point);
+    }
+    if (chainEnds) {
+      toolStore.resetDraw();
+    }
+  }
+
   function handleKeydown(event: KeyboardEvent): void {
+    if (event.key === "Escape") {
+      toolStore.resetDraw();
+      return;
+    }
     if ((event.key === "Delete" || event.key === "Backspace") && toolStore.state.selectedId) {
       handleDelete();
     }
@@ -50,6 +82,12 @@
       height={800}
       selectedId={toolStore.state.selectedId}
       onselect={handleSelect}
+      tool={toolStore.state.tool}
+      drawPoints={toolStore.state.drawPoints}
+      cursorWorld={toolStore.state.cursorWorld}
+      onpointermove={handlePointerMove}
+      onplacepoint={handlePlacePoint}
+      ondblclick={() => toolStore.resetDraw()}
     />
   </div>
 </div>

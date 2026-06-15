@@ -60,4 +60,120 @@ describe("App", () => {
     expect(target.querySelectorAll("polygon.wall").length).toBe(wallsBefore - 1);
     expect(deleteBtn.disabled).toBe(true);
   });
+
+  it("drawing a wall chain places points, commits segments, and closes the loop", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = mount(App, { target });
+    flushSync();
+
+    const wallBtn = Array.from(target.querySelectorAll(".toolbar button")).find(
+      (b) => b.textContent?.trim() === "Wall",
+    ) as HTMLButtonElement;
+    wallBtn.click();
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas")!;
+    const wallsBefore = target.querySelectorAll("polygon.wall").length;
+
+    // Place 4 corners of a new 2x2 square far from the sample floor so it
+    // doesn't snap to existing geometry. Screen = world*100 + (400,300).
+    const corners = [
+      { x: 10, y: 10 },
+      { x: 12, y: 10 },
+      { x: 12, y: 12 },
+      { x: 10, y: 12 },
+      { x: 10, y: 10 }, // closes the loop
+    ];
+
+    for (const corner of corners) {
+      const screen = { x: corner.x * 100 + 400, y: corner.y * 100 + 300 };
+      svg.dispatchEvent(
+        new MouseEvent("mousemove", { bubbles: true, clientX: screen.x, clientY: screen.y }),
+      );
+      flushSync();
+      svg.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, clientX: screen.x, clientY: screen.y }),
+      );
+      flushSync();
+    }
+
+    expect(target.querySelectorAll("polygon.wall").length).toBe(wallsBefore + 4);
+
+    const rooms = target.querySelectorAll("polygon.room");
+    expect(rooms.length).toBe(3);
+    const labels = Array.from(target.querySelectorAll("text.room-label")).map((el) =>
+      el.textContent?.trim(),
+    );
+    expect(labels).toContain("4 m²");
+  });
+
+  it("Escape ends the wall chain without closing it", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = mount(App, { target });
+    flushSync();
+
+    const wallBtn = Array.from(target.querySelectorAll(".toolbar button")).find(
+      (b) => b.textContent?.trim() === "Wall",
+    ) as HTMLButtonElement;
+    wallBtn.click();
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas")!;
+    const wallsBefore = target.querySelectorAll("polygon.wall").length;
+
+    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 1400, clientY: 1300 }));
+    flushSync();
+    svg.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 1400, clientY: 1300 }));
+    flushSync();
+
+    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 1500, clientY: 1300 }));
+    flushSync();
+    svg.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 1500, clientY: 1300 }));
+    flushSync();
+
+    expect(target.querySelectorAll("polygon.wall").length).toBe(wallsBefore + 1);
+    expect(target.querySelector("g.draw-preview line.rubber-band")).not.toBeNull();
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    flushSync();
+
+    expect(target.querySelector("g.draw-preview line.rubber-band")).toBeNull();
+  });
+
+  it("double-click ends the wall chain without closing it", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = mount(App, { target });
+    flushSync();
+
+    const wallBtn = Array.from(target.querySelectorAll(".toolbar button")).find(
+      (b) => b.textContent?.trim() === "Wall",
+    ) as HTMLButtonElement;
+    wallBtn.click();
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas")!;
+
+    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 2400, clientY: 2300 }));
+    flushSync();
+    svg.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 2400, clientY: 2300 }));
+    flushSync();
+
+    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 2500, clientY: 2300 }));
+    flushSync();
+    svg.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 2500, clientY: 2300 }));
+    flushSync();
+
+    expect(target.querySelector("g.draw-preview line.rubber-band")).not.toBeNull();
+
+    svg.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: 2500, clientY: 2300 }));
+    flushSync();
+
+    expect(target.querySelector("g.draw-preview line.rubber-band")).toBeNull();
+  });
 });

@@ -3,6 +3,7 @@ import { mount, unmount, flushSync } from "svelte";
 import Canvas from "../src/lib/components/Canvas.svelte";
 import { createSampleFloor } from "../src/lib/sampleFloor";
 import { detectRooms, matchRooms } from "@myhome/geometry";
+import type { Point } from "@myhome/geometry";
 import { DEFAULT_VIEWPORT } from "../src/lib/viewportStore.svelte";
 
 describe("Canvas", () => {
@@ -75,5 +76,71 @@ describe("Canvas", () => {
     svg.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     flushSync();
     expect(selectedId).toBeNull();
+  });
+
+  it("computes a snap result and renders a draw preview while a wall chain is in progress", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const floor = createSampleFloor();
+    let placed: Point | null = null;
+
+    app = mount(Canvas, {
+      target,
+      props: {
+        floor,
+        viewport: { ...DEFAULT_VIEWPORT },
+        width: 800,
+        height: 600,
+        tool: "wall",
+        drawPoints: [{ x: 0, y: 0 }],
+        cursorWorld: { x: 2.02, y: 0.01 },
+        onplacepoint: (p: Point) => {
+          placed = p;
+        },
+      },
+    });
+    flushSync();
+
+    const preview = target.querySelector("g.draw-preview")!;
+    expect(preview.querySelector("line.rubber-band")).not.toBeNull();
+    expect(preview.querySelector("text.length-label")?.textContent?.trim()).toBe("2.00 m");
+
+    const svg = target.querySelector("svg.canvas")!;
+    svg.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 600, clientY: 301 }));
+    flushSync();
+
+    expect(placed).toEqual({ x: 2, y: 0 });
+  });
+
+  it("placing the first point of a chain reports the snapped cursor position", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const floor = createSampleFloor();
+    let placed: Point | null = null;
+
+    app = mount(Canvas, {
+      target,
+      props: {
+        floor,
+        viewport: { ...DEFAULT_VIEWPORT },
+        width: 800,
+        height: 600,
+        tool: "wall",
+        drawPoints: [],
+        cursorWorld: { x: -1, y: -1 },
+        onplacepoint: (p: Point) => {
+          placed = p;
+        },
+      },
+    });
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas")!;
+    svg.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+
+    expect(placed).toEqual({ x: -1, y: -1 });
   });
 });
