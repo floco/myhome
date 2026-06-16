@@ -110,6 +110,42 @@ describe("matchRooms", () => {
     expect(result.unresolved[0].id).toBe("room-old");
   });
 
+  it("picks the smallest containing polygon when centroids are nested (courtyard case)", () => {
+    // Outer room: 10x10, inner courtyard: 2x2 at centre — inner centroid is inside BOTH polygons.
+    // matchRooms should pick the smaller (inner) existing room for the inner detected polygon,
+    // not whichever appears first in the existing array.
+    const outer: Room = {
+      id: "room-outer",
+      label: "Outer",
+      haAreaId: null,
+      polygon: rect(0, 0, 10, 10),
+      areaM2: 100,
+    };
+    const inner: Room = {
+      id: "room-inner",
+      label: "Courtyard",
+      haAreaId: null,
+      polygon: rect(4, 4, 6, 6),
+      areaM2: 4,
+    };
+
+    // Detected: inner polygon shifts slightly, outer polygon shifts slightly.
+    // Inner centroid (4.55, 4.55) is inside BOTH existing polygons — tie-break by smallest area.
+    const detectedInner: DetectedRoom = { polygon: rect(4.1, 4.1, 6.1, 6.1), areaM2: 4 };
+    const detectedOuter: DetectedRoom = { polygon: rect(0.1, 0, 10.1, 10), areaM2: 100 };
+
+    // existing[0] is outer — without the fix, find() would return outer for the inner detected polygon
+    const result = matchRooms([detectedInner, detectedOuter], [outer, inner]);
+
+    const matchedInner = result.rooms.find((r) => r.id === "room-inner");
+    const matchedOuter = result.rooms.find((r) => r.id === "room-outer");
+    expect(matchedInner).toBeDefined();
+    expect(matchedInner!.polygon).toEqual(detectedInner.polygon);
+    expect(matchedOuter).toBeDefined();
+    expect(matchedOuter!.polygon).toEqual(detectedOuter.polygon);
+    expect(result.unresolved).toHaveLength(0);
+  });
+
   it("matches multiple rooms independently by centroid containment", () => {
     const existing: Room[] = [
       { id: "room-a", label: "A", haAreaId: "a", polygon: rect(0, 0, 2, 2), areaM2: 4 },

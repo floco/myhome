@@ -88,6 +88,32 @@ describe("renderFloorSvg - walls and dividers", () => {
     expect(wallPaths).toHaveLength(1);
   });
 
+  it("clips opening symbol to the same interval as the wall gap when offset is negative", () => {
+    // offset=-0.5, width=1 on a 4m wall: the gap covers [0, 0.5] (clamped).
+    // Before the fix, the symbol was drawn from 0 to 1 (full width), extending into solid wall.
+    const wall: Wall = {
+      id: "w1",
+      start: { x: 0, y: 0 },
+      end: { x: 4, y: 0 },
+      thickness: 0.2,
+      type: "wall",
+    };
+    const opening: Opening = {
+      id: "op1",
+      wallId: "w1",
+      type: "window",
+      offset: -0.5,
+      width: 1,
+    };
+    const svg = renderFloorSvg(baseFloor({ walls: [wall], openings: [opening] }));
+
+    // Symbol should span [0, 0.5], matching the wall gap — not [0, 1]
+    const windowLines = [...svg.matchAll(/<line class="window"[^>]*\/>/g)];
+    expect(windowLines).toHaveLength(1);
+    expect(windowLines[0][0]).toContain('x1="0"');
+    expect(windowLines[0][0]).toContain('x2="0.5"');
+  });
+
   it("renders a divider as a dashed centerline with no thickness", () => {
     const divider: Wall = {
       id: "d1",
