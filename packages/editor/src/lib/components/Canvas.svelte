@@ -24,6 +24,7 @@
     onselect,
     onselectroom,
     onselectopening,
+    ondragopeninghandlestart,
     tool = "select",
     drawPoints = [],
     cursorWorld = null,
@@ -46,6 +47,7 @@
     onselect?: (id: string | null) => void;
     onselectroom?: (id: string | null) => void;
     onselectopening?: (id: string | null) => void;
+    ondragopeninghandlestart?: (openingId: string, side: "start" | "end") => void;
     tool?: ToolType;
     drawPoints?: Point[];
     cursorWorld?: Point | null;
@@ -223,6 +225,10 @@
         {tool}
         selected={opening.id === selectedOpeningId}
         onselect={(id) => onselectopening?.(id)}
+        ondraghandlestart={(openingId, side, event) => {
+          event.stopPropagation();
+          ondragopeninghandlestart?.(openingId, side);
+        }}
       />
     {/each}
   {/each}
