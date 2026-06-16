@@ -258,4 +258,52 @@ describe("Canvas", () => {
     expect(zoomCall!.screen).toEqual({ x: 200 - 50, y: 150 - 30 }); // { x: 150, y: 120 }
     expect(zoomCall!.factor).toBeGreaterThan(1);
   });
+
+  it("double-click ends the chain without placing an extra segment", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const floor = createSampleFloor();
+    let dblclickCalled = false;
+    const placedPoints: Point[] = [];
+
+    app = mount(Canvas, {
+      target,
+      props: {
+        floor,
+        viewport: { ...DEFAULT_VIEWPORT },
+        width: 800,
+        height: 600,
+        tool: "wall",
+        drawPoints: [{ x: 0, y: 0 }],
+        cursorWorld: { x: 2, y: 0 },
+        onplacepoint: (p: Point) => {
+          placedPoints.push(p);
+        },
+        ondblclick: () => {
+          dblclickCalled = true;
+        },
+      },
+    });
+    flushSync();
+
+    // Before dblclick, there should be a rubber-band line
+    const preview = target.querySelector("g.draw-preview")!;
+    expect(preview.querySelector("line.rubber-band")).not.toBeNull();
+
+    const svg = target.querySelector("svg.canvas")!;
+    // Dispatch the real browser sequence: click, click, dblclick
+    svg.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+    svg.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+    svg.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    flushSync();
+
+    // The first click should place a point (at the snapped cursor position)
+    expect(placedPoints).toEqual([{ x: 2, y: 0 }]);
+    // The second click should be suppressed (no extra point placed)
+    // dblclick should be called
+    expect(dblclickCalled).toBe(true);
+  });
 });

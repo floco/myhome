@@ -59,6 +59,8 @@
 
   let panState = $state<Point | null>(null);
   let suppressNextClick = false; // not reactive: consumed synchronously by the next onclick
+  let lastClickPos: { x: number; y: number } | null = null;
+  let clickCountResetTimer: ReturnType<typeof setTimeout> | null = null;
 
   function toWorld(event: MouseEvent): Point {
     const rect = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
@@ -103,7 +105,30 @@
     onzoom?.(screen, factor);
   }
 
-  function handleClick(): void {
+  function handleClick(event: MouseEvent): void {
+    const currentPos = { x: event.clientX, y: event.clientY };
+
+    // If this click is at the same position as the previous click within a short time window,
+    // it's likely the synthetic click from a browser double-click. Suppress it.
+    if (
+      lastClickPos &&
+      lastClickPos.x === currentPos.x &&
+      lastClickPos.y === currentPos.y &&
+      clickCountResetTimer !== null
+    ) {
+      return;
+    }
+
+    // Record this click position and reset the timer
+    lastClickPos = currentPos;
+    if (clickCountResetTimer) {
+      clearTimeout(clickCountResetTimer);
+    }
+    clickCountResetTimer = setTimeout(() => {
+      lastClickPos = null;
+      clickCountResetTimer = null;
+    }, 300);
+
     if (suppressNextClick) {
       suppressNextClick = false;
       return;
