@@ -6,7 +6,7 @@ export const GRID_SIZE = 0.1;
 /** Fixed screen-space snap radius in pixels, independent of zoom. */
 export const SNAP_RADIUS_PX = 12;
 
-/** Fixed world-space hit radius for wall detection in pixels. */
+/** Fixed screen-space hit radius for wall detection in pixels, independent of zoom. */
 export const HIT_RADIUS_PX = 30;
 
 function roundTo(value: number, decimals: number): number {

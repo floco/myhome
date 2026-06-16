@@ -9,8 +9,8 @@
     onupdate: (patch: { label?: string; haAreaId?: string | null }) => void;
   } = $props();
 
-  let labelDraft = $state(room.label);
-  let areaDraft = $state(room.haAreaId ?? "");
+  let labelDraft = $state("");
+  let areaDraft = $state("");
 
   $effect(() => {
     labelDraft = room.label;
