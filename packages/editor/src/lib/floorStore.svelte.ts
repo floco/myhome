@@ -10,7 +10,17 @@ function loadFloor(): Floor {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return createSampleFloor();
   try {
-    return JSON.parse(raw) as Floor;
+    const parsed = JSON.parse(raw);
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      !Array.isArray(parsed.walls) ||
+      !Array.isArray(parsed.rooms) ||
+      !Array.isArray(parsed.openings)
+    ) {
+      return createSampleFloor();
+    }
+    return parsed as Floor;
   } catch {
     return createSampleFloor();
   }

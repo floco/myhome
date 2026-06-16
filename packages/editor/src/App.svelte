@@ -99,6 +99,7 @@
 
   function handleKeydown(event: KeyboardEvent): void {
     if (event.code === "Space") {
+      event.preventDefault();
       spacePressed = true;
       return;
     }
@@ -122,6 +123,7 @@
   onkeydown={handleKeydown}
   onkeyup={handleKeyup}
   onblur={() => { spacePressed = false; }}
+  onmouseup={handleDragEnd}
 />
 
 <div class="app">
