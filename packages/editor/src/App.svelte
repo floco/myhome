@@ -118,7 +118,11 @@
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} onkeyup={handleKeyup} />
+<svelte:window
+  onkeydown={handleKeydown}
+  onkeyup={handleKeyup}
+  onblur={() => { spacePressed = false; }}
+/>
 
 <div class="app">
   <header class="topbar">

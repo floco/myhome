@@ -58,7 +58,7 @@
   const selectedWall = $derived(floor.walls.find((w) => w.id === selectedId) ?? null);
 
   let panState = $state<Point | null>(null);
-  let suppressNextClick = false;
+  let suppressNextClick = false; // not reactive: consumed synchronously by the next onclick
 
   function toWorld(event: MouseEvent): Point {
     const rect = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
@@ -88,8 +88,11 @@
   }
 
   function handleMouseUp(): void {
+    const wasPanning = panState !== null;
     panState = null;
-    ondragend?.();
+    if (!wasPanning) {
+      ondragend?.();
+    }
   }
 
   function handleWheel(event: WheelEvent): void {

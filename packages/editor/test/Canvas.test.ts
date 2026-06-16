@@ -232,6 +232,11 @@ describe("Canvas", () => {
     const floor = createSampleFloor();
     let zoomCall: { screen: Point; factor: number } | null = null;
 
+    // Give the SVG a non-zero bounding rect so the rect.left/top subtraction
+    // is exercised, confirming that the screen point is canvas-relative.
+    SVGSVGElement.prototype.getBoundingClientRect = () =>
+      ({ left: 50, top: 30, right: 850, bottom: 630, width: 800, height: 600 }) as DOMRect;
+
     app = mount(Canvas, {
       target,
       props: {
@@ -250,7 +255,7 @@ describe("Canvas", () => {
     svg.dispatchEvent(new WheelEvent("wheel", { bubbles: true, deltaY: -100, clientX: 200, clientY: 150 }));
     flushSync();
 
-    expect(zoomCall!.screen).toEqual({ x: 200, y: 150 });
+    expect(zoomCall!.screen).toEqual({ x: 200 - 50, y: 150 - 30 }); // { x: 150, y: 120 }
     expect(zoomCall!.factor).toBeGreaterThan(1);
   });
 });
