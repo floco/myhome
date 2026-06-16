@@ -1,5 +1,5 @@
 import { detectRooms, matchRooms, pointsEqual } from "@myhome/geometry";
-import type { Floor, Wall, Point } from "@myhome/geometry";
+import type { Floor, Wall, Opening, Room, Point } from "@myhome/geometry";
 import { createSampleFloor } from "./sampleFloor";
 
 export const STORAGE_KEY = "myhome.editor.floor";
@@ -56,6 +56,7 @@ export function createFloorStore() {
 
   function removeWall(id: string): void {
     floor.walls = floor.walls.filter((w) => w.id !== id);
+    floor.openings = floor.openings.filter((o) => o.wallId !== id);
     commitWalls();
   }
 
@@ -71,6 +72,24 @@ export function createFloorStore() {
     commitWalls();
   }
 
+  function addOpening(opening: Opening): void {
+    floor.openings.push(opening);
+    persist();
+  }
+
+  function removeOpening(id: string): void {
+    floor.openings = floor.openings.filter((o) => o.id !== id);
+    persist();
+  }
+
+  function updateRoom(id: string, patch: Partial<Pick<Room, "label" | "haAreaId">>): void {
+    const room = floor.rooms.find((r) => r.id === id);
+    if (!room) return;
+    if (patch.label !== undefined) room.label = patch.label;
+    if (patch.haAreaId !== undefined) room.haAreaId = patch.haAreaId;
+    persist();
+  }
+
   recomputeRooms();
 
   return {
@@ -80,5 +99,8 @@ export function createFloorStore() {
     addWall,
     removeWall,
     moveSharedPoint,
+    addOpening,
+    removeOpening,
+    updateRoom,
   };
 }
