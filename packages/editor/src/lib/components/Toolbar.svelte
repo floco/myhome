@@ -15,10 +15,12 @@
 </script>
 
 <nav class="toolbar">
-  <button class:active={tool === "select"} onclick={() => onselecttool("select")}> Select </button>
-  <button class:active={tool === "wall"} onclick={() => onselecttool("wall")}> Wall </button>
-  <button class:active={tool === "divider"} onclick={() => onselecttool("divider")}> Divider </button>
-  <button class="delete" disabled={!hasSelection} onclick={ondelete}> Delete </button>
+  <button class:active={tool === "select"} onclick={() => onselecttool("select")}>Select</button>
+  <button class:active={tool === "wall"} onclick={() => onselecttool("wall")}>Wall</button>
+  <button class:active={tool === "divider"} onclick={() => onselecttool("divider")}>Divider</button>
+  <button class:active={tool === "door"} onclick={() => onselecttool("door")}>Door</button>
+  <button class:active={tool === "window"} onclick={() => onselecttool("window")}>Window</button>
+  <button class="delete" disabled={!hasSelection} onclick={ondelete}>Delete</button>
 </nav>
 
 <style>
@@ -37,6 +39,7 @@
     background: #444;
     color: #ccc;
     cursor: pointer;
+    font-size: 11px;
   }
   button.active {
     background: #555;

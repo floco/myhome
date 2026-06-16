@@ -1,10 +1,13 @@
-import type { Point } from "@myhome/geometry";
+import type { Point, Wall } from "@myhome/geometry";
 
 /** World-space grid spacing in meters, matching Spec 1's House.gridSnap default. */
 export const GRID_SIZE = 0.1;
 
 /** Fixed screen-space snap radius in pixels, independent of zoom. */
 export const SNAP_RADIUS_PX = 12;
+
+/** Fixed screen-space hit radius for wall detection in pixels, independent of zoom. */
+export const HIT_RADIUS_PX = 30;
 
 function roundTo(value: number, decimals: number): number {
   const factor = 10 ** decimals;
@@ -38,4 +41,41 @@ export function findSnapPoint(target: Point, candidates: Point[], radius: number
     }
   }
   return closest;
+}
+
+/**
+ * Projects `cursor` onto each "wall"-type segment. Returns the closest wall
+ * and its grid-snapped offset if within `threshold` (world units), or null.
+ */
+export function hitTestWall(
+  cursor: Point,
+  walls: Wall[],
+  threshold: number
+): { wall: Wall; offset: number } | null {
+  let bestDist = threshold;
+  let bestWall: Wall | null = null;
+  let bestOffset = 0;
+
+  for (const wall of walls) {
+    if (wall.type !== "wall") continue;
+    const dx = wall.end.x - wall.start.x;
+    const dy = wall.end.y - wall.start.y;
+    const length = Math.hypot(dx, dy);
+    if (length < 1e-9) continue;
+    const dirX = dx / length;
+    const dirY = dy / length;
+    const cx = cursor.x - wall.start.x;
+    const cy = cursor.y - wall.start.y;
+    const t = Math.max(0, Math.min(length, cx * dirX + cy * dirY));
+    const projX = wall.start.x + dirX * t;
+    const projY = wall.start.y + dirY * t;
+    const dist = Math.hypot(cursor.x - projX, cursor.y - projY);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestWall = wall;
+      bestOffset = Math.max(0, Math.min(length, Math.round(t / GRID_SIZE) * GRID_SIZE));
+    }
+  }
+
+  return bestWall ? { wall: bestWall, offset: bestOffset } : null;
 }

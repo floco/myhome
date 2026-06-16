@@ -1,9 +1,9 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { mount, unmount, flushSync } from "svelte";
+import { mount, unmount, flushSync, tick } from "svelte";
 import Canvas from "../src/lib/components/Canvas.svelte";
 import { createSampleFloor } from "../src/lib/sampleFloor";
 import { detectRooms, matchRooms } from "@myhome/geometry";
-import type { Point } from "@myhome/geometry";
+import type { Point, Wall, Opening, Floor } from "@myhome/geometry";
 import { DEFAULT_VIEWPORT } from "../src/lib/viewportStore.svelte";
 
 describe("Canvas", () => {
@@ -39,10 +39,12 @@ describe("Canvas", () => {
     expect(svg!.querySelectorAll("polygon.room")).toHaveLength(2);
     expect(svg!.querySelectorAll("line.grid-line").length).toBeGreaterThan(0);
 
+    // RoomShape now shows room.label when set; newly-detected rooms get auto-labels "Room N"
     const labels = Array.from(svg!.querySelectorAll("text.room-label")).map((el) =>
       el.textContent?.trim(),
     );
-    expect(labels).toEqual(["6 m²", "6 m²"]);
+    expect(labels).toHaveLength(2);
+    expect(labels.every((l) => l?.startsWith("Room "))).toBe(true);
   });
 
   it("selects a wall on click and clears selection on background click", () => {
@@ -308,5 +310,62 @@ describe("Canvas", () => {
     // The second click should be suppressed (no extra point placed)
     // dblclick should be called
     expect(dblclickCalled).toBe(true);
+  });
+
+  describe("Canvas — openings", () => {
+    it("renders a window opening SVG element", async () => {
+      target = document.createElement("div");
+      document.body.appendChild(target);
+
+      const wall: Wall = {
+        id: "w1",
+        start: { x: 0, y: 0 },
+        end: { x: 4, y: 0 },
+        thickness: 0.2,
+        type: "wall",
+      };
+      const opening: Opening = {
+        id: "op1",
+        wallId: "w1",
+        type: "window",
+        offset: 1,
+        width: 1.2,
+      };
+      const floor: Floor = {
+        id: "f1",
+        name: "G",
+        order: 0,
+        walls: [wall],
+        openings: [opening],
+        rooms: [],
+      };
+      const viewport = { zoom: 50, panX: 0, panY: 0 };
+
+      app = mount(Canvas, {
+        target,
+        props: { floor, viewport, width: 600, height: 400 },
+      });
+      await tick();
+
+      // Window symbol should be rendered as a line with class "window-sym"
+      const lines = document.querySelectorAll("line.window-sym");
+      expect(lines.length).toBeGreaterThan(0);
+    });
+
+    it("renders a door opening with leaf and arc", async () => {
+      target = document.createElement("div");
+      document.body.appendChild(target);
+
+      const wall: Wall = { id: "w1", start: { x: 0, y: 0 }, end: { x: 4, y: 0 }, thickness: 0.2, type: "wall" };
+      const opening: Opening = { id: "op2", wallId: "w1", type: "door", offset: 1, width: 0.9, swing: "left-in" };
+      const floor: Floor = { id: "f1", name: "G", order: 0, walls: [wall], openings: [opening], rooms: [] };
+      const viewport = { zoom: 50, panX: 0, panY: 0 };
+
+      app = mount(Canvas, { props: { floor, viewport, width: 600, height: 400 }, target });
+      await tick();
+
+      expect(document.querySelectorAll("line.door-leaf").length).toBeGreaterThan(0);
+      expect(document.querySelectorAll("path.door-arc").length).toBeGreaterThan(0);
+    });
   });
 });
