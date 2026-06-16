@@ -9,10 +9,17 @@
   import type { Opening } from "@myhome/geometry";
   import Canvas from "./lib/components/Canvas.svelte";
   import Toolbar from "./lib/components/Toolbar.svelte";
+  import RoomPanel from "./lib/components/RoomPanel.svelte";
 
   const floorStore = createFloorStore();
   const viewportStore = createViewportStore();
   const toolStore = createToolStore();
+
+  const selectedRoom = $derived(
+    toolStore.state.selectedRoomId
+      ? (floorStore.floor.rooms.find((r) => r.id === toolStore.state.selectedRoomId) ?? null)
+      : null
+  );
 
   let spacePressed = $state(false);
   let canvasWidth = $state(1200);
@@ -205,6 +212,12 @@
       onpan={handlePan}
       onzoom={handleZoom}
     />
+    {#if selectedRoom}
+      <RoomPanel
+        room={selectedRoom}
+        onupdate={(patch) => floorStore.updateRoom(selectedRoom.id, patch)}
+      />
+    {/if}
   </div>
 </div>
 

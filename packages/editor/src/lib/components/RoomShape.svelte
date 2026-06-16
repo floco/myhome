@@ -2,8 +2,21 @@
   import type { Room } from "@myhome/geometry";
   import { polygonCentroid } from "@myhome/geometry";
   import type { ViewportState } from "../viewportStore.svelte";
+  import type { ToolType } from "../toolStore.svelte";
 
-  let { room, viewport }: { room: Room; viewport: ViewportState } = $props();
+  let {
+    room,
+    viewport,
+    tool = "select",
+    selected = false,
+    onselectroom,
+  }: {
+    room: Room;
+    viewport: ViewportState;
+    tool?: ToolType;
+    selected?: boolean;
+    onselectroom?: (id: string) => void;
+  } = $props();
 
   const screenPoints = $derived.by(() => {
     if (!room.polygon) return [];
@@ -20,12 +33,31 @@
     const c = polygonCentroid(room.polygon);
     return { x: c.x * viewport.zoom + viewport.panX, y: c.y * viewport.zoom + viewport.panY };
   });
+
+  function handleClick(event: MouseEvent): void {
+    if (tool !== "select") return;
+    event.stopPropagation();
+    onselectroom?.(room.id);
+  }
 </script>
 
 {#if room.polygon}
-  <polygon {points} class="room" />
-  <text x={labelPos.x} y={labelPos.y} class="room-label" text-anchor="middle">
-    {room.areaM2} m²
+  <polygon
+    {points}
+    class="room"
+    class:selected
+    onclick={handleClick}
+    role="button"
+    tabindex="0"
+  />
+  <text
+    x={labelPos.x}
+    y={labelPos.y}
+    class="room-label"
+    text-anchor="middle"
+    pointer-events="none"
+  >
+    {room.label || String(room.areaM2) + " m²"}
   </text>
 {/if}
 
@@ -34,10 +66,18 @@
     fill: #3a5a3a;
     fill-opacity: 0.5;
     stroke: none;
+    cursor: pointer;
+  }
+  .room.selected {
+    fill: #2a6a8a;
+    fill-opacity: 0.6;
+    stroke: #5af;
+    stroke-width: 2;
   }
   .room-label {
     fill: #cde;
     font-size: 12px;
     dominant-baseline: middle;
+    pointer-events: none;
   }
 </style>

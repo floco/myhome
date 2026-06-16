@@ -104,10 +104,12 @@ describe("App", () => {
 
     const rooms = target.querySelectorAll("polygon.room");
     expect(rooms.length).toBe(3);
+    // RoomShape now shows room.label when set; newly-detected rooms get auto-labels "Room N"
     const labels = Array.from(target.querySelectorAll("text.room-label")).map((el) =>
       el.textContent?.trim(),
     );
-    expect(labels).toContain("4 m²");
+    expect(labels).toHaveLength(3);
+    expect(labels.every((l) => l?.startsWith("Room "))).toBe(true);
   });
 
   it("Escape ends the wall chain without closing it", () => {
@@ -287,6 +289,19 @@ describe("App", () => {
 
     const wallAfterPan = target.querySelector("polygon.wall")!.getAttribute("points");
     expect(wallAfterPan).not.toBe(wallBefore);
+  });
+});
+
+describe("App — room panel", () => {
+  it("room panel is not visible initially", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(App, { target });
+    await tick();
+    const panel = target.querySelector(".room-panel");
+    expect(panel).toBeNull();
+    unmount(app);
+    target.remove();
   });
 });
 

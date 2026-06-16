@@ -39,10 +39,12 @@ describe("Canvas", () => {
     expect(svg!.querySelectorAll("polygon.room")).toHaveLength(2);
     expect(svg!.querySelectorAll("line.grid-line").length).toBeGreaterThan(0);
 
+    // RoomShape now shows room.label when set; newly-detected rooms get auto-labels "Room N"
     const labels = Array.from(svg!.querySelectorAll("text.room-label")).map((el) =>
       el.textContent?.trim(),
     );
-    expect(labels).toEqual(["6 m²", "6 m²"]);
+    expect(labels).toHaveLength(2);
+    expect(labels.every((l) => l?.startsWith("Room "))).toBe(true);
   });
 
   it("selects a wall on click and clears selection on background click", () => {

@@ -199,7 +199,13 @@
 >
   <Grid {viewport} {width} {height} />
   {#each floor.rooms as room (room.id)}
-    <RoomShape {room} {viewport} />
+    <RoomShape
+      {room}
+      {viewport}
+      {tool}
+      selected={room.id === selectedRoomId}
+      onselectroom={(id) => onselectroom?.(id)}
+    />
   {/each}
   {#each floor.walls as wall (wall.id)}
     {#if wall.type === "wall"}
