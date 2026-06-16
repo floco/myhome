@@ -29,12 +29,17 @@ export function matchRooms(detected: DetectedRoom[], existing: Room[]): RoomMatc
 
   for (const det of detected) {
     const centroid = polygonCentroid(det.polygon);
-    const match = existing.find(
+    const candidates = existing.filter(
       (r) =>
         !matchedExistingIds.has(r.id) &&
         r.polygon !== null &&
-        pointInPolygon(centroid, r.polygon)
+        pointInPolygon(centroid, r.polygon!)
     );
+    const match = candidates.length <= 1
+      ? candidates[0]
+      : candidates.reduce((best, r) =>
+          polygonArea(r.polygon!) < polygonArea(best.polygon!) ? r : best
+        );
 
     if (match) {
       matchedExistingIds.add(match.id);

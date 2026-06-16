@@ -141,17 +141,18 @@ function renderWall(wall: Wall, openings: Opening[]): string {
 
 function renderOpening(wall: Wall, opening: Opening): string {
   const { dirX, dirY, length } = wallDirection(wall);
-  const offset = clamp(opening.offset, 0, length);
-  const width = clamp(opening.width, 0, length - offset);
+  const from = clamp(opening.offset, 0, length);
+  const to = clamp(opening.offset + opening.width, from, length);
+  const renderWidth = to - from;
 
-  const p1 = pointAlong(wall.start, dirX, dirY, offset);
-  const p2 = pointAlong(wall.start, dirX, dirY, offset + width);
+  const p1 = pointAlong(wall.start, dirX, dirY, from);
+  const p2 = pointAlong(wall.start, dirX, dirY, to);
 
   if (opening.type === "window") {
     return `<line class="window" x1="${fmt(p1.x)}" y1="${fmt(p1.y)}" x2="${fmt(p2.x)}" y2="${fmt(p2.y)}" />`;
   }
 
-  return renderDoor(p1, p2, dirX, dirY, opening.swing ?? "left-in", width);
+  return renderDoor(p1, p2, dirX, dirY, opening.swing ?? "left-in", renderWidth);
 }
 
 function renderDoor(
