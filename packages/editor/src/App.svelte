@@ -14,6 +14,8 @@
   const toolStore = createToolStore();
 
   let spacePressed = $state(false);
+  let canvasWidth = $state(1200);
+  let canvasHeight = $state(800);
 
   function handleSelect(id: string | null): void {
     if (toolStore.state.tool === "select") {
@@ -131,7 +133,7 @@
     <h1>Floor Plan Editor</h1>
     <button class="reset-view" onclick={() => viewportStore.reset()}>Reset View</button>
   </header>
-  <div class="body">
+  <div class="body" bind:clientWidth={canvasWidth} bind:clientHeight={canvasHeight}>
     <Toolbar
       tool={toolStore.state.tool}
       hasSelection={toolStore.state.selectedId !== null}
@@ -141,8 +143,8 @@
     <Canvas
       floor={floorStore.floor}
       viewport={viewportStore.viewport}
-      width={1200}
-      height={800}
+      width={canvasWidth}
+      height={canvasHeight}
       selectedId={toolStore.state.selectedId}
       onselect={handleSelect}
       tool={toolStore.state.tool}
