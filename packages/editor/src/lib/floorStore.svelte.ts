@@ -136,9 +136,9 @@ export function createFloorStore() {
     patch: Partial<Pick<Opening, "offset" | "width" | "swing">>,
     opts?: { skipHistory?: boolean }
   ): void {
-    if (!opts?.skipHistory) saveSnapshot();
     const opening = floor.openings.find((o) => o.id === id);
     if (!opening) return;
+    if (!opts?.skipHistory) saveSnapshot();
     if (patch.offset !== undefined) opening.offset = patch.offset;
     if (patch.width !== undefined) opening.width = patch.width;
     if (patch.swing !== undefined) opening.swing = patch.swing;
