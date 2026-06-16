@@ -1,10 +1,12 @@
 import type { Point } from "@myhome/geometry";
 
-export type ToolType = "select" | "wall" | "divider";
+export type ToolType = "select" | "wall" | "divider" | "door" | "window";
 
 export interface ToolState {
   tool: ToolType;
   selectedId: string | null;
+  selectedRoomId: string | null;
+  selectedOpeningId: string | null;
   drawPoints: Point[];
   cursorWorld: Point | null;
   draggingPoint: Point | null;
@@ -14,6 +16,8 @@ export function createToolStore() {
   const state = $state<ToolState>({
     tool: "select",
     selectedId: null,
+    selectedRoomId: null,
+    selectedOpeningId: null,
     drawPoints: [],
     cursorWorld: null,
     draggingPoint: null,
@@ -22,6 +26,8 @@ export function createToolStore() {
   function setTool(tool: ToolType): void {
     state.tool = tool;
     state.selectedId = null;
+    state.selectedRoomId = null;
+    state.selectedOpeningId = null;
     state.drawPoints = [];
     state.cursorWorld = null;
     state.draggingPoint = null;
@@ -29,6 +35,20 @@ export function createToolStore() {
 
   function select(id: string | null): void {
     state.selectedId = id;
+    state.selectedRoomId = null;
+    state.selectedOpeningId = null;
+  }
+
+  function selectRoom(id: string | null): void {
+    state.selectedRoomId = id;
+    state.selectedId = null;
+    state.selectedOpeningId = null;
+  }
+
+  function selectOpening(id: string | null): void {
+    state.selectedOpeningId = id;
+    state.selectedId = null;
+    state.selectedRoomId = null;
   }
 
   function addDrawPoint(p: Point): void {
@@ -61,6 +81,8 @@ export function createToolStore() {
     },
     setTool,
     select,
+    selectRoom,
+    selectOpening,
     addDrawPoint,
     setCursor,
     resetDraw,

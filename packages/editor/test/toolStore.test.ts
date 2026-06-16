@@ -69,3 +69,58 @@ describe("toolStore", () => {
     expect(store.state.draggingPoint).toBeNull();
   });
 });
+
+describe("toolStore — door/window tools", () => {
+  it("setTool('door') is valid and clears draw state", () => {
+    const store = createToolStore();
+    store.addDrawPoint({ x: 1, y: 0 });
+    store.setTool("door");
+    expect(store.state.tool).toBe("door");
+    expect(store.state.drawPoints).toHaveLength(0);
+  });
+
+  it("setTool('window') is valid", () => {
+    const store = createToolStore();
+    store.setTool("window");
+    expect(store.state.tool).toBe("window");
+  });
+});
+
+describe("toolStore — room and opening selection", () => {
+  it("selectRoom sets selectedRoomId and clears selectedId and selectedOpeningId", () => {
+    const store = createToolStore();
+    store.select("wall-1");
+    store.selectRoom("room-1");
+    expect(store.state.selectedRoomId).toBe("room-1");
+    expect(store.state.selectedId).toBeNull();
+    expect(store.state.selectedOpeningId).toBeNull();
+  });
+
+  it("selectOpening sets selectedOpeningId and clears selectedId and selectedRoomId", () => {
+    const store = createToolStore();
+    store.selectRoom("room-1");
+    store.selectOpening("op-1");
+    expect(store.state.selectedOpeningId).toBe("op-1");
+    expect(store.state.selectedRoomId).toBeNull();
+    expect(store.state.selectedId).toBeNull();
+  });
+
+  it("select(wall) clears selectedRoomId and selectedOpeningId", () => {
+    const store = createToolStore();
+    store.selectRoom("room-1");
+    store.select("wall-1");
+    expect(store.state.selectedId).toBe("wall-1");
+    expect(store.state.selectedRoomId).toBeNull();
+    expect(store.state.selectedOpeningId).toBeNull();
+  });
+
+  it("setTool clears all selections", () => {
+    const store = createToolStore();
+    store.selectRoom("room-1");
+    store.selectOpening("op-1");
+    store.setTool("wall");
+    expect(store.state.selectedRoomId).toBeNull();
+    expect(store.state.selectedOpeningId).toBeNull();
+    expect(store.state.selectedId).toBeNull();
+  });
+});
