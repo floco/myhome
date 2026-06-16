@@ -10,6 +10,7 @@ export interface ToolState {
   drawPoints: Point[];
   cursorWorld: Point | null;
   draggingPoint: Point | null;
+  draggingOpeningHandle: { openingId: string; side: "start" | "end" } | null;
 }
 
 export function createToolStore() {
@@ -21,6 +22,7 @@ export function createToolStore() {
     drawPoints: [],
     cursorWorld: null,
     draggingPoint: null,
+    draggingOpeningHandle: null,
   });
 
   function setTool(tool: ToolType): void {
@@ -31,6 +33,7 @@ export function createToolStore() {
     state.drawPoints = [];
     state.cursorWorld = null;
     state.draggingPoint = null;
+    state.draggingOpeningHandle = null;
   }
 
   function select(id: string | null): void {
@@ -73,6 +76,15 @@ export function createToolStore() {
 
   function endDrag(): void {
     state.draggingPoint = null;
+    state.draggingOpeningHandle = null;
+  }
+
+  function startOpeningDrag(openingId: string, side: "start" | "end"): void {
+    state.draggingOpeningHandle = { openingId, side };
+  }
+
+  function endOpeningDrag(): void {
+    state.draggingOpeningHandle = null;
   }
 
   return {
@@ -89,5 +101,7 @@ export function createToolStore() {
     startDrag,
     updateDragPoint,
     endDrag,
+    startOpeningDrag,
+    endOpeningDrag,
   };
 }
