@@ -6,6 +6,10 @@ export interface ViewportState {
   zoom: number;
 }
 
+export function worldToScreen(p: Point, viewport: ViewportState): Point {
+  return { x: p.x * viewport.zoom + viewport.panX, y: p.y * viewport.zoom + viewport.panY };
+}
+
 export const DEFAULT_VIEWPORT: ViewportState = { panX: 400, panY: 300, zoom: 100 };
 
 const MIN_ZOOM = 20;   // 2 cm/pixel — ~2,400 grid lines max
@@ -13,10 +17,6 @@ const MAX_ZOOM = 2000; // 0.05 mm/pixel
 
 export function createViewportStore() {
   const viewport = $state<ViewportState>({ ...DEFAULT_VIEWPORT });
-
-  function worldToScreen(p: Point): Point {
-    return { x: p.x * viewport.zoom + viewport.panX, y: p.y * viewport.zoom + viewport.panY };
-  }
 
   function screenToWorld(p: Point): Point {
     return { x: (p.x - viewport.panX) / viewport.zoom, y: (p.y - viewport.panY) / viewport.zoom };
@@ -45,7 +45,7 @@ export function createViewportStore() {
     get viewport() {
       return viewport;
     },
-    worldToScreen,
+    worldToScreen: (p: Point) => worldToScreen(p, viewport),
     screenToWorld,
     zoomAt,
     pan,

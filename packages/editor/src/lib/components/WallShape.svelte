@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Wall } from "@myhome/geometry";
-  import type { ViewportState } from "../viewportStore.svelte";
+  import { worldToScreen, type ViewportState } from "../viewportStore.svelte";
   import type { ToolType } from "../toolStore.svelte";
 
   let {
@@ -34,10 +34,7 @@
       { x: wall.end.x - px, y: wall.end.y - py },
       { x: wall.start.x - px, y: wall.start.y - py },
     ];
-    return worldCorners.map((p) => ({
-      x: p.x * viewport.zoom + viewport.panX,
-      y: p.y * viewport.zoom + viewport.panY,
-    }));
+    return worldCorners.map((p) => worldToScreen(p, viewport));
   });
 
   const points = $derived(corners.map((c) => `${c.x},${c.y}`).join(" "));

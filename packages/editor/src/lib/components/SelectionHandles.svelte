@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Point, Wall } from "@myhome/geometry";
-  import type { ViewportState } from "../viewportStore.svelte";
+  import { worldToScreen, type ViewportState } from "../viewportStore.svelte";
 
   let {
     wall,
@@ -13,7 +13,7 @@
   } = $props();
 
   function toScreen(p: Point): Point {
-    return { x: p.x * viewport.zoom + viewport.panX, y: p.y * viewport.zoom + viewport.panY };
+    return worldToScreen(p, viewport);
   }
 
   const startScreen = $derived(toScreen(wall.start));
