@@ -234,6 +234,7 @@ describe("Canvas", () => {
 
     // Give the SVG a non-zero bounding rect so the rect.left/top subtraction
     // is exercised, confirming that the screen point is canvas-relative.
+    const origGetBCR = SVGSVGElement.prototype.getBoundingClientRect;
     SVGSVGElement.prototype.getBoundingClientRect = () =>
       ({ left: 50, top: 30, right: 850, bottom: 630, width: 800, height: 600 }) as DOMRect;
 
@@ -257,6 +258,8 @@ describe("Canvas", () => {
 
     expect(zoomCall!.screen).toEqual({ x: 200 - 50, y: 150 - 30 }); // { x: 150, y: 120 }
     expect(zoomCall!.factor).toBeGreaterThan(1);
+
+    SVGSVGElement.prototype.getBoundingClientRect = origGetBCR;
   });
 
   it("double-click ends the chain without placing an extra segment", () => {
