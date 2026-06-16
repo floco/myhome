@@ -71,6 +71,7 @@ export function createHouseStore() {
   }
 
   function applyState(s: HouseState): void {
+    if (s.floors.length === 0) return;
     floors.length = 0;
     for (const f of s.floors) floors.push(f);
     currentFloorId = s.currentFloorId;

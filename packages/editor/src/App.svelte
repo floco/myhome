@@ -256,7 +256,7 @@
     <FloorSwitcher
       floors={floorStore.floors}
       currentFloorId={floorStore.currentFloorId}
-      onswitchfloor={(id) => floorStore.switchFloor(id)}
+      onswitchfloor={(id) => { floorStore.switchFloor(id); toolStore.select(null); toolStore.selectRoom(null); toolStore.selectOpening(null); }}
       onaddfloor={(name) => floorStore.addFloor(name)}
       onrenamefloor={(id, name) => floorStore.renameFloor(id, name)}
       onremovefloor={(id) => floorStore.removeFloor(id)}
