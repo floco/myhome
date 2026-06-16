@@ -4,17 +4,28 @@
   let {
     tool,
     hasSelection,
+    hasUndo = false,
+    hasRedo = false,
     onselecttool,
     ondelete,
+    onundo,
+    onredo,
   }: {
     tool: ToolType;
     hasSelection: boolean;
+    hasUndo?: boolean;
+    hasRedo?: boolean;
     onselecttool: (tool: ToolType) => void;
     ondelete: () => void;
+    onundo?: () => void;
+    onredo?: () => void;
   } = $props();
 </script>
 
 <nav class="toolbar">
+  <button disabled={!hasUndo} onclick={() => onundo?.()}>Undo</button>
+  <button disabled={!hasRedo} onclick={() => onredo?.()}>Redo</button>
+  <hr />
   <button class:active={tool === "select"} onclick={() => onselecttool("select")}>Select</button>
   <button class:active={tool === "wall"} onclick={() => onselecttool("wall")}>Wall</button>
   <button class:active={tool === "divider"} onclick={() => onselecttool("divider")}>Divider</button>
@@ -31,6 +42,11 @@
     padding: 8px 6px;
     background: #333;
     width: 64px;
+  }
+  hr {
+    border: none;
+    border-top: 1px solid #555;
+    margin: 0;
   }
   button {
     padding: 6px;

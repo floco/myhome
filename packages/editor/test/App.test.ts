@@ -30,7 +30,7 @@ describe("App", () => {
 
     const buttons = Array.from(target.querySelectorAll(".toolbar button"));
     const labels = buttons.map((b) => b.textContent?.trim());
-    expect(labels).toEqual(["Select", "Wall", "Divider", "Door", "Window", "Delete"]);
+    expect(labels).toEqual(["Undo", "Redo", "Select", "Wall", "Divider", "Door", "Window", "Delete"]);
 
     const selectBtn = buttons.find((b) => b.textContent?.trim() === "Select")!;
     expect(selectBtn.className).toContain("active");
@@ -50,7 +50,7 @@ describe("App", () => {
     wall.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     flushSync();
 
-    const deleteBtn = target.querySelectorAll(".toolbar button")[5] as HTMLButtonElement;
+    const deleteBtn = target.querySelectorAll(".toolbar button")[7] as HTMLButtonElement;
     expect(deleteBtn.disabled).toBe(false);
 
     const wallsBefore = target.querySelectorAll("polygon.wall").length;
@@ -332,5 +332,25 @@ describe("App — opening selection", () => {
     const deleteBtn = target.querySelector("button.delete") as HTMLButtonElement;
     expect(deleteBtn).not.toBeNull();
     expect(deleteBtn.disabled).toBe(true); // no selection initially
+  });
+});
+
+describe("App — undo/redo buttons", () => {
+  it("Undo and Redo buttons exist and are disabled initially", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(App, { target });
+    await tick();
+
+    const buttons = target.querySelectorAll(".toolbar button");
+    const undoBtn = buttons[0] as HTMLButtonElement;
+    const redoBtn = buttons[1] as HTMLButtonElement;
+    expect(undoBtn.textContent?.trim()).toBe("Undo");
+    expect(redoBtn.textContent?.trim()).toBe("Redo");
+    expect(undoBtn.disabled).toBe(true);
+    expect(redoBtn.disabled).toBe(true);
+
+    unmount(app);
+    target.remove();
   });
 });

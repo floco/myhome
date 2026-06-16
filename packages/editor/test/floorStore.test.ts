@@ -127,3 +127,108 @@ describe("floorStore — room update", () => {
     expect(store.floor.rooms.map((r) => r.label)).toEqual(before);
   });
 });
+
+describe("floorStore — undo/redo", () => {
+  beforeEach(() => { localStorage.clear(); });
+
+  it("undo reverts the last addWall", () => {
+    const store = createFloorStore();
+    const before = store.floor.walls.length;
+    store.addWall({ id: "w-new", start: { x: 10, y: 10 }, end: { x: 20, y: 10 }, type: "wall", thickness: 0.15 });
+    expect(store.floor.walls.length).toBe(before + 1);
+    store.undo();
+    expect(store.floor.walls.length).toBe(before);
+  });
+
+  it("redo re-applies the reverted action", () => {
+    const store = createFloorStore();
+    const before = store.floor.walls.length;
+    store.addWall({ id: "w-new", start: { x: 10, y: 10 }, end: { x: 20, y: 10 }, type: "wall", thickness: 0.15 });
+    store.undo();
+    store.redo();
+    expect(store.floor.walls.length).toBe(before + 1);
+  });
+
+  it("mutation after undo clears the redo stack", () => {
+    const store = createFloorStore();
+    store.addWall({ id: "w1", start: { x: 10, y: 0 }, end: { x: 20, y: 0 }, type: "wall", thickness: 0.15 });
+    store.undo();
+    expect(store.hasRedo).toBe(true);
+    store.addWall({ id: "w2", start: { x: 30, y: 0 }, end: { x: 40, y: 0 }, type: "wall", thickness: 0.15 });
+    expect(store.hasRedo).toBe(false);
+  });
+
+  it("hasUndo is false initially and true after a mutation", () => {
+    const store = createFloorStore();
+    expect(store.hasUndo).toBe(false);
+    store.addWall({ id: "w-x", start: { x: 50, y: 0 }, end: { x: 60, y: 0 }, type: "wall", thickness: 0.15 });
+    expect(store.hasUndo).toBe(true);
+  });
+
+  it("undo on empty stack is a no-op", () => {
+    const store = createFloorStore();
+    expect(() => store.undo()).not.toThrow();
+  });
+});
+
+describe("floorStore — updateOpening", () => {
+  beforeEach(() => { localStorage.clear(); });
+
+  it("updateOpening changes offset and width", () => {
+    const store = createFloorStore();
+    const wallId = store.floor.walls.find((w) => w.type === "wall")?.id;
+    expect(wallId).toBeDefined();
+    store.addOpening({ id: "op1", wallId: wallId!, type: "window", offset: 1, width: 1.2 });
+    store.updateOpening("op1", { offset: 2, width: 0.9 });
+    const op = store.floor.openings.find((o) => o.id === "op1");
+    expect(op?.offset).toBeCloseTo(2, 5);
+    expect(op?.width).toBeCloseTo(0.9, 5);
+  });
+
+  it("updateOpening with skipHistory does not add to undo stack beyond addOpening", () => {
+    const store = createFloorStore();
+    const wallId = store.floor.walls.find((w) => w.type === "wall")?.id;
+    expect(wallId).toBeDefined();
+    store.addOpening({ id: "op1", wallId: wallId!, type: "window", offset: 1, width: 1.2 });
+    store.updateOpening("op1", { width: 0.8 }, { skipHistory: true });
+    // undo should revert addOpening, not updateOpening
+    store.undo();
+    expect(store.floor.openings.find((o) => o.id === "op1")).toBeUndefined();
+  });
+});
+
+describe("floorStore — openingOverlaps", () => {
+  beforeEach(() => { localStorage.clear(); });
+
+  it("openingOverlaps returns false when no openings exist", () => {
+    const store = createFloorStore();
+    expect(store.openingOverlaps("w1", null, 1, 2)).toBe(false);
+  });
+
+  it("openingOverlaps returns true when a new opening would overlap an existing one", () => {
+    const store = createFloorStore();
+    const wallId = store.floor.walls.find((w) => w.type === "wall")?.id;
+    expect(wallId).toBeDefined();
+    store.addOpening({ id: "op1", wallId: wallId!, type: "window", offset: 1, width: 1.2 });
+    // [1, 2.2] already exists; [1.5, 2.7] overlaps
+    expect(store.openingOverlaps(wallId!, null, 1.5, 2.7)).toBe(true);
+  });
+
+  it("openingOverlaps returns false for non-overlapping range", () => {
+    const store = createFloorStore();
+    const wallId = store.floor.walls.find((w) => w.type === "wall")?.id;
+    expect(wallId).toBeDefined();
+    store.addOpening({ id: "op1", wallId: wallId!, type: "window", offset: 1, width: 1.2 });
+    // [1, 2.2] exists; [3, 4] is clear
+    expect(store.openingOverlaps(wallId!, null, 3, 4)).toBe(false);
+  });
+
+  it("openingOverlaps excludes the opening being resized (self)", () => {
+    const store = createFloorStore();
+    const wallId = store.floor.walls.find((w) => w.type === "wall")?.id;
+    expect(wallId).toBeDefined();
+    store.addOpening({ id: "op1", wallId: wallId!, type: "window", offset: 1, width: 1.2 });
+    // Same range as op1 — should return false since op1 is excluded
+    expect(store.openingOverlaps(wallId!, "op1", 1, 2.2)).toBe(false);
+  });
+});

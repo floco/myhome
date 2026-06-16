@@ -124,3 +124,32 @@ describe("toolStore — room and opening selection", () => {
     expect(store.state.selectedId).toBeNull();
   });
 });
+
+describe("toolStore — opening handle drag", () => {
+  it("startOpeningDrag sets draggingOpeningHandle", () => {
+    const store = createToolStore();
+    store.startOpeningDrag("op-1", "end");
+    expect(store.state.draggingOpeningHandle).toEqual({ openingId: "op-1", side: "end" });
+  });
+
+  it("endOpeningDrag clears draggingOpeningHandle", () => {
+    const store = createToolStore();
+    store.startOpeningDrag("op-1", "start");
+    store.endOpeningDrag();
+    expect(store.state.draggingOpeningHandle).toBeNull();
+  });
+
+  it("endDrag also clears draggingOpeningHandle", () => {
+    const store = createToolStore();
+    store.startOpeningDrag("op-1", "start");
+    store.endDrag();
+    expect(store.state.draggingOpeningHandle).toBeNull();
+  });
+
+  it("setTool clears draggingOpeningHandle", () => {
+    const store = createToolStore();
+    store.startOpeningDrag("op-1", "start");
+    store.setTool("wall");
+    expect(store.state.draggingOpeningHandle).toBeNull();
+  });
+});

@@ -11,6 +11,7 @@
     tool = "select",
     selected = false,
     onselect,
+    ondraghandlestart,
   }: {
     wall: Wall;
     opening: Opening;
@@ -18,6 +19,7 @@
     tool?: ToolType;
     selected?: boolean;
     onselect?: (id: string) => void;
+    ondraghandlestart?: (openingId: string, side: "start" | "end", event: MouseEvent) => void;
   } = $props();
 
   const dir = $derived.by(() => {
@@ -136,10 +138,38 @@
       tabindex="0"
     />
   {/if}
+
+  {#if selected}
+    <circle
+      class="handle"
+      cx={sp1.x}
+      cy={sp1.y}
+      r="5"
+      onmousedown={(e) => { e.stopPropagation(); ondraghandlestart?.(opening.id, "start", e); }}
+      role="button"
+      tabindex="0"
+    />
+    <circle
+      class="handle"
+      cx={sp2.x}
+      cy={sp2.y}
+      r="5"
+      onmousedown={(e) => { e.stopPropagation(); ondraghandlestart?.(opening.id, "end", e); }}
+      role="button"
+      tabindex="0"
+    />
+  {/if}
 {/if}
 
 <style>
   .selected-gap {
     fill: rgba(0, 128, 255, 0.15);
+  }
+
+  .handle {
+    fill: #5af;
+    stroke: #fff;
+    stroke-width: 1.5;
+    cursor: ew-resize;
   }
 </style>
