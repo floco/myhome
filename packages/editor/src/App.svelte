@@ -70,7 +70,7 @@
     }
 
     const { segment, chainEnds } = placePoint(chain, point, tool as WallType, () =>
-      crypto.randomUUID(),
+      crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36),
     );
     if (segment) {
       floorStore.addWall(segment);

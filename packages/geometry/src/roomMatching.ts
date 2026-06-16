@@ -46,7 +46,7 @@ export function matchRooms(detected: DetectedRoom[], existing: Room[]): RoomMatc
     } else {
       newRoomCount++;
       rooms.push({
-        id: crypto.randomUUID(),
+        id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36),
         label: `Room ${newRoomCount}`,
         haAreaId: null,
         polygon: det.polygon,
