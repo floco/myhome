@@ -13,6 +13,8 @@
   const viewportStore = createViewportStore();
   const toolStore = createToolStore();
 
+  let spacePressed = $state(false);
+
   function handleSelect(id: string | null): void {
     if (toolStore.state.tool === "select") {
       toolStore.select(id);
@@ -28,11 +30,11 @@
   }
 
   function wouldCollapseAWall(dragging: Point, snapped: Point): boolean {
-    return floorStore.floor.walls.some((wall) => {
-      if (pointsEqual(wall.start, dragging)) return pointsEqual(wall.end, snapped);
-      if (pointsEqual(wall.end, dragging)) return pointsEqual(wall.start, snapped);
-      return false;
-    });
+    return floorStore.floor.walls.some(
+      (w) =>
+        (pointsEqual(w.start, dragging) && pointsEqual(w.end, snapped)) ||
+        (pointsEqual(w.end, dragging) && pointsEqual(w.start, snapped)),
+    );
   }
 
   function handleDragMove(worldCursor: Point): void {
@@ -87,7 +89,19 @@
     toolStore.endDrag();
   }
 
+  function handlePan(dx: number, dy: number): void {
+    viewportStore.pan(dx, dy);
+  }
+
+  function handleZoom(screen: Point, factor: number): void {
+    viewportStore.zoomAt(screen, factor);
+  }
+
   function handleKeydown(event: KeyboardEvent): void {
+    if (event.code === "Space") {
+      spacePressed = true;
+      return;
+    }
     if (event.key === "Escape") {
       toolStore.resetDraw();
       return;
@@ -96,13 +110,20 @@
       handleDelete();
     }
   }
+
+  function handleKeyup(event: KeyboardEvent): void {
+    if (event.code === "Space") {
+      spacePressed = false;
+    }
+  }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} onkeyup={handleKeyup} />
 
 <div class="app">
   <header class="topbar">
     <h1>Floor Plan Editor</h1>
+    <button class="reset-view" onclick={() => viewportStore.reset()}>Reset View</button>
   </header>
   <div class="body">
     <Toolbar
@@ -121,11 +142,14 @@
       tool={toolStore.state.tool}
       drawPoints={toolStore.state.drawPoints}
       cursorWorld={toolStore.state.cursorWorld}
+      {spacePressed}
       onpointermove={handlePointerMove}
       onplacepoint={handlePlacePoint}
       ondblclick={() => toolStore.resetDraw()}
       ondragstart={handleDragStart}
       ondragend={handleDragEnd}
+      onpan={handlePan}
+      onzoom={handleZoom}
     />
   </div>
 </div>
@@ -145,11 +169,20 @@
     align-items: center;
     padding: 0 12px;
     flex-shrink: 0;
+    justify-content: space-between;
   }
   .topbar h1 {
     font-size: 14px;
     margin: 0;
     font-weight: 600;
+  }
+  .reset-view {
+    padding: 4px 10px;
+    border: none;
+    border-radius: 4px;
+    background: #444;
+    color: #ccc;
+    cursor: pointer;
   }
   .body {
     display: flex;

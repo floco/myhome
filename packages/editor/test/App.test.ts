@@ -244,4 +244,48 @@ describe("App", () => {
 
     vi.useRealTimers();
   });
+
+  it("wheel-zooms the viewport and Reset View restores it", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+    app = mount(App, { target });
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas")!;
+    const wallBefore = target.querySelector("polygon.wall")!.getAttribute("points");
+
+    svg.dispatchEvent(new WheelEvent("wheel", { bubbles: true, deltaY: -100, clientX: 400, clientY: 300 }));
+    flushSync();
+
+    const wallAfterZoom = target.querySelector("polygon.wall")!.getAttribute("points");
+    expect(wallAfterZoom).not.toBe(wallBefore);
+
+    const resetBtn = Array.from(target.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "Reset View",
+    ) as HTMLButtonElement;
+    resetBtn.click();
+    flushSync();
+
+    const wallAfterReset = target.querySelector("polygon.wall")!.getAttribute("points");
+    expect(wallAfterReset).toBe(wallBefore);
+  });
+
+  it("holding space and dragging pans the viewport", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+    app = mount(App, { target });
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas")!;
+    const wallBefore = target.querySelector("polygon.wall")!.getAttribute("points");
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "Space" }));
+    svg.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 100, clientY: 100 }));
+    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 130, clientY: 80 }));
+    flushSync();
+    window.dispatchEvent(new KeyboardEvent("keyup", { code: "Space" }));
+
+    const wallAfterPan = target.querySelector("polygon.wall")!.getAttribute("points");
+    expect(wallAfterPan).not.toBe(wallBefore);
+  });
 });

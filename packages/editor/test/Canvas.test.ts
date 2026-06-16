@@ -188,4 +188,69 @@ describe("Canvas", () => {
     flushSync();
     expect(events).toEqual(["dragstart", "move", "dragend"]);
   });
+
+  it("middle-mouse drag reports pan deltas instead of pointer moves", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const floor = createSampleFloor();
+    let panDelta: { dx: number; dy: number } | null = null;
+    let moveCount = 0;
+
+    app = mount(Canvas, {
+      target,
+      props: {
+        floor,
+        viewport: { ...DEFAULT_VIEWPORT },
+        width: 800,
+        height: 600,
+        onpan: (dx: number, dy: number) => {
+          panDelta = { dx, dy };
+        },
+        onpointermove: () => moveCount++,
+      },
+    });
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas")!;
+    svg.dispatchEvent(
+      new MouseEvent("mousedown", { bubbles: true, button: 1, clientX: 100, clientY: 100 }),
+    );
+    svg.dispatchEvent(
+      new MouseEvent("mousemove", { bubbles: true, button: 1, clientX: 120, clientY: 90 }),
+    );
+    flushSync();
+
+    expect(panDelta).toEqual({ dx: 20, dy: -10 });
+    expect(moveCount).toBe(0);
+  });
+
+  it("wheel events report a zoom factor centered on the cursor", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const floor = createSampleFloor();
+    let zoomCall: { screen: Point; factor: number } | null = null;
+
+    app = mount(Canvas, {
+      target,
+      props: {
+        floor,
+        viewport: { ...DEFAULT_VIEWPORT },
+        width: 800,
+        height: 600,
+        onzoom: (screen: Point, factor: number) => {
+          zoomCall = { screen, factor };
+        },
+      },
+    });
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas")!;
+    svg.dispatchEvent(new WheelEvent("wheel", { bubbles: true, deltaY: -100, clientX: 200, clientY: 150 }));
+    flushSync();
+
+    expect(zoomCall!.screen).toEqual({ x: 200, y: 150 });
+    expect(zoomCall!.factor).toBeGreaterThan(1);
+  });
 });

@@ -21,11 +21,14 @@
     tool = "select",
     drawPoints = [],
     cursorWorld = null,
+    spacePressed = false,
     onpointermove,
     onplacepoint,
     ondblclick,
     ondragstart,
     ondragend,
+    onpan,
+    onzoom,
   }: {
     floor: Floor;
     viewport: ViewportState;
@@ -36,11 +39,14 @@
     tool?: ToolType;
     drawPoints?: Point[];
     cursorWorld?: Point | null;
+    spacePressed?: boolean;
     onpointermove?: (point: Point) => void;
     onplacepoint?: (point: Point) => void;
     ondblclick?: () => void;
     ondragstart?: (point: Point) => void;
     ondragend?: () => void;
+    onpan?: (dx: number, dy: number) => void;
+    onzoom?: (screen: Point, factor: number) => void;
   } = $props();
 
   const snapResult = $derived.by(() => {
@@ -51,6 +57,9 @@
 
   const selectedWall = $derived(floor.walls.find((w) => w.id === selectedId) ?? null);
 
+  let panState = $state<Point | null>(null);
+  let suppressNextClick = false;
+
   function toWorld(event: MouseEvent): Point {
     const rect = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
     return {
@@ -59,25 +68,53 @@
     };
   }
 
+  function handleMouseDown(event: MouseEvent): void {
+    if (event.button === 1 || (event.button === 0 && spacePressed)) {
+      event.preventDefault();
+      panState = { x: event.clientX, y: event.clientY };
+      suppressNextClick = true;
+    }
+  }
+
   function handleMouseMove(event: MouseEvent): void {
+    if (panState) {
+      const dx = event.clientX - panState.x;
+      const dy = event.clientY - panState.y;
+      onpan?.(dx, dy);
+      panState = { x: event.clientX, y: event.clientY };
+      return;
+    }
     onpointermove?.(toWorld(event));
   }
 
   function handleMouseUp(): void {
+    panState = null;
     ondragend?.();
   }
 
-  function handleDragStart(point: Point, event: MouseEvent): void {
-    event.stopPropagation();
-    ondragstart?.(point);
+  function handleWheel(event: WheelEvent): void {
+    event.preventDefault();
+    const rect = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
+    const screen = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
+    onzoom?.(screen, factor);
   }
 
   function handleClick(): void {
+    if (suppressNextClick) {
+      suppressNextClick = false;
+      return;
+    }
     if (tool === "select") {
       onselect?.(null);
       return;
     }
     if (snapResult) onplacepoint?.(snapResult.point);
+  }
+
+  function handleDragStart(point: Point, event: MouseEvent): void {
+    event.stopPropagation();
+    ondragstart?.(point);
   }
 </script>
 
@@ -86,9 +123,11 @@
   {height}
   class="canvas"
   onclick={handleClick}
+  onmousedown={handleMouseDown}
   onmousemove={handleMouseMove}
   onmouseup={handleMouseUp}
   ondblclick={() => ondblclick?.()}
+  onwheel={handleWheel}
 >
   <Grid {viewport} {width} {height} />
   {#each floor.rooms as room (room.id)}
