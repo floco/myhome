@@ -63,6 +63,10 @@ describe("floorStore", () => {
 });
 
 describe("floorStore — openings", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   function makeOpening(wallId: string): Opening {
     return { id: "op-1", wallId, type: "window", offset: 1, width: 1.2 };
   }
@@ -85,6 +89,7 @@ describe("floorStore — openings", () => {
   it("removeWall also removes orphaned openings on that wall", () => {
     const store = createFloorStore();
     const wallId = store.floor.walls.find((w) => w.type === "wall")?.id;
+    expect(wallId).toBeDefined();
     if (!wallId) return;
     store.addOpening(makeOpening(wallId));
     store.removeWall(wallId);
@@ -93,9 +98,14 @@ describe("floorStore — openings", () => {
 });
 
 describe("floorStore — room update", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it("updateRoom sets label", () => {
     const store = createFloorStore();
     const room = store.floor.rooms[0];
+    expect(room).toBeDefined();
     if (!room) return;
     store.updateRoom(room.id, { label: "Kitchen" });
     expect(store.floor.rooms.find((r) => r.id === room.id)?.label).toBe("Kitchen");
@@ -104,6 +114,7 @@ describe("floorStore — room update", () => {
   it("updateRoom sets haAreaId", () => {
     const store = createFloorStore();
     const room = store.floor.rooms[0];
+    expect(room).toBeDefined();
     if (!room) return;
     store.updateRoom(room.id, { haAreaId: "kitchen_area" });
     expect(store.floor.rooms.find((r) => r.id === room.id)?.haAreaId).toBe("kitchen_area");
