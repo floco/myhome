@@ -169,6 +169,8 @@
     }
     if (tool === "select") {
       onselect?.(null);
+      onselectopening?.(null);
+      onselectroom?.(null);
       return;
     }
     if (tool === "door" || tool === "window") {

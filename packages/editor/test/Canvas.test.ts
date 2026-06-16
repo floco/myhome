@@ -349,5 +349,21 @@ describe("Canvas", () => {
       const lines = document.querySelectorAll("line.window-sym");
       expect(lines.length).toBeGreaterThan(0);
     });
+
+    it("renders a door opening with leaf and arc", async () => {
+      target = document.createElement("div");
+      document.body.appendChild(target);
+
+      const wall: Wall = { id: "w1", start: { x: 0, y: 0 }, end: { x: 4, y: 0 }, thickness: 0.2, type: "wall" };
+      const opening: Opening = { id: "op2", wallId: "w1", type: "door", offset: 1, width: 0.9, swing: "left-in" };
+      const floor: Floor = { id: "f1", name: "G", order: 0, walls: [wall], openings: [opening], rooms: [] };
+      const viewport = { zoom: 50, panX: 0, panY: 0 };
+
+      app = mount(Canvas, { props: { floor, viewport, width: 600, height: 400 }, target });
+      await tick();
+
+      expect(document.querySelectorAll("line.door-leaf").length).toBeGreaterThan(0);
+      expect(document.querySelectorAll("path.door-arc").length).toBeGreaterThan(0);
+    });
   });
 });

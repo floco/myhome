@@ -28,13 +28,16 @@
     return { x: dx / length, y: dy / length, length };
   });
 
+  const clampedFrom = $derived(Math.max(0, Math.min(dir.length, opening.offset)));
+  const clampedTo = $derived(Math.max(clampedFrom, Math.min(dir.length, opening.offset + opening.width)));
+
   const wp1 = $derived({
-    x: wall.start.x + dir.x * opening.offset,
-    y: wall.start.y + dir.y * opening.offset,
+    x: wall.start.x + dir.x * clampedFrom,
+    y: wall.start.y + dir.y * clampedFrom,
   });
   const wp2 = $derived({
-    x: wall.start.x + dir.x * (opening.offset + opening.width),
-    y: wall.start.y + dir.y * (opening.offset + opening.width),
+    x: wall.start.x + dir.x * clampedTo,
+    y: wall.start.y + dir.y * clampedTo,
   });
 
   const sp1 = $derived(worldToScreen(wp1, viewport));
@@ -54,22 +57,25 @@
 
   const doorData = $derived.by(() => {
     if (opening.type !== "door") return null;
+    const from = Math.max(0, Math.min(dir.length, opening.offset));
+    const to = Math.max(from, Math.min(dir.length, opening.offset + opening.width));
+    const width = to - from;
+    if (width < 1e-9) return null;
     const swing = opening.swing ?? "left-in";
     const isLeft = swing === "left-in" || swing === "left-out";
     const isIn = swing === "left-in" || swing === "right-in";
-    const perpSign = isIn ? -1 : 1;
-    const perpX = perpSign * -dir.y;
-    const perpY = perpSign * dir.x;
+    const perpX = isIn ? -dir.y : dir.y;
+    const perpY = isIn ? dir.x : -dir.x;
     const hingeWorld = isLeft ? wp1 : wp2;
     const otherWorld = isLeft ? wp2 : wp1;
     const openEndWorld = {
-      x: hingeWorld.x + perpX * opening.width,
-      y: hingeWorld.y + perpY * opening.width,
+      x: hingeWorld.x + perpX * width,
+      y: hingeWorld.y + perpY * width,
     };
     const hinge = worldToScreen(hingeWorld, viewport);
     const other = worldToScreen(otherWorld, viewport);
     const openEnd = worldToScreen(openEndWorld, viewport);
-    const radius = opening.width * viewport.zoom;
+    const radius = width * viewport.zoom;
     const sweep = chooseSweepFlag(other, openEnd, radius, hinge);
     return { hinge, other, openEnd, radius, sweep };
   });
