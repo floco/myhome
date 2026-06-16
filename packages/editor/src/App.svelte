@@ -50,6 +50,20 @@
     }
   }
 
+  function handleUndo(): void {
+    floorStore.undo();
+    toolStore.select(null);
+    toolStore.selectRoom(null);
+    toolStore.selectOpening(null);
+  }
+
+  function handleRedo(): void {
+    floorStore.redo();
+    toolStore.select(null);
+    toolStore.selectRoom(null);
+    toolStore.selectOpening(null);
+  }
+
   function wouldCollapseAWall(dragging: Point, snapped: Point): boolean {
     return floorStore.floor.walls.some(
       (w) =>
@@ -69,7 +83,7 @@
     if (pointsEqual(snapped, dragging)) return;
     if (wouldCollapseAWall(dragging, snapped)) return;
 
-    floorStore.moveSharedPoint(dragging, snapped);
+    floorStore.moveSharedPoint(dragging, snapped, { skipHistory: true });
     toolStore.updateDragPoint(snapped);
   }
 
@@ -77,6 +91,9 @@
     toolStore.setCursor(world);
     if (toolStore.state.draggingPoint) {
       handleDragMove(world);
+    }
+    if (toolStore.state.draggingOpeningHandle) {
+      handleOpeningHandleDrag(world);
     }
   }
 
@@ -93,6 +110,9 @@
     const defaultWidth = tool === "door" ? 0.9 : 1.2;
     const width = Math.min(defaultWidth, wallLength - offset);
     if (width < 1e-9) return;
+
+    const openingEnd = offset + width;
+    if (floorStore.openingOverlaps(wall.id, null, offset, openingEnd)) return;
 
     const opening: Opening = {
       id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36),
@@ -132,11 +152,53 @@
   }
 
   function handleDragStart(point: Point): void {
+    floorStore.saveSnapshot();
     toolStore.startDrag(point);
   }
 
   function handleDragEnd(): void {
     toolStore.endDrag();
+  }
+
+  const MIN_OPENING_WIDTH = 0.1;
+
+  function handleOpeningHandleDragStart(openingId: string, side: "start" | "end"): void {
+    floorStore.saveSnapshot();
+    toolStore.startOpeningDrag(openingId, side);
+  }
+
+  function handleOpeningHandleDrag(worldCursor: Point): void {
+    const drag = toolStore.state.draggingOpeningHandle;
+    if (!drag) return;
+    const opening = floorStore.floor.openings.find((o) => o.id === drag.openingId);
+    if (!opening) return;
+    const wall = floorStore.floor.walls.find((w) => w.id === opening.wallId);
+    if (!wall) return;
+
+    const dx = wall.end.x - wall.start.x;
+    const dy = wall.end.y - wall.start.y;
+    const len = Math.hypot(dx, dy);
+    if (len < 1e-9) return;
+    const dirX = dx / len;
+    const dirY = dy / len;
+    const cx = worldCursor.x - wall.start.x;
+    const cy = worldCursor.y - wall.start.y;
+    const raw = Math.max(0, Math.min(len, cx * dirX + cy * dirY));
+    const snapped = Math.max(0, Math.min(len, Math.round(raw / 0.1) * 0.1));
+
+    if (drag.side === "end") {
+      const newWidth = snapped - opening.offset;
+      if (newWidth < MIN_OPENING_WIDTH) return;
+      if (floorStore.openingOverlaps(wall.id, opening.id, opening.offset, snapped)) return;
+      floorStore.updateOpening(opening.id, { width: newWidth }, { skipHistory: true });
+    } else {
+      const currentEnd = opening.offset + opening.width;
+      const newOffset = snapped;
+      const newWidth = currentEnd - newOffset;
+      if (newWidth < MIN_OPENING_WIDTH) return;
+      if (floorStore.openingOverlaps(wall.id, opening.id, newOffset, currentEnd)) return;
+      floorStore.updateOpening(opening.id, { offset: newOffset, width: newWidth }, { skipHistory: true });
+    }
   }
 
   function handlePan(dx: number, dy: number): void {
@@ -151,6 +213,16 @@
     if (event.code === "Space") {
       event.preventDefault();
       spacePressed = true;
+      return;
+    }
+    if (event.ctrlKey && event.key === "z" && !event.shiftKey) {
+      event.preventDefault();
+      handleUndo();
+      return;
+    }
+    if (event.ctrlKey && (event.key === "y" || (event.key === "z" && event.shiftKey))) {
+      event.preventDefault();
+      handleRedo();
       return;
     }
     if (event.key === "Escape") {
@@ -186,8 +258,12 @@
     <Toolbar
       tool={toolStore.state.tool}
       hasSelection={toolStore.state.selectedId !== null || toolStore.state.selectedOpeningId !== null}
+      hasUndo={floorStore.hasUndo}
+      hasRedo={floorStore.hasRedo}
       onselecttool={(tool) => toolStore.setTool(tool)}
       ondelete={handleDelete}
+      onundo={handleUndo}
+      onredo={handleRedo}
     />
     <Canvas
       floor={floorStore.floor}
@@ -209,6 +285,7 @@
       ondblclick={() => toolStore.resetDraw()}
       ondragstart={handleDragStart}
       ondragend={handleDragEnd}
+      ondragopeninghandlestart={handleOpeningHandleDragStart}
       onpan={handlePan}
       onzoom={handleZoom}
     />

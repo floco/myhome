@@ -334,3 +334,23 @@ describe("App — opening selection", () => {
     expect(deleteBtn.disabled).toBe(true); // no selection initially
   });
 });
+
+describe("App — undo/redo buttons", () => {
+  it("Undo and Redo buttons exist and are disabled initially", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(App, { target });
+    await tick();
+
+    const buttons = target.querySelectorAll(".toolbar button");
+    const undoBtn = buttons[0] as HTMLButtonElement;
+    const redoBtn = buttons[1] as HTMLButtonElement;
+    expect(undoBtn.textContent?.trim()).toBe("Undo");
+    expect(redoBtn.textContent?.trim()).toBe("Redo");
+    expect(undoBtn.disabled).toBe(true);
+    expect(redoBtn.disabled).toBe(true);
+
+    unmount(app);
+    target.remove();
+  });
+});
