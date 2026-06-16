@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Point, WallType } from "@myhome/geometry";
   import { pointsEqual } from "@myhome/geometry";
-  import { createFloorStore } from "./lib/floorStore.svelte";
+  import { createHouseStore } from "./lib/houseStore.svelte";
   import { createViewportStore } from "./lib/viewportStore.svelte";
   import { createToolStore } from "./lib/toolStore.svelte";
   import { placePoint, allEndpoints } from "./lib/drawingTool";
@@ -10,8 +10,9 @@
   import Canvas from "./lib/components/Canvas.svelte";
   import Toolbar from "./lib/components/Toolbar.svelte";
   import RoomPanel from "./lib/components/RoomPanel.svelte";
+  import FloorSwitcher from "./lib/components/FloorSwitcher.svelte";
 
-  const floorStore = createFloorStore();
+  const floorStore = createHouseStore();
   const viewportStore = createViewportStore();
   const toolStore = createToolStore();
 
@@ -252,6 +253,14 @@
 <div class="app">
   <header class="topbar">
     <h1>Floor Plan Editor</h1>
+    <FloorSwitcher
+      floors={floorStore.floors}
+      currentFloorId={floorStore.currentFloorId}
+      onswitchfloor={(id) => { floorStore.switchFloor(id); toolStore.select(null); toolStore.selectRoom(null); toolStore.selectOpening(null); }}
+      onaddfloor={(name) => floorStore.addFloor(name)}
+      onrenamefloor={(id, name) => floorStore.renameFloor(id, name)}
+      onremovefloor={(id) => floorStore.removeFloor(id)}
+    />
     <button class="reset-view" onclick={() => viewportStore.reset()}>Reset View</button>
   </header>
   <div class="body" bind:clientWidth={canvasWidth} bind:clientHeight={canvasHeight}>
@@ -327,6 +336,7 @@
     background: #444;
     color: #ccc;
     cursor: pointer;
+    flex-shrink: 0;
   }
   .body {
     display: flex;

@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { mount, unmount, flushSync, tick } from "svelte";
 import App from "../src/App.svelte";
-import { STORAGE_KEY } from "../src/lib/floorStore.svelte";
+import { HOUSE_STORAGE_KEY } from "../src/lib/houseStore.svelte";
 
 describe("App", () => {
   let target: HTMLElement;
@@ -204,9 +204,9 @@ describe("App", () => {
 
     vi.advanceTimersByTime(300);
 
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
-    const wall1Data = saved.walls.find((w: { id: string }) => w.id === "wall-1");
-    const wall4Data = saved.walls.find((w: { id: string }) => w.id === "wall-4");
+    const saved = JSON.parse(localStorage.getItem(HOUSE_STORAGE_KEY)!);
+    const wall1Data = saved.floors[0].walls.find((w: { id: string }) => w.id === "wall-1");
+    const wall4Data = saved.floors[0].walls.find((w: { id: string }) => w.id === "wall-4");
     expect(wall1Data.start).toEqual({ x: -1, y: 0 });
     expect(wall4Data.end).toEqual({ x: -1, y: 0 });
 
@@ -242,7 +242,7 @@ describe("App", () => {
 
     // The drag was a no-op (it would have collapsed wall-1 to zero length),
     // so the floor was never persisted.
-    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(localStorage.getItem(HOUSE_STORAGE_KEY)).toBeNull();
 
     vi.useRealTimers();
   });

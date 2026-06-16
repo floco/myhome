@@ -18,3 +18,13 @@ export const SAMPLE_FLOOR: Floor = {
 export function createSampleFloor(): Floor {
   return structuredClone(SAMPLE_FLOOR);
 }
+
+export interface HouseData {
+  floors: Floor[];
+  currentFloorId: string;
+}
+
+export function createSampleHouse(): HouseData {
+  const floor = createSampleFloor();
+  return { floors: [floor], currentFloorId: floor.id };
+}
