@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Wall } from "@myhome/geometry";
-  import type { ViewportState } from "../viewportStore.svelte";
+  import { worldToScreen, type ViewportState } from "../viewportStore.svelte";
   import type { ToolType } from "../toolStore.svelte";
 
   let {
@@ -17,10 +17,12 @@
     onselect?: (id: string) => void;
   } = $props();
 
-  const x1 = $derived(wall.start.x * viewport.zoom + viewport.panX);
-  const y1 = $derived(wall.start.y * viewport.zoom + viewport.panY);
-  const x2 = $derived(wall.end.x * viewport.zoom + viewport.panX);
-  const y2 = $derived(wall.end.y * viewport.zoom + viewport.panY);
+  const startScreen = $derived(worldToScreen(wall.start, viewport));
+  const endScreen = $derived(worldToScreen(wall.end, viewport));
+  const x1 = $derived(startScreen.x);
+  const y1 = $derived(startScreen.y);
+  const x2 = $derived(endScreen.x);
+  const y2 = $derived(endScreen.y);
 
   function handleClick(event: MouseEvent): void {
     if (tool !== "select") return;
