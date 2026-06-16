@@ -5,7 +5,8 @@
   import { createViewportStore } from "./lib/viewportStore.svelte";
   import { createToolStore } from "./lib/toolStore.svelte";
   import { placePoint, allEndpoints } from "./lib/drawingTool";
-  import { findSnapPoint, snapToGrid, SNAP_RADIUS_PX } from "./lib/geometry-helpers";
+  import { findSnapPoint, snapToGrid, SNAP_RADIUS_PX, hitTestWall, HIT_RADIUS_PX } from "./lib/geometry-helpers";
+  import type { Opening } from "@myhome/geometry";
   import Canvas from "./lib/components/Canvas.svelte";
   import Toolbar from "./lib/components/Toolbar.svelte";
 
@@ -23,11 +24,22 @@
     }
   }
 
+  function handleSelectOpening(id: string | null): void {
+    toolStore.selectOpening(id);
+  }
+
+  function handleSelectRoom(id: string | null): void {
+    toolStore.selectRoom(id);
+  }
+
   function handleDelete(): void {
-    const id = toolStore.state.selectedId;
-    if (id) {
-      floorStore.removeWall(id);
+    const { selectedId, selectedOpeningId } = toolStore.state;
+    if (selectedId) {
+      floorStore.removeWall(selectedId);
       toolStore.select(null);
+    } else if (selectedOpeningId) {
+      floorStore.removeOpening(selectedOpeningId);
+      toolStore.selectOpening(null);
     }
   }
 
@@ -61,8 +73,37 @@
     }
   }
 
+  function handleOpeningPlace(worldCursor: Point): void {
+    const thresholdWorld = HIT_RADIUS_PX / viewportStore.viewport.zoom;
+    const hit = hitTestWall(worldCursor, floorStore.floor.walls, thresholdWorld);
+    if (!hit) return;
+
+    const { wall, offset } = hit;
+    const dx = wall.end.x - wall.start.x;
+    const dy = wall.end.y - wall.start.y;
+    const wallLength = Math.hypot(dx, dy);
+    const tool = toolStore.state.tool;
+    const defaultWidth = tool === "door" ? 0.9 : 1.2;
+    const width = Math.min(defaultWidth, wallLength - offset);
+    if (width < 1e-9) return;
+
+    const opening: Opening = {
+      id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36),
+      wallId: wall.id,
+      type: tool as "door" | "window",
+      offset,
+      width,
+      ...(tool === "door" ? { swing: "left-in" as const } : {}),
+    };
+    floorStore.addOpening(opening);
+  }
+
   function handlePlacePoint(point: Point): void {
     const tool = toolStore.state.tool;
+    if (tool === "door" || tool === "window") {
+      handleOpeningPlace(point);
+      return;
+    }
     if (tool === "select") return;
 
     const chain = toolStore.state.drawPoints;
@@ -109,7 +150,8 @@
       toolStore.resetDraw();
       return;
     }
-    if ((event.key === "Delete" || event.key === "Backspace") && toolStore.state.selectedId) {
+    if ((event.key === "Delete" || event.key === "Backspace") &&
+        (toolStore.state.selectedId || toolStore.state.selectedOpeningId)) {
       handleDelete();
     }
   }
@@ -136,7 +178,7 @@
   <div class="body" bind:clientWidth={canvasWidth} bind:clientHeight={canvasHeight}>
     <Toolbar
       tool={toolStore.state.tool}
-      hasSelection={toolStore.state.selectedId !== null}
+      hasSelection={toolStore.state.selectedId !== null || toolStore.state.selectedOpeningId !== null}
       onselecttool={(tool) => toolStore.setTool(tool)}
       ondelete={handleDelete}
     />
@@ -146,7 +188,11 @@
       width={canvasWidth}
       height={canvasHeight}
       selectedId={toolStore.state.selectedId}
+      selectedOpeningId={toolStore.state.selectedOpeningId}
+      selectedRoomId={toolStore.state.selectedRoomId}
       onselect={handleSelect}
+      onselectopening={handleSelectOpening}
+      onselectroom={handleSelectRoom}
       tool={toolStore.state.tool}
       drawPoints={toolStore.state.drawPoints}
       cursorWorld={toolStore.state.cursorWorld}
