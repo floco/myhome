@@ -1,15 +1,17 @@
 <script lang="ts">
   import type { Floor, Point } from "@myhome/geometry";
-  import type { ViewportState } from "../viewportStore.svelte";
+  import type { ViewportState } from "../viewportStore.svelte.ts";
   import type { ToolType } from "../toolStore.svelte";
   import { computeSnap, allEndpoints } from "../drawingTool";
-  import { SNAP_RADIUS_PX } from "../geometry-helpers";
+  import { SNAP_RADIUS_PX, hitTestWall, HIT_RADIUS_PX } from "../geometry-helpers";
+  import { worldToScreen } from "../viewportStore.svelte.ts";
   import Grid from "./Grid.svelte";
   import WallShape from "./WallShape.svelte";
   import DividerShape from "./DividerShape.svelte";
   import RoomShape from "./RoomShape.svelte";
   import DrawPreview from "./DrawPreview.svelte";
   import SelectionHandles from "./SelectionHandles.svelte";
+  import OpeningShape from "./OpeningShape.svelte";
 
   let {
     floor,
@@ -17,7 +19,11 @@
     width,
     height,
     selectedId = null,
+    selectedRoomId = null,
+    selectedOpeningId = null,
     onselect,
+    onselectroom,
+    onselectopening,
     tool = "select",
     drawPoints = [],
     cursorWorld = null,
@@ -35,7 +41,11 @@
     width: number;
     height: number;
     selectedId?: string | null;
+    selectedRoomId?: string | null;
+    selectedOpeningId?: string | null;
     onselect?: (id: string | null) => void;
+    onselectroom?: (id: string | null) => void;
+    onselectopening?: (id: string | null) => void;
     tool?: ToolType;
     drawPoints?: Point[];
     cursorWorld?: Point | null;
@@ -50,9 +60,33 @@
   } = $props();
 
   const snapResult = $derived.by(() => {
-    if (tool === "select" || !cursorWorld) return null;
+    if (tool !== "wall" && tool !== "divider") return null;
+    if (!cursorWorld) return null;
     const radius = SNAP_RADIUS_PX / viewport.zoom;
     return computeSnap(cursorWorld, allEndpoints(floor.walls), drawPoints, radius);
+  });
+
+  const wallHit = $derived.by(() => {
+    if (tool !== "door" && tool !== "window") return null;
+    if (!cursorWorld) return null;
+    return hitTestWall(cursorWorld, floor.walls, HIT_RADIUS_PX / viewport.zoom);
+  });
+
+  const openingPreview = $derived.by(() => {
+    if (!wallHit) return null;
+    const { wall, offset } = wallHit;
+    const dx = wall.end.x - wall.start.x;
+    const dy = wall.end.y - wall.start.y;
+    const len = Math.hypot(dx, dy);
+    if (len < 1e-9) return null;
+    const dirX = dx / len;
+    const dirY = dy / len;
+    const defaultWidth = tool === "door" ? 0.9 : 1.2;
+    const clampedWidth = Math.min(defaultWidth, len - offset);
+    if (clampedWidth < 1e-9) return null;
+    const wp1 = { x: wall.start.x + dirX * offset, y: wall.start.y + dirY * offset };
+    const wp2 = { x: wall.start.x + dirX * (offset + clampedWidth), y: wall.start.y + dirY * (offset + clampedWidth) };
+    return { sp1: worldToScreen(wp1, viewport), sp2: worldToScreen(wp2, viewport) };
   });
 
   const selectedWall = $derived(floor.walls.find((w) => w.id === selectedId) ?? null);
@@ -137,6 +171,10 @@
       onselect?.(null);
       return;
     }
+    if (tool === "door" || tool === "window") {
+      if (wallHit && cursorWorld) onplacepoint?.(cursorWorld);
+      return;
+    }
     if (snapResult) onplacepoint?.(snapResult.point);
   }
 
@@ -168,12 +206,37 @@
       <DividerShape {wall} {viewport} {tool} selected={wall.id === selectedId} onselect={(id) => onselect?.(id)} />
     {/if}
   {/each}
-  {#if tool !== "select"}
+  {#each floor.openings as opening (opening.id)}
+    {#each floor.walls.filter((w) => w.id === opening.wallId && w.type === "wall") as wall (wall.id)}
+      <OpeningShape
+        {wall}
+        {opening}
+        {viewport}
+        {tool}
+        selected={opening.id === selectedOpeningId}
+        onselect={(id) => onselectopening?.(id)}
+      />
+    {/each}
+  {/each}
+  {#if tool === "wall" || tool === "divider"}
     <DrawPreview
       chainPoints={drawPoints}
       snapPoint={snapResult?.point ?? null}
       showSnapRing={snapResult ? snapResult.snappedToExisting || snapResult.closesLoop : false}
       {viewport}
+    />
+  {/if}
+  {#if openingPreview}
+    <line
+      x1={openingPreview.sp1.x}
+      y1={openingPreview.sp1.y}
+      x2={openingPreview.sp2.x}
+      y2={openingPreview.sp2.y}
+      stroke={tool === "door" ? "#eea" : "#8cf"}
+      stroke-width="6"
+      stroke-dasharray="4 2"
+      opacity="0.6"
+      pointer-events="none"
     />
   {/if}
   {#if selectedWall}

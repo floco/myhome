@@ -1,9 +1,9 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { mount, unmount, flushSync } from "svelte";
+import { mount, unmount, flushSync, tick } from "svelte";
 import Canvas from "../src/lib/components/Canvas.svelte";
 import { createSampleFloor } from "../src/lib/sampleFloor";
 import { detectRooms, matchRooms } from "@myhome/geometry";
-import type { Point } from "@myhome/geometry";
+import type { Point, Wall, Opening, Floor } from "@myhome/geometry";
 import { DEFAULT_VIEWPORT } from "../src/lib/viewportStore.svelte";
 
 describe("Canvas", () => {
@@ -308,5 +308,46 @@ describe("Canvas", () => {
     // The second click should be suppressed (no extra point placed)
     // dblclick should be called
     expect(dblclickCalled).toBe(true);
+  });
+
+  describe("Canvas — openings", () => {
+    it("renders a window opening SVG element", async () => {
+      target = document.createElement("div");
+      document.body.appendChild(target);
+
+      const wall: Wall = {
+        id: "w1",
+        start: { x: 0, y: 0 },
+        end: { x: 4, y: 0 },
+        thickness: 0.2,
+        type: "wall",
+      };
+      const opening: Opening = {
+        id: "op1",
+        wallId: "w1",
+        type: "window",
+        offset: 1,
+        width: 1.2,
+      };
+      const floor: Floor = {
+        id: "f1",
+        name: "G",
+        order: 0,
+        walls: [wall],
+        openings: [opening],
+        rooms: [],
+      };
+      const viewport = { zoom: 50, panX: 0, panY: 0 };
+
+      app = mount(Canvas, {
+        target,
+        props: { floor, viewport, width: 600, height: 400 },
+      });
+      await tick();
+
+      // Window symbol should be rendered as a line with class "window-sym"
+      const lines = document.querySelectorAll("line.window-sym");
+      expect(lines.length).toBeGreaterThan(0);
+    });
   });
 });
