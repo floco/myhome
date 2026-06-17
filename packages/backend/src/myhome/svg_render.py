@@ -7,7 +7,7 @@ def render_floor_svg(floor: Floor, padding: float = 0.5) -> str:
     bounds = _compute_bounds(floor.walls, padding)
 
     rooms_svg = "\n".join(
-        _render_room(r) for r in floor.rooms if r.polygon is not None
+        _render_room(r) for r in floor.rooms if r.polygon
     )
 
     wall_walls = [w for w in floor.walls if w.type == "wall"]
@@ -67,8 +67,8 @@ def _compute_bounds(walls: list[Wall], padding: float) -> dict[str, float]:
 
 
 def _render_room(room: Room) -> str:
-    assert room.polygon is not None
-    d = _polygon_to_path(room.polygon)
+    polygon = room.polygon or []
+    d = _polygon_to_path(polygon)
     ha_area = _escape_attr(room.haAreaId or "")
     room_id = _escape_attr(room.id)
     return f'<path id="room-{room_id}" data-ha-area="{ha_area}" class="room" d="{d}" />'

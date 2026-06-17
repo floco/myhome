@@ -21,5 +21,7 @@ def load_house() -> HouseDocument | None:
 def save_house(doc: HouseDocument) -> None:
     path = _house_file()
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w") as f:
+    tmp = path.with_suffix(".tmp")
+    with tmp.open("w") as f:
         json.dump(doc.model_dump(), f, indent=2)
+    tmp.replace(path)

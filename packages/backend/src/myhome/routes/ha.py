@@ -6,7 +6,7 @@ router = APIRouter()
 
 
 @router.get("/api/ha/areas")
-async def get_ha_areas() -> list:
+async def get_ha_areas() -> list[dict]:
     token = os.environ.get("SUPERVISOR_TOKEN")
     if not token:
         return []
