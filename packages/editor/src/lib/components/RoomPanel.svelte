@@ -3,9 +3,11 @@
 
   let {
     room,
+    haAreas = [],
     onupdate,
   }: {
     room: Room;
+    haAreas?: Array<{ area_id: string; name: string }>;
     onupdate: (patch: { label?: string; haAreaId?: string | null }) => void;
   } = $props();
 

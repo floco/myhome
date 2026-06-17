@@ -2,13 +2,39 @@ import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { mount, unmount, flushSync, tick } from "svelte";
 import App from "../src/App.svelte";
 
-function stubFetch404() {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-    ok: false,
-    status: 404,
-    statusText: "Not Found",
-    json: async () => undefined,
+function stubFetch(handlers: Record<string, unknown> = {}) {
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => {
+    if (url in handlers) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        json: async () => handlers[url],
+      });
+    }
+    // Default: 404
+    return Promise.resolve({
+      ok: false,
+      status: 404,
+      statusText: "Not Found",
+      json: async () => undefined,
+    });
   }));
+}
+
+function stubFetch404() {
+  stubFetch();
+}
+
+/** Mount the app and wait for the houseStore async init to complete so the
+ *  loaded guard resolves and Toolbar/Canvas are in the DOM. */
+async function mountAndLoad(target: HTMLElement): Promise<ReturnType<typeof mount>> {
+  const app = mount(App, { target });
+  // Let the fetch micro-tasks resolve (init() awaits fetch then sets loaded=true)
+  await tick();
+  await tick();
+  flushSync();
+  return app;
 }
 
 describe("App", () => {
@@ -27,12 +53,11 @@ describe("App", () => {
     target?.remove();
   });
 
-  it("renders the title and toolbar with the select tool active", () => {
+  it("renders the title and toolbar with the select tool active", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);
 
-    app = mount(App, { target });
-    flushSync();
+    app = await mountAndLoad(target);
 
     expect(target.querySelector(".topbar h1")?.textContent).toBe("Floor Plan Editor");
 
@@ -47,12 +72,11 @@ describe("App", () => {
     expect(deleteBtn.disabled).toBe(true);
   });
 
-  it("selects a wall and deletes it with the Delete key", () => {
+  it("selects a wall and deletes it with the Delete key", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);
 
-    app = mount(App, { target });
-    flushSync();
+    app = await mountAndLoad(target);
 
     const wall = target.querySelector("polygon.wall")!;
     wall.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -70,12 +94,11 @@ describe("App", () => {
     expect(deleteBtn.disabled).toBe(true);
   });
 
-  it("drawing a wall chain places points, commits segments, and closes the loop", () => {
+  it("drawing a wall chain places points, commits segments, and closes the loop", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);
 
-    app = mount(App, { target });
-    flushSync();
+    app = await mountAndLoad(target);
 
     const wallBtn = Array.from(target.querySelectorAll(".toolbar button")).find(
       (b) => b.textContent?.trim() === "Wall",
@@ -120,12 +143,11 @@ describe("App", () => {
     expect(labels.every((l) => l?.startsWith("Room "))).toBe(true);
   });
 
-  it("Escape ends the wall chain without closing it", () => {
+  it("Escape ends the wall chain without closing it", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);
 
-    app = mount(App, { target });
-    flushSync();
+    app = await mountAndLoad(target);
 
     const wallBtn = Array.from(target.querySelectorAll(".toolbar button")).find(
       (b) => b.textContent?.trim() === "Wall",
@@ -155,12 +177,11 @@ describe("App", () => {
     expect(target.querySelector("g.draw-preview line.rubber-band")).toBeNull();
   });
 
-  it("double-click ends the wall chain without closing it", () => {
+  it("double-click ends the wall chain without closing it", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);
 
-    app = mount(App, { target });
-    flushSync();
+    app = await mountAndLoad(target);
 
     const wallBtn = Array.from(target.querySelectorAll(".toolbar button")).find(
       (b) => b.textContent?.trim() === "Wall",
@@ -188,12 +209,11 @@ describe("App", () => {
     expect(target.querySelector("g.draw-preview line.rubber-band")).toBeNull();
   });
 
-  it("dragging a selected wall's endpoint moves shared corners", () => {
+  it("dragging a selected wall's endpoint moves shared corners", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);
 
-    app = mount(App, { target });
-    flushSync();
+    app = await mountAndLoad(target);
 
     // Record the original polygon points for wall-1 and wall-4 before dragging
     const wall1Poly = target.querySelectorAll("polygon.wall")[0]!;
@@ -220,12 +240,11 @@ describe("App", () => {
     expect(target.querySelectorAll("polygon.wall")[3]!.getAttribute("points")).not.toBe(wall4PointsBefore);
   });
 
-  it("dragging an endpoint onto its own wall's other endpoint does not collapse the wall", () => {
+  it("dragging an endpoint onto its own wall's other endpoint does not collapse the wall", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);
 
-    app = mount(App, { target });
-    flushSync();
+    app = await mountAndLoad(target);
 
     // Record wall-1's polygon points before the attempted drag
     const wall1PolyBefore = target.querySelectorAll("polygon.wall")[0]!.getAttribute("points");
@@ -252,11 +271,10 @@ describe("App", () => {
     expect(target.querySelectorAll("polygon.wall")[0]!.getAttribute("points")).toBe(wall1PolyBefore);
   });
 
-  it("wheel-zooms the viewport and Reset View restores it", () => {
+  it("wheel-zooms the viewport and Reset View restores it", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);
-    app = mount(App, { target });
-    flushSync();
+    app = await mountAndLoad(target);
 
     const svg = target.querySelector("svg.canvas")!;
     const wallBefore = target.querySelector("polygon.wall")!.getAttribute("points");
@@ -277,11 +295,10 @@ describe("App", () => {
     expect(wallAfterReset).toBe(wallBefore);
   });
 
-  it("holding space and dragging pans the viewport", () => {
+  it("holding space and dragging pans the viewport", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);
-    app = mount(App, { target });
-    flushSync();
+    app = await mountAndLoad(target);
 
     const svg = target.querySelector("svg.canvas")!;
     const wallBefore = target.querySelector("polygon.wall")!.getAttribute("points");
@@ -299,10 +316,13 @@ describe("App", () => {
 
 describe("App — room panel", () => {
   it("room panel is not visible initially", async () => {
+    stubFetch404();
     const target = document.createElement("div");
     document.body.appendChild(target);
     const app = mount(App, { target });
     await tick();
+    await tick();
+    flushSync();
     const panel = target.querySelector(".room-panel");
     expect(panel).toBeNull();
     unmount(app);
@@ -329,8 +349,7 @@ describe("App — opening selection", () => {
   it("selecting an opening enables the Delete button", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);
-    app = mount(App, { target });
-    await tick();
+    app = await mountAndLoad(target);
 
     // Simulate selecting an opening via toolStore (hard to do via DOM since it requires a real click on SVG)
     // Instead verify the initial state: Delete is disabled
@@ -342,10 +361,10 @@ describe("App — opening selection", () => {
 
 describe("App — undo/redo buttons", () => {
   it("Undo and Redo buttons exist and are disabled initially", async () => {
+    stubFetch404();
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const app = mount(App, { target });
-    await tick();
+    const app = await mountAndLoad(target);
 
     const buttons = target.querySelectorAll(".toolbar button");
     const undoBtn = buttons[0] as HTMLButtonElement;
