@@ -11,10 +11,20 @@
   import Toolbar from "./lib/components/Toolbar.svelte";
   import RoomPanel from "./lib/components/RoomPanel.svelte";
   import FloorSwitcher from "./lib/components/FloorSwitcher.svelte";
+  import { createChoreStore } from "./lib/choreStore.svelte";
+  import type { Assignment } from "./lib/choreStore.svelte";
+  import ChoreOverlay from "./lib/components/ChoreOverlay.svelte";
+  import ChorePanel from "./lib/components/ChorePanel.svelte";
+  import BadgePopup from "./lib/components/BadgePopup.svelte";
 
   const floorStore = createHouseStore();
   const viewportStore = createViewportStore();
   const toolStore = createToolStore();
+  const choreStore = createChoreStore();
+
+  let choreMode = $state(false);
+  let assigningChoreId = $state<string | null>(null);
+  let selectedBadge = $state<{ assignment: Assignment; screenX: number; screenY: number } | null>(null);
 
   const selectedRoom = $derived(
     toolStore.state.selectedRoomId
@@ -57,8 +67,43 @@
     toolStore.selectOpening(id);
   }
 
+  function handleSelectRoomOrAssign(id: string | null): void {
+    if (assigningChoreId && id) {
+      const room = floorStore.floor.rooms.find((r) => r.id === id);
+      let position = { x: 0, y: 0 };
+      if (room?.polygon && room.polygon.length > 0) {
+        const n = room.polygon.length;
+        position = {
+          x: room.polygon.reduce((s, p) => s + p.x, 0) / n,
+          y: room.polygon.reduce((s, p) => s + p.y, 0) / n,
+        };
+      }
+      choreStore.createAssignment({ choreId: assigningChoreId, roomId: id, position });
+      assigningChoreId = null;
+    } else {
+      toolStore.selectRoom(id);
+    }
+  }
+
   function handleSelectRoom(id: string | null): void {
-    toolStore.selectRoom(id);
+    handleSelectRoomOrAssign(id);
+  }
+
+  function handleBadgeClick(assignmentId: string): void {
+    const assignment = choreStore.assignments.find((a) => a.id === assignmentId);
+    if (!assignment) return;
+    let screenX = 0;
+    let screenY = 0;
+    if (assignment.position) {
+      const sp = viewportStore.worldToScreen(assignment.position);
+      screenX = sp.x;
+      screenY = sp.y;
+    }
+    selectedBadge = { assignment, screenX, screenY };
+  }
+
+  function handleBadgeDragEnd(assignmentId: string, worldPos: { x: number; y: number }): void {
+    choreStore.updateAssignmentPosition(assignmentId, worldPos);
   }
 
   function handleDelete(): void {
@@ -247,6 +292,10 @@
       handleRedo();
       return;
     }
+    if (event.key === "Escape" && assigningChoreId) {
+      assigningChoreId = null;
+      return;
+    }
     if (event.key === "Escape") {
       toolStore.resetDraw();
       return;
@@ -284,6 +333,11 @@
     />
     <div class="topbar-actions">
       <button
+        class="chore-btn"
+        class:chore-active={choreMode}
+        onclick={() => { choreMode = !choreMode; if (!choreMode) { assigningChoreId = null; selectedBadge = null; } }}
+      >Chores</button>
+      <button
         class="save-btn"
         class:saved={saveStatus === "saved"}
         class:save-error={saveStatus === "error"}
@@ -299,16 +353,18 @@
     {#if !floorStore.loaded}
       <div class="loading">Loading…</div>
     {:else}
-      <Toolbar
-        tool={toolStore.state.tool}
-        hasSelection={toolStore.state.selectedId !== null || toolStore.state.selectedOpeningId !== null}
-        hasUndo={floorStore.hasUndo}
-        hasRedo={floorStore.hasRedo}
-        onselecttool={(tool) => toolStore.setTool(tool)}
-        ondelete={handleDelete}
-        onundo={handleUndo}
-        onredo={handleRedo}
-      />
+      {#if !choreMode}
+        <Toolbar
+          tool={toolStore.state.tool}
+          hasSelection={toolStore.state.selectedId !== null || toolStore.state.selectedOpeningId !== null}
+          hasUndo={floorStore.hasUndo}
+          hasRedo={floorStore.hasRedo}
+          onselecttool={(tool) => toolStore.setTool(tool)}
+          ondelete={handleDelete}
+          onundo={handleUndo}
+          onredo={handleRedo}
+        />
+      {/if}
       <Canvas
         floor={floorStore.floor}
         viewport={viewportStore.viewport}
@@ -339,6 +395,44 @@
           {haAreas}
           onupdate={(patch) => floorStore.updateRoom(selectedRoom.id, patch)}
         />
+      {/if}
+      <ChoreOverlay
+        chores={choreStore.chores}
+        assignments={choreStore.assignments}
+        viewport={viewportStore.viewport}
+        {choreMode}
+        width={canvasWidth}
+        height={canvasHeight}
+        onclick={(id) => handleBadgeClick(id)}
+        ondragend={handleBadgeDragEnd}
+      />
+      {#if choreMode}
+        <ChorePanel
+          store={choreStore}
+          {assigningChoreId}
+          onAssignToRoom={(id) => { assigningChoreId = id; selectedBadge = null; }}
+          onCancelAssign={() => { assigningChoreId = null; }}
+        />
+      {/if}
+      {#if selectedBadge}
+        {@const badge = selectedBadge}
+        {#if badge}
+          {@const chore = choreStore.chores.find((c) => c.id === badge.assignment.choreId)}
+          {#if chore}
+            <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+            <div style="position:absolute;inset:0;z-index:50" onclick={() => { selectedBadge = null; }}>
+              <BadgePopup
+                {chore}
+                assignment={badge.assignment}
+                screenX={badge.screenX}
+                screenY={badge.screenY}
+                oncomplete={async () => { await choreStore.completeChore(chore.id); selectedBadge = null; }}
+                onremove={async () => { await choreStore.deleteAssignment(badge.assignment.id); selectedBadge = null; }}
+                onclose={() => { selectedBadge = null; }}
+              />
+            </div>
+          {/if}
+        {/if}
       {/if}
     {/if}
   </div>
@@ -412,5 +506,19 @@
     display: flex;
     flex: 1;
     overflow: hidden;
+    position: relative;
+  }
+  .chore-btn {
+    padding: 4px 10px;
+    border: none;
+    border-radius: 4px;
+    background: #444;
+    color: #ccc;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .chore-btn.chore-active {
+    background: #446;
+    color: #ccf;
   }
 </style>
