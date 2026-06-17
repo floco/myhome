@@ -1,3 +1,4 @@
+import os
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -17,6 +18,8 @@ from ..models_chores import (
 from ..persistence_chores import load_chores, save_chores
 
 router = APIRouter()
+
+_DONETICK_BASE = os.environ.get("DONETICK_URL", "https://chores.casa.mutualis.com")
 
 UNIT_DAYS: dict[str, float] = {"days": 1, "weeks": 7, "months": 30, "years": 365}
 
@@ -66,8 +69,9 @@ async def import_from_donetick(body: ImportRequest) -> ImportResponse:
 
     try:
         async with httpx.AsyncClient() as client:
+            url = f"{_DONETICK_BASE}/api/v1/chores/"
             resp = await client.get(
-                "https://chores.casa.mutualis.com/api/v1/chores/",
+                url,
                 headers={"secretkey": body.token},
                 timeout=10.0,
             )
@@ -83,6 +87,8 @@ async def import_from_donetick(body: ImportRequest) -> ImportResponse:
     for rc in raw_chores:
         if rc["id"] in existing_ids:
             continue
+        raw_due = rc.get("nextDueDate") or ""
+        next_due = raw_due if raw_due else datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         doc.chores.append(
             Chore(
                 id=str(uuid.uuid4()),
@@ -90,7 +96,7 @@ async def import_from_donetick(body: ImportRequest) -> ImportResponse:
                 name=rc["name"].strip(),
                 emoji=_extract_emoji(rc["name"]),
                 periodDays=_period_days(rc),
-                nextDueDate=rc.get("nextDueDate", ""),
+                nextDueDate=next_due,
                 description="",
             )
         )
