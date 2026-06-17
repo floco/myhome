@@ -263,6 +263,5 @@ export function createHouseStore() {
     updateRoom,
     openingOverlaps,
     save,
-    init,
   };
 }

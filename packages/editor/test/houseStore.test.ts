@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createHouseStore } from "../src/lib/houseStore.svelte";
 import type { HouseDocument } from "@myhome/geometry";
 
@@ -22,6 +22,10 @@ function makeDoc(floorId = "f1"): HouseDocument {
 async function tick(): Promise<void> {
   await new Promise((r) => setTimeout(r, 0));
 }
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("houseStore — initial state (no saved doc)", () => {
   beforeEach(() => {
