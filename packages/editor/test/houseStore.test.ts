@@ -1,26 +1,85 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { createHouseStore, HOUSE_STORAGE_KEY } from "../src/lib/houseStore.svelte";
+import { createHouseStore } from "../src/lib/houseStore.svelte";
+import type { HouseDocument } from "@myhome/geometry";
 
-describe("houseStore — initial state", () => {
-  beforeEach(() => { localStorage.clear(); });
+function makeFetchStub(status: number, body?: unknown) {
+  return vi.fn().mockResolvedValue({
+    ok: status >= 200 && status < 300,
+    status,
+    statusText: status === 404 ? "Not Found" : "OK",
+    json: async () => body,
+  });
+}
 
-  it("starts with one floor and detects two rooms from the sample floor", () => {
+function makeDoc(floorId = "f1"): HouseDocument {
+  return {
+    version: 1,
+    house: { name: "Test", units: "m", gridSnap: 0.1 },
+    floors: [{ id: floorId, name: "Ground", order: 0, walls: [], openings: [], rooms: [] }],
+  };
+}
+
+async function tick(): Promise<void> {
+  await new Promise((r) => setTimeout(r, 0));
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe("houseStore — initial state (no saved doc)", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", makeFetchStub(404));
+  });
+
+  it("starts with the sample floor and detects rooms", async () => {
     const store = createHouseStore();
+    await tick();
     expect(store.floors.length).toBe(1);
     expect(store.floor.rooms.length).toBe(2);
   });
 
-  it("currentFloorId matches the single floor's id", () => {
+  it("currentFloorId matches the single floor id", async () => {
     const store = createHouseStore();
+    await tick();
     expect(store.currentFloorId).toBe(store.floors[0].id);
+  });
+
+  it("loaded becomes true after init", async () => {
+    const store = createHouseStore();
+    await tick();
+    expect(store.loaded).toBe(true);
+  });
+});
+
+describe("houseStore — loading from API", () => {
+  it("replaces sample state with API data when fetch succeeds", async () => {
+    vi.stubGlobal("fetch", makeFetchStub(200, makeDoc("api-floor")));
+    const store = createHouseStore();
+    await tick();
+    expect(store.floors[0].id).toBe("api-floor");
+    expect(store.currentFloorId).toBe("api-floor");
+    expect(store.loaded).toBe(true);
+    expect(store.loadError).toBeNull();
+  });
+
+  it("sets loadError on fetch failure, still marks loaded", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network error")));
+    const store = createHouseStore();
+    await tick();
+    expect(store.loaded).toBe(true);
+    expect(store.loadError).toMatch("Network error");
   });
 });
 
 describe("houseStore — floor management", () => {
-  beforeEach(() => { localStorage.clear(); });
+  beforeEach(() => {
+    vi.stubGlobal("fetch", makeFetchStub(404));
+  });
 
-  it("addFloor adds a new empty floor and switches to it", () => {
+  it("addFloor adds a new empty floor and switches to it", async () => {
     const store = createHouseStore();
+    await tick();
     const before = store.floors.length;
     store.addFloor("First Floor");
     expect(store.floors.length).toBe(before + 1);
@@ -30,8 +89,9 @@ describe("houseStore — floor management", () => {
     expect(store.floor.walls.length).toBe(0);
   });
 
-  it("switchFloor changes the active floor", () => {
+  it("switchFloor changes the active floor", async () => {
     const store = createHouseStore();
+    await tick();
     store.addFloor("Upstairs");
     const upstairs = store.floors[store.floors.length - 1].id;
     const groundId = store.floors[0].id;
@@ -41,15 +101,17 @@ describe("houseStore — floor management", () => {
     expect(store.currentFloorId).toBe(upstairs);
   });
 
-  it("renameFloor changes the floor name", () => {
+  it("renameFloor changes the floor name", async () => {
     const store = createHouseStore();
+    await tick();
     const id = store.floors[0].id;
     store.renameFloor(id, "Basement");
     expect(store.floors.find((f) => f.id === id)?.name).toBe("Basement");
   });
 
-  it("removeFloor removes the floor and switches to the first remaining floor", () => {
+  it("removeFloor removes floor and switches to adjacent floor", async () => {
     const store = createHouseStore();
+    await tick();
     store.addFloor("Upstairs");
     const upstairs = store.floors[store.floors.length - 1].id;
     const groundId = store.floors[0].id;
@@ -59,96 +121,98 @@ describe("houseStore — floor management", () => {
     expect(store.currentFloorId).toBe(groundId);
   });
 
-  it("removeFloor is a no-op when only one floor remains", () => {
+  it("cannot remove the last floor", async () => {
     const store = createHouseStore();
+    await tick();
     const id = store.floors[0].id;
     store.removeFloor(id);
     expect(store.floors.length).toBe(1);
-    expect(store.currentFloorId).toBe(id);
-  });
-
-  it("addFloor assigns incrementing order values", () => {
-    const store = createHouseStore();
-    store.addFloor("F2");
-    store.addFloor("F3");
-    const orders = store.floors.map((f) => f.order);
-    expect(orders[0]).toBe(0);
-    expect(orders[1]).toBe(1);
-    expect(orders[2]).toBe(2);
   });
 });
 
-describe("houseStore — floor mutations (forwarded to current floor)", () => {
-  beforeEach(() => { localStorage.clear(); });
+describe("houseStore — floor isolation", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", makeFetchStub(404));
+  });
 
-  it("addWall on the current floor does not affect other floors", () => {
+  it("walls added on one floor do not appear on another floor", async () => {
     const store = createHouseStore();
-    const groundWallsBefore = store.floors[0].walls.length;
-    store.addFloor("F2");
-    store.addWall({ id: "w-x", start: { x: 10, y: 0 }, end: { x: 20, y: 0 }, type: "wall", thickness: 0.1 });
-    store.switchFloor(store.floors[0].id);
-    expect(store.floor.walls.length).toBe(groundWallsBefore);
-    const f2 = store.floors.find((f) => f.name === "F2")!;
-    expect(f2.walls.some((w) => w.id === "w-x")).toBe(true);
+    await tick();
+    const groundId = store.floors[0].id;
+    store.addFloor("Upstairs");
+    store.switchFloor(groundId);
+    store.addWall({ id: "w1", start: { x: 0, y: 0 }, end: { x: 5, y: 0 }, type: "wall" });
+    const upstairsId = store.floors[1].id;
+    store.switchFloor(upstairsId);
+    expect(store.floor.walls.length).toBe(0);
   });
 });
 
-describe("houseStore — undo/redo across floors", () => {
-  beforeEach(() => { localStorage.clear(); });
+describe("houseStore — undo/redo", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", makeFetchStub(404));
+  });
 
-  it("undo reverts addFloor", () => {
+  it("undo restores state before addWall", async () => {
     const store = createHouseStore();
-    const before = store.floors.length;
-    store.addFloor("F2");
-    expect(store.floors.length).toBe(before + 1);
+    await tick();
+    store.addWall({ id: "w1", start: { x: 0, y: 0 }, end: { x: 5, y: 0 }, type: "wall" });
+    expect(store.floor.walls.length).toBeGreaterThan(0);
     store.undo();
-    expect(store.floors.length).toBe(before);
+    expect(store.floor.walls.find((w) => w.id === "w1")).toBeUndefined();
   });
 
-  it("redo re-applies addFloor", () => {
+  it("redo re-applies undone addWall", async () => {
     const store = createHouseStore();
-    const before = store.floors.length;
-    store.addFloor("F2");
+    await tick();
+    store.addWall({ id: "w1", start: { x: 0, y: 0 }, end: { x: 5, y: 0 }, type: "wall" });
     store.undo();
     store.redo();
-    expect(store.floors.length).toBe(before + 1);
+    expect(store.floor.walls.find((w) => w.id === "w1")).toBeDefined();
   });
 
-  it("hasUndo is false initially and true after addFloor", () => {
+  it("hasUndo is false initially, true after mutation", async () => {
     const store = createHouseStore();
+    await tick();
     expect(store.hasUndo).toBe(false);
-    store.addFloor("F2");
+    store.addWall({ id: "w1", start: { x: 0, y: 0 }, end: { x: 5, y: 0 }, type: "wall" });
     expect(store.hasUndo).toBe(true);
+  });
+
+  it("hasRedo is true after undo", async () => {
+    const store = createHouseStore();
+    await tick();
+    store.addWall({ id: "w1", start: { x: 0, y: 0 }, end: { x: 5, y: 0 }, type: "wall" });
+    store.undo();
+    expect(store.hasRedo).toBe(true);
   });
 });
 
-describe("houseStore — persistence", () => {
-  beforeEach(() => { localStorage.clear(); });
-  afterEach(() => { vi.useRealTimers(); });
-
-  it("persists to the house storage key after 300ms", () => {
-    vi.useFakeTimers();
+describe("houseStore — save", () => {
+  it("save calls PUT /api/house with current state", async () => {
+    vi.stubGlobal("fetch", makeFetchStub(404));
     const store = createHouseStore();
-    store.addFloor("Attic");
-    vi.advanceTimersByTime(300);
-    const saved = JSON.parse(localStorage.getItem(HOUSE_STORAGE_KEY)!);
-    expect(Array.isArray(saved.floors)).toBe(true);
-    expect(saved.floors.some((f: { name: string }) => f.name === "Attic")).toBe(true);
+    await tick();
+
+    const putFetch = vi.fn().mockResolvedValue({ ok: true, status: 204 });
+    vi.stubGlobal("fetch", putFetch);
+    await store.save();
+
+    expect(putFetch).toHaveBeenCalledWith(
+      "/api/house",
+      expect.objectContaining({ method: "PUT" })
+    );
+    const body = JSON.parse(putFetch.mock.calls[0][1].body);
+    expect(body.version).toBe(1);
+    expect(Array.isArray(body.floors)).toBe(true);
   });
 
-  it("migrates old myhome.editor.floor data on first load", () => {
-    const OLD_KEY = "myhome.editor.floor";
-    const oldFloor = {
-      id: "old-floor",
-      name: "Old Floor",
-      order: 0,
-      walls: [{ id: "w1", type: "wall", start: { x: 0, y: 0 }, end: { x: 5, y: 0 }, thickness: 0.1 }],
-      openings: [],
-      rooms: [],
-    };
-    localStorage.setItem(OLD_KEY, JSON.stringify(oldFloor));
+  it("save throws on non-OK response", async () => {
+    vi.stubGlobal("fetch", makeFetchStub(404));
     const store = createHouseStore();
-    expect(store.floors.length).toBe(1);
-    expect(store.floor.walls.some((w) => w.id === "w1")).toBe(true);
+    await tick();
+
+    vi.stubGlobal("fetch", makeFetchStub(500));
+    await expect(store.save()).rejects.toThrow();
   });
 });

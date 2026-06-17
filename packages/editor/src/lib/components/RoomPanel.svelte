@@ -3,18 +3,18 @@
 
   let {
     room,
+    haAreas = [],
     onupdate,
   }: {
     room: Room;
+    haAreas?: Array<{ area_id: string; name: string }>;
     onupdate: (patch: { label?: string; haAreaId?: string | null }) => void;
   } = $props();
 
   let labelDraft = $state("");
-  let areaDraft = $state("");
 
   $effect(() => {
     labelDraft = room.label;
-    areaDraft = room.haAreaId ?? "";
   });
 
   function commitLabel(): void {
@@ -22,9 +22,9 @@
     if (trimmed !== room.label) onupdate({ label: trimmed });
   }
 
-  function commitArea(): void {
-    const trimmed = areaDraft.trim();
-    const next = trimmed === "" ? null : trimmed;
+  function handleAreaChange(e: Event): void {
+    const val = (e.target as HTMLSelectElement).value;
+    const next = val === "" ? null : val;
     if (next !== room.haAreaId) onupdate({ haAreaId: next });
   }
 </script>
@@ -48,19 +48,16 @@
   </label>
 
   <label>
-    <span>HA Area ID</span>
-    <input
-      type="text"
-      placeholder="(none)"
-      bind:value={areaDraft}
-      onblur={commitArea}
-      onkeydown={(e) => {
-        if (e.key === "Enter") {
-          commitArea();
-          (e.target as HTMLInputElement).blur();
-        }
-      }}
-    />
+    <span>HA Area</span>
+    <select value={room.haAreaId ?? ""} onchange={handleAreaChange}>
+      <option value="">(none)</option>
+      {#each haAreas as area (area.area_id)}
+        <option value={area.area_id}>{area.name}</option>
+      {/each}
+      {#if room.haAreaId && !haAreas.some((a) => a.area_id === room.haAreaId)}
+        <option value={room.haAreaId}>{room.haAreaId} (unknown)</option>
+      {/if}
+    </select>
   </label>
 
   <p class="area-display">{room.areaM2} m²</p>
@@ -93,7 +90,8 @@
     font-size: 11px;
     color: #888;
   }
-  input {
+  input,
+  select {
     background: #1c1c1c;
     border: 1px solid #555;
     border-radius: 3px;
@@ -102,7 +100,8 @@
     font-size: 12px;
     font-family: inherit;
   }
-  input:focus {
+  input:focus,
+  select:focus {
     outline: none;
     border-color: #5af;
   }

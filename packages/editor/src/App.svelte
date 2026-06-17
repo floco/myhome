@@ -25,6 +25,27 @@
   let spacePressed = $state(false);
   let canvasWidth = $state(1200);
   let canvasHeight = $state(800);
+  let saveStatus = $state<"idle" | "saving" | "saved" | "error">("idle");
+  let haAreas = $state<Array<{ area_id: string; name: string }>>([]);
+
+  async function handleSave(): Promise<void> {
+    saveStatus = "saving";
+    try {
+      await floorStore.save();
+      saveStatus = "saved";
+      setTimeout(() => { saveStatus = "idle"; }, 2000);
+    } catch {
+      saveStatus = "error";
+      setTimeout(() => { saveStatus = "idle"; }, 4000);
+    }
+  }
+
+  $effect(() => {
+    fetch("/api/ha/areas")
+      .then((r) => r.json())
+      .then((areas: Array<{ area_id: string; name: string }>) => { haAreas = areas; })
+      .catch(() => { haAreas = []; });
+  });
 
   function handleSelect(id: string | null): void {
     if (toolStore.state.tool === "select") {
@@ -261,48 +282,64 @@
       onrenamefloor={(id, name) => floorStore.renameFloor(id, name)}
       onremovefloor={(id) => floorStore.removeFloor(id)}
     />
-    <button class="reset-view" onclick={() => viewportStore.reset()}>Reset View</button>
+    <div class="topbar-actions">
+      <button
+        class="save-btn"
+        class:saved={saveStatus === "saved"}
+        class:save-error={saveStatus === "error"}
+        disabled={saveStatus === "saving"}
+        onclick={handleSave}
+      >
+        {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved ✓" : saveStatus === "error" ? "Error!" : "Save"}
+      </button>
+      <button class="reset-view" onclick={() => viewportStore.reset()}>Reset View</button>
+    </div>
   </header>
   <div class="body" bind:clientWidth={canvasWidth} bind:clientHeight={canvasHeight}>
-    <Toolbar
-      tool={toolStore.state.tool}
-      hasSelection={toolStore.state.selectedId !== null || toolStore.state.selectedOpeningId !== null}
-      hasUndo={floorStore.hasUndo}
-      hasRedo={floorStore.hasRedo}
-      onselecttool={(tool) => toolStore.setTool(tool)}
-      ondelete={handleDelete}
-      onundo={handleUndo}
-      onredo={handleRedo}
-    />
-    <Canvas
-      floor={floorStore.floor}
-      viewport={viewportStore.viewport}
-      width={canvasWidth}
-      height={canvasHeight}
-      selectedId={toolStore.state.selectedId}
-      selectedOpeningId={toolStore.state.selectedOpeningId}
-      selectedRoomId={toolStore.state.selectedRoomId}
-      onselect={handleSelect}
-      onselectopening={handleSelectOpening}
-      onselectroom={handleSelectRoom}
-      tool={toolStore.state.tool}
-      drawPoints={toolStore.state.drawPoints}
-      cursorWorld={toolStore.state.cursorWorld}
-      {spacePressed}
-      onpointermove={handlePointerMove}
-      onplacepoint={handlePlacePoint}
-      ondblclick={() => toolStore.resetDraw()}
-      ondragstart={handleDragStart}
-      ondragend={handleDragEnd}
-      ondragopeninghandlestart={handleOpeningHandleDragStart}
-      onpan={handlePan}
-      onzoom={handleZoom}
-    />
-    {#if selectedRoom}
-      <RoomPanel
-        room={selectedRoom}
-        onupdate={(patch) => floorStore.updateRoom(selectedRoom.id, patch)}
+    {#if !floorStore.loaded}
+      <div class="loading">Loading…</div>
+    {:else}
+      <Toolbar
+        tool={toolStore.state.tool}
+        hasSelection={toolStore.state.selectedId !== null || toolStore.state.selectedOpeningId !== null}
+        hasUndo={floorStore.hasUndo}
+        hasRedo={floorStore.hasRedo}
+        onselecttool={(tool) => toolStore.setTool(tool)}
+        ondelete={handleDelete}
+        onundo={handleUndo}
+        onredo={handleRedo}
       />
+      <Canvas
+        floor={floorStore.floor}
+        viewport={viewportStore.viewport}
+        width={canvasWidth}
+        height={canvasHeight}
+        selectedId={toolStore.state.selectedId}
+        selectedOpeningId={toolStore.state.selectedOpeningId}
+        selectedRoomId={toolStore.state.selectedRoomId}
+        onselect={handleSelect}
+        onselectopening={handleSelectOpening}
+        onselectroom={handleSelectRoom}
+        tool={toolStore.state.tool}
+        drawPoints={toolStore.state.drawPoints}
+        cursorWorld={toolStore.state.cursorWorld}
+        {spacePressed}
+        onpointermove={handlePointerMove}
+        onplacepoint={handlePlacePoint}
+        ondblclick={() => toolStore.resetDraw()}
+        ondragstart={handleDragStart}
+        ondragend={handleDragEnd}
+        ondragopeninghandlestart={handleOpeningHandleDragStart}
+        onpan={handlePan}
+        onzoom={handleZoom}
+      />
+      {#if selectedRoom}
+        <RoomPanel
+          room={selectedRoom}
+          {haAreas}
+          onupdate={(patch) => floorStore.updateRoom(selectedRoom.id, patch)}
+        />
+      {/if}
     {/if}
   </div>
 </div>
@@ -337,6 +374,39 @@
     color: #ccc;
     cursor: pointer;
     flex-shrink: 0;
+  }
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .save-btn {
+    padding: 4px 10px;
+    border: none;
+    border-radius: 4px;
+    background: #2a6;
+    color: #fff;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .save-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+  .save-btn.saved {
+    background: #175;
+  }
+  .save-btn.save-error {
+    background: #a33;
+  }
+  .loading {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-size: 14px;
   }
   .body {
     display: flex;

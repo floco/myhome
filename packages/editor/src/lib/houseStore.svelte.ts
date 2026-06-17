@@ -1,11 +1,10 @@
 import { detectRooms, matchRooms, pointsEqual } from "@myhome/geometry";
-import type { Floor, Wall, Opening, Room, Point } from "@myhome/geometry";
+import type { Floor, Wall, Opening, Room, Point, House, HouseDocument } from "@myhome/geometry";
 import { createSampleHouse } from "./sampleFloor";
 
-export const HOUSE_STORAGE_KEY = "myhome.editor.house";
-const OLD_FLOOR_STORAGE_KEY = "myhome.editor.floor";
-const PERSIST_DEBOUNCE_MS = 300;
 const MAX_HISTORY = 50;
+
+const DEFAULT_HOUSE: House = { name: "My Home", units: "m", gridSnap: 0.1 };
 
 interface HouseState {
   floors: Floor[];
@@ -16,50 +15,17 @@ function cloneState(s: HouseState): HouseState {
   return JSON.parse(JSON.stringify(s));
 }
 
-function loadState(): HouseState {
-  if (typeof localStorage === "undefined") return createSampleHouse();
-
-  const raw = localStorage.getItem(HOUSE_STORAGE_KEY);
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw);
-      if (
-        parsed &&
-        Array.isArray(parsed.floors) &&
-        parsed.floors.length > 0 &&
-        typeof parsed.currentFloorId === "string"
-      ) {
-        return parsed as HouseState;
-      }
-    } catch { /* fall through */ }
-  }
-
-  const oldRaw = localStorage.getItem(OLD_FLOOR_STORAGE_KEY);
-  if (oldRaw) {
-    try {
-      const oldFloor = JSON.parse(oldRaw);
-      if (oldFloor && Array.isArray(oldFloor.walls) && Array.isArray(oldFloor.openings)) {
-        if (!oldFloor.id) oldFloor.id = "floor-1";
-        if (!oldFloor.name) oldFloor.name = "Ground Floor";
-        if (oldFloor.order === undefined) oldFloor.order = 0;
-        if (!Array.isArray(oldFloor.rooms)) oldFloor.rooms = [];
-        return { floors: [oldFloor as Floor], currentFloorId: oldFloor.id };
-      }
-    } catch { /* fall through */ }
-  }
-
-  return createSampleHouse();
-}
-
 function genId(): string {
   return (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36));
 }
 
 export function createHouseStore() {
-  const loaded = loadState();
-  const floors = $state<Floor[]>(loaded.floors);
-  let currentFloorId = $state<string>(loaded.currentFloorId);
-  let persistTimer: ReturnType<typeof setTimeout> | undefined;
+  const sample = createSampleHouse();
+  const floors = $state<Floor[]>(sample.floors);
+  let currentFloorId = $state<string>(sample.currentFloorId);
+  let house = $state<House>(DEFAULT_HOUSE);
+  let loaded = $state(false);
+  let loadError = $state<string | null>(null);
 
   const undoStack: HouseState[] = [];
   const redoStack: HouseState[] = [];
@@ -92,7 +58,6 @@ export function createHouseStore() {
     applyState(prev);
     undoCount = undoStack.length;
     redoCount = redoStack.length;
-    persist();
   }
 
   function redo(): void {
@@ -102,15 +67,6 @@ export function createHouseStore() {
     applyState(next);
     undoCount = undoStack.length;
     redoCount = redoStack.length;
-    persist();
-  }
-
-  function persist(): void {
-    if (typeof localStorage === "undefined") return;
-    if (persistTimer) clearTimeout(persistTimer);
-    persistTimer = setTimeout(() => {
-      localStorage.setItem(HOUSE_STORAGE_KEY, JSON.stringify(getState()));
-    }, PERSIST_DEBOUNCE_MS);
   }
 
   function currentFloor(): Floor {
@@ -126,7 +82,6 @@ export function createHouseStore() {
 
   function commitWalls(): void {
     recomputeRooms();
-    persist();
   }
 
   // Floor management
@@ -144,7 +99,6 @@ export function createHouseStore() {
     };
     floors.push(newFloor);
     currentFloorId = newFloor.id;
-    persist();
   }
 
   function removeFloor(id: string): void {
@@ -156,7 +110,6 @@ export function createHouseStore() {
     if (currentFloorId === id) {
       currentFloorId = floors[Math.max(0, idx - 1)].id;
     }
-    persist();
   }
 
   function renameFloor(id: string, name: string): void {
@@ -164,7 +117,6 @@ export function createHouseStore() {
     if (!floor) return;
     saveSnapshot();
     floor.name = name;
-    persist();
   }
 
   function switchFloor(id: string): void {
@@ -201,14 +153,12 @@ export function createHouseStore() {
   function addOpening(opening: Opening): void {
     saveSnapshot();
     currentFloor().openings.push(opening);
-    persist();
   }
 
   function removeOpening(id: string): void {
     saveSnapshot();
     const floor = currentFloor();
     floor.openings = floor.openings.filter((o) => o.id !== id);
-    persist();
   }
 
   function updateOpening(
@@ -222,7 +172,6 @@ export function createHouseStore() {
     if (patch.offset !== undefined) opening.offset = patch.offset;
     if (patch.width !== undefined) opening.width = patch.width;
     if (patch.swing !== undefined) opening.swing = patch.swing;
-    persist();
   }
 
   function updateRoom(id: string, patch: Partial<Pick<Room, "label" | "haAreaId">>): void {
@@ -231,7 +180,6 @@ export function createHouseStore() {
     saveSnapshot();
     if (patch.label !== undefined) room.label = patch.label;
     if (patch.haAreaId !== undefined) room.haAreaId = patch.haAreaId;
-    persist();
   }
 
   function openingOverlaps(wallId: string, excludeId: string | null, from: number, to: number): boolean {
@@ -240,12 +188,56 @@ export function createHouseStore() {
     );
   }
 
-  // Seed room detection on startup for all floors
+  // API load/save
+
+  async function init(): Promise<void> {
+    try {
+      const resp = await fetch("/api/house");
+      if (resp.status === 404) {
+        // No saved document; keep sample house already in state
+      } else if (!resp.ok) {
+        throw new Error(`HTTP ${resp.status}`);
+      } else {
+        const doc: HouseDocument = await resp.json();
+        house = doc.house;
+        const newCurrentId = doc.floors[0]?.id ?? currentFloorId;
+        applyState({ floors: doc.floors, currentFloorId: newCurrentId });
+        for (const f of floors) {
+          const detected = detectRooms(f.walls);
+          const { rooms } = matchRooms(detected, f.rooms);
+          f.rooms = rooms.filter((r) => r.polygon !== null);
+        }
+      }
+    } catch (e) {
+      loadError = e instanceof Error ? e.message : String(e);
+    } finally {
+      loaded = true;
+    }
+  }
+
+  async function save(): Promise<void> {
+    const doc: HouseDocument = {
+      version: 1,
+      house: house as House,
+      floors: floors as Floor[],
+    };
+    const resp = await fetch("/api/house", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(doc),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+  }
+
+  // Seed room detection on startup for sample floors
   for (const f of floors) {
     const detected = detectRooms(f.walls);
     const { rooms } = matchRooms(detected, f.rooms);
     f.rooms = rooms.filter((r) => r.polygon !== null);
   }
+
+  // Start async load immediately
+  init();
 
   return {
     get floor() { return currentFloor(); },
@@ -253,6 +245,8 @@ export function createHouseStore() {
     get currentFloorId() { return currentFloorId; },
     get hasUndo() { return undoCount > 0; },
     get hasRedo() { return redoCount > 0; },
+    get loaded() { return loaded; },
+    get loadError() { return loadError; },
     saveSnapshot,
     undo,
     redo,
@@ -268,5 +262,6 @@ export function createHouseStore() {
     updateOpening,
     updateRoom,
     openingOverlaps,
+    save,
   };
 }
