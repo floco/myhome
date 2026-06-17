@@ -33,8 +33,8 @@ def _period_days(chore: dict) -> float:
     elif freq_type == "yearly":
         return freq * 365.0
     elif freq_type == "day_of_the_month":
-        return float(freq)
-    return float(freq)
+        return 30.0
+    return 30.0
 
 
 def _extract_emoji(name: str) -> str:
