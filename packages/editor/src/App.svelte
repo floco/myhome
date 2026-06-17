@@ -36,6 +36,7 @@
       setTimeout(() => { saveStatus = "idle"; }, 2000);
     } catch {
       saveStatus = "error";
+      setTimeout(() => { saveStatus = "idle"; }, 4000);
     }
   }
 
