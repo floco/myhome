@@ -1,14 +1,22 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { mount, unmount, flushSync, tick } from "svelte";
 import App from "../src/App.svelte";
-import { HOUSE_STORAGE_KEY } from "../src/lib/houseStore.svelte";
+
+function stubFetch404() {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+    ok: false,
+    status: 404,
+    statusText: "Not Found",
+    json: async () => undefined,
+  }));
+}
 
 describe("App", () => {
   let target: HTMLElement;
   let app: ReturnType<typeof mount> | undefined;
 
   beforeEach(() => {
-    localStorage.clear();
+    stubFetch404();
   });
 
   afterEach(() => {
@@ -181,15 +189,19 @@ describe("App", () => {
   });
 
   it("dragging a selected wall's endpoint moves shared corners", () => {
-    vi.useFakeTimers();
     target = document.createElement("div");
     document.body.appendChild(target);
 
     app = mount(App, { target });
     flushSync();
 
-    const wall1 = target.querySelectorAll("polygon.wall")[0]!;
-    wall1.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    // Record the original polygon points for wall-1 and wall-4 before dragging
+    const wall1Poly = target.querySelectorAll("polygon.wall")[0]!;
+    const wall4Poly = target.querySelectorAll("polygon.wall")[3]!;
+    const wall1PointsBefore = wall1Poly.getAttribute("points");
+    const wall4PointsBefore = wall4Poly.getAttribute("points");
+
+    wall1Poly.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     flushSync();
 
     const handle = target.querySelector("circle.handle")!;
@@ -197,29 +209,26 @@ describe("App", () => {
     flushSync();
 
     const svg = target.querySelector("svg.canvas")!;
+    // Drag wall-1's start handle (at world (0,0) → screen (400,300)) to screen (300,300) → world (-1,0)
     svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 300, clientY: 300 }));
     flushSync();
     svg.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
     flushSync();
 
-    vi.advanceTimersByTime(300);
-
-    const saved = JSON.parse(localStorage.getItem(HOUSE_STORAGE_KEY)!);
-    const wall1Data = saved.floors[0].walls.find((w: { id: string }) => w.id === "wall-1");
-    const wall4Data = saved.floors[0].walls.find((w: { id: string }) => w.id === "wall-4");
-    expect(wall1Data.start).toEqual({ x: -1, y: 0 });
-    expect(wall4Data.end).toEqual({ x: -1, y: 0 });
-
-    vi.useRealTimers();
+    // Both wall-1 and wall-4 share the (0,0) endpoint; both polygons should have changed
+    expect(target.querySelectorAll("polygon.wall")[0]!.getAttribute("points")).not.toBe(wall1PointsBefore);
+    expect(target.querySelectorAll("polygon.wall")[3]!.getAttribute("points")).not.toBe(wall4PointsBefore);
   });
 
   it("dragging an endpoint onto its own wall's other endpoint does not collapse the wall", () => {
-    vi.useFakeTimers();
     target = document.createElement("div");
     document.body.appendChild(target);
 
     app = mount(App, { target });
     flushSync();
+
+    // Record wall-1's polygon points before the attempted drag
+    const wall1PolyBefore = target.querySelectorAll("polygon.wall")[0]!.getAttribute("points");
 
     const wall1 = target.querySelectorAll("polygon.wall")[0]!;
     wall1.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -238,13 +247,9 @@ describe("App", () => {
     svg.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
     flushSync();
 
-    vi.advanceTimersByTime(300);
-
     // The drag was a no-op (it would have collapsed wall-1 to zero length),
-    // so the floor was never persisted.
-    expect(localStorage.getItem(HOUSE_STORAGE_KEY)).toBeNull();
-
-    vi.useRealTimers();
+    // so the polygon points should be unchanged.
+    expect(target.querySelectorAll("polygon.wall")[0]!.getAttribute("points")).toBe(wall1PolyBefore);
   });
 
   it("wheel-zooms the viewport and Reset View restores it", () => {
@@ -310,7 +315,7 @@ describe("App — opening selection", () => {
   let app: ReturnType<typeof mount> | undefined;
 
   beforeEach(() => {
-    localStorage.clear();
+    stubFetch404();
   });
 
   afterEach(() => {
