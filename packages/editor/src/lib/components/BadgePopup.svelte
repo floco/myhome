@@ -7,18 +7,19 @@
     screenX: number;
     screenY: number;
     oncomplete: () => void;
+    oncompleteall: () => void;
     onremove: () => void;
     onclose: () => void;
   }
 
-  let { chore, assignment, screenX, screenY, oncomplete, onremove, onclose }: Props = $props();
+  let { chore, assignment, screenX, screenY, oncomplete, oncompleteall, onremove, onclose }: Props = $props();
 
   function formatDate(iso: string): string {
     const d = new Date(iso);
     return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
   }
 
-  const overdue = $derived(new Date(chore.nextDueDate).getTime() < Date.now());
+  const overdue = $derived(new Date(assignment.nextDueDate).getTime() < Date.now());
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -29,10 +30,11 @@
 >
   <div class="popup-name">{chore.name}</div>
   <div class="popup-due" class:overdue>
-    {overdue ? "Overdue since" : "Due"}: {formatDate(chore.nextDueDate)}
+    {overdue ? "Overdue since" : "Due"}: {formatDate(assignment.nextDueDate)}
   </div>
   <div class="popup-actions">
-    <button onclick={oncomplete}>✓ Mark done</button>
+    <button onclick={oncompleteall}>✓ All done</button>
+    <button onclick={oncomplete}>✓ This room</button>
     <button onclick={onremove}>✕ Remove</button>
     <button class="close-btn" onclick={onclose}>✕</button>
   </div>

@@ -16,6 +16,7 @@
   import ChoreOverlay from "./lib/components/ChoreOverlay.svelte";
   import ChorePanel from "./lib/components/ChorePanel.svelte";
   import BadgePopup from "./lib/components/BadgePopup.svelte";
+  import ChoresPage from "./lib/components/ChoresPage.svelte";
 
   const floorStore = createHouseStore();
   const viewportStore = createViewportStore();
@@ -23,8 +24,15 @@
   const choreStore = createChoreStore();
 
   let choreMode = $state(false);
-  let assigningChoreId = $state<string | null>(null);
+  let draggingChoreId = $state<string | null>(null);
   let selectedBadge = $state<{ assignment: Assignment; screenX: number; screenY: number } | null>(null);
+
+  let currentRoute = $state(window.location.hash || "#/");
+  $effect(() => {
+    const onHashChange = () => { currentRoute = window.location.hash || "#/"; };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  });
 
   const selectedRoom = $derived(
     toolStore.state.selectedRoomId
@@ -72,26 +80,8 @@
     toolStore.selectOpening(id);
   }
 
-  function handleSelectRoomOrAssign(id: string | null): void {
-    if (assigningChoreId && id) {
-      const room = floorStore.floor.rooms.find((r) => r.id === id);
-      let position = { x: 0, y: 0 };
-      if (room?.polygon && room.polygon.length > 0) {
-        const n = room.polygon.length;
-        position = {
-          x: room.polygon.reduce((s, p) => s + p.x, 0) / n,
-          y: room.polygon.reduce((s, p) => s + p.y, 0) / n,
-        };
-      }
-      choreStore.createAssignment({ choreId: assigningChoreId, roomId: id, position });
-      // assigningChoreId stays set — user presses Escape or Cancel to stop
-    } else {
-      toolStore.selectRoom(id);
-    }
-  }
-
   function handleSelectRoom(id: string | null): void {
-    handleSelectRoomOrAssign(id);
+    toolStore.selectRoom(id);
   }
 
   function handleBadgeClick(assignmentId: string): void {
@@ -297,10 +287,6 @@
       handleRedo();
       return;
     }
-    if (event.key === "Escape" && assigningChoreId) {
-      assigningChoreId = null;
-      return;
-    }
     if (event.key === "Escape") {
       toolStore.resetDraw();
       return;
@@ -316,6 +302,51 @@
       spacePressed = false;
     }
   }
+
+  function pointInPolygon(p: { x: number; y: number }, polygon: Array<{ x: number; y: number }>): boolean {
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const xi = polygon[i].x, yi = polygon[i].y;
+      const xj = polygon[j].x, yj = polygon[j].y;
+      if ((yi > p.y) !== (yj > p.y) && p.x < (xj - xi) * (p.y - yi) / (yj - yi) + xi) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  }
+
+  function handleDragOver(e: DragEvent): void {
+    if (!draggingChoreId) return;
+    e.preventDefault();
+  }
+
+  function handleDrop(e: DragEvent): void {
+    const choreId = e.dataTransfer?.getData("choreId") ?? draggingChoreId;
+    draggingChoreId = null;
+    if (!choreId) return;
+    e.preventDefault();
+
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const screenX = e.clientX - rect.left;
+    const screenY = e.clientY - rect.top;
+    const worldX = (screenX - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
+    const worldY = (screenY - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
+
+    const room = floorStore.floor.rooms.find((r) => {
+      if (!r.polygon) return false;
+      return pointInPolygon({ x: worldX, y: worldY }, r.polygon);
+    });
+
+    if (!room) return;
+
+    const chore = choreStore.chores.find((c) => c.id === choreId);
+    choreStore.createAssignment({
+      choreId,
+      roomId: room.id,
+      position: { x: worldX, y: worldY },
+      nextDueDate: chore?.nextDueDate ?? "",
+    });
+  }
 </script>
 
 <svelte:window
@@ -325,6 +356,9 @@
   onmouseup={handleDragEnd}
 />
 
+{#if currentRoute === "#/chores"}
+  <ChoresPage store={choreStore} onback={() => { window.location.hash = "#/"; }} floorStore={floorStore} />
+{:else}
 <div class="app">
   <header class="topbar">
     <h1>Floor Plan Editor</h1>
@@ -340,8 +374,9 @@
       <button
         class="chore-btn"
         class:chore-active={choreMode}
-        onclick={() => { choreMode = !choreMode; if (choreMode) { toolStore.setTool("select"); } else { assigningChoreId = null; selectedBadge = null; } }}
+        onclick={() => { choreMode = !choreMode; if (choreMode) { toolStore.setTool("select"); } else { selectedBadge = null; } }}
       >Chores</button>
+      <a href="#/chores" class="chore-manage-btn" title="Manage chores">⚙</a>
       <button
         class="save-btn"
         class:saved={saveStatus === "saved"}
@@ -354,7 +389,7 @@
       <button class="reset-view" onclick={() => viewportStore.reset()}>Reset View</button>
     </div>
   </header>
-  <div class="body" bind:clientWidth={canvasWidth} bind:clientHeight={canvasHeight}>
+  <div class="body" bind:clientWidth={canvasWidth} bind:clientHeight={canvasHeight} ondragover={handleDragOver} ondrop={handleDrop}>
     {#if !floorStore.loaded}
       <div class="loading">Loading…</div>
     {:else}
@@ -414,9 +449,9 @@
       {#if choreMode}
         <ChorePanel
           store={choreStore}
-          {assigningChoreId}
-          onAssignToRoom={(id) => { assigningChoreId = id; selectedBadge = null; toolStore.setTool("select"); }}
-          onCancelAssign={() => { assigningChoreId = null; }}
+          {draggingChoreId}
+          onDragStart={(id) => { draggingChoreId = id; }}
+          onDragEnd={() => { draggingChoreId = null; }}
         />
       {/if}
       {#if selectedBadge}
@@ -431,7 +466,8 @@
                 assignment={badge.assignment}
                 screenX={badge.screenX}
                 screenY={badge.screenY}
-                oncomplete={async () => { await choreStore.completeChore(chore.id); selectedBadge = null; }}
+                oncomplete={async () => { await choreStore.completeAssignment(badge.assignment.id); selectedBadge = null; }}
+                oncompleteall={async () => { await choreStore.completeChore(chore.id); selectedBadge = null; }}
                 onremove={async () => { await choreStore.deleteAssignment(badge.assignment.id); selectedBadge = null; }}
                 onclose={() => { selectedBadge = null; }}
               />
@@ -442,6 +478,7 @@
     {/if}
   </div>
 </div>
+{/if}
 
 <style>
   .app {
@@ -525,5 +562,16 @@
   .chore-btn.chore-active {
     background: #446;
     color: #ccf;
+  }
+  .chore-manage-btn {
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: #444;
+    color: #ccc;
+    text-decoration: none;
+    font-size: 12px;
+  }
+  .chore-manage-btn:hover {
+    background: #555;
   }
 </style>

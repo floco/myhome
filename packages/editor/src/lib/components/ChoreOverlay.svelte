@@ -22,9 +22,9 @@
     return chores.find((c) => c.id === choreId);
   }
 
-  function getProgress(chore: Chore): number {
+  function getProgress(assignment: Assignment, chore: Chore): number {
     const now = Date.now();
-    const due = new Date(chore.nextDueDate).getTime();
+    const due = new Date(assignment.nextDueDate).getTime();
     const periodMs = chore.periodDays * 86400 * 1000;
     return Math.max(0, Math.min(1, (due - now) / periodMs));
   }
@@ -99,7 +99,7 @@
     {#if chore}
       {@const sp = badgeScreen(a)}
       {#if sp}
-        {@const pct = getProgress(chore)}
+        {@const pct = getProgress(a, chore)}
         {@const color = getColor(pct)}
         {@const dashFill = pct * C}
         <g

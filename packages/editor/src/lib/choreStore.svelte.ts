@@ -18,6 +18,7 @@ export interface Assignment {
   choreId: string;
   roomId: string | null;
   position: Position | null;
+  nextDueDate: string;
 }
 
 export interface ChoreDocument {
@@ -48,9 +49,9 @@ export function createChoreStore() {
     }
   }
 
-  function getProgress(chore: Chore): number {
+  function getProgress(assignment: Assignment, chore: Chore): number {
     const now = Date.now();
-    const due = new Date(chore.nextDueDate).getTime();
+    const due = new Date(assignment.nextDueDate).getTime();
     const periodMs = chore.periodDays * 86400 * 1000;
     return Math.max(0, Math.min(1, (due - now) / periodMs));
   }
@@ -113,6 +114,12 @@ export function createChoreStore() {
     return imported as number;
   }
 
+  async function completeAssignment(id: string): Promise<void> {
+    const resp = await fetch(`/api/assignments/${id}/complete`, { method: "POST" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
   async function createAssignment(data: Omit<Assignment, "id">): Promise<void> {
     const resp = await fetch("/api/assignments", {
       method: "POST",
@@ -156,6 +163,7 @@ export function createChoreStore() {
     completeChore,
     importFromDonetick,
     createAssignment,
+    completeAssignment,
     updateAssignmentPosition,
     deleteAssignment,
   };
