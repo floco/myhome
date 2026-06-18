@@ -15,7 +15,14 @@ def load_chores() -> ChoreDocument:
     if not path.exists():
         return ChoreDocument()
     with path.open() as f:
-        return ChoreDocument.model_validate(json.load(f))
+        doc = ChoreDocument.model_validate(json.load(f))
+    # Migration: fill in missing assignment nextDueDates from parent chore
+    chore_map = {c.id: c for c in doc.chores}
+    for a in doc.assignments:
+        if not a.nextDueDate:
+            parent = chore_map.get(a.choreId)
+            a.nextDueDate = parent.nextDueDate if parent else ""
+    return doc
 
 
 def save_chores(doc: ChoreDocument) -> None:

@@ -22,6 +22,7 @@ class Assignment(BaseModel):
     choreId: str
     roomId: str | None = None
     position: Position | None = None
+    nextDueDate: str = ""   # per-instance due date; empty string = not yet set
 
 
 class ChoreDocument(BaseModel):
@@ -51,6 +52,7 @@ class AssignmentCreate(BaseModel):
     choreId: str
     roomId: str | None = None
     position: Position | None = None
+    nextDueDate: str = ""   # if empty, backend fills from chore.nextDueDate
 
 
 class AssignmentUpdate(BaseModel):
