@@ -79,7 +79,7 @@
         };
       }
       choreStore.createAssignment({ choreId: assigningChoreId, roomId: id, position });
-      assigningChoreId = null;
+      // assigningChoreId stays set — user presses Escape or Cancel to stop
     } else {
       toolStore.selectRoom(id);
     }
@@ -335,7 +335,7 @@
       <button
         class="chore-btn"
         class:chore-active={choreMode}
-        onclick={() => { choreMode = !choreMode; if (!choreMode) { assigningChoreId = null; selectedBadge = null; } }}
+        onclick={() => { choreMode = !choreMode; if (choreMode) { toolStore.setTool("select"); } else { assigningChoreId = null; selectedBadge = null; } }}
       >Chores</button>
       <button
         class="save-btn"
@@ -410,7 +410,7 @@
         <ChorePanel
           store={choreStore}
           {assigningChoreId}
-          onAssignToRoom={(id) => { assigningChoreId = id; selectedBadge = null; }}
+          onAssignToRoom={(id) => { assigningChoreId = id; selectedBadge = null; toolStore.setTool("select"); }}
           onCancelAssign={() => { assigningChoreId = null; }}
         />
       {/if}

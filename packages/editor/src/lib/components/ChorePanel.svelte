@@ -84,6 +84,17 @@
       chore: store.chores.find((c) => c.id === a.choreId),
     })).filter((x): x is { assignment: typeof x.assignment; chore: Chore } => x.chore !== undefined)
   );
+
+  const assignedChoreIds = $derived(new Set(store.assignments.map((a) => a.choreId)));
+  const unassignedChores = $derived(store.chores.filter((c) => !assignedChoreIds.has(c.id)));
+
+  function displayName(chore: Chore): string {
+    let name = chore.name.trim();
+    if (chore.emoji && name.startsWith(chore.emoji)) {
+      name = name.slice(chore.emoji.length).trim();
+    }
+    return name;
+  }
 </script>
 
 <div class="panel">
@@ -132,7 +143,7 @@
       {#each houseChores as { assignment, chore }}
         <div class="chore-row">
           <span class="chore-emoji">{chore.emoji}</span>
-          <span class="chore-name">{chore.name}</span>
+          <span class="chore-name">{displayName(chore)}</span>
           <button class="done-btn" onclick={() => store.completeChore(chore.id)}>✓</button>
           <button class="icon-btn" onclick={() => store.deleteAssignment(assignment.id)}>✕</button>
         </div>
@@ -141,8 +152,8 @@
   {/if}
 
   <div class="section chores-list">
-    <div class="section-title">All chores ({store.chores.length})</div>
-    {#each store.chores as chore (chore.id)}
+    <div class="section-title">Unassigned ({unassignedChores.length})</div>
+    {#each unassignedChores as chore (chore.id)}
       {@const pct = store.getProgress(chore)}
       {@const color = store.getColor(pct)}
       {#if editingId === chore.id}
@@ -171,7 +182,7 @@
             <text text-anchor="middle" dominant-baseline="central" font-size="8">{chore.emoji}</text>
           </svg>
           <div class="chore-info">
-            <span class="chore-name">{chore.name}</span>
+            <span class="chore-name">{displayName(chore)}</span>
             <span class="chore-days" style="color:{color}">
               {daysLeft >= 0 ? `+${daysLeft}d` : `${daysLeft}d`}
             </span>
