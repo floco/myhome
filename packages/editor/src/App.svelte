@@ -32,6 +32,11 @@
       : null
   );
 
+  const currentFloorRoomIds = $derived(new Set(floorStore.floor.rooms.map((r) => r.id)));
+  const currentFloorAssignments = $derived(
+    choreStore.assignments.filter((a) => a.roomId !== null && currentFloorRoomIds.has(a.roomId))
+  );
+
   let spacePressed = $state(false);
   let canvasWidth = $state(1200);
   let canvasHeight = $state(800);
@@ -398,7 +403,7 @@
       {/if}
       <ChoreOverlay
         chores={choreStore.chores}
-        assignments={choreStore.assignments}
+        assignments={currentFloorAssignments}
         viewport={viewportStore.viewport}
         {choreMode}
         width={canvasWidth}
