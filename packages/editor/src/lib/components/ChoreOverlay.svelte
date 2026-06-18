@@ -87,11 +87,12 @@
   );
 </script>
 
+<svelte:window onpointermove={handlePointerMove} />
+
 <svg
   {width}
   {height}
-  style="position:absolute;top:0;left:0;pointer-events:{choreMode ? 'all' : 'none'};overflow:visible"
-  onpointermove={handlePointerMove}
+  style="position:absolute;top:0;left:0;pointer-events:none;overflow:visible"
 >
   {#each roomAssignments as a (a.id)}
     {@const chore = findChore(a.choreId)}
@@ -103,7 +104,7 @@
         {@const dashFill = pct * C}
         <g
           transform="translate({sp.x},{sp.y})"
-          style="cursor:{choreMode ? (dragId === a.id ? 'grabbing' : 'grab') : 'default'}"
+          style="pointer-events:{choreMode ? 'all' : 'none'};cursor:{choreMode ? (dragId === a.id ? 'grabbing' : 'grab') : 'default'}"
           onpointerdown={(e) => handlePointerDown(e, a)}
           onpointerup={(e) => handlePointerUp(e, a)}
         >
