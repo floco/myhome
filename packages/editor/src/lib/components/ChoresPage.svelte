@@ -62,6 +62,12 @@
     return store.assignments.filter((a) => a.choreId === choreId);
   }
 
+  function displayName(chore: Chore): string {
+    let name = chore.name.trim();
+    if (chore.emoji && name.startsWith(chore.emoji)) name = name.slice(chore.emoji.length).trim();
+    return name;
+  }
+
   function formatDate(iso: string): string {
     if (!iso) return "—";
     const d = new Date(iso);
@@ -116,7 +122,7 @@
         {:else}
           <div class="chore-header">
             <span class="chore-emoji">{chore.emoji}</span>
-            <span class="chore-name">{chore.name}</span>
+            <span class="chore-name">{displayName(chore)}</span>
             <span class="chore-period">{chore.periodDays}d</span>
             <button onclick={() => store.completeChore(chore.id)}>✓ Mark all done</button>
             <button onclick={() => startEdit(chore)}>✏️</button>
@@ -162,32 +168,74 @@
 
 <style>
   .page { display: flex; flex-direction: column; height: 100vh; background: #1a1a2e; color: #ccc; font-family: sans-serif; }
-  .page-header { display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: #252535; border-bottom: 1px solid #333; flex-shrink: 0; }
-  .page-header h1 { font-size: 16px; margin: 0; flex: 1; }
-  .back-btn { padding: 4px 10px; border: none; border-radius: 4px; background: #3a3a5a; color: #ccc; cursor: pointer; font-size: 12px; }
-  .chore-list { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+  .page-header {
+    display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap;
+    padding: 8px 16px; background: #252535; border-bottom: 1px solid #333; flex-shrink: 0;
+  }
+  .page-header h1 { font-size: 16px; margin: 0; flex: 1; min-width: 120px; }
+
+  .back-btn {
+    padding: 6px 12px; border: none; border-radius: 4px;
+    background: #3a3a5a; color: #ccc; cursor: pointer; font-size: 13px;
+    min-height: 36px; white-space: nowrap;
+  }
+
+  .chore-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+
   .chore-card { background: #252535; border: 1px solid #333; border-radius: 6px; padding: 12px; }
-  .chore-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .chore-emoji { font-size: 18px; }
-  .chore-name { flex: 1; font-weight: 600; color: #eee; }
-  .chore-period { font-size: 11px; color: #666; margin-right: 8px; }
-  .instances { display: flex; flex-direction: column; gap: 4px; padding-left: 12px; border-left: 2px solid #333; }
-  .instance-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-  .instance-where { flex: 1; color: #aaa; }
-  .instance-due { color: #666; font-size: 11px; }
+
+  .chore-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .chore-emoji { font-size: 18px; flex-shrink: 0; }
+  .chore-name { flex: 1; min-width: 80px; font-weight: 600; color: #eee; word-break: break-word; }
+  .chore-period { font-size: 11px; color: #666; white-space: nowrap; }
+
+  .instances { display: flex; flex-direction: column; gap: 6px; padding-left: 12px; border-left: 2px solid #333; }
+  .instance-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; }
+  .instance-where { flex: 1; min-width: 80px; color: #aaa; }
+  .instance-due { color: #666; font-size: 11px; white-space: nowrap; }
   .no-instances { font-size: 11px; color: #555; padding-left: 12px; font-style: italic; }
-  button { padding: 3px 8px; border: none; border-radius: 3px; background: #3a3a5a; color: #ccc; cursor: pointer; font-size: 11px; }
+
+  button {
+    padding: 6px 10px; border: none; border-radius: 4px;
+    background: #3a3a5a; color: #ccc; cursor: pointer; font-size: 12px;
+    min-height: 34px; touch-action: manipulation;
+  }
   button:hover { background: #4a4a6a; }
   button:disabled { opacity: 0.5; cursor: default; }
   .primary-btn { background: #2a6; color: #fff; }
   .primary-btn:hover { background: #3b7; }
-  .add-btn { display: block; width: 100%; padding: 10px; text-align: center; background: #2a2a4a; border: 1px dashed #444; color: #888; border-radius: 4px; cursor: pointer; }
+
+  .add-btn {
+    display: block; width: 100%; padding: 12px; text-align: center;
+    background: #2a2a4a; border: 1px dashed #444; color: #888;
+    border-radius: 4px; cursor: pointer; min-height: 44px;
+  }
   .add-btn:hover { background: #3a3a5a; color: #ccc; }
-  input { padding: 4px 6px; border: 1px solid #444; border-radius: 3px; background: #2a2a3a; color: #ccc; font-size: 12px; margin-bottom: 4px; }
-  input[type="number"], input[type="date"] { width: 120px; }
-  label { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: #888; margin-bottom: 4px; }
-  .row-btns { display: flex; gap: 8px; margin-top: 4px; }
-  .token-input { width: 220px; }
+
+  .edit-form { display: flex; flex-direction: column; gap: 6px; }
+  input {
+    padding: 6px 8px; border: 1px solid #444; border-radius: 3px;
+    background: #2a2a3a; color: #ccc; font-size: 13px;
+    width: 100%; box-sizing: border-box;
+  }
+  input[type="number"] { width: 100px; }
+  input[type="date"] { width: 160px; }
+  label { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: #888; }
+  .row-btns { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+
+  .token-input { width: 100%; max-width: 260px; }
   .error-msg { color: #f44336; font-size: 11px; }
   .success-msg { color: #4caf50; font-size: 11px; }
+
+  @media (max-width: 500px) {
+    .page-header { padding: 8px 10px; }
+    .chore-list { padding: 8px; gap: 8px; }
+    .chore-card { padding: 10px; }
+    .chore-header { gap: 6px; }
+    input[type="number"], input[type="date"] { width: 100%; }
+    .row-btns { flex-direction: column; }
+    .row-btns button { width: 100%; }
+    .instance-row { gap: 6px; }
+  }
 </style>

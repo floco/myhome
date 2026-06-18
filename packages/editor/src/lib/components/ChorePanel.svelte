@@ -91,7 +91,7 @@
   .chore-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .chore-name { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .chore-sub { font-size: 10px; color: #666; }
-  button { padding: 2px 6px; border: none; border-radius: 3px; background: #3a3a5a; color: #ccc; cursor: pointer; font-size: 11px; }
+  button { padding: 4px 8px; border: none; border-radius: 3px; background: #3a3a5a; color: #ccc; cursor: pointer; font-size: 12px; min-height: 30px; touch-action: manipulation; }
   button:hover { background: #4a4a6a; }
   .house-btn { flex-shrink: 0; }
 </style>
