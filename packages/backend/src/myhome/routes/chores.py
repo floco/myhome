@@ -1,3 +1,4 @@
+import calendar
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -12,6 +13,8 @@ from ..models_chores import (
     ChoreCreate,
     ChoreDocument,
     ChoreUpdate,
+    CompleteRequest,
+    CompletionRecord,
     ImportRequest,
     ImportResponse,
 )
@@ -38,6 +41,56 @@ def _period_days(chore: dict) -> float:
     elif freq_type == "day_of_the_month":
         return 30.0
     return 30.0
+
+
+def _add_months(dt: datetime, months: int) -> datetime:
+    total = dt.month - 1 + months
+    year = dt.year + total // 12
+    month = total % 12 + 1
+    day = min(dt.day, calendar.monthrange(year, month)[1])
+    return dt.replace(year=year, month=month, day=day)
+
+
+def _add_years(dt: datetime, years: int) -> datetime:
+    try:
+        return dt.replace(year=dt.year + years)
+    except ValueError:
+        return dt.replace(year=dt.year + years, month=3, day=1)
+
+
+def _next_due_from_schedule(chore: Chore, from_dt: datetime) -> datetime:
+    ft = chore.frequencyType
+    freq = chore.frequency
+    meta: dict = chore.frequencyMetadata or {}
+    unit = meta.get("unit", "days")
+    if ft == "day_of_the_month":
+        next_m = _add_months(from_dt.replace(day=1), 1)
+        day = min(freq, calendar.monthrange(next_m.year, next_m.month)[1])
+        return next_m.replace(day=day)
+    if ft == "days_of_the_week":
+        days = sorted((d - 1) % 7 for d in (meta.get("days") or []))
+        if not days:
+            return from_dt + timedelta(weeks=1)
+        wd = from_dt.weekday()
+        for d in days:
+            if d > wd:
+                return from_dt + timedelta(days=d - wd)
+        return from_dt + timedelta(days=7 - wd + days[0])
+    if ft == "weekly":
+        return from_dt + timedelta(weeks=freq)
+    if ft in ("monthly", "month"):
+        return _add_months(from_dt, freq)
+    if ft in ("yearly", "year"):
+        return _add_years(from_dt, freq)
+    if ft == "interval":
+        if unit == "years":
+            return _add_years(from_dt, freq)
+        if unit == "months":
+            return _add_months(from_dt, freq)
+        if unit == "weeks":
+            return from_dt + timedelta(weeks=freq)
+        return from_dt + timedelta(days=freq)
+    return from_dt + timedelta(days=chore.periodDays)
 
 
 def _extract_emoji(name: str) -> str:
@@ -96,6 +149,9 @@ async def import_from_donetick(body: ImportRequest) -> ImportResponse:
                 name=rc["name"].strip(),
                 emoji=_extract_emoji(rc["name"]),
                 periodDays=_period_days(rc),
+                frequencyType=rc["frequencyType"],
+                frequency=rc["frequency"],
+                frequencyMetadata=rc.get("frequencyMetadata") or {},
                 nextDueDate=next_due,
                 description="",
             )
@@ -109,7 +165,11 @@ async def import_from_donetick(body: ImportRequest) -> ImportResponse:
 @router.post("/api/chores", response_model=Chore, status_code=201)
 def create_chore(body: ChoreCreate) -> Chore:
     doc = load_chores()
-    chore = Chore(id=str(uuid.uuid4()), **body.model_dump())
+    data = body.model_dump()
+    if data["frequency"] == 0:
+        data["frequency"] = max(1, round(data["periodDays"]))
+        data["frequencyMetadata"] = {"unit": "days"}
+    chore = Chore(id=str(uuid.uuid4()), **data)
     doc.chores.append(chore)
     save_chores(doc)
     return chore
@@ -137,18 +197,32 @@ def delete_chore(chore_id: str) -> None:
 
 
 @router.post("/api/chores/{chore_id}/complete", response_model=Chore)
-def complete_chore(chore_id: str) -> Chore:
+def complete_chore(chore_id: str, body: CompleteRequest | None = None) -> Chore:
     doc = load_chores()
     chore = next((c for c in doc.chores if c.id == chore_id), None)
     if chore is None:
         raise HTTPException(status_code=404, detail="Chore not found")
-    next_due = datetime.now(timezone.utc) + timedelta(days=chore.periodDays)
+    notes = body.notes if body else ""
+    now = datetime.now(timezone.utc)
+    if chore.scheduleFromDue and chore.nextDueDate:
+        try:
+            from_dt = datetime.fromisoformat(chore.nextDueDate.replace("Z", "+00:00"))
+        except ValueError:
+            from_dt = now
+    else:
+        from_dt = now
+    next_due = _next_due_from_schedule(chore, from_dt)
     next_due_str = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
-    # Advance all assignments for this chore
+    doc.completions.append(CompletionRecord(
+        id=str(uuid.uuid4()),
+        choreId=chore_id,
+        completedAt=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        scheduledDue=chore.nextDueDate,
+        notes=notes,
+    ))
     for a in doc.assignments:
         if a.choreId == chore_id:
             a.nextDueDate = next_due_str
-    # Also advance the chore template date
     chore.nextDueDate = next_due_str
     save_chores(doc)
     return chore
@@ -176,7 +250,7 @@ def create_assignment(body: AssignmentCreate) -> Assignment:
 
 
 @router.post("/api/assignments/{assignment_id}/complete", response_model=Assignment)
-def complete_assignment(assignment_id: str) -> Assignment:
+def complete_assignment(assignment_id: str, body: CompleteRequest | None = None) -> Assignment:
     doc = load_chores()
     assignment = next((a for a in doc.assignments if a.id == assignment_id), None)
     if assignment is None:
@@ -184,7 +258,24 @@ def complete_assignment(assignment_id: str) -> Assignment:
     chore = next((c for c in doc.chores if c.id == assignment.choreId), None)
     if chore is None:
         raise HTTPException(status_code=404, detail="Chore not found")
-    next_due = datetime.now(timezone.utc) + timedelta(days=chore.periodDays)
+    notes = body.notes if body else ""
+    now = datetime.now(timezone.utc)
+    if chore.scheduleFromDue and assignment.nextDueDate:
+        try:
+            from_dt = datetime.fromisoformat(assignment.nextDueDate.replace("Z", "+00:00"))
+        except ValueError:
+            from_dt = now
+    else:
+        from_dt = now
+    next_due = _next_due_from_schedule(chore, from_dt)
+    doc.completions.append(CompletionRecord(
+        id=str(uuid.uuid4()),
+        choreId=chore.id,
+        assignmentId=assignment_id,
+        completedAt=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        scheduledDue=assignment.nextDueDate,
+        notes=notes,
+    ))
     assignment.nextDueDate = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
     save_chores(doc)
     return assignment

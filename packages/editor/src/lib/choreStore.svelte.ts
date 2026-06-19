@@ -4,8 +4,50 @@ export interface Chore {
   name: string;
   emoji: string;
   periodDays: number;
+  frequencyType: string;
+  frequency: number;
+  frequencyMetadata: Record<string, unknown>;
+  scheduleFromDue: boolean;
   nextDueDate: string;
   description: string;
+}
+
+export interface CompletionRecord {
+  id: string;
+  choreId: string;
+  assignmentId: string | null;
+  completedAt: string;
+  scheduledDue: string;
+  notes: string;
+}
+
+export function scheduleLabel(chore: Chore): string {
+  const { frequencyType: ft, frequency: n, frequencyMetadata: meta } = chore;
+  const unit = (meta as Record<string, string>)?.unit ?? "days";
+  if (ft === "day_of_the_month") return `Monthly on day ${n}`;
+  if (ft === "days_of_the_week") {
+    const names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const days = ((meta as Record<string, number[]>)?.days ?? []).map((d) => names[(d - 1) % 7]);
+    return days.length ? `Weekly on ${days.join(", ")}` : "Weekly";
+  }
+  if (ft === "weekly") return n === 1 ? "Weekly" : `Every ${n} weeks`;
+  if (ft === "monthly") return n === 1 ? "Monthly" : `Every ${n} months`;
+  if (ft === "yearly") return n === 1 ? "Yearly" : `Every ${n} years`;
+  if (ft === "interval") {
+    if (unit === "years") return n === 1 ? "Yearly" : `Every ${n} years`;
+    if (unit === "months") return n === 1 ? "Monthly" : `Every ${n} months`;
+    if (unit === "weeks") return n === 1 ? "Weekly" : `Every ${n} weeks`;
+    if (n === 1) return "Daily";
+    if (n === 7) return "Weekly";
+    if (n === 14) return "Every 2 weeks";
+    if (n === 30) return "Monthly";
+    if (n === 90) return "Quarterly";
+    if (n === 180) return "Every 6 months";
+    if (n === 365) return "Yearly";
+    if (n === 730) return "Every 2 years";
+    return `Every ${n} days`;
+  }
+  return `${chore.periodDays}d`;
 }
 
 export interface Position {
@@ -25,11 +67,13 @@ export interface ChoreDocument {
   version: number;
   chores: Chore[];
   assignments: Assignment[];
+  completions: CompletionRecord[];
 }
 
 export function createChoreStore() {
   const chores = $state<Chore[]>([]);
   const assignments = $state<Assignment[]>([]);
+  const completions = $state<CompletionRecord[]>([]);
   let loaded = $state(false);
   let loadError = $state<string | null>(null);
 
@@ -42,6 +86,8 @@ export function createChoreStore() {
       for (const c of doc.chores) chores.push(c);
       assignments.length = 0;
       for (const a of doc.assignments) assignments.push(a);
+      completions.length = 0;
+      for (const r of doc.completions ?? []) completions.push(r);
     } catch (e) {
       loadError = e instanceof Error ? e.message : String(e);
     } finally {
@@ -96,8 +142,12 @@ export function createChoreStore() {
     await init();
   }
 
-  async function completeChore(id: string): Promise<void> {
-    const resp = await fetch(`/api/chores/${id}/complete`, { method: "POST" });
+  async function completeChore(id: string, notes: string = ""): Promise<void> {
+    const resp = await fetch(`/api/chores/${id}/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes }),
+    });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }
@@ -114,10 +164,18 @@ export function createChoreStore() {
     return imported as number;
   }
 
-  async function completeAssignment(id: string): Promise<void> {
-    const resp = await fetch(`/api/assignments/${id}/complete`, { method: "POST" });
+  async function completeAssignment(id: string, notes: string = ""): Promise<void> {
+    const resp = await fetch(`/api/assignments/${id}/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes }),
+    });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
+  }
+
+  function getCompletionsForChore(choreId: string): CompletionRecord[] {
+    return completions.filter((r) => r.choreId === choreId);
   }
 
   async function createAssignment(data: Omit<Assignment, "id">): Promise<void> {
@@ -151,12 +209,14 @@ export function createChoreStore() {
   return {
     get chores() { return chores as Chore[]; },
     get assignments() { return assignments as Assignment[]; },
+    get completions() { return completions as CompletionRecord[]; },
     get loaded() { return loaded; },
     get loadError() { return loadError; },
     getProgress,
     getColor,
     assignmentsForRoom,
     houseAssignments,
+    getCompletionsForChore,
     createChore,
     updateChore,
     deleteChore,

@@ -18,6 +18,7 @@
   import ChoresPage from "./lib/components/ChoresPage.svelte";
   import ChoreListPage from "./lib/components/ChoreListPage.svelte";
   import NavMenu from "./lib/components/NavMenu.svelte";
+  import NewChoreModal from "./lib/components/NewChoreModal.svelte";
 
   const floorStore = createHouseStore();
   const viewportStore = createViewportStore();
@@ -28,6 +29,7 @@
   let draggingChoreId = $state<string | null>(null);
   let selectedBadge = $state<{ assignment: Assignment; screenX: number; screenY: number } | null>(null);
   let navExpanded = $state(false);
+  let showNewChoreModal = $state(false);
 
   let currentRoute = $state(window.location.hash || "#/");
   $effect(() => {
@@ -330,7 +332,14 @@
         onclick={handleSave}
       >{saveIcon}</button>
       <button class="icon-btn" title="Reset view" onclick={() => viewportStore.reset()}>↺</button>
+      <span class="topbar-sep"></span>
     {/if}
+
+    <button
+      class="icon-btn new-chore-btn"
+      title="New chore"
+      onclick={() => { showNewChoreModal = true; }}
+    >＋</button>
   </header>
 
   <div class="workspace">
@@ -416,7 +425,7 @@
         </div>
 
       {:else if currentRoute === "#/chores"}
-        <ChoresPage store={choreStore} {floorStore} />
+        <ChoresPage store={choreStore} {floorStore} onnewchore={() => { showNewChoreModal = true; }} />
 
       {:else if currentRoute === "#/chores/list"}
         <ChoreListPage store={choreStore} {floorStore} />
@@ -424,6 +433,8 @@
     </div>
   </div>
 </div>
+
+<NewChoreModal open={showNewChoreModal} store={choreStore} onclose={() => { showNewChoreModal = false; }} />
 
 <style>
   :global(body) { margin: 0; padding: 0; overflow: hidden; }
@@ -493,6 +504,8 @@
   .icon-btn.save-btn.saved { color: #2a6; }
   .icon-btn.save-btn.save-error { color: #f44; }
   .icon-btn:disabled { opacity: 0.5; cursor: default; }
+  .new-chore-btn { color: #4c9; font-size: 18px; font-weight: 600; }
+  .new-chore-btn:hover { background: #1a3a2a; color: #6eb; }
 
   .workspace {
     display: flex; flex: 1; overflow: hidden;

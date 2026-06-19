@@ -16,12 +16,17 @@ def load_chores() -> ChoreDocument:
         return ChoreDocument()
     with path.open() as f:
         doc = ChoreDocument.model_validate(json.load(f))
-    # Migration: fill in missing assignment nextDueDates from parent chore
+    # Migration 1: fill in missing assignment nextDueDates from parent chore
     chore_map = {c.id: c for c in doc.chores}
     for a in doc.assignments:
         if not a.nextDueDate:
             parent = chore_map.get(a.choreId)
             a.nextDueDate = parent.nextDueDate if parent else ""
+    # Migration 2: fill in frequency fields for chores that only have periodDays
+    for c in doc.chores:
+        if c.frequencyType == "interval" and not c.frequencyMetadata:
+            c.frequency = max(1, round(c.periodDays))
+            c.frequencyMetadata = {"unit": "days"}
     return doc
 
 

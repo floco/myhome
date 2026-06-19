@@ -12,9 +12,22 @@ class Chore(BaseModel):
     donetickId: int | None = None
     name: str
     emoji: str
-    periodDays: float
-    nextDueDate: str   # ISO 8601
+    periodDays: float           # approximate period for progress bar
+    frequencyType: str = "interval"
+    frequency: int = 1
+    frequencyMetadata: dict = {}
+    scheduleFromDue: bool = False   # True = next due from planned date, False = from completion date
+    nextDueDate: str            # ISO 8601
     description: str = ""
+
+
+class CompletionRecord(BaseModel):
+    id: str
+    choreId: str
+    assignmentId: str | None = None
+    completedAt: str    # ISO 8601
+    scheduledDue: str   # due date at time of completion
+    notes: str = ""
 
 
 class Assignment(BaseModel):
@@ -29,6 +42,7 @@ class ChoreDocument(BaseModel):
     version: int = 1
     chores: list[Chore] = []
     assignments: list[Assignment] = []
+    completions: list[CompletionRecord] = []
 
 
 class ChoreCreate(BaseModel):
@@ -38,6 +52,10 @@ class ChoreCreate(BaseModel):
     nextDueDate: str
     description: str = ""
     donetickId: int | None = None
+    frequencyType: str = "interval"
+    frequency: int = 0          # 0 = derive from periodDays
+    frequencyMetadata: dict = {}
+    scheduleFromDue: bool = False
 
 
 class ChoreUpdate(BaseModel):
@@ -46,6 +64,10 @@ class ChoreUpdate(BaseModel):
     periodDays: float | None = None
     nextDueDate: str | None = None
     description: str | None = None
+    frequencyType: str | None = None
+    frequency: int | None = None
+    frequencyMetadata: dict | None = None
+    scheduleFromDue: bool | None = None
 
 
 class AssignmentCreate(BaseModel):
@@ -57,6 +79,10 @@ class AssignmentCreate(BaseModel):
 
 class AssignmentUpdate(BaseModel):
     position: Position | None = None
+
+
+class CompleteRequest(BaseModel):
+    notes: str = ""
 
 
 class ImportRequest(BaseModel):
