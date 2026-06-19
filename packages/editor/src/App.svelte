@@ -335,6 +335,7 @@
       <span class="topbar-sep"></span>
     {/if}
 
+    {#if !isFloorPlan}<span class="spacer"></span>{/if}
     <button
       class="icon-btn new-chore-btn"
       title="New chore"
