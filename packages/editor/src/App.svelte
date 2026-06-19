@@ -8,7 +8,6 @@
   import { findSnapPoint, snapToGrid, SNAP_RADIUS_PX, hitTestWall, HIT_RADIUS_PX } from "./lib/geometry-helpers";
   import type { Opening } from "@myhome/geometry";
   import Canvas from "./lib/components/Canvas.svelte";
-  import Toolbar from "./lib/components/Toolbar.svelte";
   import RoomPanel from "./lib/components/RoomPanel.svelte";
   import FloorSwitcher from "./lib/components/FloorSwitcher.svelte";
   import { createChoreStore } from "./lib/choreStore.svelte";
@@ -17,6 +16,8 @@
   import ChorePanel from "./lib/components/ChorePanel.svelte";
   import BadgePopup from "./lib/components/BadgePopup.svelte";
   import ChoresPage from "./lib/components/ChoresPage.svelte";
+  import ChoreListPage from "./lib/components/ChoreListPage.svelte";
+  import NavMenu from "./lib/components/NavMenu.svelte";
 
   const floorStore = createHouseStore();
   const viewportStore = createViewportStore();
@@ -26,6 +27,7 @@
   let choreMode = $state(false);
   let draggingChoreId = $state<string | null>(null);
   let selectedBadge = $state<{ assignment: Assignment; screenX: number; screenY: number } | null>(null);
+  let navExpanded = $state(false);
 
   let currentRoute = $state(window.location.hash || "#/");
   $effect(() => {
@@ -33,6 +35,8 @@
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   });
+
+  const isFloorPlan = $derived(currentRoute === "#/" || currentRoute === "");
 
   const selectedRoom = $derived(
     toolStore.state.selectedRoomId
@@ -50,6 +54,16 @@
   let canvasHeight = $state(800);
   let saveStatus = $state<"idle" | "saving" | "saved" | "error">("idle");
   let haAreas = $state<Array<{ area_id: string; name: string }>>([]);
+
+  const hasSelection = $derived(
+    toolStore.state.selectedId !== null || toolStore.state.selectedOpeningId !== null
+  );
+  const saveIcon = $derived(
+    saveStatus === "saving" ? "⋯" : saveStatus === "saved" ? "✓" : saveStatus === "error" ? "⚠" : "💾"
+  );
+  const saveTitle = $derived(
+    saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : saveStatus === "error" ? "Save error!" : "Save"
+  );
 
   async function handleSave(): Promise<void> {
     saveStatus = "saving";
@@ -71,28 +85,19 @@
   });
 
   function handleSelect(id: string | null): void {
-    if (toolStore.state.tool === "select") {
-      toolStore.select(id);
-    }
+    if (toolStore.state.tool === "select") toolStore.select(id);
   }
 
-  function handleSelectOpening(id: string | null): void {
-    toolStore.selectOpening(id);
-  }
-
-  function handleSelectRoom(id: string | null): void {
-    toolStore.selectRoom(id);
-  }
+  function handleSelectOpening(id: string | null): void { toolStore.selectOpening(id); }
+  function handleSelectRoom(id: string | null): void { toolStore.selectRoom(id); }
 
   function handleBadgeClick(assignmentId: string): void {
     const assignment = choreStore.assignments.find((a) => a.id === assignmentId);
     if (!assignment) return;
-    let screenX = 0;
-    let screenY = 0;
+    let screenX = 0, screenY = 0;
     if (assignment.position) {
       const sp = viewportStore.worldToScreen(assignment.position);
-      screenX = sp.x;
-      screenY = sp.y;
+      screenX = sp.x; screenY = sp.y;
     }
     selectedBadge = { assignment, screenX, screenY };
   }
@@ -103,27 +108,16 @@
 
   function handleDelete(): void {
     const { selectedId, selectedOpeningId } = toolStore.state;
-    if (selectedId) {
-      floorStore.removeWall(selectedId);
-      toolStore.select(null);
-    } else if (selectedOpeningId) {
-      floorStore.removeOpening(selectedOpeningId);
-      toolStore.selectOpening(null);
-    }
+    if (selectedId) { floorStore.removeWall(selectedId); toolStore.select(null); }
+    else if (selectedOpeningId) { floorStore.removeOpening(selectedOpeningId); toolStore.selectOpening(null); }
   }
 
   function handleUndo(): void {
-    floorStore.undo();
-    toolStore.select(null);
-    toolStore.selectRoom(null);
-    toolStore.selectOpening(null);
+    floorStore.undo(); toolStore.select(null); toolStore.selectRoom(null); toolStore.selectOpening(null);
   }
 
   function handleRedo(): void {
-    floorStore.redo();
-    toolStore.select(null);
-    toolStore.selectRoom(null);
-    toolStore.selectOpening(null);
+    floorStore.redo(); toolStore.select(null); toolStore.selectRoom(null); toolStore.selectOpening(null);
   }
 
   function wouldCollapseAWall(dragging: Point, snapped: Point): boolean {
@@ -137,33 +131,25 @@
   function handleDragMove(worldCursor: Point): void {
     const dragging = toolStore.state.draggingPoint;
     if (!dragging) return;
-
     const candidates = allEndpoints(floorStore.floor.walls).filter((p) => !pointsEqual(p, dragging));
     const snapRadiusWorld = SNAP_RADIUS_PX / viewportStore.viewport.zoom;
     const snapped = findSnapPoint(worldCursor, candidates, snapRadiusWorld) ?? snapToGrid(worldCursor);
-
     if (pointsEqual(snapped, dragging)) return;
     if (wouldCollapseAWall(dragging, snapped)) return;
-
     floorStore.moveSharedPoint(dragging, snapped, { skipHistory: true });
     toolStore.updateDragPoint(snapped);
   }
 
   function handlePointerMove(world: Point): void {
     toolStore.setCursor(world);
-    if (toolStore.state.draggingPoint) {
-      handleDragMove(world);
-    }
-    if (toolStore.state.draggingOpeningHandle) {
-      handleOpeningHandleDrag(world);
-    }
+    if (toolStore.state.draggingPoint) handleDragMove(world);
+    if (toolStore.state.draggingOpeningHandle) handleOpeningHandleDrag(world);
   }
 
   function handleOpeningPlace(worldCursor: Point): void {
     const thresholdWorld = HIT_RADIUS_PX / viewportStore.viewport.zoom;
     const hit = hitTestWall(worldCursor, floorStore.floor.walls, thresholdWorld);
     if (!hit) return;
-
     const { wall, offset } = hit;
     const dx = wall.end.x - wall.start.x;
     const dy = wall.end.y - wall.start.y;
@@ -172,16 +158,11 @@
     const defaultWidth = tool === "door" ? 0.9 : 1.2;
     const width = Math.min(defaultWidth, wallLength - offset);
     if (width < 1e-9) return;
-
     const openingEnd = offset + width;
     if (floorStore.openingOverlaps(wall.id, null, offset, openingEnd)) return;
-
     const opening: Opening = {
       id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36),
-      wallId: wall.id,
-      type: tool as "door" | "window",
-      offset,
-      width,
+      wallId: wall.id, type: tool as "door" | "window", offset, width,
       ...(tool === "door" ? { swing: "left-in" as const } : {}),
     };
     floorStore.addOpening(opening);
@@ -189,44 +170,24 @@
 
   function handlePlacePoint(point: Point): void {
     const tool = toolStore.state.tool;
-    if (tool === "door" || tool === "window") {
-      handleOpeningPlace(point);
-      return;
-    }
+    if (tool === "door" || tool === "window") { handleOpeningPlace(point); return; }
     if (tool === "select") return;
-
     const chain = toolStore.state.drawPoints;
-    if (chain.length === 0) {
-      toolStore.addDrawPoint(point);
-      return;
-    }
-
+    if (chain.length === 0) { toolStore.addDrawPoint(point); return; }
     const { segment, chainEnds } = placePoint(chain, point, tool as WallType, () =>
       crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36),
     );
-    if (segment) {
-      floorStore.addWall(segment);
-      toolStore.addDrawPoint(point);
-    }
-    if (chainEnds) {
-      toolStore.resetDraw();
-    }
+    if (segment) { floorStore.addWall(segment); toolStore.addDrawPoint(point); }
+    if (chainEnds) toolStore.resetDraw();
   }
 
-  function handleDragStart(point: Point): void {
-    floorStore.saveSnapshot();
-    toolStore.startDrag(point);
-  }
-
-  function handleDragEnd(): void {
-    toolStore.endDrag();
-  }
+  function handleDragStart(point: Point): void { floorStore.saveSnapshot(); toolStore.startDrag(point); }
+  function handleDragEnd(): void { toolStore.endDrag(); }
 
   const MIN_OPENING_WIDTH = 0.1;
 
   function handleOpeningHandleDragStart(openingId: string, side: "start" | "end"): void {
-    floorStore.saveSnapshot();
-    toolStore.startOpeningDrag(openingId, side);
+    floorStore.saveSnapshot(); toolStore.startOpeningDrag(openingId, side);
   }
 
   function handleOpeningHandleDrag(worldCursor: Point): void {
@@ -236,18 +197,14 @@
     if (!opening) return;
     const wall = floorStore.floor.walls.find((w) => w.id === opening.wallId);
     if (!wall) return;
-
     const dx = wall.end.x - wall.start.x;
     const dy = wall.end.y - wall.start.y;
     const len = Math.hypot(dx, dy);
     if (len < 1e-9) return;
-    const dirX = dx / len;
-    const dirY = dy / len;
-    const cx = worldCursor.x - wall.start.x;
-    const cy = worldCursor.y - wall.start.y;
+    const dirX = dx / len, dirY = dy / len;
+    const cx = worldCursor.x - wall.start.x, cy = worldCursor.y - wall.start.y;
     const raw = Math.max(0, Math.min(len, cx * dirX + cy * dirY));
     const snapped = Math.max(0, Math.min(len, Math.round(raw / 0.1) * 0.1));
-
     if (drag.side === "end") {
       const newWidth = snapped - opening.offset;
       if (newWidth < MIN_OPENING_WIDTH) return;
@@ -255,52 +212,27 @@
       floorStore.updateOpening(opening.id, { width: newWidth }, { skipHistory: true });
     } else {
       const currentEnd = opening.offset + opening.width;
-      const newOffset = snapped;
-      const newWidth = currentEnd - newOffset;
+      const newOffset = snapped, newWidth = currentEnd - newOffset;
       if (newWidth < MIN_OPENING_WIDTH) return;
       if (floorStore.openingOverlaps(wall.id, opening.id, newOffset, currentEnd)) return;
       floorStore.updateOpening(opening.id, { offset: newOffset, width: newWidth }, { skipHistory: true });
     }
   }
 
-  function handlePan(dx: number, dy: number): void {
-    viewportStore.pan(dx, dy);
-  }
-
-  function handleZoom(screen: Point, factor: number): void {
-    viewportStore.zoomAt(screen, factor);
-  }
+  function handlePan(dx: number, dy: number): void { viewportStore.pan(dx, dy); }
+  function handleZoom(screen: Point, factor: number): void { viewportStore.zoomAt(screen, factor); }
 
   function handleKeydown(event: KeyboardEvent): void {
-    if (event.code === "Space") {
-      event.preventDefault();
-      spacePressed = true;
-      return;
-    }
-    if (event.ctrlKey && event.key === "z" && !event.shiftKey) {
-      event.preventDefault();
-      handleUndo();
-      return;
-    }
-    if (event.ctrlKey && (event.key === "y" || (event.key === "z" && event.shiftKey))) {
-      event.preventDefault();
-      handleRedo();
-      return;
-    }
-    if (event.key === "Escape") {
-      toolStore.resetDraw();
-      return;
-    }
+    if (event.code === "Space") { event.preventDefault(); spacePressed = true; return; }
+    if (event.ctrlKey && event.key === "z" && !event.shiftKey) { event.preventDefault(); handleUndo(); return; }
+    if (event.ctrlKey && (event.key === "y" || (event.key === "z" && event.shiftKey))) { event.preventDefault(); handleRedo(); return; }
+    if (event.key === "Escape") { toolStore.resetDraw(); return; }
     if ((event.key === "Delete" || event.key === "Backspace") &&
-        (toolStore.state.selectedId || toolStore.state.selectedOpeningId)) {
-      handleDelete();
-    }
+        (toolStore.state.selectedId || toolStore.state.selectedOpeningId)) handleDelete();
   }
 
   function handleKeyup(event: KeyboardEvent): void {
-    if (event.code === "Space") {
-      spacePressed = false;
-    }
+    if (event.code === "Space") spacePressed = false;
   }
 
   function pointInPolygon(p: { x: number; y: number }, polygon: Array<{ x: number; y: number }>): boolean {
@@ -308,9 +240,7 @@
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
       const xi = polygon[i].x, yi = polygon[i].y;
       const xj = polygon[j].x, yj = polygon[j].y;
-      if ((yi > p.y) !== (yj > p.y) && p.x < (xj - xi) * (p.y - yi) / (yj - yi) + xi) {
-        inside = !inside;
-      }
+      if ((yi > p.y) !== (yj > p.y) && p.x < (xj - xi) * (p.y - yi) / (yj - yi) + xi) inside = !inside;
     }
     return inside;
   }
@@ -325,27 +255,17 @@
     draggingChoreId = null;
     if (!choreId) return;
     e.preventDefault();
-
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const screenX = e.clientX - rect.left;
-    const screenY = e.clientY - rect.top;
+    const screenX = e.clientX - rect.left, screenY = e.clientY - rect.top;
     const worldX = (screenX - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
     const worldY = (screenY - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
-
     const room = floorStore.floor.rooms.find((r) => {
       if (!r.polygon) return false;
       return pointInPolygon({ x: worldX, y: worldY }, r.polygon);
     });
-
     if (!room) return;
-
     const chore = choreStore.chores.find((c) => c.id === choreId);
-    choreStore.createAssignment({
-      choreId,
-      roomId: room.id,
-      position: { x: worldX, y: worldY },
-      nextDueDate: chore?.nextDueDate ?? "",
-    });
+    choreStore.createAssignment({ choreId, roomId: room.id, position: { x: worldX, y: worldY }, nextDueDate: chore?.nextDueDate ?? "" });
   }
 </script>
 
@@ -356,222 +276,239 @@
   onmouseup={handleDragEnd}
 />
 
-{#if currentRoute === "#/chores"}
-  <ChoresPage store={choreStore} onback={() => { window.location.hash = "#/"; }} floorStore={floorStore} />
-{:else}
 <div class="app">
   <header class="topbar">
-    <h1>Floor Plan Editor</h1>
-    <FloorSwitcher
-      floors={floorStore.floors}
-      currentFloorId={floorStore.currentFloorId}
-      onswitchfloor={(id) => { floorStore.switchFloor(id); toolStore.select(null); toolStore.selectRoom(null); toolStore.selectOpening(null); }}
-      onaddfloor={(name) => floorStore.addFloor(name)}
-      onrenamefloor={(id, name) => floorStore.renameFloor(id, name)}
-      onremovefloor={(id) => floorStore.removeFloor(id)}
-    />
-    <div class="topbar-actions">
+    <button
+      class="hamburger"
+      onclick={() => { navExpanded = !navExpanded; }}
+      title={navExpanded ? "Close menu" : "Open menu"}
+    >{navExpanded ? "✕" : "☰"}</button>
+
+    <span class="app-title">myhome</span>
+
+    {#if isFloorPlan}
+      <FloorSwitcher
+        floors={floorStore.floors}
+        currentFloorId={floorStore.currentFloorId}
+        onswitchfloor={(id) => { floorStore.switchFloor(id); toolStore.select(null); toolStore.selectRoom(null); toolStore.selectOpening(null); }}
+        onaddfloor={(name) => floorStore.addFloor(name)}
+        onrenamefloor={(id, name) => floorStore.renameFloor(id, name)}
+        onremovefloor={(id) => floorStore.removeFloor(id)}
+      />
+
+      <span class="spacer"></span>
+
+      {#if !choreMode}
+        <div class="toolbar">
+          <button title="Undo (Ctrl+Z)" disabled={!floorStore.hasUndo} onclick={handleUndo}>↩</button>
+          <button title="Redo (Ctrl+Y)" disabled={!floorStore.hasRedo} onclick={handleRedo}>↪</button>
+          <span class="sep"></span>
+          <button title="Select" class:active={toolStore.state.tool === "select"} onclick={() => toolStore.setTool("select")}>🖱</button>
+          <button title="Wall" class:active={toolStore.state.tool === "wall"} onclick={() => toolStore.setTool("wall")}>🧱</button>
+          <button title="Divider" class:active={toolStore.state.tool === "divider"} onclick={() => toolStore.setTool("divider")}>╌</button>
+          <button title="Door" class:active={toolStore.state.tool === "door"} onclick={() => toolStore.setTool("door")}>🚪</button>
+          <button title="Window" class:active={toolStore.state.tool === "window"} onclick={() => toolStore.setTool("window")}>🪟</button>
+          <span class="sep"></span>
+          <button title="Delete selected (Del)" class="delete" disabled={!hasSelection} onclick={handleDelete}>🗑</button>
+        </div>
+      {/if}
+
+      <span class="topbar-sep"></span>
+
       <button
-        class="chore-btn"
-        class:chore-active={choreMode}
-        onclick={() => { choreMode = !choreMode; if (choreMode) { toolStore.setTool("select"); } else { selectedBadge = null; } }}
-      >Chores</button>
-      <a href="#/chores" class="chore-manage-btn" title="Manage chores">⚙</a>
+        class="icon-btn"
+        class:active={choreMode}
+        title="Chore picker"
+        onclick={() => { choreMode = !choreMode; if (choreMode) toolStore.setTool("select"); else selectedBadge = null; }}
+      >📋</button>
       <button
-        class="save-btn"
+        class="icon-btn save-btn"
         class:saved={saveStatus === "saved"}
         class:save-error={saveStatus === "error"}
         disabled={saveStatus === "saving"}
+        title={saveTitle}
         onclick={handleSave}
-      >
-        {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved ✓" : saveStatus === "error" ? "Error!" : "Save"}
-      </button>
-      <button class="reset-view" onclick={() => viewportStore.reset()}>Reset View</button>
-    </div>
-  </header>
-  <div class="body" bind:clientWidth={canvasWidth} bind:clientHeight={canvasHeight} ondragover={handleDragOver} ondrop={handleDrop}>
-    {#if !floorStore.loaded}
-      <div class="loading">Loading…</div>
-    {:else}
-      {#if !choreMode}
-        <Toolbar
-          tool={toolStore.state.tool}
-          hasSelection={toolStore.state.selectedId !== null || toolStore.state.selectedOpeningId !== null}
-          hasUndo={floorStore.hasUndo}
-          hasRedo={floorStore.hasRedo}
-          onselecttool={(tool) => toolStore.setTool(tool)}
-          ondelete={handleDelete}
-          onundo={handleUndo}
-          onredo={handleRedo}
-        />
-      {/if}
-      <Canvas
-        floor={floorStore.floor}
-        viewport={viewportStore.viewport}
-        width={canvasWidth}
-        height={canvasHeight}
-        selectedId={toolStore.state.selectedId}
-        selectedOpeningId={toolStore.state.selectedOpeningId}
-        selectedRoomId={toolStore.state.selectedRoomId}
-        onselect={handleSelect}
-        onselectopening={handleSelectOpening}
-        onselectroom={handleSelectRoom}
-        tool={toolStore.state.tool}
-        drawPoints={toolStore.state.drawPoints}
-        cursorWorld={toolStore.state.cursorWorld}
-        {spacePressed}
-        onpointermove={handlePointerMove}
-        onplacepoint={handlePlacePoint}
-        ondblclick={() => toolStore.resetDraw()}
-        ondragstart={handleDragStart}
-        ondragend={handleDragEnd}
-        ondragopeninghandlestart={handleOpeningHandleDragStart}
-        onpan={handlePan}
-        onzoom={handleZoom}
-      />
-      {#if selectedRoom}
-        <RoomPanel
-          room={selectedRoom}
-          {haAreas}
-          onupdate={(patch) => floorStore.updateRoom(selectedRoom.id, patch)}
-        />
-      {/if}
-      <ChoreOverlay
-        chores={choreStore.chores}
-        assignments={currentFloorAssignments}
-        viewport={viewportStore.viewport}
-        {choreMode}
-        width={canvasWidth}
-        height={canvasHeight}
-        onclick={(id) => handleBadgeClick(id)}
-        ondragend={handleBadgeDragEnd}
-      />
-      {#if choreMode}
-        <ChorePanel
-          store={choreStore}
-          {draggingChoreId}
-          onDragStart={(id) => { draggingChoreId = id; }}
-          onDragEnd={() => { draggingChoreId = null; }}
-        />
-      {/if}
-      {#if selectedBadge}
-        {@const badge = selectedBadge}
-        {#if badge}
-          {@const chore = choreStore.chores.find((c) => c.id === badge.assignment.choreId)}
-          {#if chore}
-            <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-            <div style="position:absolute;inset:0;z-index:50" onclick={() => { selectedBadge = null; }}>
-              <BadgePopup
-                {chore}
-                assignment={badge.assignment}
-                screenX={badge.screenX}
-                screenY={badge.screenY}
-                oncomplete={async () => { await choreStore.completeAssignment(badge.assignment.id); selectedBadge = null; }}
-                oncompleteall={async () => { await choreStore.completeChore(chore.id); selectedBadge = null; }}
-                onremove={async () => { await choreStore.deleteAssignment(badge.assignment.id); selectedBadge = null; }}
-                onclose={() => { selectedBadge = null; }}
-              />
-            </div>
-          {/if}
-        {/if}
-      {/if}
+      >{saveIcon}</button>
+      <button class="icon-btn" title="Reset view" onclick={() => viewportStore.reset()}>↺</button>
     {/if}
+  </header>
+
+  <div class="workspace">
+    <NavMenu {currentRoute} expanded={navExpanded} onclose={() => { navExpanded = false; }} />
+
+    <div class="content">
+      {#if isFloorPlan}
+        <div class="canvas-area" bind:clientWidth={canvasWidth} bind:clientHeight={canvasHeight} ondragover={handleDragOver} ondrop={handleDrop}>
+          {#if !floorStore.loaded}
+            <div class="loading">Loading…</div>
+          {:else}
+            <Canvas
+              floor={floorStore.floor}
+              viewport={viewportStore.viewport}
+              width={canvasWidth}
+              height={canvasHeight}
+              selectedId={toolStore.state.selectedId}
+              selectedOpeningId={toolStore.state.selectedOpeningId}
+              selectedRoomId={toolStore.state.selectedRoomId}
+              onselect={handleSelect}
+              onselectopening={handleSelectOpening}
+              onselectroom={handleSelectRoom}
+              tool={toolStore.state.tool}
+              drawPoints={toolStore.state.drawPoints}
+              cursorWorld={toolStore.state.cursorWorld}
+              {spacePressed}
+              onpointermove={handlePointerMove}
+              onplacepoint={handlePlacePoint}
+              ondblclick={() => toolStore.resetDraw()}
+              ondragstart={handleDragStart}
+              ondragend={handleDragEnd}
+              ondragopeninghandlestart={handleOpeningHandleDragStart}
+              onpan={handlePan}
+              onzoom={handleZoom}
+            />
+            {#if selectedRoom}
+              <RoomPanel
+                room={selectedRoom}
+                {haAreas}
+                onupdate={(patch) => floorStore.updateRoom(selectedRoom.id, patch)}
+              />
+            {/if}
+            <ChoreOverlay
+              chores={choreStore.chores}
+              assignments={currentFloorAssignments}
+              viewport={viewportStore.viewport}
+              {choreMode}
+              width={canvasWidth}
+              height={canvasHeight}
+              onclick={(id) => handleBadgeClick(id)}
+              ondragend={handleBadgeDragEnd}
+            />
+            {#if choreMode}
+              <ChorePanel
+                store={choreStore}
+                {draggingChoreId}
+                onDragStart={(id) => { draggingChoreId = id; }}
+                onDragEnd={() => { draggingChoreId = null; }}
+              />
+            {/if}
+            {#if selectedBadge}
+              {@const badge = selectedBadge}
+              {#if badge}
+                {@const chore = choreStore.chores.find((c) => c.id === badge.assignment.choreId)}
+                {#if chore}
+                  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+                  <div style="position:absolute;inset:0;z-index:50" onclick={() => { selectedBadge = null; }}>
+                    <BadgePopup
+                      {chore}
+                      assignment={badge.assignment}
+                      screenX={badge.screenX}
+                      screenY={badge.screenY}
+                      oncomplete={async () => { await choreStore.completeAssignment(badge.assignment.id); selectedBadge = null; }}
+                      oncompleteall={async () => { await choreStore.completeChore(chore.id); selectedBadge = null; }}
+                      onremove={async () => { await choreStore.deleteAssignment(badge.assignment.id); selectedBadge = null; }}
+                      onclose={() => { selectedBadge = null; }}
+                    />
+                  </div>
+                {/if}
+              {/if}
+            {/if}
+          {/if}
+        </div>
+
+      {:else if currentRoute === "#/chores"}
+        <ChoresPage store={choreStore} {floorStore} />
+
+      {:else if currentRoute === "#/chores/list"}
+        <ChoreListPage store={choreStore} {floorStore} />
+      {/if}
+    </div>
   </div>
 </div>
-{/if}
 
 <style>
+  :global(body) { margin: 0; padding: 0; overflow: hidden; }
+
   .app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    font-family: sans-serif;
+    display: flex; flex-direction: column;
+    height: 100vh; font-family: sans-serif;
+    background: #1a1a2e;
   }
+
   .topbar {
-    height: 32px;
-    background: #2a2a2a;
-    color: #ccc;
-    display: flex;
-    align-items: center;
-    padding: 0 12px;
+    height: 36px;
+    background: #1e1e2e; color: #ccc;
+    display: flex; align-items: center;
+    padding: 0 8px; gap: 8px;
     flex-shrink: 0;
-    justify-content: space-between;
+    border-bottom: 1px solid #2a2a3a;
   }
-  .topbar h1 {
-    font-size: 14px;
-    margin: 0;
-    font-weight: 600;
+
+  .hamburger {
+    width: 32px; height: 32px; flex-shrink: 0;
+    border: none; background: transparent; color: #999;
+    font-size: 16px; cursor: pointer; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
   }
-  .reset-view {
-    padding: 4px 10px;
-    border: none;
-    border-radius: 4px;
-    background: #444;
-    color: #ccc;
-    cursor: pointer;
+  .hamburger:hover { background: #2a2a4a; color: #eee; }
+
+  .app-title {
+    font-size: 14px; font-weight: 600; color: #eee;
+    margin-right: 8px; flex-shrink: 0;
+  }
+
+  .topbar-sep {
+    width: 1px; height: 18px; background: #333; flex-shrink: 0; margin: 0 4px;
+  }
+  .spacer { flex: 1; }
+
+  .toolbar {
+    display: flex; align-items: center; gap: 2px; flex-shrink: 0;
+  }
+  .toolbar .sep {
+    width: 1px; height: 16px; background: #333; margin: 0 3px; flex-shrink: 0;
+  }
+  .toolbar button {
+    width: 28px; height: 28px;
+    border: none; border-radius: 4px; background: transparent;
+    color: #999; cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .toolbar button:hover:not(:disabled) { background: #2a2a4a; color: #eee; }
+  .toolbar button.active { background: #2a2a5a; color: #aaf; }
+  .toolbar button.delete { color: #c66; }
+  .toolbar button.delete:hover:not(:disabled) { background: #422; color: #f88; }
+  .toolbar button:disabled { opacity: 0.35; cursor: default; }
+
+  .icon-btn {
+    width: 30px; height: 30px;
+    border: none; border-radius: 4px; background: transparent;
+    color: #999; cursor: pointer; font-size: 15px;
+    display: flex; align-items: center; justify-content: center; padding: 0;
     flex-shrink: 0;
   }
-  .topbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
+  .icon-btn:hover:not(:disabled) { background: #2a2a4a; color: #eee; }
+  .icon-btn.active { background: #2a2a5a; color: #aaf; }
+  .icon-btn.save-btn { color: #4c9; }
+  .icon-btn.save-btn:hover:not(:disabled) { background: #1a3a2a; color: #6eb; }
+  .icon-btn.save-btn.saved { color: #2a6; }
+  .icon-btn.save-btn.save-error { color: #f44; }
+  .icon-btn:disabled { opacity: 0.5; cursor: default; }
+
+  .workspace {
+    display: flex; flex: 1; overflow: hidden;
   }
-  .save-btn {
-    padding: 4px 10px;
-    border: none;
-    border-radius: 4px;
-    background: #2a6;
-    color: #fff;
-    cursor: pointer;
-    font-size: 12px;
+
+  .content {
+    display: flex; flex-direction: column;
+    flex: 1; overflow: hidden; position: relative;
   }
-  .save-btn:disabled {
-    opacity: 0.6;
-    cursor: default;
+
+  .canvas-area {
+    flex: 1; overflow: hidden; position: relative;
   }
-  .save-btn.saved {
-    background: #175;
-  }
-  .save-btn.save-error {
-    background: #a33;
-  }
+
   .loading {
-    display: flex;
-    flex: 1;
-    align-items: center;
-    justify-content: center;
-    color: #888;
-    font-size: 14px;
-  }
-  .body {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-  }
-  .chore-btn {
-    padding: 4px 10px;
-    border: none;
-    border-radius: 4px;
-    background: #444;
-    color: #ccc;
-    cursor: pointer;
-    font-size: 12px;
-  }
-  .chore-btn.chore-active {
-    background: #446;
-    color: #ccf;
-  }
-  .chore-manage-btn {
-    padding: 4px 8px;
-    border-radius: 4px;
-    background: #444;
-    color: #ccc;
-    text-decoration: none;
-    font-size: 12px;
-  }
-  .chore-manage-btn:hover {
-    background: #555;
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; color: #888; font-size: 14px;
   }
 </style>

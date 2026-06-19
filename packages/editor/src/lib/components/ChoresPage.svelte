@@ -6,11 +6,10 @@
 
   interface Props {
     store: ChoreStore;
-    onback: () => void;
     floorStore: { floors: Array<{ id: string; name: string; rooms: Array<{ id: string; label: string }> }> };
   }
 
-  let { store, onback, floorStore }: Props = $props();
+  let { store, floorStore }: Props = $props();
 
   function getRoomName(roomId: string): string {
     for (const floor of floorStore.floors) {
@@ -90,7 +89,6 @@
 
 <div class="page">
   <header class="page-header">
-    <button class="back-btn" onclick={onback}>← Floor Plan</button>
     <h1>Chore Management</h1>
     {#if !showImportInput}
       <button onclick={() => { showImportInput = true; }}>Import from Donetick</button>
@@ -167,7 +165,7 @@
 </div>
 
 <style>
-  .page { display: flex; flex-direction: column; height: 100vh; background: #1a1a2e; color: #ccc; font-family: sans-serif; }
+  .page { display: flex; flex-direction: column; height: 100%; background: #1a1a2e; color: #ccc; font-family: sans-serif; }
 
   .page-header {
     display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap;
@@ -175,13 +173,7 @@
   }
   .page-header h1 { font-size: 16px; margin: 0; flex: 1; min-width: 120px; }
 
-  .back-btn {
-    padding: 6px 12px; border: none; border-radius: 4px;
-    background: #3a3a5a; color: #ccc; cursor: pointer; font-size: 13px;
-    min-height: 36px; white-space: nowrap;
-  }
-
-  .chore-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.chore-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
 
   .chore-card { background: #252535; border: 1px solid #333; border-radius: 6px; padding: 12px; }
 

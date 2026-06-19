@@ -26,6 +26,13 @@ function stubFetch404() {
   stubFetch();
 }
 
+/** Find a toolbar button by its title attribute */
+function toolbarBtn(target: HTMLElement, title: string): HTMLButtonElement {
+  return Array.from(target.querySelectorAll(".toolbar button")).find(
+    (b) => (b as HTMLButtonElement).title === title,
+  ) as HTMLButtonElement;
+}
+
 /** Mount the app and wait for the houseStore async init to complete so the
  *  loaded guard resolves and Toolbar/Canvas are in the DOM. */
 async function mountAndLoad(target: HTMLElement): Promise<ReturnType<typeof mount>> {
@@ -59,16 +66,16 @@ describe("App", () => {
 
     app = await mountAndLoad(target);
 
-    expect(target.querySelector(".topbar h1")?.textContent).toBe("Floor Plan Editor");
+    expect(target.querySelector(".app-title")?.textContent).toBe("myhome");
 
     const buttons = Array.from(target.querySelectorAll(".toolbar button"));
-    const labels = buttons.map((b) => b.textContent?.trim());
-    expect(labels).toEqual(["Undo", "Redo", "Select", "Wall", "Divider", "Door", "Window", "Delete"]);
+    const titles = buttons.map((b) => (b as HTMLButtonElement).title);
+    expect(titles).toEqual(["Undo (Ctrl+Z)", "Redo (Ctrl+Y)", "Select", "Wall", "Divider", "Door", "Window", "Delete selected (Del)"]);
 
-    const selectBtn = buttons.find((b) => b.textContent?.trim() === "Select")!;
+    const selectBtn = toolbarBtn(target, "Select");
     expect(selectBtn.className).toContain("active");
 
-    const deleteBtn = buttons.find((b) => b.textContent?.trim() === "Delete")! as HTMLButtonElement;
+    const deleteBtn = toolbarBtn(target, "Delete selected (Del)") as HTMLButtonElement;
     expect(deleteBtn.disabled).toBe(true);
   });
 
@@ -82,7 +89,7 @@ describe("App", () => {
     wall.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     flushSync();
 
-    const deleteBtn = target.querySelectorAll(".toolbar button")[7] as HTMLButtonElement;
+    const deleteBtn = toolbarBtn(target, "Delete selected (Del)") as HTMLButtonElement;
     expect(deleteBtn.disabled).toBe(false);
 
     const wallsBefore = target.querySelectorAll("polygon.wall").length;
@@ -100,9 +107,7 @@ describe("App", () => {
 
     app = await mountAndLoad(target);
 
-    const wallBtn = Array.from(target.querySelectorAll(".toolbar button")).find(
-      (b) => b.textContent?.trim() === "Wall",
-    ) as HTMLButtonElement;
+    const wallBtn = toolbarBtn(target, "Wall");
     wallBtn.click();
     flushSync();
 
@@ -149,9 +154,7 @@ describe("App", () => {
 
     app = await mountAndLoad(target);
 
-    const wallBtn = Array.from(target.querySelectorAll(".toolbar button")).find(
-      (b) => b.textContent?.trim() === "Wall",
-    ) as HTMLButtonElement;
+    const wallBtn = toolbarBtn(target, "Wall");
     wallBtn.click();
     flushSync();
 
@@ -183,9 +186,7 @@ describe("App", () => {
 
     app = await mountAndLoad(target);
 
-    const wallBtn = Array.from(target.querySelectorAll(".toolbar button")).find(
-      (b) => b.textContent?.trim() === "Wall",
-    ) as HTMLButtonElement;
+    const wallBtn = toolbarBtn(target, "Wall");
     wallBtn.click();
     flushSync();
 
@@ -286,7 +287,7 @@ describe("App", () => {
     expect(wallAfterZoom).not.toBe(wallBefore);
 
     const resetBtn = Array.from(target.querySelectorAll("button")).find(
-      (b) => b.textContent?.trim() === "Reset View",
+      (b) => (b as HTMLButtonElement).title === "Reset view",
     ) as HTMLButtonElement;
     resetBtn.click();
     flushSync();
@@ -366,11 +367,10 @@ describe("App — undo/redo buttons", () => {
     document.body.appendChild(target);
     const app = await mountAndLoad(target);
 
-    const buttons = target.querySelectorAll(".toolbar button");
-    const undoBtn = buttons[0] as HTMLButtonElement;
-    const redoBtn = buttons[1] as HTMLButtonElement;
-    expect(undoBtn.textContent?.trim()).toBe("Undo");
-    expect(redoBtn.textContent?.trim()).toBe("Redo");
+    const undoBtn = toolbarBtn(target, "Undo (Ctrl+Z)") as HTMLButtonElement;
+    const redoBtn = toolbarBtn(target, "Redo (Ctrl+Y)") as HTMLButtonElement;
+    expect(undoBtn).not.toBeNull();
+    expect(redoBtn).not.toBeNull();
     expect(undoBtn.disabled).toBe(true);
     expect(redoBtn.disabled).toBe(true);
 
