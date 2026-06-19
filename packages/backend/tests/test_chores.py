@@ -108,6 +108,8 @@ def test_complete_chore_advances_next_due(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     save_chores(make_chore_doc())
     c = TestClient(app)
+    # Create an assignment so we can verify it also advances
+    aid = c.post("/api/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
     resp = c.post("/api/chores/c1/complete")
     assert resp.status_code == 200
     data = resp.json()
@@ -116,6 +118,11 @@ def test_complete_chore_advances_next_due(tmp_path, monkeypatch):
     now = datetime.now(timezone.utc)
     expected = now + timedelta(days=14)
     assert abs((new_due - expected).total_seconds()) < 5
+    # All assignments should also have their nextDueDate advanced
+    assignments = c.get("/api/chores").json()["assignments"]
+    a = next(a for a in assignments if a["id"] == aid)
+    a_due = datetime.fromisoformat(a["nextDueDate"].replace("Z", "+00:00"))
+    assert abs((a_due - expected).total_seconds()) < 5
 
 
 def test_complete_chore_404(client):
@@ -136,6 +143,22 @@ def test_create_assignment(tmp_path, monkeypatch):
     assert data["roomId"] == "r1"
     assert data["position"]["x"] == 3.0
     assert "id" in data
+    # nextDueDate should be inherited from the chore template
+    assert data["nextDueDate"] == "2027-06-01T00:00:00Z"
+
+
+def test_assignment_inherits_next_due_from_chore(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    save_chores(make_chore_doc())
+    c = TestClient(app)
+    # Create assignment without explicit nextDueDate
+    resp = c.post("/api/assignments", json={"choreId": "c1", "roomId": "r2"})
+    assert resp.status_code == 201
+    assert resp.json()["nextDueDate"] == "2027-06-01T00:00:00Z"
+    # Create assignment with explicit nextDueDate overrides chore template
+    resp2 = c.post("/api/assignments", json={"choreId": "c1", "roomId": "r3", "nextDueDate": "2028-01-01T00:00:00Z"})
+    assert resp2.status_code == 201
+    assert resp2.json()["nextDueDate"] == "2028-01-01T00:00:00Z"
 
 
 def test_create_assignment_house_level(tmp_path, monkeypatch):
@@ -183,6 +206,44 @@ def test_delete_chore_cascades_assignments(tmp_path, monkeypatch):
     c.post("/api/assignments", json={"choreId": "c1", "roomId": "r1"})
     c.delete("/api/chores/c1")
     assert c.get("/api/chores").json()["assignments"] == []
+
+
+# --- POST /api/assignments/{id}/complete ---
+
+def test_complete_assignment(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    save_chores(make_chore_doc())
+    c = TestClient(app)
+    aid = c.post("/api/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    resp = c.post(f"/api/assignments/{aid}/complete")
+    assert resp.status_code == 200
+    data = resp.json()
+    from datetime import datetime, timezone, timedelta
+    new_due = datetime.fromisoformat(data["nextDueDate"].replace("Z", "+00:00"))
+    now = datetime.now(timezone.utc)
+    expected = now + timedelta(days=14)
+    assert abs((new_due - expected).total_seconds()) < 5
+
+
+def test_complete_assignment_404(client):
+    resp = client.post("/api/assignments/nonexistent/complete")
+    assert resp.status_code == 404
+
+
+def test_complete_chore_advances_all_assignments(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    save_chores(make_chore_doc())
+    c = TestClient(app)
+    aid1 = c.post("/api/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    aid2 = c.post("/api/assignments", json={"choreId": "c1", "roomId": "r2"}).json()["id"]
+    c.post("/api/chores/c1/complete")
+    from datetime import datetime, timezone, timedelta
+    assignments = {a["id"]: a for a in c.get("/api/chores").json()["assignments"]}
+    now = datetime.now(timezone.utc)
+    expected = now + timedelta(days=14)
+    for aid in (aid1, aid2):
+        due = datetime.fromisoformat(assignments[aid]["nextDueDate"].replace("Z", "+00:00"))
+        assert abs((due - expected).total_seconds()) < 5
 
 
 # --- POST /api/chores/import (mock Donetick) ---

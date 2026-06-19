@@ -143,7 +143,13 @@ def complete_chore(chore_id: str) -> Chore:
     if chore is None:
         raise HTTPException(status_code=404, detail="Chore not found")
     next_due = datetime.now(timezone.utc) + timedelta(days=chore.periodDays)
-    chore.nextDueDate = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
+    next_due_str = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
+    # Advance all assignments for this chore
+    for a in doc.assignments:
+        if a.choreId == chore_id:
+            a.nextDueDate = next_due_str
+    # Also advance the chore template date
+    chore.nextDueDate = next_due_str
     save_chores(doc)
     return chore
 
@@ -153,10 +159,33 @@ def complete_chore(chore_id: str) -> Chore:
 @router.post("/api/assignments", response_model=Assignment, status_code=201)
 def create_assignment(body: AssignmentCreate) -> Assignment:
     doc = load_chores()
-    if not any(c.id == body.choreId for c in doc.chores):
+    chore = next((c for c in doc.chores if c.id == body.choreId), None)
+    if chore is None:
         raise HTTPException(status_code=404, detail="Chore not found")
-    assignment = Assignment(id=str(uuid.uuid4()), **body.model_dump())
+    next_due = body.nextDueDate or chore.nextDueDate
+    assignment = Assignment(
+        id=str(uuid.uuid4()),
+        choreId=body.choreId,
+        roomId=body.roomId,
+        position=body.position,
+        nextDueDate=next_due,
+    )
     doc.assignments.append(assignment)
+    save_chores(doc)
+    return assignment
+
+
+@router.post("/api/assignments/{assignment_id}/complete", response_model=Assignment)
+def complete_assignment(assignment_id: str) -> Assignment:
+    doc = load_chores()
+    assignment = next((a for a in doc.assignments if a.id == assignment_id), None)
+    if assignment is None:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+    chore = next((c for c in doc.chores if c.id == assignment.choreId), None)
+    if chore is None:
+        raise HTTPException(status_code=404, detail="Chore not found")
+    next_due = datetime.now(timezone.utc) + timedelta(days=chore.periodDays)
+    assignment.nextDueDate = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
     save_chores(doc)
     return assignment
 

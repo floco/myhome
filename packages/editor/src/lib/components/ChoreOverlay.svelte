@@ -22,9 +22,9 @@
     return chores.find((c) => c.id === choreId);
   }
 
-  function getProgress(chore: Chore): number {
+  function getProgress(assignment: Assignment, chore: Chore): number {
     const now = Date.now();
-    const due = new Date(chore.nextDueDate).getTime();
+    const due = new Date(assignment.nextDueDate).getTime();
     const periodMs = chore.periodDays * 86400 * 1000;
     return Math.max(0, Math.min(1, (due - now) / periodMs));
   }
@@ -87,23 +87,24 @@
   );
 </script>
 
+<svelte:window onpointermove={handlePointerMove} />
+
 <svg
   {width}
   {height}
-  style="position:absolute;top:0;left:0;pointer-events:{choreMode ? 'all' : 'none'};overflow:visible"
-  onpointermove={handlePointerMove}
+  style="position:absolute;top:0;left:0;pointer-events:none;overflow:visible"
 >
   {#each roomAssignments as a (a.id)}
     {@const chore = findChore(a.choreId)}
     {#if chore}
       {@const sp = badgeScreen(a)}
       {#if sp}
-        {@const pct = getProgress(chore)}
+        {@const pct = getProgress(a, chore)}
         {@const color = getColor(pct)}
         {@const dashFill = pct * C}
         <g
           transform="translate({sp.x},{sp.y})"
-          style="cursor:{choreMode ? (dragId === a.id ? 'grabbing' : 'grab') : 'default'}"
+          style="pointer-events:{choreMode ? 'all' : 'none'};cursor:{choreMode ? (dragId === a.id ? 'grabbing' : 'grab') : 'default'}"
           onpointerdown={(e) => handlePointerDown(e, a)}
           onpointerup={(e) => handlePointerUp(e, a)}
         >
