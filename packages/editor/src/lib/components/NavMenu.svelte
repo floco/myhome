@@ -15,7 +15,11 @@
 <nav class="nav" class:expanded>
   <div class="nav-body">
     <div class="nav-section">
-      <span class="section-label">Chores</span>
+      <div class="section-header" title="Chores">
+        <span class="section-icon">📋</span>
+        <span class="section-title">Chores</span>
+      </div>
+      <div class="section-divider"></div>
       <a href="#/" class="nav-item" class:active={currentRoute === "#/" || currentRoute === ""} title="Floor Plan" onclick={onclose}>
         <span class="nav-icon">⊞</span>
         <span class="nav-label">Floor Plan</span>
@@ -48,20 +52,27 @@
   }
   .nav.expanded { width: 180px; }
 
-  .nav-body { flex: 1; display: flex; flex-direction: column; padding-top: 6px; min-width: 180px; }
+  .nav-body { flex: 1; display: flex; flex-direction: column; min-width: 180px; }
 
   .nav-section { display: flex; flex-direction: column; }
 
-  .section-label {
-    font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
-    color: #454560; padding: 6px 14px 6px;
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    height: 40px; padding: 0 12px;
     white-space: nowrap;
   }
+  .section-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; line-height: 1; }
+  .section-title {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: #556; font-weight: 600;
+  }
+
+  .section-divider { height: 1px; background: #1e1e38; margin: 0; }
 
   .nav-item {
-    display: flex; align-items: center; gap: 12px;
+    display: flex; align-items: center; gap: 10px;
     height: 40px; padding: 0 12px;
-    color: #888; text-decoration: none; white-space: nowrap;
+    color: #777; text-decoration: none; white-space: nowrap;
     border-left: 2px solid transparent;
   }
   .nav-item:hover { background: #1e1e3a; color: #ccc; }
