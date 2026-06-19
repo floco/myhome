@@ -59,7 +59,7 @@
     toolStore.state.selectedId !== null || toolStore.state.selectedOpeningId !== null
   );
   const saveIcon = $derived(
-    saveStatus === "saving" ? "⋯" : saveStatus === "saved" ? "✓" : saveStatus === "error" ? "⚠" : "⬆"
+    saveStatus === "saving" ? "⋯" : saveStatus === "saved" ? "✓" : saveStatus === "error" ? "⚠" : "💾"
   );
   const saveTitle = $derived(
     saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : saveStatus === "error" ? "Save error!" : "Save"
@@ -296,8 +296,9 @@
         onremovefloor={(id) => floorStore.removeFloor(id)}
       />
 
+      <span class="spacer"></span>
+
       {#if !choreMode}
-        <span class="topbar-sep"></span>
         <div class="toolbar">
           <button title="Undo (Ctrl+Z)" disabled={!floorStore.hasUndo} onclick={handleUndo}>↩</button>
           <button title="Redo (Ctrl+Y)" disabled={!floorStore.hasRedo} onclick={handleRedo}>↪</button>
@@ -312,12 +313,12 @@
         </div>
       {/if}
 
-      <span class="spacer"></span>
+      <span class="topbar-sep"></span>
 
       <button
         class="icon-btn"
         class:active={choreMode}
-        title="Chore mode"
+        title="Chore picker"
         onclick={() => { choreMode = !choreMode; if (choreMode) toolStore.setTool("select"); else selectedBadge = null; }}
       >☑</button>
       <button
