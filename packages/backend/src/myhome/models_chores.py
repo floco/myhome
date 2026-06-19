@@ -12,8 +12,11 @@ class Chore(BaseModel):
     donetickId: int | None = None
     name: str
     emoji: str
-    periodDays: float
-    nextDueDate: str   # ISO 8601
+    periodDays: float           # approximate period for progress bar
+    frequencyType: str = "interval"
+    frequency: int = 1
+    frequencyMetadata: dict = {}
+    nextDueDate: str            # ISO 8601
     description: str = ""
 
 
@@ -38,6 +41,9 @@ class ChoreCreate(BaseModel):
     nextDueDate: str
     description: str = ""
     donetickId: int | None = None
+    frequencyType: str = "interval"
+    frequency: int = 0          # 0 = derive from periodDays
+    frequencyMetadata: dict = {}
 
 
 class ChoreUpdate(BaseModel):
@@ -46,6 +52,9 @@ class ChoreUpdate(BaseModel):
     periodDays: float | None = None
     nextDueDate: str | None = None
     description: str | None = None
+    frequencyType: str | None = None
+    frequency: int | None = None
+    frequencyMetadata: dict | None = None
 
 
 class AssignmentCreate(BaseModel):

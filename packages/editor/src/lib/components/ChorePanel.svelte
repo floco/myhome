@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { createChoreStore, Chore } from "../choreStore.svelte";
+  import { scheduleLabel } from "../choreStore.svelte";
 
   type ChoreStore = ReturnType<typeof createChoreStore>;
 
@@ -65,7 +66,7 @@
         </svg>
         <div class="chore-info">
           <span class="chore-name">{displayName(chore)}</span>
-          <span class="chore-sub">{chore.periodDays}d period</span>
+          <span class="chore-sub">{scheduleLabel(chore)}</span>
         </div>
         <button
           class="house-btn"

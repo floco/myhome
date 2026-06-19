@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { createChoreStore } from "../choreStore.svelte";
   import type { Chore } from "../choreStore.svelte";
+  import { scheduleLabel } from "../choreStore.svelte";
 
   type ChoreStore = ReturnType<typeof createChoreStore>;
 
@@ -121,7 +122,7 @@
           <div class="chore-header">
             <span class="chore-emoji">{chore.emoji}</span>
             <span class="chore-name">{displayName(chore)}</span>
-            <span class="chore-period">{chore.periodDays}d</span>
+            <span class="chore-period">{scheduleLabel(chore)}</span>
             <button onclick={() => store.completeChore(chore.id)}>✓ Mark all done</button>
             <button onclick={() => startEdit(chore)}>✏️</button>
             <button onclick={() => store.deleteChore(chore.id)}>🗑️</button>

@@ -289,9 +289,14 @@ def test_import_from_donetick(tmp_path, monkeypatch):
     assert len(chores) == 2
     window = next(c for c in chores if c["donetickId"] == 42)
     assert window["emoji"] == "🪟"
-    assert window["periodDays"] == 180  # 6 * 30
+    assert window["periodDays"] == 180  # 6 * 30 (approx for progress bar)
+    assert window["frequencyType"] == "interval"
+    assert window["frequency"] == 6
+    assert window["frequencyMetadata"]["unit"] == "months"
     sweep = next(c for c in chores if c["donetickId"] == 43)
     assert sweep["periodDays"] == 14  # 2 * 7
+    assert sweep["frequencyType"] == "weekly"
+    assert sweep["frequency"] == 2
 
 
 def test_import_is_idempotent(tmp_path, monkeypatch):
@@ -315,3 +320,92 @@ def test_import_is_idempotent(tmp_path, monkeypatch):
 
     assert resp.json()["imported"] == 0
     assert len(TestClient(app).get("/api/chores").json()["chores"]) == 1
+
+
+# --- Calendar-aware scheduling ---
+
+def test_complete_chore_monthly_interval(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    doc = ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="Clean windows", emoji="🪟", periodDays=180,
+                frequencyType="interval", frequency=6,
+                frequencyMetadata={"unit": "months"},
+                nextDueDate="2027-01-01T00:00:00Z",
+            )
+        ],
+        assignments=[],
+    )
+    save_chores(doc)
+    c = TestClient(app)
+    resp = c.post("/api/chores/c1/complete")
+    assert resp.status_code == 200
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    new_due = datetime.fromisoformat(resp.json()["nextDueDate"].replace("Z", "+00:00"))
+    diff_days = (new_due - now).days
+    assert 175 <= diff_days <= 186  # 6 calendar months
+
+
+def test_complete_chore_yearly_interval(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    doc = ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="AC service", emoji="❄️", periodDays=730,
+                frequencyType="interval", frequency=2,
+                frequencyMetadata={"unit": "years"},
+                nextDueDate="2027-01-01T00:00:00Z",
+            )
+        ],
+        assignments=[],
+    )
+    save_chores(doc)
+    c = TestClient(app)
+    resp = c.post("/api/chores/c1/complete")
+    assert resp.status_code == 200
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    new_due = datetime.fromisoformat(resp.json()["nextDueDate"].replace("Z", "+00:00"))
+    diff_days = (new_due - now).days
+    assert 728 <= diff_days <= 733  # 2 calendar years
+
+
+def test_complete_chore_weekly_frequency(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    doc = ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="Sweep", emoji="🧹", periodDays=14,
+                frequencyType="weekly", frequency=2,
+                frequencyMetadata={},
+                nextDueDate="2027-01-01T00:00:00Z",
+            )
+        ],
+        assignments=[],
+    )
+    save_chores(doc)
+    c = TestClient(app)
+    resp = c.post("/api/chores/c1/complete")
+    assert resp.status_code == 200
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+    new_due = datetime.fromisoformat(resp.json()["nextDueDate"].replace("Z", "+00:00"))
+    expected = now + timedelta(weeks=2)
+    assert abs((new_due - expected).total_seconds()) < 5
+
+
+def test_create_chore_derives_frequency_from_period_days(client):
+    payload = {
+        "name": "🪟 Clean windows",
+        "emoji": "🪟",
+        "periodDays": 90,
+        "nextDueDate": "2027-01-01T00:00:00Z",
+    }
+    resp = client.post("/api/chores", json=payload)
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["frequencyType"] == "interval"
+    assert data["frequency"] == 90
+    assert data["frequencyMetadata"]["unit"] == "days"
