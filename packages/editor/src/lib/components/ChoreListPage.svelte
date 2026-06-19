@@ -54,12 +54,14 @@
   const overdue = $derived(rows.filter((r) => r.pct <= 0.25));
   const ok = $derived(rows.filter((r) => r.pct > 0.25));
 
-  let completing = $state<string | null>(null);
+  type CompletingState = { id: string; notes: string };
+  let completing = $state<CompletingState | null>(null);
 
-  async function complete(id: string): Promise<void> {
-    completing = id;
-    await store.completeAssignment(id);
+  async function confirmComplete(): Promise<void> {
+    if (!completing) return;
+    const { id, notes } = completing;
     completing = null;
+    await store.completeAssignment(id, notes);
   }
 </script>
 
@@ -79,12 +81,22 @@
           <span class="name">{displayName(chore)}</span>
           <span class="location">{getRoomName(assignment.roomId)}</span>
           <span class="due" style="color:{color}">{formatDue(assignment.nextDueDate)}</span>
-          <button
-            class="done-btn"
-            disabled={completing === assignment.id}
-            onclick={() => complete(assignment.id)}
-            title="Mark done"
-          >✓</button>
+          {#if completing?.id === assignment.id}
+            <input
+              class="note-input"
+              bind:value={completing.notes}
+              placeholder="Note (optional)"
+              onkeydown={(e) => { if (e.key === "Enter") confirmComplete(); if (e.key === "Escape") completing = null; }}
+            />
+            <button class="done-btn confirm" onclick={confirmComplete}>✓</button>
+            <button class="cancel-btn" onclick={() => { completing = null; }}>✕</button>
+          {:else}
+            <button
+              class="done-btn"
+              onclick={() => { completing = { id: assignment.id, notes: "" }; }}
+              title="Mark done"
+            >✓</button>
+          {/if}
         </div>
       {/each}
     {/if}
@@ -99,12 +111,22 @@
           <span class="name">{displayName(chore)}</span>
           <span class="location">{getRoomName(assignment.roomId)}</span>
           <span class="due" style="color:{color}">{formatDue(assignment.nextDueDate)}</span>
-          <button
-            class="done-btn"
-            disabled={completing === assignment.id}
-            onclick={() => complete(assignment.id)}
-            title="Mark done"
-          >✓</button>
+          {#if completing?.id === assignment.id}
+            <input
+              class="note-input"
+              bind:value={completing.notes}
+              placeholder="Note (optional)"
+              onkeydown={(e) => { if (e.key === "Enter") confirmComplete(); if (e.key === "Escape") completing = null; }}
+            />
+            <button class="done-btn confirm" onclick={confirmComplete}>✓</button>
+            <button class="cancel-btn" onclick={() => { completing = null; }}>✕</button>
+          {:else}
+            <button
+              class="done-btn"
+              onclick={() => { completing = { id: assignment.id, notes: "" }; }}
+              title="Mark done"
+            >✓</button>
+          {/if}
         </div>
       {/each}
     {/if}
@@ -146,6 +168,11 @@
   .location { flex: 2; min-width: 80px; color: #888; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .due { flex: 1; min-width: 70px; font-size: 12px; text-align: right; white-space: nowrap; }
 
+  .note-input {
+    flex: 1; min-width: 80px; max-width: 160px;
+    padding: 3px 8px; background: #2a2a3a; border: 1px solid #555;
+    border-radius: 3px; color: #ccc; font-size: 11px;
+  }
   .done-btn {
     padding: 4px 10px; border: none; border-radius: 4px;
     background: #2a6; color: #fff; cursor: pointer; font-size: 12px;
@@ -153,6 +180,13 @@
   }
   .done-btn:hover { background: #3b7; }
   .done-btn:disabled { opacity: 0.5; cursor: default; }
+  .done-btn.confirm { background: #2a6; }
+  .cancel-btn {
+    padding: 4px 8px; border: none; border-radius: 4px;
+    background: #3a3a5a; color: #ccc; cursor: pointer; font-size: 12px;
+    min-height: 30px; flex-shrink: 0;
+  }
+  .cancel-btn:hover { background: #4a4a6a; }
 
   .empty { padding: 40px 20px; text-align: center; color: #555; font-size: 13px; line-height: 1.6; }
 

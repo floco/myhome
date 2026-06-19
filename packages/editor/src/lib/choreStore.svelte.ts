@@ -7,8 +7,18 @@ export interface Chore {
   frequencyType: string;
   frequency: number;
   frequencyMetadata: Record<string, unknown>;
+  scheduleFromDue: boolean;
   nextDueDate: string;
   description: string;
+}
+
+export interface CompletionRecord {
+  id: string;
+  choreId: string;
+  assignmentId: string | null;
+  completedAt: string;
+  scheduledDue: string;
+  notes: string;
 }
 
 export function scheduleLabel(chore: Chore): string {
@@ -57,11 +67,13 @@ export interface ChoreDocument {
   version: number;
   chores: Chore[];
   assignments: Assignment[];
+  completions: CompletionRecord[];
 }
 
 export function createChoreStore() {
   const chores = $state<Chore[]>([]);
   const assignments = $state<Assignment[]>([]);
+  const completions = $state<CompletionRecord[]>([]);
   let loaded = $state(false);
   let loadError = $state<string | null>(null);
 
@@ -74,6 +86,8 @@ export function createChoreStore() {
       for (const c of doc.chores) chores.push(c);
       assignments.length = 0;
       for (const a of doc.assignments) assignments.push(a);
+      completions.length = 0;
+      for (const r of doc.completions ?? []) completions.push(r);
     } catch (e) {
       loadError = e instanceof Error ? e.message : String(e);
     } finally {
@@ -128,8 +142,12 @@ export function createChoreStore() {
     await init();
   }
 
-  async function completeChore(id: string): Promise<void> {
-    const resp = await fetch(`/api/chores/${id}/complete`, { method: "POST" });
+  async function completeChore(id: string, notes: string = ""): Promise<void> {
+    const resp = await fetch(`/api/chores/${id}/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes }),
+    });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }
@@ -146,10 +164,18 @@ export function createChoreStore() {
     return imported as number;
   }
 
-  async function completeAssignment(id: string): Promise<void> {
-    const resp = await fetch(`/api/assignments/${id}/complete`, { method: "POST" });
+  async function completeAssignment(id: string, notes: string = ""): Promise<void> {
+    const resp = await fetch(`/api/assignments/${id}/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes }),
+    });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
+  }
+
+  function getCompletionsForChore(choreId: string): CompletionRecord[] {
+    return completions.filter((r) => r.choreId === choreId);
   }
 
   async function createAssignment(data: Omit<Assignment, "id">): Promise<void> {
@@ -183,12 +209,14 @@ export function createChoreStore() {
   return {
     get chores() { return chores as Chore[]; },
     get assignments() { return assignments as Assignment[]; },
+    get completions() { return completions as CompletionRecord[]; },
     get loaded() { return loaded; },
     get loadError() { return loadError; },
     getProgress,
     getColor,
     assignmentsForRoom,
     houseAssignments,
+    getCompletionsForChore,
     createChore,
     updateChore,
     deleteChore,

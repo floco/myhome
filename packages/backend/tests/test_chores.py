@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from myhome.main import app
-from myhome.models_chores import ChoreDocument, Chore
+from myhome.models_chores import ChoreDocument, Chore, CompletionRecord
 from myhome.persistence_chores import save_chores
 
 
@@ -409,3 +409,112 @@ def test_create_chore_derives_frequency_from_period_days(client):
     assert data["frequencyType"] == "interval"
     assert data["frequency"] == 90
     assert data["frequencyMetadata"]["unit"] == "days"
+
+
+# --- Completion history and notes ---
+
+def test_complete_chore_records_history(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    save_chores(make_chore_doc())
+    c = TestClient(app)
+    resp = c.post("/api/chores/c1/complete", json={"notes": "Used new mop"})
+    assert resp.status_code == 200
+    doc = c.get("/api/chores").json()
+    assert len(doc["completions"]) == 1
+    rec = doc["completions"][0]
+    assert rec["choreId"] == "c1"
+    assert rec["notes"] == "Used new mop"
+    assert "completedAt" in rec
+    assert "scheduledDue" in rec
+    assert rec["assignmentId"] is None
+
+
+def test_complete_assignment_records_history(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    save_chores(make_chore_doc())
+    c = TestClient(app)
+    aid = c.post("/api/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    resp = c.post(f"/api/assignments/{aid}/complete", json={"notes": "Quick clean"})
+    assert resp.status_code == 200
+    doc = c.get("/api/chores").json()
+    assert len(doc["completions"]) == 1
+    rec = doc["completions"][0]
+    assert rec["choreId"] == "c1"
+    assert rec["assignmentId"] == aid
+    assert rec["notes"] == "Quick clean"
+
+
+def test_complete_without_notes_leaves_empty_string(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    save_chores(make_chore_doc())
+    c = TestClient(app)
+    c.post("/api/chores/c1/complete")
+    doc = c.get("/api/chores").json()
+    assert doc["completions"][0]["notes"] == ""
+
+
+def test_multiple_completions_accumulate(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    save_chores(make_chore_doc())
+    c = TestClient(app)
+    c.post("/api/chores/c1/complete", json={"notes": "first"})
+    c.post("/api/chores/c1/complete", json={"notes": "second"})
+    doc = c.get("/api/chores").json()
+    assert len(doc["completions"]) == 2
+    notes = {r["notes"] for r in doc["completions"]}
+    assert notes == {"first", "second"}
+
+
+# --- scheduleFromDue ---
+
+def test_schedule_from_due_date(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    due_date = "2027-06-01T00:00:00Z"
+    doc = ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="Test", emoji="✅", periodDays=30,
+                frequencyType="interval", frequency=30,
+                frequencyMetadata={"unit": "days"},
+                scheduleFromDue=True,
+                nextDueDate=due_date,
+            )
+        ],
+        assignments=[],
+    )
+    save_chores(doc)
+    c = TestClient(app)
+    resp = c.post("/api/chores/c1/complete")
+    assert resp.status_code == 200
+    from datetime import datetime, timezone, timedelta
+    due_dt = datetime.fromisoformat(due_date.replace("Z", "+00:00"))
+    expected = due_dt + timedelta(days=30)
+    new_dt = datetime.fromisoformat(resp.json()["nextDueDate"].replace("Z", "+00:00"))
+    assert abs((new_dt - expected).total_seconds()) < 2
+
+
+def test_schedule_from_due_assignment(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    due_date = "2027-03-15T00:00:00Z"
+    doc = ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="Test", emoji="✅", periodDays=30,
+                frequencyType="interval", frequency=30,
+                frequencyMetadata={"unit": "days"},
+                scheduleFromDue=True,
+                nextDueDate=due_date,
+            )
+        ],
+        assignments=[],
+    )
+    save_chores(doc)
+    c = TestClient(app)
+    aid = c.post("/api/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    resp = c.post(f"/api/assignments/{aid}/complete")
+    assert resp.status_code == 200
+    from datetime import datetime, timezone, timedelta
+    due_dt = datetime.fromisoformat(due_date.replace("Z", "+00:00"))
+    expected = due_dt + timedelta(days=30)
+    new_dt = datetime.fromisoformat(resp.json()["nextDueDate"].replace("Z", "+00:00"))
+    assert abs((new_dt - expected).total_seconds()) < 2

@@ -13,6 +13,8 @@ from ..models_chores import (
     ChoreCreate,
     ChoreDocument,
     ChoreUpdate,
+    CompleteRequest,
+    CompletionRecord,
     ImportRequest,
     ImportResponse,
 )
@@ -195,18 +197,32 @@ def delete_chore(chore_id: str) -> None:
 
 
 @router.post("/api/chores/{chore_id}/complete", response_model=Chore)
-def complete_chore(chore_id: str) -> Chore:
+def complete_chore(chore_id: str, body: CompleteRequest | None = None) -> Chore:
     doc = load_chores()
     chore = next((c for c in doc.chores if c.id == chore_id), None)
     if chore is None:
         raise HTTPException(status_code=404, detail="Chore not found")
-    next_due = _next_due_from_schedule(chore, datetime.now(timezone.utc))
+    notes = body.notes if body else ""
+    now = datetime.now(timezone.utc)
+    if chore.scheduleFromDue and chore.nextDueDate:
+        try:
+            from_dt = datetime.fromisoformat(chore.nextDueDate.replace("Z", "+00:00"))
+        except ValueError:
+            from_dt = now
+    else:
+        from_dt = now
+    next_due = _next_due_from_schedule(chore, from_dt)
     next_due_str = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
-    # Advance all assignments for this chore
+    doc.completions.append(CompletionRecord(
+        id=str(uuid.uuid4()),
+        choreId=chore_id,
+        completedAt=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        scheduledDue=chore.nextDueDate,
+        notes=notes,
+    ))
     for a in doc.assignments:
         if a.choreId == chore_id:
             a.nextDueDate = next_due_str
-    # Also advance the chore template date
     chore.nextDueDate = next_due_str
     save_chores(doc)
     return chore
@@ -234,7 +250,7 @@ def create_assignment(body: AssignmentCreate) -> Assignment:
 
 
 @router.post("/api/assignments/{assignment_id}/complete", response_model=Assignment)
-def complete_assignment(assignment_id: str) -> Assignment:
+def complete_assignment(assignment_id: str, body: CompleteRequest | None = None) -> Assignment:
     doc = load_chores()
     assignment = next((a for a in doc.assignments if a.id == assignment_id), None)
     if assignment is None:
@@ -242,7 +258,24 @@ def complete_assignment(assignment_id: str) -> Assignment:
     chore = next((c for c in doc.chores if c.id == assignment.choreId), None)
     if chore is None:
         raise HTTPException(status_code=404, detail="Chore not found")
-    next_due = _next_due_from_schedule(chore, datetime.now(timezone.utc))
+    notes = body.notes if body else ""
+    now = datetime.now(timezone.utc)
+    if chore.scheduleFromDue and assignment.nextDueDate:
+        try:
+            from_dt = datetime.fromisoformat(assignment.nextDueDate.replace("Z", "+00:00"))
+        except ValueError:
+            from_dt = now
+    else:
+        from_dt = now
+    next_due = _next_due_from_schedule(chore, from_dt)
+    doc.completions.append(CompletionRecord(
+        id=str(uuid.uuid4()),
+        choreId=chore.id,
+        assignmentId=assignment_id,
+        completedAt=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        scheduledDue=assignment.nextDueDate,
+        notes=notes,
+    ))
     assignment.nextDueDate = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
     save_chores(doc)
     return assignment
