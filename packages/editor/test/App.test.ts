@@ -287,7 +287,7 @@ describe("App", () => {
     expect(wallAfterZoom).not.toBe(wallBefore);
 
     const resetBtn = Array.from(target.querySelectorAll("button")).find(
-      (b) => b.textContent?.trim() === "Reset View",
+      (b) => (b as HTMLButtonElement).title === "Reset view",
     ) as HTMLButtonElement;
     resetBtn.click();
     flushSync();

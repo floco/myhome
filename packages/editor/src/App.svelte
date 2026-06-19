@@ -8,7 +8,6 @@
   import { findSnapPoint, snapToGrid, SNAP_RADIUS_PX, hitTestWall, HIT_RADIUS_PX } from "./lib/geometry-helpers";
   import type { Opening } from "@myhome/geometry";
   import Canvas from "./lib/components/Canvas.svelte";
-  import Toolbar from "./lib/components/Toolbar.svelte";
   import RoomPanel from "./lib/components/RoomPanel.svelte";
   import FloorSwitcher from "./lib/components/FloorSwitcher.svelte";
   import { createChoreStore } from "./lib/choreStore.svelte";
@@ -55,6 +54,16 @@
   let canvasHeight = $state(800);
   let saveStatus = $state<"idle" | "saving" | "saved" | "error">("idle");
   let haAreas = $state<Array<{ area_id: string; name: string }>>([]);
+
+  const hasSelection = $derived(
+    toolStore.state.selectedId !== null || toolStore.state.selectedOpeningId !== null
+  );
+  const saveIcon = $derived(
+    saveStatus === "saving" ? "⋯" : saveStatus === "saved" ? "✓" : saveStatus === "error" ? "⚠" : "⬆"
+  );
+  const saveTitle = $derived(
+    saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : saveStatus === "error" ? "Save error!" : "Save"
+  );
 
   async function handleSave(): Promise<void> {
     saveStatus = "saving";
@@ -286,19 +295,40 @@
         onrenamefloor={(id, name) => floorStore.renameFloor(id, name)}
         onremovefloor={(id) => floorStore.removeFloor(id)}
       />
+
+      {#if !choreMode}
+        <span class="topbar-sep"></span>
+        <div class="toolbar">
+          <button title="Undo (Ctrl+Z)" disabled={!floorStore.hasUndo} onclick={handleUndo}>↩</button>
+          <button title="Redo (Ctrl+Y)" disabled={!floorStore.hasRedo} onclick={handleRedo}>↪</button>
+          <span class="sep"></span>
+          <button title="Select" class:active={toolStore.state.tool === "select"} onclick={() => toolStore.setTool("select")}>↖</button>
+          <button title="Wall" class:active={toolStore.state.tool === "wall"} onclick={() => toolStore.setTool("wall")}>▬</button>
+          <button title="Divider" class:active={toolStore.state.tool === "divider"} onclick={() => toolStore.setTool("divider")}>┅</button>
+          <button title="Door" class:active={toolStore.state.tool === "door"} onclick={() => toolStore.setTool("door")}>⊓</button>
+          <button title="Window" class:active={toolStore.state.tool === "window"} onclick={() => toolStore.setTool("window")}>⊡</button>
+          <span class="sep"></span>
+          <button title="Delete selected (Del)" class="delete" disabled={!hasSelection} onclick={handleDelete}>✕</button>
+        </div>
+      {/if}
+
+      <span class="spacer"></span>
+
       <button
-        class="chore-btn"
-        class:chore-active={choreMode}
+        class="icon-btn"
+        class:active={choreMode}
+        title="Chore mode"
         onclick={() => { choreMode = !choreMode; if (choreMode) toolStore.setTool("select"); else selectedBadge = null; }}
-      >Chores</button>
+      >☑</button>
       <button
-        class="save-btn"
+        class="icon-btn save-btn"
         class:saved={saveStatus === "saved"}
         class:save-error={saveStatus === "error"}
         disabled={saveStatus === "saving"}
+        title={saveTitle}
         onclick={handleSave}
-      >{saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved ✓" : saveStatus === "error" ? "Error!" : "Save"}</button>
-      <button class="reset-view" onclick={() => viewportStore.reset()}>Reset View</button>
+      >{saveIcon}</button>
+      <button class="icon-btn" title="Reset view" onclick={() => viewportStore.reset()}>↺</button>
     {/if}
   </header>
 
@@ -307,18 +337,6 @@
 
     <div class="content">
       {#if isFloorPlan}
-        {#if !choreMode}
-          <Toolbar
-            tool={toolStore.state.tool}
-            hasSelection={toolStore.state.selectedId !== null || toolStore.state.selectedOpeningId !== null}
-            hasUndo={floorStore.hasUndo}
-            hasRedo={floorStore.hasRedo}
-            onselecttool={(tool) => toolStore.setTool(tool)}
-            ondelete={handleDelete}
-            onundo={handleUndo}
-            onredo={handleRedo}
-          />
-        {/if}
         <div class="canvas-area" bind:clientWidth={canvasWidth} bind:clientHeight={canvasHeight} ondragover={handleDragOver} ondrop={handleDrop}>
           {#if !floorStore.loaded}
             <div class="loading">Loading…</div>
@@ -437,26 +455,43 @@
     margin-right: 8px; flex-shrink: 0;
   }
 
-  .chore-btn {
-    padding: 3px 10px; border: none; border-radius: 4px;
-    background: #333; color: #ccc; cursor: pointer; font-size: 12px;
+  .topbar-sep {
+    width: 1px; height: 18px; background: #333; flex-shrink: 0; margin: 0 4px;
   }
-  .chore-btn.chore-active { background: #334; color: #ccf; }
-  .chore-btn:hover { background: #444; }
+  .spacer { flex: 1; }
 
-  .save-btn {
-    padding: 3px 10px; border: none; border-radius: 4px;
-    background: #2a6; color: #fff; cursor: pointer; font-size: 12px;
+  .toolbar {
+    display: flex; align-items: center; gap: 2px; flex-shrink: 0;
   }
-  .save-btn:disabled { opacity: 0.6; cursor: default; }
-  .save-btn.saved { background: #175; }
-  .save-btn.save-error { background: #a33; }
+  .toolbar .sep {
+    width: 1px; height: 16px; background: #333; margin: 0 3px; flex-shrink: 0;
+  }
+  .toolbar button {
+    width: 28px; height: 28px;
+    border: none; border-radius: 4px; background: transparent;
+    color: #999; cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .toolbar button:hover:not(:disabled) { background: #2a2a4a; color: #eee; }
+  .toolbar button.active { background: #2a2a5a; color: #aaf; }
+  .toolbar button.delete { color: #c66; }
+  .toolbar button.delete:hover:not(:disabled) { background: #422; color: #f88; }
+  .toolbar button:disabled { opacity: 0.35; cursor: default; }
 
-  .reset-view {
-    padding: 3px 10px; border: none; border-radius: 4px;
-    background: #333; color: #ccc; cursor: pointer; font-size: 12px; flex-shrink: 0;
+  .icon-btn {
+    width: 30px; height: 30px;
+    border: none; border-radius: 4px; background: transparent;
+    color: #999; cursor: pointer; font-size: 15px;
+    display: flex; align-items: center; justify-content: center; padding: 0;
+    flex-shrink: 0;
   }
-  .reset-view:hover { background: #444; }
+  .icon-btn:hover:not(:disabled) { background: #2a2a4a; color: #eee; }
+  .icon-btn.active { background: #2a2a5a; color: #aaf; }
+  .icon-btn.save-btn { color: #4c9; }
+  .icon-btn.save-btn:hover:not(:disabled) { background: #1a3a2a; color: #6eb; }
+  .icon-btn.save-btn.saved { color: #2a6; }
+  .icon-btn.save-btn.save-error { color: #f44; }
+  .icon-btn:disabled { opacity: 0.5; cursor: default; }
 
   .workspace {
     display: flex; flex: 1; overflow: hidden;
