@@ -79,7 +79,7 @@
 </div>
 
 <style>
-  .panel { position: absolute; right: 0; top: 0; bottom: 0; width: 260px; background: #1e1e2e; border-left: 1px solid #333; overflow-y: auto; z-index: 10; display: flex; flex-direction: column; font-size: 12px; color: #ccc; }
+  .panel { width: 260px; height: 100%; background: #1e1e2e; border-left: 1px solid #333; overflow-y: auto; z-index: 10; display: flex; flex-direction: column; font-size: 12px; color: #ccc; flex-shrink: 0; }
   .panel-header { padding: 8px 12px; font-size: 13px; font-weight: 600; color: #eee; border-bottom: 1px solid #333; background: #252535; }
   .hint { font-size: 10px; color: #666; font-weight: normal; }
   .section { padding: 8px 12px; border-bottom: 1px solid #2a2a3a; }

@@ -62,6 +62,7 @@
   $effect(() => {
     if (!choreLayerActive) selectedBadge = null;
   });
+  let pickerOpen = $state(false);
   let navExpanded = $state(false);
   let showNewChoreModal = $state(false);
 
@@ -373,6 +374,12 @@
 
       <LayersDropdown {activeLayers} ontoggle={toggleLayer} />
       <button
+        class="icon-btn"
+        class:active={pickerOpen}
+        title="Toggle item picker"
+        onclick={() => { pickerOpen = !pickerOpen; }}
+      >📋</button>
+      <button
         class="icon-btn save-btn"
         class:saved={saveStatus === "saved"}
         class:save-error={saveStatus === "error"}
@@ -440,26 +447,20 @@
                 onupdate={(patch) => floorStore.updateRoom(selectedRoom.id, patch)}
               />
             {/if}
-            <ChoreOverlay
-              chores={choreStore.chores}
-              assignments={currentFloorAssignments}
-              viewport={viewportStore.viewport}
-              choreMode={choreLayerActive}
-              width={canvasWidth}
-              height={canvasHeight}
-              onclick={(id) => handleBadgeClick(id)}
-              ondragend={handleBadgeDragEnd}
-            />
-            {#if choreLayerActive || inventoryLayerActive}
+            {#if choreLayerActive}
+              <ChoreOverlay
+                chores={choreStore.chores}
+                assignments={currentFloorAssignments}
+                viewport={viewportStore.viewport}
+                choreMode={true}
+                width={canvasWidth}
+                height={canvasHeight}
+                onclick={(id) => handleBadgeClick(id)}
+                ondragend={handleBadgeDragEnd}
+              />
+            {/if}
+            {#if pickerOpen && (choreLayerActive || inventoryLayerActive)}
               <div class="right-panels">
-                {#if choreLayerActive}
-                  <ChorePanel
-                    store={choreStore}
-                    {draggingChoreId}
-                    onDragStart={(id) => { draggingChoreId = id; }}
-                    onDragEnd={() => { draggingChoreId = null; }}
-                  />
-                {/if}
                 {#if inventoryLayerActive}
                   <InventoryPickerPanel
                     items={inventoryStore.items}
@@ -467,6 +468,14 @@
                     draggingItemId={draggingInventoryItemId}
                     onDragStart={(id) => { draggingInventoryItemId = id; }}
                     onDragEnd={() => { draggingInventoryItemId = null; }}
+                  />
+                {/if}
+                {#if choreLayerActive}
+                  <ChorePanel
+                    store={choreStore}
+                    {draggingChoreId}
+                    onDragStart={(id) => { draggingChoreId = id; }}
+                    onDragEnd={() => { draggingChoreId = null; }}
                   />
                 {/if}
               </div>
@@ -492,10 +501,11 @@
                 {/if}
               {/if}
             {/if}
+            {#if inventoryLayerActive}
             <InventoryOverlay
               items={currentFloorInventoryItems}
               viewport={viewportStore.viewport}
-              active={inventoryLayerActive}
+              active={true}
               width={canvasWidth}
               height={canvasHeight}
               onclick={(itemId) => {
@@ -513,6 +523,7 @@
                 });
               }}
             />
+            {/if}
             {#if selectedInventoryPin}
               {@const pin = selectedInventoryPin}
               <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -661,7 +672,7 @@
 
   .right-panels {
     position: absolute; top: 0; right: 0; bottom: 0;
-    display: flex; flex-direction: column; z-index: 20; overflow: hidden;
+    display: flex; flex-direction: row; z-index: 20;
   }
 
   .loading {

@@ -78,7 +78,7 @@
   .panel {
     background: #111130; border-left: 1px solid #2a2a4a;
     display: flex; flex-direction: column; width: 220px; flex-shrink: 0;
-    font-family: sans-serif; font-size: 12px; overflow: hidden; flex: 1;
+    font-family: sans-serif; font-size: 12px; overflow: hidden; height: 100%;
   }
   .panel-header {
     padding: 8px 10px; border-bottom: 1px solid #2a2a3a;
