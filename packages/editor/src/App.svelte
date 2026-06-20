@@ -19,6 +19,9 @@
   import ChoreListPage from "./lib/components/ChoreListPage.svelte";
   import NavMenu from "./lib/components/NavMenu.svelte";
   import NewChoreModal from "./lib/components/NewChoreModal.svelte";
+  import InventoryPage from "./lib/components/InventoryPage.svelte";
+  import ConsumablesPage from "./lib/components/ConsumablesPage.svelte";
+  import WorksPage from "./lib/components/WorksPage.svelte";
 
   const floorStore = createHouseStore();
   const viewportStore = createViewportStore();
@@ -39,6 +42,7 @@
   });
 
   const isFloorPlan = $derived(currentRoute === "#/" || currentRoute === "");
+  const isChores = $derived(currentRoute.startsWith("#/chores"));
 
   const selectedRoom = $derived(
     toolStore.state.selectedRoomId
@@ -335,12 +339,20 @@
       <span class="topbar-sep"></span>
     {/if}
 
-    {#if !isFloorPlan}<span class="spacer"></span>{/if}
-    <button
-      class="icon-btn new-chore-btn"
-      title="New chore"
-      onclick={() => { showNewChoreModal = true; }}
-    >＋</button>
+    {#if isChores}
+      {#if !isFloorPlan}<span class="spacer"></span>{/if}
+      <a
+        href={currentRoute === "#/chores/manage" ? "#/chores" : "#/chores/manage"}
+        class="icon-btn"
+        class:active={currentRoute === "#/chores/manage"}
+        title="Chore settings"
+      >⚙</a>
+      <button
+        class="icon-btn new-chore-btn"
+        title="New chore"
+        onclick={() => { showNewChoreModal = true; }}
+      >＋</button>
+    {/if}
   </header>
 
   <div class="workspace">
@@ -426,10 +438,19 @@
         </div>
 
       {:else if currentRoute === "#/chores"}
+        <ChoreListPage store={choreStore} {floorStore} />
+
+      {:else if currentRoute === "#/chores/manage"}
         <ChoresPage store={choreStore} {floorStore} onnewchore={() => { showNewChoreModal = true; }} />
 
-      {:else if currentRoute === "#/chores/list"}
-        <ChoreListPage store={choreStore} {floorStore} />
+      {:else if currentRoute === "#/inventory"}
+        <InventoryPage />
+
+      {:else if currentRoute === "#/consumables"}
+        <ConsumablesPage />
+
+      {:else if currentRoute === "#/works"}
+        <WorksPage />
       {/if}
     </div>
   </div>
@@ -496,7 +517,7 @@
     border: none; border-radius: 4px; background: transparent;
     color: #999; cursor: pointer; font-size: 15px;
     display: flex; align-items: center; justify-content: center; padding: 0;
-    flex-shrink: 0;
+    flex-shrink: 0; text-decoration: none;
   }
   .icon-btn:hover:not(:disabled) { background: #2a2a4a; color: #eee; }
   .icon-btn.active { background: #2a2a5a; color: #aaf; }

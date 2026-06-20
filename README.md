@@ -1,13 +1,22 @@
 # My Home
 
-An interactive floor plan editor with chore tracking for Home Assistant.
+A modular home management app for Home Assistant. Each aspect of your home — its layout, chores, inventory, supplies, and renovation history — lives in its own module behind a unified sidebar.
 
-## Features
+## Modules
 
-- **Floor plan editor** — draw rooms, place furniture, label areas on an SVG canvas
-- **Chore tracker** — track recurring chores with flexible schedules (daily, weekly, monthly, yearly, day-of-month, days-of-week), completion history, notes, and progress bars
-- **Donetick import** — import chores from a Donetick JSON export
-- **Home Assistant integration** — fetches your HA areas and overlays SVG badges on the floor plan
+| Module | Status | Description |
+|--------|--------|-------------|
+| ⊞ **Floor Plan** | Live | Draw rooms, place doors/windows, overlay chore badges, label HA areas |
+| ✅ **Chores** | Live | Track recurring chores with flexible schedules, completion history, and notes |
+| 📦 **Inventory** | Planned | Catalog items stored in your home — furniture, appliances, tools, valuables |
+| 🛒 **Consumables** | Planned | Monitor stock levels for everyday supplies and household essentials |
+| 🔧 **Works** | Planned | Log renovations and repairs — contractors, costs, warranties, photos |
+
+## Chores
+
+Chores supports flexible recurrence (daily, weekly, monthly, yearly, day-of-month, days-of-week), completion history with notes, and two scheduling modes — advance from the planned date or from the actual completion date. Chores can be imported from [Donetick](https://donetick.com).
+
+From the **Chores** module, use the ⚙ button (left of `+`) to open chore settings for creating, editing, deleting, and importing chores.
 
 ## Installing as a Home Assistant Addon
 
@@ -38,7 +47,7 @@ An interactive floor plan editor with chore tracking for Home Assistant.
 |--------|---------|-------------|
 | `log_level` | `info` | Log verbosity: `debug`, `info`, `warning`, `error`, `critical` |
 
-Data (floor plans, chores) is stored in `/data` inside the addon and persists across restarts and updates.
+Data is stored in `/data` inside the addon and persists across restarts and updates.
 
 ## Running locally (development)
 
@@ -53,7 +62,7 @@ pip install -e packages/backend
 ./dev.sh
 ```
 
-The app is served at `http://localhost:5173` (frontend) and `http://localhost:8000` (API).
+Frontend at `http://localhost:5173`, API at `http://localhost:8000`.
 
 ## Building the Docker image
 

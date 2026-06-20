@@ -5,6 +5,19 @@
     onclose: () => void;
   }
   let { currentRoute, expanded, onclose }: Props = $props();
+
+  const modules = [
+    { href: "#/",            icon: "⊞", label: "Floor Plan"   },
+    { href: "#/chores",      icon: "✅", label: "Chores"       },
+    { href: "#/inventory",   icon: "📦", label: "Inventory"    },
+    { href: "#/consumables", icon: "🛒", label: "Consumables"  },
+    { href: "#/works",       icon: "🔧", label: "Works"        },
+  ];
+
+  function isActive(href: string): boolean {
+    if (href === "#/") return currentRoute === "#/" || currentRoute === "";
+    return currentRoute.startsWith(href);
+  }
 </script>
 
 {#if expanded}
@@ -14,25 +27,18 @@
 
 <nav class="nav" class:expanded>
   <div class="nav-body">
-    <div class="nav-section">
-      <div class="section-header" title="Chores">
-        <span class="section-icon">📋</span>
-        <span class="section-title">Chores</span>
-      </div>
-      <div class="section-divider"></div>
-      <a href="#/" class="nav-item" class:active={currentRoute === "#/" || currentRoute === ""} title="Floor Plan" onclick={onclose}>
-        <span class="nav-icon">⊞</span>
-        <span class="nav-label">Floor Plan</span>
+    {#each modules as mod}
+      <a
+        href={mod.href}
+        class="nav-item"
+        class:active={isActive(mod.href)}
+        title={mod.label}
+        onclick={onclose}
+      >
+        <span class="nav-icon">{mod.icon}</span>
+        <span class="nav-label">{mod.label}</span>
       </a>
-      <a href="#/chores" class="nav-item" class:active={currentRoute === "#/chores"} title="Management" onclick={onclose}>
-        <span class="nav-icon">⚙</span>
-        <span class="nav-label">Management</span>
-      </a>
-      <a href="#/chores/list" class="nav-item" class:active={currentRoute === "#/chores/list"} title="List" onclick={onclose}>
-        <span class="nav-icon">≡</span>
-        <span class="nav-label">List</span>
-      </a>
-    </div>
+    {/each}
   </div>
 </nav>
 
@@ -52,22 +58,7 @@
   }
   .nav.expanded { width: 180px; }
 
-  .nav-body { flex: 1; display: flex; flex-direction: column; min-width: 180px; }
-
-  .nav-section { display: flex; flex-direction: column; }
-
-  .section-header {
-    display: flex; align-items: center; gap: 10px;
-    height: 40px; padding: 0 12px;
-    white-space: nowrap;
-  }
-  .section-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; line-height: 1; }
-  .section-title {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
-    color: #556; font-weight: 600;
-  }
-
-  .section-divider { height: 1px; background: #1e1e38; margin: 0; }
+  .nav-body { flex: 1; display: flex; flex-direction: column; min-width: 180px; padding-top: 6px; }
 
   .nav-item {
     display: flex; align-items: center; gap: 10px;
