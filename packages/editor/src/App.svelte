@@ -30,6 +30,8 @@
   import InventoryPinPopup from "./lib/components/InventoryPinPopup.svelte";
   import { createSettingsStore } from "./lib/settingsStore.svelte";
   import SettingsPage from "./lib/components/SettingsPage.svelte";
+  import { createCostsStore } from "./lib/costsStore.svelte";
+  import CostsPage from "./lib/components/CostsPage.svelte";
 
   const floorStore = createHouseStore();
   const viewportStore = createViewportStore();
@@ -37,6 +39,7 @@
   const choreStore = createChoreStore();
   const inventoryStore = createInventoryStore();
   const settingsStore = createSettingsStore();
+  const costsStore = createCostsStore();
 
   let selectedInventoryPin = $state<{
     item: InventoryItem;
@@ -641,7 +644,7 @@
         <WorksPage />
 
       {:else if currentRoute === "#/costs"}
-        <div class="placeholder">Costs module coming soon</div>
+        <CostsPage {costsStore} {settingsStore} {floorStore} />
 
       {:else if currentRoute === "#/settings"}
         <SettingsPage store={settingsStore} />
