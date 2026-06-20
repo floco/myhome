@@ -12,6 +12,7 @@
   // --- Cost categories ---
   let editingCostId = $state<string | null>(null);
   let costDraft = $state<CostCategory>({ id: "", name: "", emoji: "", unit: null, color: "#4466cc" });
+  let costDraftUnit = $state("");
   let showNewCostForm = $state(false);
   let newCostDraft = $state({ name: "", emoji: "", unit: "", color: "#4466cc" });
   let confirmDeleteCostId = $state<string | null>(null);
@@ -20,6 +21,7 @@
   function startEditCost(cat: CostCategory): void {
     editingCostId = cat.id;
     costDraft = { ...cat };
+    costDraftUnit = cat.unit ?? "";
   }
 
   function cancelEditCost(): void {
@@ -30,7 +32,7 @@
   async function saveEditCost(): Promise<void> {
     if (!costDraft.name.trim()) { costError = "Name required"; return; }
     const updated = store.costCategories.map(c =>
-      c.id === editingCostId ? { ...costDraft, name: costDraft.name.trim() } : c
+      c.id === editingCostId ? { ...costDraft, name: costDraft.name.trim(), unit: costDraftUnit.trim() || null } : c
     );
     await store.updateCostCategories(updated);
     editingCostId = null;
@@ -105,7 +107,7 @@
                   <td><input type="color" bind:value={costDraft.color} class="color-input" /></td>
                   <td><input class="emoji-input" bind:value={costDraft.emoji} maxlength="2" /></td>
                   <td><input class="name-input" bind:value={costDraft.name} placeholder="Name" /></td>
-                  <td><input class="unit-input" bind:value={costDraft.unit as string} placeholder="L, kWh…" /></td>
+                  <td><input class="unit-input" bind:value={costDraftUnit} placeholder="L, kWh…" /></td>
                   <td class="actions">
                     <button class="icon-action ok" onclick={saveEditCost} title="Save">✓</button>
                     <button class="icon-action" onclick={cancelEditCost} title="Cancel">✕</button>
