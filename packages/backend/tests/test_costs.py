@@ -33,10 +33,9 @@ def test_get_costs_empty_when_no_file(client):
     assert resp.json()["entries"] == []
 
 
-def test_get_costs_returns_saved_data(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_get_costs_returns_saved_data(client, tmp_path):
     save_costs(make_doc())
-    resp = TestClient(app).get("/api/costs")
+    resp = client.get("/api/costs")
     assert resp.status_code == 200
     assert resp.json()["entries"][0]["id"] == "e1"
 
@@ -73,13 +72,11 @@ def test_create_lump_sum_entry(client):
     assert data["unitPrice"] is None
 
 
-def test_update_entry_partial(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_update_entry_partial(client, tmp_path):
     save_costs(make_doc())
-    c = TestClient(app)
-    resp = c.put("/api/costs/entries/e1", json={"totalAmount": 1800.0, "supplier": "TotalEnergies"})
+    resp = client.put("/api/costs/entries/e1", json={"totalAmount": 1800.0, "supplier": "TotalEnergies"})
     assert resp.status_code == 204
-    entry = c.get("/api/costs").json()["entries"][0]
+    entry = client.get("/api/costs").json()["entries"][0]
     assert entry["totalAmount"] == 1800.0
     assert entry["supplier"] == "TotalEnergies"
     assert entry["quantity"] == 1500.0    # unchanged
@@ -91,13 +88,11 @@ def test_update_entry_404(client):
     assert resp.status_code == 404
 
 
-def test_delete_entry(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_delete_entry(client, tmp_path):
     save_costs(make_doc())
-    c = TestClient(app)
-    resp = c.delete("/api/costs/entries/e1")
+    resp = client.delete("/api/costs/entries/e1")
     assert resp.status_code == 204
-    assert c.get("/api/costs").json()["entries"] == []
+    assert client.get("/api/costs").json()["entries"] == []
 
 
 def test_delete_entry_404(client):
