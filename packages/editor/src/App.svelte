@@ -24,11 +24,24 @@
   import ConsumablesPage from "./lib/components/ConsumablesPage.svelte";
   import WorksPage from "./lib/components/WorksPage.svelte";
   import FinancePage from "./lib/components/FinancePage.svelte";
+  import { createInventoryStore } from "./lib/inventoryStore.svelte";
+  import type { InventoryItem } from "./lib/inventoryStore.svelte";
+  import InventoryOverlay from "./lib/components/InventoryOverlay.svelte";
+  import InventoryPinPopup from "./lib/components/InventoryPinPopup.svelte";
 
   const floorStore = createHouseStore();
   const viewportStore = createViewportStore();
   const toolStore = createToolStore();
   const choreStore = createChoreStore();
+  const inventoryStore = createInventoryStore();
+
+  let selectedInventoryPin = $state<{
+    item: InventoryItem;
+    screenX: number;
+    screenY: number;
+  } | null>(null);
+  let selectedInventoryItemId = $state<string | null>(null);
+  let draggingInventoryItemId = $state<string | null>(null);
 
   let activeLayers = $state(new Set<string>());
   const choreLayerActive = $derived(activeLayers.has("chores"));
@@ -70,6 +83,11 @@
   const currentFloorRoomIds = $derived(new Set(floorStore.floor.rooms.map((r) => r.id)));
   const currentFloorAssignments = $derived(
     choreStore.assignments.filter((a) => a.roomId !== null && currentFloorRoomIds.has(a.roomId))
+  );
+  const currentFloorInventoryItems = $derived(
+    inventoryStore.items.filter(
+      (i) => i.placement?.floorId === floorStore.currentFloorId
+    )
   );
 
   let spacePressed = $state(false);
@@ -269,19 +287,33 @@
   }
 
   function handleDragOver(e: DragEvent): void {
-    if (!draggingChoreId) return;
+    if (!draggingChoreId && !draggingInventoryItemId) return;
     e.preventDefault();
   }
 
   function handleDrop(e: DragEvent): void {
+    e.preventDefault();
+    const inventoryItemId = e.dataTransfer?.getData("inventoryItemId") ?? draggingInventoryItemId;
+    draggingInventoryItemId = null;
     const choreId = e.dataTransfer?.getData("choreId") ?? draggingChoreId;
     draggingChoreId = null;
-    if (!choreId) return;
-    e.preventDefault();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const screenX = e.clientX - rect.left, screenY = e.clientY - rect.top;
     const worldX = (screenX - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
     const worldY = (screenY - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
+    if (inventoryItemId) {
+      const room = floorStore.floor.rooms.find((r) => {
+        if (!r.polygon) return false;
+        return pointInPolygon({ x: worldX, y: worldY }, r.polygon);
+      });
+      inventoryStore.setPlacement(inventoryItemId, {
+        floorId: floorStore.currentFloorId,
+        roomId: room?.id ?? null,
+        position: { x: worldX, y: worldY },
+      });
+      return;
+    }
+    if (!choreId) return;
     const room = floorStore.floor.rooms.find((r) => {
       if (!r.polygon) return false;
       return pointInPolygon({ x: worldX, y: worldY }, r.polygon);
@@ -445,6 +477,51 @@
                   </div>
                 {/if}
               {/if}
+            {/if}
+            <InventoryOverlay
+              items={currentFloorInventoryItems}
+              viewport={viewportStore.viewport}
+              active={inventoryLayerActive}
+              width={canvasWidth}
+              height={canvasHeight}
+              onclick={(itemId) => {
+                const item = inventoryStore.items.find((i) => i.id === itemId);
+                if (!item?.placement) return;
+                const sp = viewportStore.worldToScreen(item.placement.position);
+                selectedInventoryPin = { item, screenX: sp.x, screenY: sp.y };
+              }}
+              ondragend={(itemId, worldPos) => {
+                const item = inventoryStore.items.find((i) => i.id === itemId);
+                if (!item?.placement) return;
+                inventoryStore.setPlacement(itemId, {
+                  ...item.placement,
+                  position: worldPos,
+                });
+              }}
+            />
+            {#if selectedInventoryPin}
+              {@const pin = selectedInventoryPin}
+              <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+              <div
+                style="position:absolute;inset:0;z-index:55"
+                onclick={() => { selectedInventoryPin = null; }}
+              >
+                <InventoryPinPopup
+                  item={pin.item}
+                  screenX={pin.screenX}
+                  screenY={pin.screenY}
+                  onedit={() => {
+                    selectedInventoryItemId = pin.item.id;
+                    selectedInventoryPin = null;
+                    window.location.hash = "#/inventory";
+                  }}
+                  onremove={async () => {
+                    await inventoryStore.setPlacement(pin.item.id, null);
+                    selectedInventoryPin = null;
+                  }}
+                  onclose={() => { selectedInventoryPin = null; }}
+                />
+              </div>
             {/if}
           {/if}
         </div>
