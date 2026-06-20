@@ -17,6 +17,8 @@
     onremovefloor: (id: string) => void;
   } = $props();
 
+  const ALL_FLOOR_ID = "__all__";
+
   let editingId = $state<string | null>(null);
   let editingName = $state("");
 
@@ -52,6 +54,13 @@
 </script>
 
 <div class="floor-switcher">
+  <div class="floor-btn all-btn" class:active={currentFloorId === ALL_FLOOR_ID}>
+    <button
+      class="floor-label"
+      onclick={() => onswitchfloor(ALL_FLOOR_ID)}
+      title="House-wide assignments — drag chores here"
+    >🏠 All</button>
+  </div>
   {#each floors as floor (floor.id)}
     <div class="floor-btn" class:active={floor.id === currentFloorId}>
       {#if editingId === floor.id}
@@ -158,4 +167,7 @@
     background: #444;
     color: #ccc;
   }
+
+  .all-btn .floor-label { color: #aaf; }
+  .all-btn.active .floor-label { color: #ccf; }
 </style>
