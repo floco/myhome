@@ -19,6 +19,7 @@
   import ChoreListPage from "./lib/components/ChoreListPage.svelte";
   import NavMenu from "./lib/components/NavMenu.svelte";
   import NewChoreModal from "./lib/components/NewChoreModal.svelte";
+  import LayersDropdown from "./lib/components/LayersDropdown.svelte";
   import InventoryPage from "./lib/components/InventoryPage.svelte";
   import ConsumablesPage from "./lib/components/ConsumablesPage.svelte";
   import WorksPage from "./lib/components/WorksPage.svelte";
@@ -29,9 +30,24 @@
   const toolStore = createToolStore();
   const choreStore = createChoreStore();
 
-  let choreMode = $state(false);
+  let activeLayers = $state(new Set<string>());
+  const choreLayerActive = $derived(activeLayers.has("chores"));
+  const inventoryLayerActive = $derived(activeLayers.has("inventory"));
+
+  function toggleLayer(layer: string): void {
+    const next = new Set(activeLayers);
+    if (next.has(layer)) next.delete(layer);
+    else next.add(layer);
+    activeLayers = next;
+    if (next.has("chores")) toolStore.setTool("select");
+  }
+
   let draggingChoreId = $state<string | null>(null);
   let selectedBadge = $state<{ assignment: Assignment; screenX: number; screenY: number } | null>(null);
+
+  $effect(() => {
+    if (!choreLayerActive) selectedBadge = null;
+  });
   let navExpanded = $state(false);
   let showNewChoreModal = $state(false);
 
@@ -305,7 +321,7 @@
 
       <span class="spacer"></span>
 
-      {#if !choreMode}
+      {#if !choreLayerActive}
         <div class="toolbar">
           <button title="Undo (Ctrl+Z)" disabled={!floorStore.hasUndo} onclick={handleUndo}>↩</button>
           <button title="Redo (Ctrl+Y)" disabled={!floorStore.hasRedo} onclick={handleRedo}>↪</button>
@@ -322,12 +338,7 @@
 
       <span class="topbar-sep"></span>
 
-      <button
-        class="icon-btn"
-        class:active={choreMode}
-        title="Chore picker"
-        onclick={() => { choreMode = !choreMode; if (choreMode) toolStore.setTool("select"); else selectedBadge = null; }}
-      >📋</button>
+      <LayersDropdown {activeLayers} ontoggle={toggleLayer} />
       <button
         class="icon-btn save-btn"
         class:saved={saveStatus === "saved"}
@@ -400,13 +411,13 @@
               chores={choreStore.chores}
               assignments={currentFloorAssignments}
               viewport={viewportStore.viewport}
-              {choreMode}
+              choreMode={choreLayerActive}
               width={canvasWidth}
               height={canvasHeight}
               onclick={(id) => handleBadgeClick(id)}
               ondragend={handleBadgeDragEnd}
             />
-            {#if choreMode}
+            {#if choreLayerActive}
               <ChorePanel
                 store={choreStore}
                 {draggingChoreId}
