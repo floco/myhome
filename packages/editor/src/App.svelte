@@ -13,8 +13,8 @@
   import { createChoreStore } from "./lib/choreStore.svelte";
   import type { Assignment } from "./lib/choreStore.svelte";
   import ChoreOverlay from "./lib/components/ChoreOverlay.svelte";
-  import ChorePanel from "./lib/components/ChorePanel.svelte";
-  import InventoryPickerPanel from "./lib/components/InventoryPickerPanel.svelte";
+  import ItemPickerPanel from "./lib/components/ItemPickerPanel.svelte";
+  import type { PickerLayer } from "./lib/components/ItemPickerPanel.svelte";
   import BadgePopup from "./lib/components/BadgePopup.svelte";
   import ChoresPage from "./lib/components/ChoresPage.svelte";
   import ChoreListPage from "./lib/components/ChoreListPage.svelte";
@@ -42,11 +42,46 @@
     screenY: number;
   } | null>(null);
   let selectedInventoryItemId = $state<string | null>(null);
-  let draggingInventoryItemId = $state<string | null>(null);
+  let draggingItemId = $state<string | null>(null);
+  let draggingLayerId = $state<string | null>(null);
 
   let activeLayers = $state(new Set<string>());
   const choreLayerActive = $derived(activeLayers.has("chores"));
   const inventoryLayerActive = $derived(activeLayers.has("inventory"));
+
+  function choreDisplayName(name: string, emoji: string): string {
+    const trimmed = name.trim();
+    return (emoji && trimmed.startsWith(emoji)) ? trimmed.slice(emoji.length).trim() : trimmed;
+  }
+
+  const chorePickerLayer = $derived<PickerLayer>({
+    id: "chores",
+    label: "Chores",
+    emoji: "✅",
+    items: choreStore.chores.map(c => ({
+      id: c.id,
+      name: choreDisplayName(c.name, c.emoji),
+      emoji: c.emoji,
+      placed: choreStore.assignments.some(a => a.choreId === c.id),
+    })),
+  });
+
+  const inventoryPickerLayer = $derived<PickerLayer>({
+    id: "inventory",
+    label: "Inventory",
+    emoji: "📦",
+    items: inventoryStore.items.map(i => ({
+      id: i.id,
+      name: i.name,
+      emoji: i.emoji,
+      placed: i.placement !== null,
+    })),
+  });
+
+  const pickerLayers = $derived<PickerLayer[]>([
+    ...(choreLayerActive ? [chorePickerLayer] : []),
+    ...(inventoryLayerActive ? [inventoryPickerLayer] : []),
+  ]);
 
   function toggleLayer(layer: string): void {
     const next = new Set(activeLayers);
@@ -56,12 +91,14 @@
     if (next.has("chores")) toolStore.setTool("select");
   }
 
-  let draggingChoreId = $state<string | null>(null);
   let selectedBadge = $state<{ assignment: Assignment; screenX: number; screenY: number } | null>(null);
 
   $effect(() => {
     if (!choreLayerActive) selectedBadge = null;
   });
+  let pickerOpen = $state(false);
+  const ALL_FLOOR_ID = "__all__";
+  let allFloorsMode = $state(false);
   let navExpanded = $state(false);
   let showNewChoreModal = $state(false);
 
@@ -288,40 +325,46 @@
   }
 
   function handleDragOver(e: DragEvent): void {
-    if (!draggingChoreId && !draggingInventoryItemId) return;
+    if (!draggingItemId) return;
     e.preventDefault();
   }
 
   function handleDrop(e: DragEvent): void {
     e.preventDefault();
-    const inventoryItemId = e.dataTransfer?.getData("inventoryItemId") ?? draggingInventoryItemId;
-    draggingInventoryItemId = null;
-    const choreId = e.dataTransfer?.getData("choreId") ?? draggingChoreId;
-    draggingChoreId = null;
+    const layerId = e.dataTransfer?.getData("pickerLayer") ?? draggingLayerId;
+    const itemId = e.dataTransfer?.getData("pickerId") ?? draggingItemId;
+    draggingItemId = null;
+    draggingLayerId = null;
+    if (!layerId || !itemId) return;
+
+    if (allFloorsMode) {
+      if (layerId !== "chores") return;
+      const chore = choreStore.chores.find(c => c.id === itemId);
+      choreStore.createAssignment({ choreId: itemId, roomId: null, position: null, nextDueDate: chore?.nextDueDate ?? "" });
+      return;
+    }
+
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const screenX = e.clientX - rect.left, screenY = e.clientY - rect.top;
     const worldX = (screenX - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
     const worldY = (screenY - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
-    if (inventoryItemId) {
-      const room = floorStore.floor.rooms.find((r) => {
-        if (!r.polygon) return false;
-        return pointInPolygon({ x: worldX, y: worldY }, r.polygon);
-      });
-      inventoryStore.setPlacement(inventoryItemId, {
+
+    if (layerId === "inventory") {
+      const room = floorStore.floor.rooms.find(r => r.polygon && pointInPolygon({ x: worldX, y: worldY }, r.polygon));
+      inventoryStore.setPlacement(itemId, {
         floorId: floorStore.currentFloorId,
         roomId: room?.id ?? null,
         position: { x: worldX, y: worldY },
       });
       return;
     }
-    if (!choreId) return;
-    const room = floorStore.floor.rooms.find((r) => {
-      if (!r.polygon) return false;
-      return pointInPolygon({ x: worldX, y: worldY }, r.polygon);
-    });
-    if (!room) return;
-    const chore = choreStore.chores.find((c) => c.id === choreId);
-    choreStore.createAssignment({ choreId, roomId: room.id, position: { x: worldX, y: worldY }, nextDueDate: chore?.nextDueDate ?? "" });
+
+    if (layerId === "chores") {
+      const room = floorStore.floor.rooms.find(r => r.polygon && pointInPolygon({ x: worldX, y: worldY }, r.polygon));
+      if (!room) return;
+      const chore = choreStore.chores.find(c => c.id === itemId);
+      choreStore.createAssignment({ choreId: itemId, roomId: room.id, position: { x: worldX, y: worldY }, nextDueDate: chore?.nextDueDate ?? "" });
+    }
   }
 </script>
 
@@ -345,8 +388,15 @@
     {#if isFloorPlan}
       <FloorSwitcher
         floors={floorStore.floors}
-        currentFloorId={floorStore.currentFloorId}
-        onswitchfloor={(id) => { floorStore.switchFloor(id); toolStore.select(null); toolStore.selectRoom(null); toolStore.selectOpening(null); }}
+        currentFloorId={allFloorsMode ? ALL_FLOOR_ID : floorStore.currentFloorId}
+        onswitchfloor={(id) => {
+          if (id === ALL_FLOOR_ID) { allFloorsMode = true; return; }
+          allFloorsMode = false;
+          floorStore.switchFloor(id);
+          toolStore.select(null);
+          toolStore.selectRoom(null);
+          toolStore.selectOpening(null);
+        }}
         onaddfloor={(name) => floorStore.addFloor(name)}
         onrenamefloor={(id, name) => floorStore.renameFloor(id, name)}
         onremovefloor={(id) => floorStore.removeFloor(id)}
@@ -372,6 +422,12 @@
       <span class="topbar-sep"></span>
 
       <LayersDropdown {activeLayers} ontoggle={toggleLayer} />
+      <button
+        class="icon-btn"
+        class:active={pickerOpen}
+        title="Toggle item picker"
+        onclick={() => { pickerOpen = !pickerOpen; }}
+      >📋</button>
       <button
         class="icon-btn save-btn"
         class:saved={saveStatus === "saved"}
@@ -408,6 +464,28 @@
         <div class="canvas-area" bind:clientWidth={canvasWidth} bind:clientHeight={canvasHeight} ondragover={handleDragOver} ondrop={handleDrop}>
           {#if !floorStore.loaded}
             <div class="loading">Loading…</div>
+          {:else if allFloorsMode}
+            <div class="all-floor-canvas">
+              <div class="all-floor-hint">
+                <span class="all-floor-icon">🏠</span>
+                <span class="all-floor-title">House-wide</span>
+                <span class="all-floor-sub">Drag chores here to assign to the whole house</span>
+              </div>
+              {#each choreStore.houseAssignments() as a (a.id)}
+                {@const chore = choreStore.chores.find(c => c.id === a.choreId)}
+                {#if chore}
+                  <div class="house-badge">
+                    <span>{chore.emoji}</span>
+                    <span>{choreDisplayName(chore.name, chore.emoji)}</span>
+                    <button
+                      class="house-badge-remove"
+                      onclick={() => choreStore.deleteAssignment(a.id)}
+                      title="Remove house-wide assignment"
+                    >✕</button>
+                  </div>
+                {/if}
+              {/each}
+            </div>
           {:else}
             <Canvas
               floor={floorStore.floor}
@@ -440,35 +518,26 @@
                 onupdate={(patch) => floorStore.updateRoom(selectedRoom.id, patch)}
               />
             {/if}
-            <ChoreOverlay
-              chores={choreStore.chores}
-              assignments={currentFloorAssignments}
-              viewport={viewportStore.viewport}
-              choreMode={choreLayerActive}
-              width={canvasWidth}
-              height={canvasHeight}
-              onclick={(id) => handleBadgeClick(id)}
-              ondragend={handleBadgeDragEnd}
-            />
-            {#if choreLayerActive || inventoryLayerActive}
+            {#if choreLayerActive}
+              <ChoreOverlay
+                chores={choreStore.chores}
+                assignments={currentFloorAssignments}
+                viewport={viewportStore.viewport}
+                choreMode={true}
+                width={canvasWidth}
+                height={canvasHeight}
+                onclick={(id) => handleBadgeClick(id)}
+                ondragend={handleBadgeDragEnd}
+              />
+            {/if}
+            {#if pickerOpen && pickerLayers.length > 0}
               <div class="right-panels">
-                {#if choreLayerActive}
-                  <ChorePanel
-                    store={choreStore}
-                    {draggingChoreId}
-                    onDragStart={(id) => { draggingChoreId = id; }}
-                    onDragEnd={() => { draggingChoreId = null; }}
-                  />
-                {/if}
-                {#if inventoryLayerActive}
-                  <InventoryPickerPanel
-                    items={inventoryStore.items}
-                    currentFloorId={floorStore.currentFloorId}
-                    draggingItemId={draggingInventoryItemId}
-                    onDragStart={(id) => { draggingInventoryItemId = id; }}
-                    onDragEnd={() => { draggingInventoryItemId = null; }}
-                  />
-                {/if}
+                <ItemPickerPanel
+                  layers={pickerLayers}
+                  draggingId={draggingItemId}
+                  ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; }}
+                  ondragend={() => { draggingLayerId = null; draggingItemId = null; }}
+                />
               </div>
             {/if}
             {#if selectedBadge}
@@ -492,10 +561,11 @@
                 {/if}
               {/if}
             {/if}
+            {#if inventoryLayerActive}
             <InventoryOverlay
               items={currentFloorInventoryItems}
               viewport={viewportStore.viewport}
-              active={inventoryLayerActive}
+              active={true}
               width={canvasWidth}
               height={canvasHeight}
               onclick={(itemId) => {
@@ -513,6 +583,7 @@
                 });
               }}
             />
+            {/if}
             {#if selectedInventoryPin}
               {@const pin = selectedInventoryPin}
               <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -661,11 +732,33 @@
 
   .right-panels {
     position: absolute; top: 0; right: 0; bottom: 0;
-    display: flex; flex-direction: column; z-index: 20; overflow: hidden;
+    display: flex; flex-direction: row; z-index: 20;
   }
 
   .loading {
     display: flex; align-items: center; justify-content: center;
     height: 100%; color: #888; font-size: 14px;
   }
+
+  .all-floor-canvas {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    padding: 40px 24px; gap: 12px; background: #111122; overflow-y: auto;
+  }
+  .all-floor-hint {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    margin-bottom: 24px;
+  }
+  .all-floor-icon { font-size: 40px; }
+  .all-floor-title { font-size: 18px; color: #eee; font-weight: 600; }
+  .all-floor-sub { font-size: 12px; color: #667; }
+  .house-badge {
+    display: flex; align-items: center; gap: 10px; padding: 8px 16px;
+    background: #1e1e2e; border: 1px solid #333; border-radius: 6px;
+    color: #ccc; font-size: 13px; min-width: 200px;
+  }
+  .house-badge-remove {
+    margin-left: auto; border: none; background: transparent; color: #666;
+    cursor: pointer; font-size: 11px; padding: 2px 5px;
+  }
+  .house-badge-remove:hover { color: #f66; }
 </style>
