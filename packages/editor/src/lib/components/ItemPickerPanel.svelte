@@ -124,16 +124,17 @@
     border: 1px solid #2a2a4a; color: #bbb; border-radius: 4px;
     font-size: 11px; flex-shrink: 0;
   }
-  .section { border-bottom: 1px solid #2a2a3a; }
+  .section { border-bottom: 1px solid #2a2a3a; flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
   .section-header {
     width: 100%; display: flex; align-items: center; gap: 6px;
     padding: 6px 10px; background: #252535; border: none; color: #aaf;
     cursor: pointer; font-size: 11px; font-weight: 600; text-align: left;
+    flex-shrink: 0;
   }
   .section-header:hover { background: #2a2a45; }
   .section-count { margin-left: auto; color: #556; font-size: 10px; }
   .chevron { color: #556; font-size: 9px; flex-shrink: 0; }
-  .section-body { overflow-y: auto; }
+  .section-body { overflow-y: auto; flex: 1; min-height: 0; }
   .group-title {
     color: #556; font-size: 9px; text-transform: uppercase;
     letter-spacing: .05em; padding: 4px 10px 2px;

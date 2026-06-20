@@ -518,3 +518,96 @@ def test_schedule_from_due_assignment(tmp_path, monkeypatch):
     expected = due_dt + timedelta(days=30)
     new_dt = datetime.fromisoformat(resp.json()["nextDueDate"].replace("Z", "+00:00"))
     assert abs((new_dt - expected).total_seconds()) < 2
+
+
+# --- Scheduling: weekday string names ---
+
+def _make_weekday_chore(days_value) -> ChoreDocument:
+    """Helper: days_of_the_week chore whose metadata.days is the given value."""
+    return ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="Sweep", emoji="🧹", periodDays=7,
+                frequencyType="days_of_the_week", frequency=1,
+                frequencyMetadata={"days": days_value},
+                nextDueDate="2026-06-16T00:00:00Z",  # Monday
+            )
+        ],
+        assignments=[],
+    )
+
+
+def test_days_of_week_with_integer_days(tmp_path, monkeypatch):
+    """Numeric day values (1-based) must not crash and must advance to next occurrence."""
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    save_chores(_make_weekday_chore([3, 5]))  # Wednesday=3, Friday=5
+    c = TestClient(app)
+    aid = c.post("/api/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    resp = c.post(f"/api/assignments/{aid}/complete")
+    assert resp.status_code == 200
+    assert resp.json()["nextDueDate"] is not None
+
+
+def test_days_of_week_with_string_day_names(tmp_path, monkeypatch):
+    """String weekday names from Donetick imports must not raise TypeError."""
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    save_chores(_make_weekday_chore(["wednesday", "friday"]))
+    c = TestClient(app)
+    aid = c.post("/api/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    resp = c.post(f"/api/assignments/{aid}/complete")
+    assert resp.status_code == 200
+    assert resp.json()["nextDueDate"] is not None
+
+
+# --- Scheduling: day_of_the_month with month filter ---
+
+def test_day_of_month_respects_allowed_months(tmp_path, monkeypatch):
+    """day_of_the_month chore with months=[1,7] must skip to next allowed month."""
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    doc = ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="Annual service", emoji="🔧", periodDays=30,
+                frequencyType="day_of_the_month", frequency=1,
+                frequencyMetadata={"months": [1, 7]},  # January and July only
+                nextDueDate="2026-06-01T00:00:00Z",  # due in June — next allowed is July
+            )
+        ],
+        assignments=[],
+    )
+    save_chores(doc)
+    c = TestClient(app)
+    aid = c.post("/api/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    resp = c.post(f"/api/assignments/{aid}/complete")
+    assert resp.status_code == 200
+    next_due = resp.json()["nextDueDate"]
+    from datetime import datetime, timezone
+    dt = datetime.fromisoformat(next_due.replace("Z", "+00:00"))
+    assert dt.month == 7, f"expected July, got month {dt.month}"
+    assert dt.day == 1
+
+
+def test_day_of_month_no_month_filter_advances_one_month(tmp_path, monkeypatch):
+    """day_of_the_month with no months filter advances by exactly one month."""
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    doc = ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="Monthly clean", emoji="🧹", periodDays=30,
+                frequencyType="day_of_the_month", frequency=15,
+                frequencyMetadata={},
+                nextDueDate="2026-06-15T00:00:00Z",
+            )
+        ],
+        assignments=[],
+    )
+    save_chores(doc)
+    c = TestClient(app)
+    aid = c.post("/api/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    resp = c.post(f"/api/assignments/{aid}/complete")
+    assert resp.status_code == 200
+    next_due = resp.json()["nextDueDate"]
+    from datetime import datetime, timezone
+    dt = datetime.fromisoformat(next_due.replace("Z", "+00:00"))
+    assert dt.month == 7
+    assert dt.day == 15

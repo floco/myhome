@@ -45,8 +45,12 @@
 
 <style>
   .backdrop {
+    display: none;
     position: fixed; inset: 0; z-index: 19;
     background: rgba(0, 0, 0, 0.45);
+  }
+  @media (max-width: 600px) {
+    .backdrop { display: block; }
   }
 
   .nav {
