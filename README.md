@@ -6,11 +6,12 @@ A modular home management app for Home Assistant. Each aspect of your home — i
 
 | Module | Status | Description |
 |--------|--------|-------------|
-| ⊞ **Floor Plan** | Live | Draw rooms, place doors/windows, overlay chore badges, label HA areas |
+| 🏠 **Floor Plan** | Live | Draw rooms, place doors/windows, overlay chore badges, label HA areas |
 | ✅ **Chores** | Live | Track recurring chores with flexible schedules, completion history, and notes |
 | 📦 **Inventory** | Planned | Catalog items stored in your home — furniture, appliances, tools, valuables |
 | 🛒 **Consumables** | Planned | Monitor stock levels for everyday supplies and household essentials |
 | 🔧 **Works** | Planned | Log renovations and repairs — contractors, costs, warranties, photos |
+| 💶 **Finance** | Planned | Track house costs — property taxes, fuel/mazout orders, electricity bills, and other expenses |
 
 ## Chores
 

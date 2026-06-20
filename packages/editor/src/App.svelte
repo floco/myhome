@@ -22,6 +22,7 @@
   import InventoryPage from "./lib/components/InventoryPage.svelte";
   import ConsumablesPage from "./lib/components/ConsumablesPage.svelte";
   import WorksPage from "./lib/components/WorksPage.svelte";
+  import FinancePage from "./lib/components/FinancePage.svelte";
 
   const floorStore = createHouseStore();
   const viewportStore = createViewportStore();
@@ -451,6 +452,9 @@
 
       {:else if currentRoute === "#/works"}
         <WorksPage />
+
+      {:else if currentRoute === "#/finance"}
+        <FinancePage />
       {/if}
     </div>
   </div>

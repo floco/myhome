@@ -7,11 +7,12 @@
   let { currentRoute, expanded, onclose }: Props = $props();
 
   const modules = [
-    { href: "#/",            icon: "⊞", label: "Floor Plan"   },
+    { href: "#/",            icon: "🏠", label: "Floor Plan"   },
     { href: "#/chores",      icon: "✅", label: "Chores"       },
     { href: "#/inventory",   icon: "📦", label: "Inventory"    },
     { href: "#/consumables", icon: "🛒", label: "Consumables"  },
     { href: "#/works",       icon: "🔧", label: "Works"        },
+    { href: "#/finance",     icon: "💶", label: "Finance"      },
   ];
 
   function isActive(href: string): boolean {
