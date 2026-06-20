@@ -24,17 +24,19 @@
   import InventoryPage from "./lib/components/InventoryPage.svelte";
   import ConsumablesPage from "./lib/components/ConsumablesPage.svelte";
   import WorksPage from "./lib/components/WorksPage.svelte";
-  import FinancePage from "./lib/components/FinancePage.svelte";
   import { createInventoryStore } from "./lib/inventoryStore.svelte";
   import type { InventoryItem } from "./lib/inventoryStore.svelte";
   import InventoryOverlay from "./lib/components/InventoryOverlay.svelte";
   import InventoryPinPopup from "./lib/components/InventoryPinPopup.svelte";
+  import { createSettingsStore } from "./lib/settingsStore.svelte";
+  import SettingsPage from "./lib/components/SettingsPage.svelte";
 
   const floorStore = createHouseStore();
   const viewportStore = createViewportStore();
   const toolStore = createToolStore();
   const choreStore = createChoreStore();
   const inventoryStore = createInventoryStore();
+  const settingsStore = createSettingsStore();
 
   let selectedInventoryPin = $state<{
     item: InventoryItem;
@@ -621,6 +623,7 @@
         <InventoryPage
           store={inventoryStore}
           {floorStore}
+          inventoryCategories={settingsStore.inventoryCategories.map(c => c.name)}
           selectedItemId={selectedInventoryItemId}
           onclearselection={() => { selectedInventoryItemId = null; }}
           onplaceonmap={(id) => {
@@ -637,8 +640,11 @@
       {:else if currentRoute === "#/works"}
         <WorksPage />
 
-      {:else if currentRoute === "#/finance"}
-        <FinancePage />
+      {:else if currentRoute === "#/costs"}
+        <div class="placeholder">Costs module coming soon</div>
+
+      {:else if currentRoute === "#/settings"}
+        <SettingsPage store={settingsStore} />
       {/if}
     </div>
   </div>
@@ -761,4 +767,9 @@
     cursor: pointer; font-size: 11px; padding: 2px 5px;
   }
   .house-badge-remove:hover { color: #f66; }
+
+  .placeholder {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; color: #556; font-size: 14px;
+  }
 </style>

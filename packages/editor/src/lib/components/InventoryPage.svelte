@@ -9,6 +9,7 @@
   interface Props {
     store: InvStore;
     floorStore: HouseStore;
+    inventoryCategories?: string[];
     selectedItemId?: string | null;
     onclearselection?: () => void;
     onplaceonmap?: (itemId: string) => void;
@@ -17,6 +18,7 @@
   let {
     store,
     floorStore,
+    inventoryCategories = [],
     selectedItemId = null,
     onclearselection,
     onplaceonmap,
@@ -170,6 +172,7 @@
   <InventoryModal
     item={modalItem === "create" ? null : modalItem}
     {store}
+    {inventoryCategories}
     onclose={() => { modalItem = null; }}
     onplaceonmap={onplaceonmap
       ? (id) => { modalItem = null; onplaceonmap!(id); }

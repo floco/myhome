@@ -6,15 +6,12 @@
   interface Props {
     item: InventoryItem | null; // null = create mode
     store: InvStore;
+    inventoryCategories: string[];
     onclose: () => void;
     onplaceonmap?: (itemId: string) => void;
   }
 
-  let { item, store, onclose, onplaceonmap }: Props = $props();
-
-  const CATEGORY_SUGGESTIONS = [
-    "Electronics", "Furniture", "Appliance", "Tool", "Artwork", "Other",
-  ];
+  let { item, store, inventoryCategories, onclose, onplaceonmap }: Props = $props();
 
   const isCreate = item === null;
 
@@ -103,7 +100,7 @@
           placeholder="Electronics, Furniture…"
         />
         <datalist id="inv-cat-list">
-          {#each CATEGORY_SUGGESTIONS as s}<option value={s} />{/each}
+          {#each inventoryCategories as s}<option value={s} />{/each}
         </datalist>
       </div>
       <div class="row">
