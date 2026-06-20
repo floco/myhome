@@ -12,8 +12,10 @@
     { href: "#/inventory",   icon: "📦", label: "Inventory"    },
     { href: "#/consumables", icon: "🛒", label: "Consumables"  },
     { href: "#/works",       icon: "🔧", label: "Works"        },
-    { href: "#/finance",     icon: "💶", label: "Finance"      },
+    { href: "#/costs",       icon: "💶", label: "Costs"        },
   ];
+
+  const settingsLink = { href: "#/settings", icon: "⚙", label: "Settings" };
 
   function isActive(href: string): boolean {
     if (href === "#/") return currentRoute === "#/" || currentRoute === "";
@@ -40,6 +42,17 @@
         <span class="nav-label">{mod.label}</span>
       </a>
     {/each}
+    <hr class="nav-separator" />
+    <a
+      href={settingsLink.href}
+      class="nav-item"
+      class:active={isActive(settingsLink.href)}
+      title={settingsLink.label}
+      onclick={onclose}
+    >
+      <span class="nav-icon">{settingsLink.icon}</span>
+      <span class="nav-label">{settingsLink.label}</span>
+    </a>
   </div>
 </nav>
 
@@ -76,6 +89,8 @@
 
   .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; line-height: 1; }
   .nav-label { font-size: 12px; }
+
+  .nav-separator { border: none; border-top: 1px solid #2a2a4a; margin: 8px 4px; }
 
   @media (max-width: 600px) {
     .nav {
