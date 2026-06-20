@@ -14,6 +14,7 @@
   import type { Assignment } from "./lib/choreStore.svelte";
   import ChoreOverlay from "./lib/components/ChoreOverlay.svelte";
   import ChorePanel from "./lib/components/ChorePanel.svelte";
+  import InventoryPickerPanel from "./lib/components/InventoryPickerPanel.svelte";
   import BadgePopup from "./lib/components/BadgePopup.svelte";
   import ChoresPage from "./lib/components/ChoresPage.svelte";
   import ChoreListPage from "./lib/components/ChoreListPage.svelte";
@@ -449,13 +450,26 @@
               onclick={(id) => handleBadgeClick(id)}
               ondragend={handleBadgeDragEnd}
             />
-            {#if choreLayerActive}
-              <ChorePanel
-                store={choreStore}
-                {draggingChoreId}
-                onDragStart={(id) => { draggingChoreId = id; }}
-                onDragEnd={() => { draggingChoreId = null; }}
-              />
+            {#if choreLayerActive || inventoryLayerActive}
+              <div class="right-panels">
+                {#if choreLayerActive}
+                  <ChorePanel
+                    store={choreStore}
+                    {draggingChoreId}
+                    onDragStart={(id) => { draggingChoreId = id; }}
+                    onDragEnd={() => { draggingChoreId = null; }}
+                  />
+                {/if}
+                {#if inventoryLayerActive}
+                  <InventoryPickerPanel
+                    items={inventoryStore.items}
+                    currentFloorId={floorStore.currentFloorId}
+                    draggingItemId={draggingInventoryItemId}
+                    onDragStart={(id) => { draggingInventoryItemId = id; }}
+                    onDragEnd={() => { draggingInventoryItemId = null; }}
+                  />
+                {/if}
+              </div>
             {/if}
             {#if selectedBadge}
               {@const badge = selectedBadge}
@@ -632,6 +646,11 @@
 
   .canvas-area {
     flex: 1; overflow: hidden; position: relative;
+  }
+
+  .right-panels {
+    position: absolute; top: 0; right: 0; bottom: 0;
+    display: flex; flex-direction: column; z-index: 20; overflow: hidden;
   }
 
   .loading {
