@@ -24,16 +24,20 @@
   let categoryFilter = $state("");
   let yearFilter = $state("");
 
+  const categoryMap = $derived(
+    new Map(settingsStore.costCategories.map(c => [c.id, c]))
+  );
+
   function categoryName(categoryId: string): string {
-    return settingsStore.costCategories.find(c => c.id === categoryId)?.name ?? "Unknown";
+    return categoryMap.get(categoryId)?.name ?? "Unknown";
   }
 
   function categoryEmoji(categoryId: string): string {
-    return settingsStore.costCategories.find(c => c.id === categoryId)?.emoji ?? "?";
+    return categoryMap.get(categoryId)?.emoji ?? "?";
   }
 
   function categoryUnit(categoryId: string): string | null {
-    return settingsStore.costCategories.find(c => c.id === categoryId)?.unit ?? null;
+    return categoryMap.get(categoryId)?.unit ?? null;
   }
 
   function roomName(roomId: string | null | undefined): string {
