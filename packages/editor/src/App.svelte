@@ -14,24 +14,54 @@
   import type { Assignment } from "./lib/choreStore.svelte";
   import ChoreOverlay from "./lib/components/ChoreOverlay.svelte";
   import ChorePanel from "./lib/components/ChorePanel.svelte";
+  import InventoryPickerPanel from "./lib/components/InventoryPickerPanel.svelte";
   import BadgePopup from "./lib/components/BadgePopup.svelte";
   import ChoresPage from "./lib/components/ChoresPage.svelte";
   import ChoreListPage from "./lib/components/ChoreListPage.svelte";
   import NavMenu from "./lib/components/NavMenu.svelte";
   import NewChoreModal from "./lib/components/NewChoreModal.svelte";
+  import LayersDropdown from "./lib/components/LayersDropdown.svelte";
   import InventoryPage from "./lib/components/InventoryPage.svelte";
   import ConsumablesPage from "./lib/components/ConsumablesPage.svelte";
   import WorksPage from "./lib/components/WorksPage.svelte";
   import FinancePage from "./lib/components/FinancePage.svelte";
+  import { createInventoryStore } from "./lib/inventoryStore.svelte";
+  import type { InventoryItem } from "./lib/inventoryStore.svelte";
+  import InventoryOverlay from "./lib/components/InventoryOverlay.svelte";
+  import InventoryPinPopup from "./lib/components/InventoryPinPopup.svelte";
 
   const floorStore = createHouseStore();
   const viewportStore = createViewportStore();
   const toolStore = createToolStore();
   const choreStore = createChoreStore();
+  const inventoryStore = createInventoryStore();
 
-  let choreMode = $state(false);
+  let selectedInventoryPin = $state<{
+    item: InventoryItem;
+    screenX: number;
+    screenY: number;
+  } | null>(null);
+  let selectedInventoryItemId = $state<string | null>(null);
+  let draggingInventoryItemId = $state<string | null>(null);
+
+  let activeLayers = $state(new Set<string>());
+  const choreLayerActive = $derived(activeLayers.has("chores"));
+  const inventoryLayerActive = $derived(activeLayers.has("inventory"));
+
+  function toggleLayer(layer: string): void {
+    const next = new Set(activeLayers);
+    if (next.has(layer)) next.delete(layer);
+    else next.add(layer);
+    activeLayers = next;
+    if (next.has("chores")) toolStore.setTool("select");
+  }
+
   let draggingChoreId = $state<string | null>(null);
   let selectedBadge = $state<{ assignment: Assignment; screenX: number; screenY: number } | null>(null);
+
+  $effect(() => {
+    if (!choreLayerActive) selectedBadge = null;
+  });
   let navExpanded = $state(false);
   let showNewChoreModal = $state(false);
 
@@ -54,6 +84,11 @@
   const currentFloorRoomIds = $derived(new Set(floorStore.floor.rooms.map((r) => r.id)));
   const currentFloorAssignments = $derived(
     choreStore.assignments.filter((a) => a.roomId !== null && currentFloorRoomIds.has(a.roomId))
+  );
+  const currentFloorInventoryItems = $derived(
+    inventoryStore.items.filter(
+      (i) => i.placement?.floorId === floorStore.currentFloorId
+    )
   );
 
   let spacePressed = $state(false);
@@ -253,19 +288,33 @@
   }
 
   function handleDragOver(e: DragEvent): void {
-    if (!draggingChoreId) return;
+    if (!draggingChoreId && !draggingInventoryItemId) return;
     e.preventDefault();
   }
 
   function handleDrop(e: DragEvent): void {
+    e.preventDefault();
+    const inventoryItemId = e.dataTransfer?.getData("inventoryItemId") ?? draggingInventoryItemId;
+    draggingInventoryItemId = null;
     const choreId = e.dataTransfer?.getData("choreId") ?? draggingChoreId;
     draggingChoreId = null;
-    if (!choreId) return;
-    e.preventDefault();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const screenX = e.clientX - rect.left, screenY = e.clientY - rect.top;
     const worldX = (screenX - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
     const worldY = (screenY - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
+    if (inventoryItemId) {
+      const room = floorStore.floor.rooms.find((r) => {
+        if (!r.polygon) return false;
+        return pointInPolygon({ x: worldX, y: worldY }, r.polygon);
+      });
+      inventoryStore.setPlacement(inventoryItemId, {
+        floorId: floorStore.currentFloorId,
+        roomId: room?.id ?? null,
+        position: { x: worldX, y: worldY },
+      });
+      return;
+    }
+    if (!choreId) return;
     const room = floorStore.floor.rooms.find((r) => {
       if (!r.polygon) return false;
       return pointInPolygon({ x: worldX, y: worldY }, r.polygon);
@@ -305,7 +354,7 @@
 
       <span class="spacer"></span>
 
-      {#if !choreMode}
+      {#if !choreLayerActive}
         <div class="toolbar">
           <button title="Undo (Ctrl+Z)" disabled={!floorStore.hasUndo} onclick={handleUndo}>↩</button>
           <button title="Redo (Ctrl+Y)" disabled={!floorStore.hasRedo} onclick={handleRedo}>↪</button>
@@ -322,12 +371,7 @@
 
       <span class="topbar-sep"></span>
 
-      <button
-        class="icon-btn"
-        class:active={choreMode}
-        title="Chore picker"
-        onclick={() => { choreMode = !choreMode; if (choreMode) toolStore.setTool("select"); else selectedBadge = null; }}
-      >📋</button>
+      <LayersDropdown {activeLayers} ontoggle={toggleLayer} />
       <button
         class="icon-btn save-btn"
         class:saved={saveStatus === "saved"}
@@ -400,19 +444,32 @@
               chores={choreStore.chores}
               assignments={currentFloorAssignments}
               viewport={viewportStore.viewport}
-              {choreMode}
+              choreMode={choreLayerActive}
               width={canvasWidth}
               height={canvasHeight}
               onclick={(id) => handleBadgeClick(id)}
               ondragend={handleBadgeDragEnd}
             />
-            {#if choreMode}
-              <ChorePanel
-                store={choreStore}
-                {draggingChoreId}
-                onDragStart={(id) => { draggingChoreId = id; }}
-                onDragEnd={() => { draggingChoreId = null; }}
-              />
+            {#if choreLayerActive || inventoryLayerActive}
+              <div class="right-panels">
+                {#if choreLayerActive}
+                  <ChorePanel
+                    store={choreStore}
+                    {draggingChoreId}
+                    onDragStart={(id) => { draggingChoreId = id; }}
+                    onDragEnd={() => { draggingChoreId = null; }}
+                  />
+                {/if}
+                {#if inventoryLayerActive}
+                  <InventoryPickerPanel
+                    items={inventoryStore.items}
+                    currentFloorId={floorStore.currentFloorId}
+                    draggingItemId={draggingInventoryItemId}
+                    onDragStart={(id) => { draggingInventoryItemId = id; }}
+                    onDragEnd={() => { draggingInventoryItemId = null; }}
+                  />
+                {/if}
+              </div>
             {/if}
             {#if selectedBadge}
               {@const badge = selectedBadge}
@@ -435,6 +492,51 @@
                 {/if}
               {/if}
             {/if}
+            <InventoryOverlay
+              items={currentFloorInventoryItems}
+              viewport={viewportStore.viewport}
+              active={inventoryLayerActive}
+              width={canvasWidth}
+              height={canvasHeight}
+              onclick={(itemId) => {
+                const item = inventoryStore.items.find((i) => i.id === itemId);
+                if (!item?.placement) return;
+                const sp = viewportStore.worldToScreen(item.placement.position);
+                selectedInventoryPin = { item, screenX: sp.x, screenY: sp.y };
+              }}
+              ondragend={(itemId, worldPos) => {
+                const item = inventoryStore.items.find((i) => i.id === itemId);
+                if (!item?.placement) return;
+                inventoryStore.setPlacement(itemId, {
+                  ...item.placement,
+                  position: worldPos,
+                });
+              }}
+            />
+            {#if selectedInventoryPin}
+              {@const pin = selectedInventoryPin}
+              <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+              <div
+                style="position:absolute;inset:0;z-index:55"
+                onclick={() => { selectedInventoryPin = null; }}
+              >
+                <InventoryPinPopup
+                  item={pin.item}
+                  screenX={pin.screenX}
+                  screenY={pin.screenY}
+                  onedit={() => {
+                    selectedInventoryItemId = pin.item.id;
+                    selectedInventoryPin = null;
+                    window.location.hash = "#/inventory";
+                  }}
+                  onremove={async () => {
+                    await inventoryStore.setPlacement(pin.item.id, null);
+                    selectedInventoryPin = null;
+                  }}
+                  onclose={() => { selectedInventoryPin = null; }}
+                />
+              </div>
+            {/if}
           {/if}
         </div>
 
@@ -445,7 +547,18 @@
         <ChoresPage store={choreStore} {floorStore} onnewchore={() => { showNewChoreModal = true; }} />
 
       {:else if currentRoute === "#/inventory"}
-        <InventoryPage />
+        <InventoryPage
+          store={inventoryStore}
+          {floorStore}
+          selectedItemId={selectedInventoryItemId}
+          onclearselection={() => { selectedInventoryItemId = null; }}
+          onplaceonmap={(id) => {
+            const next = new Set(activeLayers);
+            next.add("inventory");
+            activeLayers = next;
+            window.location.hash = "#/";
+          }}
+        />
 
       {:else if currentRoute === "#/consumables"}
         <ConsumablesPage />
@@ -544,6 +657,11 @@
 
   .canvas-area {
     flex: 1; overflow: hidden; position: relative;
+  }
+
+  .right-panels {
+    position: absolute; top: 0; right: 0; bottom: 0;
+    display: flex; flex-direction: column; z-index: 20; overflow: hidden;
   }
 
   .loading {
