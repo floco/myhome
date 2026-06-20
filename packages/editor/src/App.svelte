@@ -547,7 +547,18 @@
         <ChoresPage store={choreStore} {floorStore} onnewchore={() => { showNewChoreModal = true; }} />
 
       {:else if currentRoute === "#/inventory"}
-        <InventoryPage />
+        <InventoryPage
+          store={inventoryStore}
+          {floorStore}
+          selectedItemId={selectedInventoryItemId}
+          onclearselection={() => { selectedInventoryItemId = null; }}
+          onplaceonmap={(id) => {
+            const next = new Set(activeLayers);
+            next.add("inventory");
+            activeLayers = next;
+            window.location.hash = "#/";
+          }}
+        />
 
       {:else if currentRoute === "#/consumables"}
         <ConsumablesPage />
