@@ -9,12 +9,15 @@ COPY packages/geometry ./packages/geometry
 COPY packages/editor ./packages/editor
 RUN npm run -w @myhome/editor build
 
-# Stage 2: Python backend
+# Stage 2: Python backend + static assets
 FROM python:3.12-slim
 WORKDIR /app
 COPY packages/backend/pyproject.toml ./
 COPY packages/backend/src ./src
 RUN pip install --no-cache-dir .
 COPY --from=frontend-build /build/packages/editor/dist ./static
+COPY addon/run.sh /run.sh
+RUN chmod +x /run.sh
+ENV STATIC_DIR=/app/static
 EXPOSE 8000
-CMD ["uvicorn", "myhome.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/run.sh"]

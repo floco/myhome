@@ -1,8 +1,9 @@
-name: "MyHome Floor Plan"
-version: "0.1.0"
+name: "My Home"
+version: "0.2.0"
 slug: "myhome"
-description: "Interactive floor plan editor for Home Assistant"
-url: "https://github.com/mutualis/myhome"
+description: "Interactive floor plan editor with chore tracking"
+url: "https://github.com/floco/myhome"
+image: "ghcr.io/floco/myhome/{arch}"
 arch:
   - amd64
   - aarch64
@@ -10,10 +11,15 @@ arch:
   - armv7
 startup: application
 boot: auto
+init: false
+homeassistant_api: true
 ingress: true
 ingress_port: 8000
-homeassistant_api: true
+panel_icon: mdi:home-floor-plan
+panel_title: My Home
 map:
   - data:rw
-options: {}
-schema: {}
+options:
+  log_level: info
+schema:
+  log_level: "list(debug|info|warning|error|critical)"
