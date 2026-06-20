@@ -150,7 +150,7 @@ describe("InventoryOverlay", () => {
     });
 
     const g = target.querySelector("svg g");
-    expect(g?.getAttribute("style")).toContain("pointer-events:none");
+    expect(g?.getAttribute("style")).toMatch(/pointer-events:\s*none/);
 
     unmount(comp);
     target.remove();
