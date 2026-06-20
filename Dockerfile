@@ -1,5 +1,5 @@
-# Stage 1: build Svelte frontend
-FROM node:22-alpine AS frontend-build
+# Stage 1: build Svelte frontend (always amd64 — rolldown has no arm/v6/v7 binaries)
+FROM --platform=linux/amd64 node:22-alpine AS frontend-build
 WORKDIR /build
 COPY package.json package-lock.json ./
 COPY packages/geometry/package.json ./packages/geometry/
