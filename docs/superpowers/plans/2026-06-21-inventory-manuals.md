@@ -1,10 +1,10 @@
-# Inventory PDF Manuals Implementation Plan
+# Inventory PDF Attachments Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add PDF manual upload/view/delete to inventory items, following the same pattern as works attachments.
+**Goal:** Add multiple PDF attachment support to inventory items, mirroring works attachments exactly.
 
-**Architecture:** `manual: str | None` field on `InventoryItem` stores the sanitised filename; files live at `/data/inventory-manuals/{item_id}/{filename}`; three new FastAPI routes handle upload (multipart POST), serve (`FileResponse` inline), and delete. The `InventoryModal` gains a "Manual" tab identical in structure to `WorkModal`'s "Attachments" tab.
+**Architecture:** `attachments: list[str]` field on `InventoryItem` stores sanitised filenames; files live at `/data/inventory-attachments/{item_id}/{filename}`; three new FastAPI routes handle upload (multipart POST), serve (`FileResponse` inline), and delete per filename. The `InventoryModal` gains an "Attachments" tab identical to `WorkModal`'s tab.
 
 **Tech Stack:** Python 3.12 / FastAPI / Pydantic v2 · Svelte 5 runes / TypeScript · Vitest · pytest
 
@@ -13,15 +13,15 @@
 ## File Structure
 
 **Backend — modified:**
-- `packages/backend/src/myhome/models_inventory.py` — add `manual: str | None = None` to `InventoryItem`
-- `packages/backend/src/myhome/persistence_inventory.py` — add `_manuals_dir`, `save_manual`, `delete_item_manual`
-- `packages/backend/src/myhome/routes/inventory.py` — add upload/get/delete manual routes + cascade on item delete
-- `packages/backend/tests/test_inventory.py` — add manual route tests
+- `packages/backend/src/myhome/models_inventory.py` — add `attachments: list[str] = []` to `InventoryItem`
+- `packages/backend/src/myhome/persistence_inventory.py` — add `_attachments_dir`, `save_attachment`, `delete_attachment`, `delete_all_attachments`
+- `packages/backend/src/myhome/routes/inventory.py` — add upload/get/delete attachment routes + cascade on item delete
+- `packages/backend/tests/test_inventory.py` — add attachment route tests
 
 **Frontend — modified:**
-- `packages/editor/src/lib/inventoryStore.svelte.ts` — add `manual` to `InventoryItem` interface; add `uploadManual`, `deleteManual`
-- `packages/editor/test/inventoryStore.test.ts` — add `manual: null` to `makeItem`; add store method tests
-- `packages/editor/src/lib/components/InventoryModal.svelte` — add Manual tab
+- `packages/editor/src/lib/inventoryStore.svelte.ts` — add `attachments` to `InventoryItem` interface; add `uploadAttachment`, `deleteAttachment`
+- `packages/editor/test/inventoryStore.test.ts` — add `attachments: []` to `makeItem`; add store method tests
+- `packages/editor/src/lib/components/InventoryModal.svelte` — add Attachments tab
 
 ---
 
@@ -31,9 +31,9 @@
 - Modify: `packages/backend/src/myhome/models_inventory.py`
 - Modify: `packages/backend/src/myhome/persistence_inventory.py`
 
-- [ ] **Step 1: Add `manual` field to `InventoryItem`**
+- [ ] **Step 1: Add `attachments` field to `InventoryItem`**
 
-In `packages/backend/src/myhome/models_inventory.py`, add `manual: str | None = None` between `notes` and `placement`. The complete file becomes:
+Replace `packages/backend/src/myhome/models_inventory.py` with:
 
 ```python
 from __future__ import annotations
@@ -63,7 +63,7 @@ class InventoryItem(BaseModel):
     purchasePrice: float | None = None
     warrantyExpiryDate: str | None = None
     notes: str = ""
-    manual: str | None = None
+    attachments: list[str] = []
     placement: InventoryPlacement | None = None
 
 
@@ -102,7 +102,7 @@ class PlacementUpdate(BaseModel):
     placement: InventoryPlacement | None = None
 ```
 
-- [ ] **Step 2: Add manual file helpers to persistence**
+- [ ] **Step 2: Add attachment file helpers to persistence**
 
 Replace `packages/backend/src/myhome/persistence_inventory.py` with:
 
@@ -120,9 +120,9 @@ def _inventory_file() -> Path:
     return data_dir / "inventory.json"
 
 
-def _manuals_dir(item_id: str) -> Path:
+def _attachments_dir(item_id: str) -> Path:
     data_dir = Path(os.environ.get("DATA_DIR", "/data"))
-    return data_dir / "inventory-manuals" / item_id
+    return data_dir / "inventory-attachments" / item_id
 
 
 def load_inventory() -> InventoryDocument:
@@ -142,14 +142,22 @@ def save_inventory(doc: InventoryDocument) -> None:
     tmp.replace(path)
 
 
-def save_manual(item_id: str, filename: str, data: bytes) -> None:
-    path = _manuals_dir(item_id)
+def save_attachment(item_id: str, filename: str, data: bytes) -> None:
+    path = _attachments_dir(item_id)
     path.mkdir(parents=True, exist_ok=True)
     (path / filename).write_bytes(data)
 
 
-def delete_item_manual(item_id: str) -> None:
-    path = _manuals_dir(item_id)
+def delete_attachment(item_id: str, filename: str) -> bool:
+    path = _attachments_dir(item_id) / filename
+    if not path.exists():
+        return False
+    path.unlink()
+    return True
+
+
+def delete_all_attachments(item_id: str) -> None:
+    path = _attachments_dir(item_id)
     if path.exists():
         shutil.rmtree(path)
 ```
@@ -160,19 +168,19 @@ def delete_item_manual(item_id: str) -> None:
 cd packages/backend && python3 -m pytest tests/test_inventory.py -v
 ```
 
-Expected: 11 passed (all existing tests). The `manual` field defaults to `None` and is transparent to existing tests.
+Expected: 11 passed. The `attachments` field defaults to `[]` and is transparent to existing tests.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add packages/backend/src/myhome/models_inventory.py \
         packages/backend/src/myhome/persistence_inventory.py
-git commit -m "feat(inventory): add manual field and persistence helpers"
+git commit -m "feat(inventory): add attachments field and persistence helpers"
 ```
 
 ---
 
-### Task 2: Backend routes for manual upload, get, and delete
+### Task 2: Backend routes for attachment upload, get, and delete
 
 **Files:**
 - Modify: `packages/backend/src/myhome/routes/inventory.py`
@@ -183,130 +191,156 @@ git commit -m "feat(inventory): add manual field and persistence helpers"
 Append to the end of `packages/backend/tests/test_inventory.py`:
 
 ```python
-# --- Manual routes ---
+# --- Attachment routes ---
 
-def test_upload_manual(tmp_path, monkeypatch):
+def test_upload_attachment(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     save_inventory(make_doc())
     c = TestClient(app)
     resp = c.post(
-        "/api/inventory/items/i1/manual",
-        files={"file": ("dishwasher_manual.pdf", b"%PDF-1.4 content", "application/pdf")},
+        "/api/inventory/items/i1/attachments",
+        files={"file": ("invoice.pdf", b"%PDF-1.4 content", "application/pdf")},
     )
     assert resp.status_code == 201
-    assert resp.json()["filename"] == "dishwasher_manual.pdf"
+    assert resp.json()["filename"] == "invoice.pdf"
     item = c.get("/api/inventory").json()["items"][0]
-    assert item["manual"] == "dishwasher_manual.pdf"
+    assert "invoice.pdf" in item["attachments"]
 
 
-def test_upload_manual_sanitises_filename(tmp_path, monkeypatch):
+def test_upload_attachment_sanitises_filename(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     save_inventory(make_doc())
     c = TestClient(app)
     resp = c.post(
-        "/api/inventory/items/i1/manual",
-        files={"file": ("my manual 2025.pdf", b"%PDF test", "application/pdf")},
+        "/api/inventory/items/i1/attachments",
+        files={"file": ("my invoice 2025.pdf", b"%PDF test", "application/pdf")},
     )
     assert resp.status_code == 201
-    assert resp.json()["filename"] == "my_manual_2025.pdf"
+    assert resp.json()["filename"] == "my_invoice_2025.pdf"
 
 
-def test_upload_manual_replaces_existing(tmp_path, monkeypatch):
+def test_upload_attachment_multiple(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     save_inventory(make_doc())
     c = TestClient(app)
-    c.post("/api/inventory/items/i1/manual", files={"file": ("v1.pdf", b"%PDF v1", "application/pdf")})
-    c.post("/api/inventory/items/i1/manual", files={"file": ("v2.pdf", b"%PDF v2", "application/pdf")})
+    c.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF v1", "application/pdf")})
+    c.post("/api/inventory/items/i1/attachments", files={"file": ("manual.pdf", b"%PDF v2", "application/pdf")})
     item = c.get("/api/inventory").json()["items"][0]
-    assert item["manual"] == "v2.pdf"
+    assert "invoice.pdf" in item["attachments"]
+    assert "manual.pdf" in item["attachments"]
+    assert len(item["attachments"]) == 2
 
 
-def test_upload_manual_rejects_non_pdf(tmp_path, monkeypatch):
+def test_upload_attachment_no_duplicate(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    save_inventory(make_doc())
+    c = TestClient(app)
+    c.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF v1", "application/pdf")})
+    c.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF v2", "application/pdf")})
+    item = c.get("/api/inventory").json()["items"][0]
+    assert item["attachments"].count("invoice.pdf") == 1
+
+
+def test_upload_attachment_rejects_non_pdf(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     save_inventory(make_doc())
     c = TestClient(app)
     resp = c.post(
-        "/api/inventory/items/i1/manual",
+        "/api/inventory/items/i1/attachments",
         files={"file": ("image.png", b"fake-png", "image/png")},
     )
     assert resp.status_code == 400
 
 
-def test_upload_manual_item_not_found(client):
+def test_upload_attachment_item_not_found(client):
     resp = client.post(
-        "/api/inventory/items/nope/manual",
-        files={"file": ("manual.pdf", b"%PDF test", "application/pdf")},
+        "/api/inventory/items/nope/attachments",
+        files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")},
     )
     assert resp.status_code == 404
 
 
-def test_upload_manual_invalid_id(client):
+def test_upload_attachment_invalid_id(client):
     resp = client.post(
-        "/api/inventory/items/i!1/manual",
-        files={"file": ("manual.pdf", b"%PDF test", "application/pdf")},
+        "/api/inventory/items/i!1/attachments",
+        files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")},
     )
     assert resp.status_code == 400
 
 
-def test_get_manual(tmp_path, monkeypatch):
+def test_get_attachment(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     save_inventory(make_doc())
     c = TestClient(app)
-    c.post("/api/inventory/items/i1/manual", files={"file": ("manual.pdf", b"%PDF-1.4 content", "application/pdf")})
-    resp = c.get("/api/inventory/items/i1/manual")
+    c.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF-1.4 content", "application/pdf")})
+    resp = c.get("/api/inventory/items/i1/attachments/invoice.pdf")
     assert resp.status_code == 200
     assert "pdf" in resp.headers["content-type"]
 
 
-def test_get_manual_not_found(tmp_path, monkeypatch):
+def test_get_attachment_not_found(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     save_inventory(make_doc())
-    resp = TestClient(app).get("/api/inventory/items/i1/manual")
+    resp = TestClient(app).get("/api/inventory/items/i1/attachments/nope.pdf")
     assert resp.status_code == 404
 
 
-def test_get_manual_invalid_id(client):
-    resp = client.get("/api/inventory/items/i!1/manual")
+def test_get_attachment_invalid_id(client):
+    resp = client.get("/api/inventory/items/i!1/attachments/invoice.pdf")
     assert resp.status_code == 400
 
 
-def test_delete_manual(tmp_path, monkeypatch):
+def test_get_attachment_traversal_rejected(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    save_inventory(make_doc())
+    resp = TestClient(app).get("/api/inventory/items/i1/attachments/.hidden")
+    assert resp.status_code == 400
+
+
+def test_delete_attachment(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     save_inventory(make_doc())
     c = TestClient(app)
-    c.post("/api/inventory/items/i1/manual", files={"file": ("manual.pdf", b"%PDF test", "application/pdf")})
-    resp = c.delete("/api/inventory/items/i1/manual")
+    c.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")})
+    resp = c.delete("/api/inventory/items/i1/attachments/invoice.pdf")
     assert resp.status_code == 204
     item = c.get("/api/inventory").json()["items"][0]
-    assert item["manual"] is None
+    assert "invoice.pdf" not in item["attachments"]
 
 
-def test_delete_manual_not_found(tmp_path, monkeypatch):
+def test_delete_attachment_not_found(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     save_inventory(make_doc())
-    resp = TestClient(app).delete("/api/inventory/items/i1/manual")
+    resp = TestClient(app).delete("/api/inventory/items/i1/attachments/nope.pdf")
     assert resp.status_code == 404
 
 
-def test_delete_item_cascades_manual(tmp_path, monkeypatch):
+def test_delete_attachment_traversal_rejected(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    save_inventory(make_doc())
+    resp = TestClient(app).delete("/api/inventory/items/i1/attachments/.hidden")
+    assert resp.status_code == 400
+
+
+def test_delete_item_cascades_attachments(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     save_inventory(make_doc())
     c = TestClient(app)
-    c.post("/api/inventory/items/i1/manual", files={"file": ("manual.pdf", b"%PDF test", "application/pdf")})
+    c.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")})
     c.delete("/api/inventory/items/i1")
-    manual_dir = tmp_path / "inventory-manuals" / "i1"
-    assert not manual_dir.exists()
+    attach_dir = tmp_path / "inventory-attachments" / "i1"
+    assert not attach_dir.exists()
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
-cd packages/backend && python3 -m pytest tests/test_inventory.py -v -k "manual"
+cd packages/backend && python3 -m pytest tests/test_inventory.py -v -k "attachment"
 ```
 
-Expected: all 12 new tests FAIL with 404 or AttributeError (routes don't exist yet).
+Expected: all 15 new tests FAIL (routes don't exist yet).
 
-- [ ] **Step 3: Implement manual routes**
+- [ ] **Step 3: Implement attachment routes**
 
 Replace `packages/backend/src/myhome/routes/inventory.py` with:
 
@@ -325,11 +359,12 @@ from ..models_inventory import (
     PlacementUpdate,
 )
 from ..persistence_inventory import (
-    _manuals_dir,
-    delete_item_manual,
+    _attachments_dir,
+    delete_all_attachments,
+    delete_attachment,
     load_inventory,
+    save_attachment,
     save_inventory,
-    save_manual,
 )
 
 router = APIRouter()
@@ -368,7 +403,7 @@ def delete_item(id: str) -> None:
     if len(doc.items) == before:
         raise HTTPException(status_code=404)
     save_inventory(doc)
-    delete_item_manual(id)
+    delete_all_attachments(id)
 
 
 @router.put("/api/inventory/items/{id}/placement", status_code=204)
@@ -386,7 +421,7 @@ def _sanitise_filename(name: str) -> str:
     name = re.sub(r"[^a-zA-Z0-9._-]", "", name)
     if not name.lower().endswith(".pdf"):
         name = name + ".pdf"
-    return name or "manual.pdf"
+    return name or "attachment.pdf"
 
 
 _ID_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")
@@ -402,8 +437,8 @@ def _validate_filename(filename: str) -> None:
         raise HTTPException(status_code=400, detail="Invalid filename")
 
 
-@router.post("/api/inventory/items/{id}/manual", status_code=201)
-async def upload_manual(id: str, file: UploadFile) -> dict:
+@router.post("/api/inventory/items/{id}/attachments", status_code=201)
+async def upload_attachment(id: str, file: UploadFile) -> dict:
     _validate_id(id)
     doc = load_inventory()
     item = next((i for i in doc.items if i.id == id), None)
@@ -415,36 +450,35 @@ async def upload_manual(id: str, file: UploadFile) -> dict:
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
     filename = _sanitise_filename(original)
     data = await file.read()
-    save_manual(id, filename, data)
-    item.manual = filename
+    save_attachment(id, filename, data)
+    if filename not in item.attachments:
+        item.attachments.append(filename)
     save_inventory(doc)
     return {"filename": filename}
 
 
-@router.get("/api/inventory/items/{id}/manual")
-def get_manual(id: str) -> FileResponse:
+@router.get("/api/inventory/items/{id}/attachments/{filename}")
+def get_attachment(id: str, filename: str) -> FileResponse:
     _validate_id(id)
-    doc = load_inventory()
-    item = next((i for i in doc.items if i.id == id), None)
-    if not item or not item.manual:
-        raise HTTPException(status_code=404)
-    _validate_filename(item.manual)
-    base = _manuals_dir(id).resolve()
-    path = (base / item.manual).resolve()
+    _validate_filename(filename)
+    base = _attachments_dir(id).resolve()
+    path = (base / filename).resolve()
     if not str(path).startswith(str(base) + "/") or not path.is_file():
         raise HTTPException(status_code=404)
     return FileResponse(str(path), media_type="application/pdf", content_disposition_type="inline")
 
 
-@router.delete("/api/inventory/items/{id}/manual", status_code=204)
-def delete_manual(id: str) -> None:
+@router.delete("/api/inventory/items/{id}/attachments/{filename}", status_code=204)
+def remove_attachment(id: str, filename: str) -> None:
     _validate_id(id)
+    _validate_filename(filename)
     doc = load_inventory()
     item = next((i for i in doc.items if i.id == id), None)
-    if not item or not item.manual:
+    if not item:
         raise HTTPException(status_code=404)
-    delete_item_manual(id)
-    item.manual = None
+    if not delete_attachment(id, filename):
+        raise HTTPException(status_code=404)
+    item.attachments = [a for a in item.attachments if a != filename]
     save_inventory(doc)
 ```
 
@@ -454,27 +488,27 @@ def delete_manual(id: str) -> None:
 cd packages/backend && python3 -m pytest tests/test_inventory.py -v
 ```
 
-Expected: 23 passed (11 existing + 12 new).
+Expected: 26 passed (11 existing + 15 new).
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add packages/backend/src/myhome/routes/inventory.py \
         packages/backend/tests/test_inventory.py
-git commit -m "feat(inventory): add PDF manual upload/get/delete routes"
+git commit -m "feat(inventory): add PDF attachment upload/get/delete routes"
 ```
 
 ---
 
-### Task 3: Frontend store — `manual` field and methods
+### Task 3: Frontend store — `attachments` field and methods
 
 **Files:**
 - Modify: `packages/editor/src/lib/inventoryStore.svelte.ts`
 - Modify: `packages/editor/test/inventoryStore.test.ts`
 
-- [ ] **Step 1: Add `manual: null` to `makeItem` in the test file**
+- [ ] **Step 1: Add `attachments: []` to `makeItem` in the test file**
 
-In `packages/editor/test/inventoryStore.test.ts`, update `makeItem` to include `manual: null`:
+In `packages/editor/test/inventoryStore.test.ts`, update `makeItem` to include `attachments: []`:
 
 ```typescript
 function makeItem(overrides: Partial<InventoryItem> = {}): InventoryItem {
@@ -490,35 +524,35 @@ function makeItem(overrides: Partial<InventoryItem> = {}): InventoryItem {
     purchasePrice: 1200,
     warrantyExpiryDate: null,
     notes: "",
-    manual: null,
+    attachments: [],
     placement: null,
     ...overrides,
   };
 }
 ```
 
-- [ ] **Step 2: Add failing tests for `uploadManual` and `deleteManual`**
+- [ ] **Step 2: Add failing tests for `uploadAttachment` and `deleteAttachment`**
 
 Append to the end of `packages/editor/test/inventoryStore.test.ts`:
 
 ```typescript
-describe("inventoryStore — uploadManual", () => {
-  it("posts to /manual and returns filename", async () => {
-    const updatedDoc = { version: 1, items: [makeItem({ manual: "dishwasher.pdf" })] };
+describe("inventoryStore — uploadAttachment", () => {
+  it("posts to /attachments and returns filename", async () => {
+    const updatedDoc = { version: 1, items: [makeItem({ attachments: ["invoice.pdf"] })] };
     vi.stubGlobal(
       "fetch",
       vi.fn()
         .mockResolvedValueOnce({ ok: true, status: 200, json: async () => emptyDoc })
-        .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ filename: "dishwasher.pdf" }) })
+        .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ filename: "invoice.pdf" }) })
         .mockResolvedValueOnce({ ok: true, status: 200, json: async () => updatedDoc }),
     );
     const store = createInventoryStore();
     await tick();
-    const file = new File(["%PDF-1.4"], "dishwasher.pdf", { type: "application/pdf" });
-    const filename = await store.uploadManual("i1", file);
+    const file = new File(["%PDF-1.4"], "invoice.pdf", { type: "application/pdf" });
+    const filename = await store.uploadAttachment("i1", file);
     await tick();
-    expect(filename).toBe("dishwasher.pdf");
-    expect(store.items[0].manual).toBe("dishwasher.pdf");
+    expect(filename).toBe("invoice.pdf");
+    expect(store.items[0].attachments).toContain("invoice.pdf");
   });
 
   it("throws on HTTP error", async () => {
@@ -531,15 +565,15 @@ describe("inventoryStore — uploadManual", () => {
     const store = createInventoryStore();
     await tick();
     await expect(
-      store.uploadManual("i1", new File(["img"], "img.png")),
+      store.uploadAttachment("i1", new File(["img"], "img.png")),
     ).rejects.toThrow("HTTP 400");
   });
 });
 
-describe("inventoryStore — deleteManual", () => {
-  it("calls DELETE and clears manual in store", async () => {
-    const initDoc = { version: 1, items: [makeItem({ manual: "dishwasher.pdf" })] };
-    const clearedDoc = { version: 1, items: [makeItem({ manual: null })] };
+describe("inventoryStore — deleteAttachment", () => {
+  it("calls DELETE and removes filename from store", async () => {
+    const initDoc = { version: 1, items: [makeItem({ attachments: ["invoice.pdf"] })] };
+    const clearedDoc = { version: 1, items: [makeItem({ attachments: [] })] };
     vi.stubGlobal(
       "fetch",
       vi.fn()
@@ -549,10 +583,10 @@ describe("inventoryStore — deleteManual", () => {
     );
     const store = createInventoryStore();
     await tick();
-    expect(store.items[0].manual).toBe("dishwasher.pdf");
-    await store.deleteManual("i1");
+    expect(store.items[0].attachments).toContain("invoice.pdf");
+    await store.deleteAttachment("i1", "invoice.pdf");
     await tick();
-    expect(store.items[0].manual).toBeNull();
+    expect(store.items[0].attachments).not.toContain("invoice.pdf");
   });
 
   it("throws on HTTP error", async () => {
@@ -564,7 +598,7 @@ describe("inventoryStore — deleteManual", () => {
     );
     const store = createInventoryStore();
     await tick();
-    await expect(store.deleteManual("i1")).rejects.toThrow("HTTP 404");
+    await expect(store.deleteAttachment("i1", "invoice.pdf")).rejects.toThrow("HTTP 404");
   });
 });
 ```
@@ -575,7 +609,7 @@ describe("inventoryStore — deleteManual", () => {
 cd packages/editor && npx vitest run test/inventoryStore.test.ts
 ```
 
-Expected: 9 existing tests pass, 4 new tests FAIL with "store.uploadManual is not a function" or similar.
+Expected: 9 existing tests pass, 4 new tests FAIL with "store.uploadAttachment is not a function".
 
 - [ ] **Step 4: Update `inventoryStore.svelte.ts`**
 
@@ -605,7 +639,7 @@ export interface InventoryItem {
   purchasePrice: number | null;
   warrantyExpiryDate: string | null;
   notes: string;
-  manual: string | null;
+  attachments: string[];
   placement: InventoryPlacement | null;
 }
 
@@ -648,7 +682,7 @@ export function createInventoryStore() {
   }
 
   async function createItem(
-    data: Omit<InventoryItem, "id" | "placement" | "manual">
+    data: Omit<InventoryItem, "id" | "attachments" | "placement">
   ): Promise<void> {
     const resp = await fetch("/api/inventory/items", {
       method: "POST",
@@ -661,7 +695,7 @@ export function createInventoryStore() {
 
   async function updateItem(
     id: string,
-    patch: Partial<Omit<InventoryItem, "id" | "placement" | "manual">>
+    patch: Partial<Omit<InventoryItem, "id" | "attachments" | "placement">>
   ): Promise<void> {
     const resp = await fetch(`/api/inventory/items/${id}`, {
       method: "PUT",
@@ -693,10 +727,10 @@ export function createInventoryStore() {
     await init();
   }
 
-  async function uploadManual(id: string, file: File): Promise<string> {
+  async function uploadAttachment(id: string, file: File): Promise<string> {
     const form = new FormData();
     form.append("file", file);
-    const resp = await fetch(`/api/inventory/items/${id}/manual`, {
+    const resp = await fetch(`/api/inventory/items/${id}/attachments`, {
       method: "POST",
       body: form,
     });
@@ -706,8 +740,8 @@ export function createInventoryStore() {
     return result.filename as string;
   }
 
-  async function deleteManual(id: string): Promise<void> {
-    const resp = await fetch(`/api/inventory/items/${id}/manual`, {
+  async function deleteAttachment(id: string, filename: string): Promise<void> {
+    const resp = await fetch(`/api/inventory/items/${id}/attachments/${filename}`, {
       method: "DELETE",
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -727,8 +761,8 @@ export function createInventoryStore() {
     updateItem,
     deleteItem,
     setPlacement,
-    uploadManual,
-    deleteManual,
+    uploadAttachment,
+    deleteAttachment,
   };
 }
 ```
@@ -746,12 +780,12 @@ Expected: 13 passed (9 existing + 4 new).
 ```bash
 git add packages/editor/src/lib/inventoryStore.svelte.ts \
         packages/editor/test/inventoryStore.test.ts
-git commit -m "feat(inventory): add manual field and uploadManual/deleteManual to store"
+git commit -m "feat(inventory): add attachments field and uploadAttachment/deleteAttachment to store"
 ```
 
 ---
 
-### Task 4: Frontend UI — Manual tab in `InventoryModal`
+### Task 4: Frontend UI — Attachments tab in `InventoryModal`
 
 **Files:**
 - Modify: `packages/editor/src/lib/components/InventoryModal.svelte`
@@ -779,7 +813,7 @@ Replace `packages/editor/src/lib/components/InventoryModal.svelte` with:
 
   const isCreate = item === null;
 
-  let activeTab = $state<"info" | "manual">("info");
+  let activeTab = $state<"info" | "attachments">("info");
   let name = $state(item?.name ?? "");
   let emoji = $state(item?.emoji ?? "📦");
   let category = $state(item?.category ?? "");
@@ -803,6 +837,7 @@ Replace `packages/editor/src/lib/components/InventoryModal.svelte` with:
   const currentItem = $derived(
     item ? (store.items.find((i) => i.id === item.id) ?? item) : null
   );
+  const attachmentCount = $derived(currentItem?.attachments.length ?? 0);
 
   async function handleSave(): Promise<void> {
     if (!name.trim()) { error = "Name is required"; return; }
@@ -852,7 +887,7 @@ Replace `packages/editor/src/lib/components/InventoryModal.svelte` with:
     if (!file || !item) return;
     uploading = true; uploadError = null;
     try {
-      await store.uploadManual(item.id, file);
+      await store.uploadAttachment(item.id, file);
     } catch (err) {
       uploadError = err instanceof Error ? err.message : "Upload failed";
     } finally {
@@ -861,10 +896,10 @@ Replace `packages/editor/src/lib/components/InventoryModal.svelte` with:
     }
   }
 
-  async function handleDeleteManual(): Promise<void> {
+  async function handleDeleteAttachment(filename: string): Promise<void> {
     if (!item) return;
     try {
-      await store.deleteManual(item.id);
+      await store.deleteAttachment(item.id, filename);
     } catch (err) {
       uploadError = err instanceof Error ? err.message : "Delete failed";
     }
@@ -883,10 +918,10 @@ Replace `packages/editor/src/lib/components/InventoryModal.svelte` with:
       <button class="tab" class:active={activeTab === "info"} onclick={() => { activeTab = "info"; }}>Info</button>
       <button
         class="tab"
-        class:active={activeTab === "manual"}
+        class:active={activeTab === "attachments"}
         disabled={isCreate}
-        onclick={() => { activeTab = "manual"; }}
-      >Manual{currentItem?.manual ? " (1)" : ""}</button>
+        onclick={() => { activeTab = "attachments"; }}
+      >Attachments{attachmentCount > 0 ? ` (${attachmentCount})` : ""}</button>
     </div>
 
     <div class="modal-body">
@@ -943,19 +978,21 @@ Replace `packages/editor/src/lib/components/InventoryModal.svelte` with:
         {#if error}<div class="error">{error}</div>{/if}
       {:else}
         <div class="attachments">
-          {#if currentItem?.manual}
-            <div class="attach-row">
-              <span class="attach-icon">📄</span>
-              <a
-                class="attach-name"
-                href="/api/inventory/items/{item!.id}/manual"
-                target="_blank"
-                rel="noopener"
-              >{currentItem.manual}</a>
-              <button class="attach-del" onclick={handleDeleteManual} title="Delete">✕</button>
-            </div>
+          {#if currentItem && currentItem.attachments.length > 0}
+            {#each currentItem.attachments as filename}
+              <div class="attach-row">
+                <span class="attach-icon">📄</span>
+                <a
+                  class="attach-name"
+                  href="/api/inventory/items/{item!.id}/attachments/{filename}"
+                  target="_blank"
+                  rel="noopener"
+                >{filename}</a>
+                <button class="attach-del" onclick={() => handleDeleteAttachment(filename)} title="Delete">✕</button>
+              </div>
+            {/each}
           {:else}
-            <div class="attach-empty">No manual yet.</div>
+            <div class="attach-empty">No attachments yet.</div>
           {/if}
           <label class="upload-btn" class:uploading>
             {uploading ? "Uploading…" : "＋ Upload PDF"}
@@ -1106,11 +1143,11 @@ Expected: no errors.
 cd packages/backend && python3 -m pytest tests/test_inventory.py -v && cd ../editor && npx vitest run test/inventoryStore.test.ts
 ```
 
-Expected: 23 backend tests pass, 13 frontend store tests pass.
+Expected: 26 backend tests pass, 13 frontend store tests pass.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add packages/editor/src/lib/components/InventoryModal.svelte
-git commit -m "feat(inventory): add Manual tab to InventoryModal"
+git commit -m "feat(inventory): add Attachments tab to InventoryModal"
 ```
