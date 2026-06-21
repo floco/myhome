@@ -97,9 +97,22 @@
     })),
   });
 
+  const costsPickerLayer = $derived<PickerLayer>({
+    id: "costs",
+    label: "Costs",
+    emoji: "💶",
+    items: settingsStore.costCategories.map(c => ({
+      id: c.id,
+      name: c.name,
+      emoji: c.emoji,
+      placed: c.placement?.floorId === floorStore.currentFloorId,
+    })),
+  });
+
   const pickerLayers = $derived<PickerLayer[]>([
     ...(choreLayerActive ? [chorePickerLayer] : []),
     ...(inventoryLayerActive ? [inventoryPickerLayer] : []),
+    ...(costsLayerActive ? [costsPickerLayer] : []),
   ]);
 
   function toggleLayer(layer: string): void {
@@ -376,6 +389,14 @@
       inventoryStore.setPlacement(itemId, {
         floorId: floorStore.currentFloorId,
         roomId: room?.id ?? null,
+        position: { x: worldX, y: worldY },
+      });
+      return;
+    }
+
+    if (layerId === "costs") {
+      settingsStore.placeCostCategory(itemId, {
+        floorId: floorStore.currentFloorId,
         position: { x: worldX, y: worldY },
       });
       return;
