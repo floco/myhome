@@ -3,6 +3,7 @@
   import type { createCostsStore, CostEntry } from "../costsStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
   import type { createHouseStore } from "../houseStore.svelte";
+  import DatePicker from "./DatePicker.svelte";
 
   type CostsStore = ReturnType<typeof createCostsStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -128,7 +129,7 @@
 
       <div class="row">
         <label>Date *</label>
-        <input type="date" bind:value={date} />
+        <DatePicker bind:value={date} />
       </div>
 
       {#if hasUnit}

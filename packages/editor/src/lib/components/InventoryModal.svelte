@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { createInventoryStore, InventoryItem } from "../inventoryStore.svelte";
+  import DatePicker from "./DatePicker.svelte";
 
   type InvStore = ReturnType<typeof createInventoryStore>;
 
@@ -115,7 +116,7 @@
       </div>
       <div class="row">
         <label>Purchased</label>
-        <input type="date" bind:value={purchaseDate} />
+        <DatePicker bind:value={purchaseDate} />
         <label style="margin-left:12px">Price (€)</label>
         <input
           class="price-input"
@@ -128,7 +129,7 @@
       </div>
       <div class="row">
         <label>Warranty expiry</label>
-        <input type="date" bind:value={warrantyExpiryDate} />
+        <DatePicker bind:value={warrantyExpiryDate} />
       </div>
       <div class="row col">
         <label>Notes</label>

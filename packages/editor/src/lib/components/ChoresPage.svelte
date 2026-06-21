@@ -2,6 +2,7 @@
   import type { createChoreStore } from "../choreStore.svelte";
   import type { Chore } from "../choreStore.svelte";
   import { scheduleLabel } from "../choreStore.svelte";
+  import DatePicker from "./DatePicker.svelte";
 
   type ChoreStore = ReturnType<typeof createChoreStore>;
 
@@ -123,7 +124,7 @@
             <input bind:value={editName} placeholder="Name"/>
             <input bind:value={editEmoji} placeholder="Emoji" maxlength="4" style="width:60px"/>
             <label>Period (days) <input type="number" bind:value={editPeriodDays} min="1"/></label>
-            <label>Default due <input type="date" bind:value={editNextDue}/></label>
+            <label>Default due <DatePicker bind:value={editNextDue} /></label>
             <div class="sfd-row">
               <input type="checkbox" id="sfd-{chore.id}" bind:checked={editScheduleFromDue}/>
               <label for="sfd-{chore.id}" title="Next due = planned date + period">Schedule from due date</label>
@@ -295,7 +296,6 @@
     width: 100%; box-sizing: border-box;
   }
   input[type="number"] { width: 100px; }
-  input[type="date"] { width: 160px; }
   input[type="checkbox"] { width: auto; }
   label { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: #888; }
   .row-btns { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
@@ -311,7 +311,7 @@
     .chore-list { padding: 8px; gap: 8px; }
     .chore-card { padding: 10px; }
     .chore-header { gap: 6px; }
-    input[type="number"], input[type="date"] { width: 100%; }
+    input[type="number"] { width: 100%; }
     .row-btns { flex-direction: column; }
     .row-btns button { width: 100%; }
     .instance-row { gap: 6px; }
