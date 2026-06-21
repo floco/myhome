@@ -67,3 +67,36 @@ def test_put_inventory_categories(client):
     data = client.get("/api/settings").json()
     assert len(data["inventoryCategories"]) == 2
     assert data["inventoryCategories"][1]["name"] == "Clothing"
+
+
+def test_put_cost_category_placement(client):
+    resp = client.put("/api/settings/cost-categories/cat-fuel/placement", json={
+        "floorId": "floor-1",
+        "position": {"x": 100.5, "y": 200.0},
+    })
+    assert resp.status_code == 204
+    settings = client.get("/api/settings").json()
+    fuel = next(cat for cat in settings["costCategories"] if cat["id"] == "cat-fuel")
+    assert fuel["placement"]["floorId"] == "floor-1"
+    assert fuel["placement"]["position"]["x"] == 100.5
+
+
+def test_delete_cost_category_placement(client):
+    # First place it
+    client.put("/api/settings/cost-categories/cat-fuel/placement", json={
+        "floorId": "floor-1",
+        "position": {"x": 100.0, "y": 200.0},
+    })
+    # Then remove it
+    resp = client.delete("/api/settings/cost-categories/cat-fuel/placement")
+    assert resp.status_code == 204
+    settings = client.get("/api/settings").json()
+    fuel = next(cat for cat in settings["costCategories"] if cat["id"] == "cat-fuel")
+    assert fuel["placement"] is None
+
+
+def test_put_cost_category_placement_404(client):
+    resp = client.put("/api/settings/cost-categories/nonexistent/placement", json={
+        "floorId": "f1", "position": {"x": 0, "y": 0}
+    })
+    assert resp.status_code == 404

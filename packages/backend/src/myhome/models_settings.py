@@ -2,12 +2,23 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 
+class CostCategoryPosition(BaseModel):
+    x: float
+    y: float
+
+
+class CostCategoryPlacement(BaseModel):
+    floorId: str
+    position: CostCategoryPosition
+
+
 class CostCategory(BaseModel):
     id: str
     name: str
     emoji: str
     unit: str | None = None
     color: str = "#4466cc"
+    placement: CostCategoryPlacement | None = None
 
 
 class InventoryCategory(BaseModel):
