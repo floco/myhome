@@ -5,11 +5,11 @@ from pydantic import BaseModel
 class CostEntry(BaseModel):
     id: str
     categoryId: str
-    date: str                      # ISO date e.g. "2025-10-14"
+    date: str
     totalAmount: float
     quantity: float | None = None
     unitPrice: float | None = None
-    supplier: str | None = None
+    supplierId: str | None = None
     notes: str = ""
     roomId: str | None = None
 
@@ -25,7 +25,7 @@ class CostEntryCreate(BaseModel):
     totalAmount: float
     quantity: float | None = None
     unitPrice: float | None = None
-    supplier: str | None = None
+    supplierId: str | None = None
     notes: str = ""
     roomId: str | None = None
 
@@ -36,6 +36,6 @@ class CostEntryUpdate(BaseModel):
     totalAmount: float | None = None
     quantity: float | None = None
     unitPrice: float | None = None
-    supplier: str | None = None
+    supplierId: str | None = None
     notes: str | None = None
     roomId: str | None = None

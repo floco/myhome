@@ -8,7 +8,7 @@ export interface CostEntry {
   totalAmount: number;
   quantity: number | null;
   unitPrice: number | null;
-  supplier: string | null;
+  supplierId: string | null;
   notes: string;
   roomId: string | null;
 }

@@ -26,7 +26,7 @@
   let totalAmount = $state<string>(entry?.totalAmount != null ? String(entry.totalAmount) : "");
   let quantity = $state<string>(entry?.quantity != null ? String(entry.quantity) : "");
   let unitPrice = $state<string>(entry?.unitPrice != null ? String(entry.unitPrice) : "");
-  let supplier = $state(entry?.supplier ?? "");
+  let supplierId = $state(entry?.supplierId ?? "");
   let notes = $state(entry?.notes ?? "");
   let roomId = $state(entry?.roomId ?? "");
 
@@ -78,7 +78,7 @@
       totalAmount: parsedTotal,
       quantity: quantity ? parseFloat(quantity) || null : null,
       unitPrice: unitPrice ? parseFloat(unitPrice) || null : null,
-      supplier: supplier.trim() || null,
+      supplierId: supplierId || null,
       notes: notes.trim(),
       roomId: roomId || null,
     };
@@ -172,7 +172,12 @@
 
       <div class="row">
         <label>Supplier</label>
-        <input class="flex-input" bind:value={supplier} placeholder="Optional" />
+        <select class="flex-input" bind:value={supplierId}>
+          <option value="">— No supplier —</option>
+          {#each settingsStore.suppliers as s}
+            <option value={s.id}>{s.name}</option>
+          {/each}
+        </select>
       </div>
 
       <div class="row">

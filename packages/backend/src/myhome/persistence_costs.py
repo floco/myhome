@@ -15,7 +15,10 @@ def load_costs() -> CostsDocument:
     if not path.exists():
         return CostsDocument()
     with path.open() as f:
-        return CostsDocument.model_validate(json.load(f))
+        raw = json.load(f)
+    # Migration: entries saved before 2026-06-21 used "supplier" (freeform string).
+    # Pydantic v2 ignores unknown fields, so old entries load with supplierId=None automatically.
+    return CostsDocument.model_validate(raw)
 
 
 def save_costs(doc: CostsDocument) -> None:

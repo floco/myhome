@@ -12,7 +12,7 @@ def make_doc() -> CostsDocument:
                 totalAmount=1650.0,
                 quantity=1500.0,
                 unitPrice=1.10,
-                supplier="Butagaz",
+                supplierId="sup-butagaz",
                 roomId="r1",
             )
         ]
@@ -40,7 +40,7 @@ def test_round_trip(tmp_path, monkeypatch):
     assert e.totalAmount == 1650.0
     assert e.quantity == 1500.0
     assert e.unitPrice == 1.10
-    assert e.supplier == "Butagaz"
+    assert e.supplierId == "sup-butagaz"
     assert e.roomId == "r1"
 
 
@@ -54,7 +54,7 @@ def test_lump_sum_entry_round_trips(tmp_path, monkeypatch):
     e = loaded.entries[0]
     assert e.quantity is None
     assert e.unitPrice is None
-    assert e.supplier is None
+    assert e.supplierId is None
 
 
 def test_save_creates_data_dir_if_missing(tmp_path, monkeypatch):
