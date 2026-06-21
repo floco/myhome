@@ -1,11 +1,22 @@
 // packages/editor/src/lib/settingsStore.svelte.ts
 
+export interface CostCategoryPosition {
+  x: number;
+  y: number;
+}
+
+export interface CostCategoryPlacement {
+  floorId: string;
+  position: CostCategoryPosition;
+}
+
 export interface CostCategory {
   id: string;
   name: string;
   emoji: string;
   unit: string | null;
   color: string;
+  placement?: CostCategoryPlacement | null;
 }
 
 export interface InventoryCategory {
@@ -61,6 +72,21 @@ export function createSettingsStore() {
     await init();
   }
 
+  async function placeCostCategory(id: string, placement: CostCategoryPlacement | null): Promise<void> {
+    if (placement === null) {
+      const resp = await fetch(`/api/settings/cost-categories/${id}/placement`, { method: "DELETE" });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    } else {
+      const resp = await fetch(`/api/settings/cost-categories/${id}/placement`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(placement),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    }
+    await init();
+  }
+
   init();
 
   return {
@@ -70,5 +96,6 @@ export function createSettingsStore() {
     get loadError() { return loadError; },
     updateCostCategories,
     updateInventoryCategories,
+    placeCostCategory,
   };
 }

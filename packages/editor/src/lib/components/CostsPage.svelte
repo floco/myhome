@@ -14,9 +14,10 @@
     costsStore: CostsStore;
     settingsStore: SettingsStore;
     floorStore: HouseStore;
+    onplaceonmap?: (catId: string) => void;
   }
 
-  let { costsStore, settingsStore, floorStore }: Props = $props();
+  let { costsStore, settingsStore, floorStore, onplaceonmap }: Props = $props();
 
   let modalEntry = $state<CostEntry | "create" | null>(null);
   let chartModalCategoryId = $state<string | null>(null);
@@ -384,6 +385,7 @@
     {costsStore}
     {settingsStore}
     onclose={() => { chartModalCategoryId = null; }}
+    {onplaceonmap}
   />
 {/if}
 

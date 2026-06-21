@@ -10,6 +10,7 @@
   const layers = [
     { id: "chores", icon: "✅", label: "Chores" },
     { id: "inventory", icon: "📦", label: "Inventory" },
+    { id: "costs", icon: "💶", label: "Costs" },
   ];
 
   function handleClickOutside(e: MouseEvent) {

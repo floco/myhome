@@ -32,6 +32,9 @@
   import SettingsPage from "./lib/components/SettingsPage.svelte";
   import { createCostsStore } from "./lib/costsStore.svelte";
   import CostsPage from "./lib/components/CostsPage.svelte";
+  import CostsOverlay from "./lib/components/CostsOverlay.svelte";
+  import CostsPinPopup from "./lib/components/CostsPinPopup.svelte";
+  import type { CostCategory } from "./lib/settingsStore.svelte";
 
   const floorStore = createHouseStore();
   const viewportStore = createViewportStore();
@@ -50,9 +53,20 @@
   let draggingItemId = $state<string | null>(null);
   let draggingLayerId = $state<string | null>(null);
 
+  let selectedCostCategoryPin = $state<{
+    category: CostCategory;
+    screenX: number;
+    screenY: number;
+  } | null>(null);
+  let placingCostCategoryId = $state<string | null>(null);
+
   let activeLayers = $state(new Set<string>());
   const choreLayerActive = $derived(activeLayers.has("chores"));
   const inventoryLayerActive = $derived(activeLayers.has("inventory"));
+  const costsLayerActive = $derived(activeLayers.has("costs"));
+  const currentFloorCostCategories = $derived(
+    settingsStore.costCategories.filter(c => c.placement?.floorId === floorStore.currentFloorId)
+  );
 
   function choreDisplayName(name: string, emoji: string): string {
     const trimmed = name.trim();
@@ -310,7 +324,10 @@
     if (event.code === "Space") { event.preventDefault(); spacePressed = true; return; }
     if (event.ctrlKey && event.key === "z" && !event.shiftKey) { event.preventDefault(); handleUndo(); return; }
     if (event.ctrlKey && (event.key === "y" || (event.key === "z" && event.shiftKey))) { event.preventDefault(); handleRedo(); return; }
-    if (event.key === "Escape") { toolStore.resetDraw(); return; }
+    if (event.key === "Escape") {
+      if (placingCostCategoryId) { placingCostCategoryId = null; return; }
+      toolStore.resetDraw(); return;
+    }
     if ((event.key === "Delete" || event.key === "Backspace") &&
         (toolStore.state.selectedId || toolStore.state.selectedOpeningId)) handleDelete();
   }
@@ -613,6 +630,77 @@
                 />
               </div>
             {/if}
+            {#if costsLayerActive}
+              <CostsOverlay
+                categories={currentFloorCostCategories}
+                viewport={viewportStore.viewport}
+                active={true}
+                width={canvasWidth}
+                height={canvasHeight}
+                onclick={(catId) => {
+                  const cat = settingsStore.costCategories.find((c) => c.id === catId);
+                  if (!cat?.placement) return;
+                  const sp = viewportStore.worldToScreen(cat.placement.position);
+                  selectedCostCategoryPin = { category: cat, screenX: sp.x, screenY: sp.y };
+                }}
+                ondragend={(catId, worldPos) => {
+                  const cat = settingsStore.costCategories.find((c) => c.id === catId);
+                  if (!cat?.placement) return;
+                  settingsStore.placeCostCategory(catId, {
+                    ...cat.placement,
+                    position: worldPos,
+                  });
+                }}
+              />
+            {/if}
+            {#if selectedCostCategoryPin}
+              {@const pin = selectedCostCategoryPin}
+              <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+              <div style="position:absolute;inset:0;z-index:55" onclick={() => { selectedCostCategoryPin = null; }}>
+                <CostsPinPopup
+                  category={pin.category}
+                  screenX={pin.screenX}
+                  screenY={pin.screenY}
+                  onopen={() => {
+                    selectedCostCategoryPin = null;
+                    window.location.hash = "#/costs";
+                  }}
+                  onremove={async () => {
+                    await settingsStore.placeCostCategory(pin.category.id, null);
+                    selectedCostCategoryPin = null;
+                  }}
+                  onclose={() => { selectedCostCategoryPin = null; }}
+                />
+              </div>
+            {/if}
+            {#if placingCostCategoryId}
+              {@const placingCat = settingsStore.costCategories.find(c => c.id === placingCostCategoryId)}
+              <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+              <div
+                style="position:absolute;inset:0;z-index:70;cursor:crosshair"
+                onclick={(e) => {
+                  if (!placingCostCategoryId) return;
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  const screenX = e.clientX - rect.left;
+                  const screenY = e.clientY - rect.top;
+                  const worldPos = viewportStore.screenToWorld({ x: screenX, y: screenY });
+                  settingsStore.placeCostCategory(placingCostCategoryId, {
+                    floorId: floorStore.currentFloorId,
+                    position: worldPos,
+                  });
+                  placingCostCategoryId = null;
+                }}
+              >
+                <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);background:#1e1e3a;border:1px solid #5566cc;border-radius:6px;padding:6px 14px;color:#aaf;font-size:12px;font-family:sans-serif;pointer-events:none">
+                  {#if placingCat}
+                    Click to place {placingCat.emoji} {placingCat.name}
+                  {:else}
+                    Click to place pin
+                  {/if}
+                  &nbsp;&nbsp;<span style="color:#556;font-size:10px">Press Esc to cancel</span>
+                </div>
+              </div>
+            {/if}
           {/if}
         </div>
 
@@ -644,7 +732,18 @@
         <WorksPage />
 
       {:else if currentRoute === "#/costs"}
-        <CostsPage {costsStore} {settingsStore} {floorStore} />
+        <CostsPage
+          {costsStore}
+          {settingsStore}
+          {floorStore}
+          onplaceonmap={(catId) => {
+            placingCostCategoryId = catId;
+            const next = new Set(activeLayers);
+            next.add("costs");
+            activeLayers = next;
+            window.location.hash = "#/";
+          }}
+        />
 
       {:else if currentRoute === "#/settings"}
         <SettingsPage store={settingsStore} />

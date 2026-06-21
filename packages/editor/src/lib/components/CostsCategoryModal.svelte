@@ -11,9 +11,10 @@
     costsStore: CostsStore;
     settingsStore: SettingsStore;
     onclose: () => void;
+    onplaceonmap?: (categoryId: string) => void;
   }
 
-  let { categoryId, costsStore, settingsStore, onclose }: Props = $props();
+  let { categoryId, costsStore, settingsStore, onclose, onplaceonmap }: Props = $props();
 
   const category = $derived(settingsStore.costCategories.find(c => c.id === categoryId));
   const hasUnit = $derived((category?.unit ?? null) !== null);
@@ -147,6 +148,9 @@
     </div>
 
     <div class="modal-footer">
+      {#if onplaceonmap}
+        <button class="place-btn" onclick={() => { onplaceonmap!(categoryId); onclose(); }}>📍 Place on map</button>
+      {/if}
       <span class="spacer"></span>
       <button onclick={onclose}>Close</button>
     </div>
@@ -208,4 +212,6 @@
   .spacer { flex: 1; }
   button { padding: 5px 14px; border-radius: 4px; font-size: 12px; cursor: pointer; background: none; border: 1px solid #2a2a4a; color: #778; }
   button:hover { background: #1e1e3a; color: #ccc; }
+  .place-btn { background: #1e2a4a; border-color: #3a4a8a; color: #aac; }
+  .place-btn:hover { background: #2a3a6a; color: #ccf; }
 </style>
