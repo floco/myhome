@@ -99,3 +99,113 @@ def test_delete_attachment_traversal_rejected(client, tmp_path):
     save_works(make_doc())
     resp = client.delete("/api/works/w1/attachments/.hidden")
     assert resp.status_code == 400
+
+
+def test_upload_attachment(client, tmp_path):
+    save_works(make_doc())
+    resp = client.post(
+        "/api/works/w1/attachments",
+        files={"file": ("invoice.pdf", b"%PDF-1.4 test", "application/pdf")},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["filename"] == "invoice.pdf"
+    work = client.get("/api/works").json()["works"][0]
+    assert "invoice.pdf" in work["attachments"]
+
+
+def test_upload_sanitises_filename(client, tmp_path):
+    save_works(make_doc())
+    resp = client.post(
+        "/api/works/w1/attachments",
+        files={"file": ("my invoice 2025.pdf", b"%PDF test", "application/pdf")},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["filename"] == "my_invoice_2025.pdf"
+
+
+def test_upload_non_pdf_rejected(client, tmp_path):
+    save_works(make_doc())
+    resp = client.post(
+        "/api/works/w1/attachments",
+        files={"file": ("image.png", b"fake-png", "image/png")},
+    )
+    assert resp.status_code == 400
+
+
+def test_upload_attachment_work_not_found(client):
+    resp = client.post(
+        "/api/works/nope/attachments",
+        files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")},
+    )
+    assert resp.status_code == 404
+
+
+def test_get_attachment(client, tmp_path):
+    save_works(make_doc())
+    client.post(
+        "/api/works/w1/attachments",
+        files={"file": ("invoice.pdf", b"%PDF-1.4 test content", "application/pdf")},
+    )
+    resp = client.get("/api/works/w1/attachments/invoice.pdf")
+    assert resp.status_code == 200
+    assert "pdf" in resp.headers["content-type"]
+
+
+def test_get_attachment_not_found(client, tmp_path):
+    save_works(make_doc())
+    resp = client.get("/api/works/w1/attachments/nope.pdf")
+    assert resp.status_code == 404
+
+
+def test_delete_attachment(client, tmp_path):
+    save_works(make_doc())
+    client.post(
+        "/api/works/w1/attachments",
+        files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")},
+    )
+    resp = client.delete("/api/works/w1/attachments/invoice.pdf")
+    assert resp.status_code == 204
+    work = client.get("/api/works").json()["works"][0]
+    assert "invoice.pdf" not in work["attachments"]
+
+
+def test_delete_attachment_not_found(client, tmp_path):
+    save_works(make_doc())
+    resp = client.delete("/api/works/w1/attachments/nope.pdf")
+    assert resp.status_code == 404
+
+
+def test_set_placement(client, tmp_path):
+    save_works(make_doc())
+    body = {"floorId": "f1", "position": {"x": 100.0, "y": 200.0}}
+    resp = client.put("/api/works/w1/placement", json=body)
+    assert resp.status_code == 204
+    work = client.get("/api/works").json()["works"][0]
+    assert work["placement"]["floorId"] == "f1"
+    assert work["placement"]["position"]["x"] == 100.0
+
+
+def test_set_placement_not_found(client):
+    resp = client.put("/api/works/nope/placement", json={"floorId": "f1", "position": {"x": 0, "y": 0}})
+    assert resp.status_code == 404
+
+
+def test_clear_placement(client, tmp_path):
+    doc = make_doc()
+    doc.works[0].placement = WorkPlacement(floorId="f1", position=WorkPosition(x=1, y=2))
+    save_works(doc)
+    resp = client.delete("/api/works/w1/placement")
+    assert resp.status_code == 204
+    work = client.get("/api/works").json()["works"][0]
+    assert work["placement"] is None
+
+
+def test_delete_work_removes_attachments(client, tmp_path):
+    save_works(make_doc())
+    client.post(
+        "/api/works/w1/attachments",
+        files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")},
+    )
+    client.delete("/api/works/w1")
+    attach_dir = tmp_path / "works-attachments" / "w1"
+    assert not attach_dir.exists()
