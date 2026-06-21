@@ -4,6 +4,7 @@
   import type { createSettingsStore } from "../settingsStore.svelte";
   import DatePicker from "./DatePicker.svelte";
   import { marked } from "marked";
+  import DOMPurify from "dompurify";
 
   type WorksStore = ReturnType<typeof createWorksStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -108,7 +109,9 @@
     work ? (store.works.find(w => w.id === work.id) ?? work) : null
   );
   const attachmentCount = $derived(currentWork?.attachments.length ?? 0);
-  const notesHtml = $derived(notes.trim() ? marked(notes) as string : "");
+  const notesHtml = $derived(
+    notes.trim() ? DOMPurify.sanitize(marked(notes) as string) : ""
+  );
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
