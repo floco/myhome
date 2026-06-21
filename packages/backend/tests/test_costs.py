@@ -54,6 +54,7 @@ def test_create_entry(client):
     data = resp.json()
     assert data["categoryId"] == "cat-fuel"
     assert data["totalAmount"] == 1650.0
+    assert data["quantity"] == 1500.0
     assert data["supplierId"] == "sup-butagaz"
     assert "id" in data
 
