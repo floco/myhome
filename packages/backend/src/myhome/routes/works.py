@@ -61,6 +61,11 @@ def _sanitise_filename(name: str) -> str:
     return name or "attachment.pdf"
 
 
+def _validate_filename(filename: str) -> None:
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", filename) or filename.startswith("."):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+
 @router.post("/api/works/{id}/attachments", status_code=201)
 async def upload_attachment(id: str, file: UploadFile) -> dict:
     doc = load_works()
@@ -82,6 +87,7 @@ async def upload_attachment(id: str, file: UploadFile) -> dict:
 
 @router.get("/api/works/{id}/attachments/{filename}")
 def get_attachment(id: str, filename: str) -> FileResponse:
+    _validate_filename(filename)
     path = get_attachment_path(id, filename)
     if not path.exists():
         raise HTTPException(status_code=404)
@@ -90,6 +96,7 @@ def get_attachment(id: str, filename: str) -> FileResponse:
 
 @router.delete("/api/works/{id}/attachments/{filename}", status_code=204)
 def remove_attachment(id: str, filename: str) -> None:
+    _validate_filename(filename)
     doc = load_works()
     work = next((w for w in doc.works if w.id == id), None)
     if not work:

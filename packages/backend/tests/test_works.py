@@ -87,3 +87,15 @@ def test_delete_work(client, tmp_path):
 def test_delete_work_404(client):
     resp = client.delete("/api/works/nope")
     assert resp.status_code == 404
+
+
+def test_get_attachment_traversal_rejected(client, tmp_path):
+    save_works(make_doc())
+    resp2 = client.get("/api/works/w1/attachments/.hidden")
+    assert resp2.status_code == 400
+
+
+def test_delete_attachment_traversal_rejected(client, tmp_path):
+    save_works(make_doc())
+    resp = client.delete("/api/works/w1/attachments/.hidden")
+    assert resp.status_code == 400
