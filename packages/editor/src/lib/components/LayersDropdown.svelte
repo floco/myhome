@@ -11,6 +11,7 @@
     { id: "chores", icon: "✅", label: "Chores" },
     { id: "inventory", icon: "📦", label: "Inventory" },
     { id: "costs", icon: "💶", label: "Costs" },
+    { id: "works", icon: "🔧", label: "Works" },
   ];
 
   function handleClickOutside(e: MouseEvent) {
