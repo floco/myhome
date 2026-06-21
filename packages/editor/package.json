@@ -10,7 +10,8 @@
     "typecheck": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
-    "@myhome/geometry": "*"
+    "@myhome/geometry": "*",
+    "marked": "^18.0.5"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.1.2",

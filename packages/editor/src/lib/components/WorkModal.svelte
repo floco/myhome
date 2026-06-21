@@ -3,6 +3,7 @@
   import type { createWorksStore, Work } from "../worksStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
   import DatePicker from "./DatePicker.svelte";
+  import { marked } from "marked";
 
   type WorksStore = ReturnType<typeof createWorksStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -29,6 +30,7 @@
   let supplierId = $state(work?.supplierId ?? "");
   let notes = $state(work?.notes ?? "");
 
+  let editingNotes = $state(isCreate);
   let saving = $state(false);
   let deleting = $state(false);
   let confirmDelete = $state(false);
@@ -53,10 +55,12 @@
     try {
       if (isCreate) {
         await store.createWork(patch);
+        onclose();
       } else {
         await store.updateWork(work!.id, patch);
+        editingNotes = false;
+        onclose();
       }
-      onclose();
     } catch (e) {
       error = e instanceof Error ? e.message : "Save failed";
     } finally {
@@ -104,6 +108,7 @@
     work ? (store.works.find(w => w.id === work.id) ?? work) : null
   );
   const attachmentCount = $derived(currentWork?.attachments.length ?? 0);
+  const notesHtml = $derived(notes.trim() ? marked(notes) as string : "");
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -174,7 +179,25 @@
           <textarea class="flex-input desc-area" bind:value={description} placeholder="Short summary of the work…" rows="2"></textarea>
         </div>
       {:else if activeTab === "notes"}
-        <textarea class="flex-input notes-area" bind:value={notes} placeholder="Markdown notes…"></textarea>
+        {#if editingNotes}
+          <textarea class="flex-input notes-area" bind:value={notes} placeholder="Markdown notes…"></textarea>
+          {#if !isCreate}
+            <button class="notes-done-btn" onclick={() => { editingNotes = false; }}>Done editing</button>
+          {/if}
+        {:else}
+          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+          <div
+            class="notes-preview {notes.trim() ? '' : 'notes-empty'}"
+            onclick={() => { editingNotes = true; }}
+            title="Click to edit"
+          >
+            {#if notes.trim()}
+              {@html notesHtml}
+            {:else}
+              <span class="notes-placeholder">Click to add markdown notes…</span>
+            {/if}
+          </div>
+        {/if}
       {:else}
         <div class="attachments">
           {#if currentWork && currentWork.attachments.length > 0}
@@ -228,9 +251,15 @@
   }
   .modal {
     background: #1a1a30; border: 1px solid #3a3a5a; border-radius: 10px;
-    width: 520px; max-width: 95vw; max-height: 90vh;
+    width: min(95vw, 560px); max-height: 90vh;
     display: flex; flex-direction: column; overflow: hidden;
     box-shadow: 0 8px 32px #0008;
+  }
+  @media (min-width: 900px) {
+    .modal { width: min(90vw, 760px); max-height: 85vh; }
+  }
+  @media (min-width: 1400px) {
+    .modal { width: min(80vw, 960px); max-height: 85vh; }
   }
   .modal-header {
     display: flex; align-items: center; padding: 14px 18px;
@@ -265,6 +294,42 @@
   select.flex-input { cursor: pointer; }
   .desc-area { resize: vertical; min-height: 48px; }
   .notes-area { resize: none; min-height: 260px; font-family: monospace; font-size: 12px; line-height: 1.5; flex: 1; }
+  .notes-done-btn {
+    align-self: flex-end; background: #1e2a4a; border: 1px solid #3a4a8a;
+    color: #aac; padding: 4px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; font-family: sans-serif;
+  }
+  .notes-done-btn:hover { background: #2a3a6a; }
+  .notes-preview {
+    flex: 1; min-height: 260px; padding: 10px 12px; border-radius: 4px;
+    background: #111128; border: 1px solid #2a2a4a; cursor: pointer; overflow-y: auto;
+    color: #ccc; font-family: sans-serif; font-size: 13px; line-height: 1.65;
+  }
+  .notes-preview:hover { border-color: #5566cc; }
+  .notes-preview.notes-empty { border-style: dashed; }
+  .notes-placeholder { color: #334; font-size: 12px; font-style: italic; }
+  .notes-preview :global(h1), .notes-preview :global(h2), .notes-preview :global(h3) {
+    color: #aaf; margin: 0.6em 0 0.3em; font-size: 14px;
+  }
+  .notes-preview :global(h1) { font-size: 16px; }
+  .notes-preview :global(p) { margin: 0.4em 0; }
+  .notes-preview :global(ul), .notes-preview :global(ol) { margin: 0.4em 0; padding-left: 1.4em; }
+  .notes-preview :global(li) { margin: 0.2em 0; }
+  .notes-preview :global(code) {
+    background: #0a0a1e; border: 1px solid #2a2a4a; border-radius: 3px;
+    padding: 0 4px; font-size: 11px; font-family: monospace; color: #88ccff;
+  }
+  .notes-preview :global(pre) {
+    background: #0a0a1e; border: 1px solid #2a2a4a; border-radius: 4px;
+    padding: 10px; overflow-x: auto; margin: 0.5em 0;
+  }
+  .notes-preview :global(pre code) { background: none; border: none; padding: 0; }
+  .notes-preview :global(blockquote) {
+    border-left: 3px solid #3a4a8a; margin: 0.5em 0; padding: 2px 12px; color: #889;
+  }
+  .notes-preview :global(hr) { border: none; border-top: 1px solid #2a2a4a; margin: 0.8em 0; }
+  .notes-preview :global(a) { color: #88aaff; }
+  .notes-preview :global(strong) { color: #dde; }
+  .notes-preview :global(em) { color: #aab; }
 
   .attachments { display: flex; flex-direction: column; gap: 6px; }
   .attach-row {
