@@ -149,7 +149,7 @@
 
     <div class="modal-footer">
       {#if onplaceonmap}
-        <button class="place-btn" onclick={() => { onplaceonmap!(categoryId); onclose(); }}>📍 Place on map</button>
+        <button class="place-btn" onclick={() => { onplaceonmap(categoryId); onclose(); }}>📍 Place on map</button>
       {/if}
       <span class="spacer"></span>
       <button onclick={onclose}>Close</button>

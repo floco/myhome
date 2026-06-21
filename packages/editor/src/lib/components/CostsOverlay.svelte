@@ -57,7 +57,7 @@
     dragOffsetScreen = { x: 0, y: 0 };
   }
 
-  const placedCategories = $derived(categories);
+  const placedCategories = $derived(categories.filter(c => c.placement !== null));
 
   function groupStyle(cat: CostCategory): string {
     const pe = active ? "all" : "none";
