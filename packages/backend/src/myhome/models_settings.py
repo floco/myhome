@@ -26,6 +26,17 @@ class InventoryCategory(BaseModel):
     name: str
 
 
+class WorkCategory(BaseModel):
+    id: str
+    name: str
+    emoji: str
+
+
+class Supplier(BaseModel):
+    id: str
+    name: str
+
+
 def _default_cost_categories() -> list[CostCategory]:
     return [
         CostCategory(id="cat-fuel",        name="Fuel / Mazout",  emoji="🛢", unit="L",      color="#4466cc"),
@@ -47,7 +58,19 @@ def _default_inventory_categories() -> list[InventoryCategory]:
     ]
 
 
+def _default_work_categories() -> list[WorkCategory]:
+    return [
+        WorkCategory(id="wcat-plumbing",   name="Plumbing",   emoji="🔧"),
+        WorkCategory(id="wcat-electrical", name="Electrical", emoji="⚡"),
+        WorkCategory(id="wcat-roofing",    name="Roofing",    emoji="🏠"),
+        WorkCategory(id="wcat-painting",   name="Painting",   emoji="🎨"),
+        WorkCategory(id="wcat-flooring",   name="Flooring",   emoji="🪵"),
+    ]
+
+
 class SettingsDocument(BaseModel):
     version: int = 1
     costCategories: list[CostCategory] = []
     inventoryCategories: list[InventoryCategory] = []
+    workCategories: list[WorkCategory] = []
+    suppliers: list[Supplier] = []

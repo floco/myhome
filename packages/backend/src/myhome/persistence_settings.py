@@ -6,6 +6,7 @@ from .models_settings import (
     SettingsDocument,
     _default_cost_categories,
     _default_inventory_categories,
+    _default_work_categories,
 )
 
 
@@ -20,6 +21,7 @@ def load_settings() -> SettingsDocument:
         return SettingsDocument(
             costCategories=_default_cost_categories(),
             inventoryCategories=_default_inventory_categories(),
+            workCategories=_default_work_categories(),
         )
     with path.open() as f:
         return SettingsDocument.model_validate(json.load(f))

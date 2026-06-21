@@ -100,3 +100,36 @@ def test_put_cost_category_placement_404(client):
         "floorId": "f1", "position": {"x": 0, "y": 0}
     })
     assert resp.status_code == 404
+
+
+def test_get_settings_returns_default_work_categories(client):
+    resp = client.get("/api/settings")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["workCategories"]) == 5
+    assert data["workCategories"][0]["name"] == "Plumbing"
+    assert data["suppliers"] == []
+
+
+def test_put_work_categories(client):
+    new_cats = [{"id": "w1", "name": "Masonry", "emoji": "🧱"}]
+    resp = client.put("/api/settings/work-categories", json=new_cats)
+    assert resp.status_code == 204
+    data = client.get("/api/settings").json()
+    assert len(data["workCategories"]) == 1
+    assert data["workCategories"][0]["name"] == "Masonry"
+
+
+def test_put_suppliers(client):
+    resp = client.put("/api/settings/suppliers", json=[{"id": "s1", "name": "Acme Plumbers"}])
+    assert resp.status_code == 204
+    data = client.get("/api/settings").json()
+    assert data["suppliers"][0]["name"] == "Acme Plumbers"
+
+
+def test_put_suppliers_replaces_all(client):
+    client.put("/api/settings/suppliers", json=[{"id": "s1", "name": "A"}, {"id": "s2", "name": "B"}])
+    client.put("/api/settings/suppliers", json=[{"id": "s3", "name": "C"}])
+    data = client.get("/api/settings").json()
+    assert len(data["suppliers"]) == 1
+    assert data["suppliers"][0]["name"] == "C"
