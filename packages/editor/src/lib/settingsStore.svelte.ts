@@ -24,15 +24,30 @@ export interface InventoryCategory {
   name: string;
 }
 
+export interface WorkCategory {
+  id: string;
+  name: string;
+  emoji: string;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+}
+
 export interface SettingsDocument {
   version: number;
   costCategories: CostCategory[];
   inventoryCategories: InventoryCategory[];
+  workCategories: WorkCategory[];
+  suppliers: Supplier[];
 }
 
 export function createSettingsStore() {
   const costCategories = $state<CostCategory[]>([]);
   const inventoryCategories = $state<InventoryCategory[]>([]);
+  const workCategories = $state<WorkCategory[]>([]);
+  const suppliers = $state<Supplier[]>([]);
   let loaded = $state(false);
   let loadError = $state<string | null>(null);
 
@@ -45,6 +60,10 @@ export function createSettingsStore() {
       for (const c of doc.costCategories) costCategories.push(c);
       inventoryCategories.length = 0;
       for (const c of doc.inventoryCategories) inventoryCategories.push(c);
+      workCategories.length = 0;
+      for (const c of (doc.workCategories ?? [])) workCategories.push(c);
+      suppliers.length = 0;
+      for (const s of (doc.suppliers ?? [])) suppliers.push(s);
     } catch (e) {
       loadError = e instanceof Error ? e.message : String(e);
     } finally {
@@ -64,6 +83,26 @@ export function createSettingsStore() {
 
   async function updateInventoryCategories(list: InventoryCategory[]): Promise<void> {
     const resp = await fetch("/api/settings/inventory-categories", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(list),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
+  async function updateWorkCategories(list: WorkCategory[]): Promise<void> {
+    const resp = await fetch("/api/settings/work-categories", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(list),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
+  async function updateSuppliers(list: Supplier[]): Promise<void> {
+    const resp = await fetch("/api/settings/suppliers", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(list),
@@ -92,10 +131,14 @@ export function createSettingsStore() {
   return {
     get costCategories() { return costCategories as CostCategory[]; },
     get inventoryCategories() { return inventoryCategories as InventoryCategory[]; },
+    get workCategories() { return workCategories as WorkCategory[]; },
+    get suppliers() { return suppliers as Supplier[]; },
     get loaded() { return loaded; },
     get loadError() { return loadError; },
     updateCostCategories,
     updateInventoryCategories,
+    updateWorkCategories,
+    updateSuppliers,
     placeCostCategory,
   };
 }
