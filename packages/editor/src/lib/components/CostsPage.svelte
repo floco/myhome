@@ -28,6 +28,9 @@
   const categoryMap = $derived(
     new Map(settingsStore.costCategories.map(c => [c.id, c]))
   );
+  const supplierMap = $derived(
+    new Map(settingsStore.suppliers.map(s => [s.id, s]))
+  );
 
   function categoryName(categoryId: string): string {
     return categoryMap.get(categoryId)?.name ?? "Unknown";
@@ -73,7 +76,7 @@
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const name = categoryName(e.categoryId).toLowerCase();
-        const sup = (e.supplier ?? "").toLowerCase();
+        const sup = (e.supplierId ? (supplierMap.get(e.supplierId)?.name ?? "") : "").toLowerCase();
         const notes = e.notes.toLowerCase();
         if (!name.includes(q) && !sup.includes(q) && !notes.includes(q)) return false;
       }
@@ -341,7 +344,7 @@
             <td class="emoji-cell">{categoryEmoji(entry.categoryId)}</td>
             <td class="name-cell">{categoryName(entry.categoryId)}</td>
             <td>{entry.date}</td>
-            <td>{entry.supplier ?? "—"}</td>
+            <td>{entry.supplierId ? (supplierMap.get(entry.supplierId)?.name ?? "—") : "—"}</td>
             <td class="num-col">{formatQty(entry)}</td>
             <td class="num-col">{formatUnitPrice(entry)}</td>
             <td class="num-col amount-cell">{entry.totalAmount.toLocaleString()} €</td>
