@@ -25,6 +25,7 @@ class InventoryItem(BaseModel):
     purchasePrice: float | None = None
     warrantyExpiryDate: str | None = None
     notes: str = ""
+    attachments: list[str] = []
     placement: InventoryPlacement | None = None
 
 
