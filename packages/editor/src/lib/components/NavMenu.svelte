@@ -15,7 +15,7 @@
     { href: "#/costs",       icon: "💶", label: "Costs"        },
   ];
 
-  const settingsLink = { href: "#/settings", icon: "⚙", label: "Settings" };
+  const settingsLink = { href: "#/settings", icon: "⚙️", label: "Settings" };
 
   function isActive(href: string): boolean {
     if (href === "#/") return currentRoute === "#/" || currentRoute === "";

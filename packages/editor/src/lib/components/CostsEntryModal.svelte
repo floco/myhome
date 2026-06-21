@@ -44,27 +44,19 @@
     const tot = parseFloat(totalAmount);
     const qty = parseFloat(quantity);
     const ppu = parseFloat(unitPrice);
-    const totOk = totalAmount !== "" && !isNaN(tot) && tot > 0;
-    const qtyOk = quantity !== "" && !isNaN(qty) && qty > 0;
-    const ppuOk = unitPrice !== "" && !isNaN(ppu) && ppu > 0;
+    const totOk = !isNaN(tot) && tot > 0;
+    const qtyOk = !isNaN(qty) && qty > 0;
+    const ppuOk = !isNaN(ppu) && ppu > 0;
 
-    if (changed === "total" || changed === "price") {
-      // qty = total / price
-      if (totOk && ppuOk && quantity === "") {
-        quantity = (tot / ppu).toFixed(2);
-      }
-    }
-    if (changed === "total" || changed === "qty") {
-      // price = total / qty
-      if (totOk && qtyOk && unitPrice === "") {
-        unitPrice = (tot / qty).toFixed(4);
-      }
-    }
-    if (changed === "price" || changed === "qty") {
-      // total = price × qty
-      if (ppuOk && qtyOk && totalAmount === "") {
-        totalAmount = (ppu * qty).toFixed(2);
-      }
+    if ((changed === "qty" || changed === "price") && qtyOk && ppuOk) {
+      // qty × price → always update total
+      totalAmount = (qty * ppu).toFixed(2);
+    } else if (changed === "total" && totOk && qtyOk) {
+      // total / qty → update unit price
+      unitPrice = (tot / qty).toFixed(4);
+    } else if (changed === "total" && totOk && ppuOk && quantity === "") {
+      // total / price → update qty (only when qty is empty)
+      quantity = (tot / ppu).toFixed(2);
     }
   }
 
