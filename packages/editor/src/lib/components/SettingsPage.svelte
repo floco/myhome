@@ -85,6 +85,7 @@
   function startEditWork(cat: WorkCategory): void {
     editingWorkId = cat.id;
     workDraft = { ...cat };
+    workError = null;
   }
 
   function cancelEditWork(): void { editingWorkId = null; workError = null; }
