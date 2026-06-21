@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 
 from ..models_works import Work, WorkCreate, WorkPlacement, WorkUpdate, WorksDocument
 from ..persistence_works import (
+    _attachments_dir,
     delete_all_attachments,
     delete_attachment,
     get_attachment_path,
@@ -61,6 +62,14 @@ def _sanitise_filename(name: str) -> str:
     return name or "attachment.pdf"
 
 
+_ID_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")
+
+
+def _validate_id(work_id: str) -> None:
+    if not _ID_RE.fullmatch(work_id):
+        raise HTTPException(status_code=400, detail="Invalid id")
+
+
 def _validate_filename(filename: str) -> None:
     if not re.fullmatch(r"[A-Za-z0-9._-]+", filename) or filename.startswith("."):
         raise HTTPException(status_code=400, detail="Invalid filename")
@@ -68,6 +77,7 @@ def _validate_filename(filename: str) -> None:
 
 @router.post("/api/works/{id}/attachments", status_code=201)
 async def upload_attachment(id: str, file: UploadFile) -> dict:
+    _validate_id(id)
     doc = load_works()
     work = next((w for w in doc.works if w.id == id), None)
     if not work:
@@ -87,15 +97,18 @@ async def upload_attachment(id: str, file: UploadFile) -> dict:
 
 @router.get("/api/works/{id}/attachments/{filename}")
 def get_attachment(id: str, filename: str) -> FileResponse:
+    _validate_id(id)
     _validate_filename(filename)
-    path = get_attachment_path(id, filename)
-    if not path.exists():
+    base = _attachments_dir(id).resolve()
+    path = (base / filename).resolve()
+    if not str(path).startswith(str(base) + "/") or not path.is_file():
         raise HTTPException(status_code=404)
     return FileResponse(str(path), media_type="application/pdf", filename=filename)
 
 
 @router.delete("/api/works/{id}/attachments/{filename}", status_code=204)
 def remove_attachment(id: str, filename: str) -> None:
+    _validate_id(id)
     _validate_filename(filename)
     doc = load_works()
     work = next((w for w in doc.works if w.id == id), None)
