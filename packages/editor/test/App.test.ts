@@ -378,3 +378,47 @@ describe("App — undo/redo buttons", () => {
     target.remove();
   });
 });
+
+describe("App — item picker visibility across floor modes", () => {
+  it("keeps the item picker panel visible after switching to the All floor", async () => {
+    stubFetch({
+      "/api/chores": {
+        version: 1,
+        chores: [{ id: "c1", donetickId: null, name: "Water plants", emoji: "💧", periodDays: 7, frequencyType: "interval", frequency: 7, frequencyMetadata: {}, scheduleFromDue: false, nextDueDate: "2026-07-01", description: "" }],
+        assignments: [],
+        completions: [],
+      },
+    });
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = await mountAndLoad(target);
+
+    // Activate the "chores" layer via the Layers dropdown.
+    (target.querySelector('button[title="Toggle map layers"]') as HTMLButtonElement).click();
+    await tick();
+    flushSync();
+    const choresRow = Array.from(target.querySelectorAll(".layer-row")).find(
+      (r) => r.textContent?.includes("Chores"),
+    ) as HTMLElement;
+    (choresRow.querySelector('input[type="checkbox"]') as HTMLInputElement).click();
+    await tick();
+    flushSync();
+
+    // Open the item picker.
+    (target.querySelector('button[title="Toggle item picker"]') as HTMLButtonElement).click();
+    await tick();
+    flushSync();
+    expect(target.querySelector(".right-panels")).not.toBeNull();
+
+    // Switch to the "All" floor — the picker must stay visible so chores can
+    // still be dragged onto the house-wide assignment area.
+    (target.querySelector('button[title="House-wide assignments — drag chores here"]') as HTMLButtonElement).click();
+    await tick();
+    flushSync();
+    expect(target.querySelector(".all-floor-canvas")).not.toBeNull();
+    expect(target.querySelector(".right-panels")).not.toBeNull();
+
+    unmount(app);
+    target.remove();
+  });
+});

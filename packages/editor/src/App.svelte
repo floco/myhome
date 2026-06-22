@@ -611,16 +611,6 @@
                 ondragend={handleBadgeDragEnd}
               />
             {/if}
-            {#if pickerOpen && pickerLayers.length > 0}
-              <div class="right-panels">
-                <ItemPickerPanel
-                  layers={pickerLayers}
-                  draggingId={draggingItemId}
-                  ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; }}
-                  ondragend={() => { draggingLayerId = null; draggingItemId = null; }}
-                />
-              </div>
-            {/if}
             {#if selectedBadge}
               {@const badge = selectedBadge}
               {#if badge}
@@ -830,6 +820,16 @@
                 </div>
               </div>
             {/if}
+          {/if}
+          {#if pickerOpen && pickerLayers.length > 0}
+            <div class="right-panels">
+              <ItemPickerPanel
+                layers={pickerLayers}
+                draggingId={draggingItemId}
+                ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; }}
+                ondragend={() => { draggingLayerId = null; draggingItemId = null; }}
+              />
+            </div>
           {/if}
         </div>
 
