@@ -16,6 +16,10 @@ def _attachments_dir(item_id: str) -> Path:
     return data_dir / "inventory-attachments" / item_id
 
 
+def get_attachment_path(item_id: str, filename: str) -> Path:
+    return _attachments_dir(item_id) / filename
+
+
 def load_inventory() -> InventoryDocument:
     path = _inventory_file()
     if not path.exists():
