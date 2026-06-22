@@ -1,0 +1,73 @@
+/* packages/editor/src/lib/theme.css */
+
+:root {
+  /* Surfaces & text — light (default) */
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface-alt: #fafafa;
+  --surface-hover: #f0f0f2;
+  --border: #e5e5e7;
+  --text: #1a1a1e;
+  --text-muted: #767680;
+  --text-faint: #9a9aa2;
+  --accent: #111111;
+  --accent-contrast: #ffffff;
+
+  /* Semantic */
+  --success: #2a8f5c;
+  --danger: #e0444d;
+  --warning: #d99a1b;
+
+  /* Scales (theme-independent) */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Floor-plan canvas (tuned separately from UI chrome; consumed in Phase 2) */
+  --canvas-bg: #eceef1;
+  --canvas-grid: #d8dadf;
+  --canvas-wall: #2a2a30;
+  --canvas-wall-selected: #111111;
+  --canvas-room-fill: #ffffff;
+}
+
+[data-theme="dark"] {
+  --bg: #15151a;
+  --surface: #1e1e24;
+  --surface-alt: #242430;
+  --surface-hover: #2a2a33;
+  --border: #2c2c35;
+  --text: #e8e8ea;
+  --text-muted: #9a9aa5;
+  --text-faint: #6b6b75;
+  --accent: #f0f0f0;
+  --accent-contrast: #111111;
+
+  --success: #4ade80;
+  --danger: #f87171;
+  --warning: #fbbf24;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+  --canvas-bg: #1c1c22;
+  --canvas-grid: #2a2a32;
+  --canvas-wall: #d8d8dc;
+  --canvas-wall-selected: #ffffff;
+  --canvas-room-fill: #232328;
+}
