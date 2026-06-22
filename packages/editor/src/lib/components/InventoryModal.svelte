@@ -5,7 +5,7 @@
   type InvStore = ReturnType<typeof createInventoryStore>;
 
   interface Props {
-    item: InventoryItem | null; // null = create mode
+    item: InventoryItem | null;
     store: InvStore;
     inventoryCategories: string[];
     onclose: () => void;
@@ -16,6 +16,7 @@
 
   const isCreate = item === null;
 
+  let activeTab = $state<"info" | "attachments">("info");
   let name = $state(item?.name ?? "");
   let emoji = $state(item?.emoji ?? "📦");
   let category = $state(item?.category ?? "");
@@ -33,6 +34,13 @@
   let deleting = $state(false);
   let confirmDelete = $state(false);
   let error = $state<string | null>(null);
+  let uploading = $state(false);
+  let uploadError = $state<string | null>(null);
+
+  const currentItem = $derived(
+    item ? (store.items.find((i) => i.id === item.id) ?? item) : null
+  );
+  const attachmentCount = $derived(currentItem?.attachments.length ?? 0);
 
   async function handleSave(): Promise<void> {
     if (!name.trim()) { error = "Name is required"; return; }
@@ -75,6 +83,30 @@
       deleting = false;
     }
   }
+
+  async function handleUpload(e: Event): Promise<void> {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !item) return;
+    uploading = true; uploadError = null;
+    try {
+      await store.uploadAttachment(item.id, file);
+    } catch (err) {
+      uploadError = err instanceof Error ? err.message : "Upload failed";
+    } finally {
+      uploading = false;
+      input.value = "";
+    }
+  }
+
+  async function handleDeleteAttachment(filename: string): Promise<void> {
+    if (!item) return;
+    try {
+      await store.deleteAttachment(item.id, filename);
+    } catch (err) {
+      uploadError = err instanceof Error ? err.message : "Delete failed";
+    }
+  }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -85,57 +117,93 @@
       <button class="close-btn" onclick={onclose}>✕</button>
     </div>
 
+    <div class="tabs">
+      <button class="tab" class:active={activeTab === "info"} onclick={() => { activeTab = "info"; }}>Info</button>
+      <button
+        class="tab"
+        class:active={activeTab === "attachments"}
+        disabled={isCreate}
+        onclick={() => { activeTab = "attachments"; }}
+      >Attachments{attachmentCount > 0 ? ` (${attachmentCount})` : ""}</button>
+    </div>
+
     <div class="modal-body">
-      <div class="row">
-        <label>Emoji</label>
-        <input class="emoji-input" bind:value={emoji} maxlength="2" />
-        <label style="margin-left:16px">Name *</label>
-        <input class="flex-input" bind:value={name} placeholder='e.g. Samsung TV 65"' />
-      </div>
-      <div class="row">
-        <label>Category</label>
-        <input
-          class="flex-input"
-          bind:value={category}
-          list="inv-cat-list"
-          placeholder="Electronics, Furniture…"
-        />
-        <datalist id="inv-cat-list">
-          {#each inventoryCategories as s}<option value={s} />{/each}
-        </datalist>
-      </div>
-      <div class="row">
-        <label>Brand</label>
-        <input class="flex-input" bind:value={brand} placeholder="Samsung" />
-        <label style="margin-left:12px">Model</label>
-        <input class="flex-input" bind:value={model} placeholder="QE65Q80C" />
-      </div>
-      <div class="row">
-        <label>Serial #</label>
-        <input class="flex-input" bind:value={serialNumber} placeholder="XYZ123" />
-      </div>
-      <div class="row">
-        <label>Purchased</label>
-        <DatePicker bind:value={purchaseDate} />
-        <label style="margin-left:12px">Price (€)</label>
-        <input
-          class="price-input"
-          bind:value={purchasePrice}
-          type="number"
-          min="0"
-          step="0.01"
-          placeholder="0.00"
-        />
-      </div>
-      <div class="row">
-        <label>Warranty expiry</label>
-        <DatePicker bind:value={warrantyExpiryDate} />
-      </div>
-      <div class="row col">
-        <label>Notes</label>
-        <textarea bind:value={notes} rows="3" placeholder="Additional notes…"></textarea>
-      </div>
-      {#if error}<div class="error">{error}</div>{/if}
+      {#if activeTab === "info"}
+        <div class="row">
+          <label>Emoji</label>
+          <input class="emoji-input" bind:value={emoji} maxlength="2" />
+          <label style="margin-left:16px">Name *</label>
+          <input class="flex-input" bind:value={name} placeholder='e.g. Samsung TV 65"' />
+        </div>
+        <div class="row">
+          <label>Category</label>
+          <input
+            class="flex-input"
+            bind:value={category}
+            list="inv-cat-list"
+            placeholder="Electronics, Furniture…"
+          />
+          <datalist id="inv-cat-list">
+            {#each inventoryCategories as s}<option value={s} />{/each}
+          </datalist>
+        </div>
+        <div class="row">
+          <label>Brand</label>
+          <input class="flex-input" bind:value={brand} placeholder="Samsung" />
+          <label style="margin-left:12px">Model</label>
+          <input class="flex-input" bind:value={model} placeholder="QE65Q80C" />
+        </div>
+        <div class="row">
+          <label>Serial #</label>
+          <input class="flex-input" bind:value={serialNumber} placeholder="XYZ123" />
+        </div>
+        <div class="row">
+          <label>Purchased</label>
+          <DatePicker bind:value={purchaseDate} />
+          <label style="margin-left:12px">Price (€)</label>
+          <input
+            class="price-input"
+            bind:value={purchasePrice}
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="0.00"
+          />
+        </div>
+        <div class="row">
+          <label>Warranty expiry</label>
+          <DatePicker bind:value={warrantyExpiryDate} />
+        </div>
+        <div class="row col">
+          <label>Notes</label>
+          <textarea bind:value={notes} rows="3" placeholder="Additional notes…"></textarea>
+        </div>
+        {#if error}<div class="error">{error}</div>{/if}
+      {:else}
+        <div class="attachments">
+          {#if currentItem && currentItem.attachments.length > 0}
+            {#each currentItem.attachments as filename}
+              <div class="attach-row">
+                <span class="attach-icon">📄</span>
+                <a
+                  class="attach-name"
+                  href="/api/inventory/items/{item!.id}/attachments/{filename}"
+                  target="_blank"
+                  rel="noopener"
+                >{filename}</a>
+                <button class="attach-del" onclick={() => handleDeleteAttachment(filename)} title="Delete">✕</button>
+              </div>
+            {/each}
+          {:else}
+            <div class="attach-empty">No attachments yet.</div>
+          {/if}
+          <label class="upload-btn" class:uploading>
+            {uploading ? "Uploading…" : "＋ Upload PDF"}
+            <input type="file" accept=".pdf" style="display:none" onchange={handleUpload} />
+          </label>
+          {#if uploadError}<div class="upload-error">{uploadError}</div>{/if}
+        </div>
+      {/if}
     </div>
 
     <div class="modal-footer">
@@ -156,9 +224,11 @@
           <button class="delete-btn" onclick={() => { confirmDelete = true; }}>🗑 Delete</button>
         {/if}
       {/if}
-      <button class="save-btn" disabled={saving} onclick={handleSave}>
-        {saving ? "Saving…" : isCreate ? "Create" : "Save"}
-      </button>
+      {#if activeTab === "info"}
+        <button class="save-btn" disabled={saving} onclick={handleSave}>
+          {saving ? "Saving…" : isCreate ? "Create" : "Save"}
+        </button>
+      {/if}
     </div>
   </div>
 </div>
@@ -188,6 +258,15 @@
   }
   .close-btn:hover { color: #aaa; }
 
+  .tabs { display: flex; border-bottom: 1px solid #2a2a4a; flex-shrink: 0; }
+  .tab {
+    padding: 8px 16px; background: none; border: none; border-bottom: 2px solid transparent;
+    color: #556; font-size: 12px; cursor: pointer; font-family: sans-serif;
+  }
+  .tab:hover:not(:disabled) { color: #99a; }
+  .tab.active { border-bottom-color: #5566cc; color: #aaf; }
+  .tab:disabled { color: #334; cursor: default; }
+
   .modal-body {
     padding: 16px 18px; overflow-y: auto; flex: 1; font-family: sans-serif;
   }
@@ -208,6 +287,26 @@
   .price-input { width: 90px; }
   textarea { resize: vertical; }
   .error { color: #f44336; font-size: 11px; margin-top: 4px; font-family: sans-serif; }
+
+  .attachments { display: flex; flex-direction: column; gap: 6px; }
+  .attach-row {
+    display: flex; align-items: center; gap: 8px;
+    background: #111128; border: 1px solid #2a2a4a; border-radius: 4px; padding: 6px 10px;
+  }
+  .attach-icon { font-size: 14px; }
+  .attach-name { flex: 1; font-size: 11px; color: #88aaff; text-decoration: none; }
+  .attach-name:hover { text-decoration: underline; }
+  .attach-del { background: none; border: none; color: #446; cursor: pointer; font-size: 12px; }
+  .attach-del:hover { color: #f44; }
+  .attach-empty { font-size: 11px; color: #334; text-align: center; padding: 12px 0; }
+  .upload-btn {
+    background: #1a1a2e; border: 1px dashed #2a2a4a; color: #556;
+    padding: 7px 12px; border-radius: 4px; font-size: 11px; cursor: pointer;
+    text-align: center; font-family: sans-serif; display: block;
+  }
+  .upload-btn:hover:not(.uploading) { background: #2a2a4a; color: #99a; }
+  .upload-btn.uploading { color: #334; cursor: default; }
+  .upload-error { font-size: 10px; color: #f88; }
 
   .modal-footer {
     display: flex; align-items: center; gap: 8px; padding: 12px 18px;
