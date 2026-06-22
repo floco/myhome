@@ -61,17 +61,45 @@
   }
 
   // --- Inventory categories ---
-  let newInvName = $state("");
+  let editingInvId = $state<string | null>(null);
+  let invDraft = $state<InventoryCategory>({ id: "", name: "" });
+  let showNewInvForm = $state(false);
+  let newInvDraft = $state({ name: "" });
+  let confirmDeleteInvId = $state<string | null>(null);
+  let invError = $state<string | null>(null);
 
-  async function addInventoryCategory(): Promise<void> {
-    if (!newInvName.trim()) return;
-    const newCat: InventoryCategory = { id: crypto.randomUUID(), name: newInvName.trim() };
-    await store.updateInventoryCategories([...store.inventoryCategories, newCat]);
-    newInvName = "";
+  function startEditInv(cat: InventoryCategory): void {
+    editingInvId = cat.id;
+    invDraft = { ...cat };
+    invError = null;
+  }
+
+  function cancelEditInv(): void { editingInvId = null; invError = null; }
+
+  async function saveEditInv(): Promise<void> {
+    if (!invDraft.name.trim()) { invError = "Name required"; return; }
+    const updated = store.inventoryCategories.map(c =>
+      c.id === editingInvId ? { ...invDraft, name: invDraft.name.trim() } : c
+    );
+    await store.updateInventoryCategories(updated);
+    editingInvId = null; invError = null;
   }
 
   async function deleteInventoryCategory(id: string): Promise<void> {
     await store.updateInventoryCategories(store.inventoryCategories.filter(c => c.id !== id));
+    confirmDeleteInvId = null;
+  }
+
+  async function addInventoryCategory(): Promise<void> {
+    if (!newInvDraft.name.trim()) { invError = "Name required"; return; }
+    const newCat: InventoryCategory = {
+      id: crypto.randomUUID(),
+      name: newInvDraft.name.trim(),
+    };
+    await store.updateInventoryCategories([...store.inventoryCategories, newCat]);
+    newInvDraft = { name: "" };
+    showNewInvForm = false;
+    invError = null;
   }
 
   // --- Work categories ---
@@ -117,19 +145,45 @@
   }
 
   // --- Suppliers ---
-  let newSupplierName = $state("");
+  let editingSupplierId = $state<string | null>(null);
+  let supplierDraft = $state<Supplier>({ id: "", name: "" });
+  let showNewSupplierForm = $state(false);
+  let newSupplierDraft = $state({ name: "" });
   let confirmDeleteSupplierId = $state<string | null>(null);
+  let supplierError = $state<string | null>(null);
 
-  async function addSupplier(): Promise<void> {
-    if (!newSupplierName.trim()) return;
-    const newS: Supplier = { id: crypto.randomUUID(), name: newSupplierName.trim() };
-    await store.updateSuppliers([...store.suppliers, newS]);
-    newSupplierName = "";
+  function startEditSupplier(s: Supplier): void {
+    editingSupplierId = s.id;
+    supplierDraft = { ...s };
+    supplierError = null;
+  }
+
+  function cancelEditSupplier(): void { editingSupplierId = null; supplierError = null; }
+
+  async function saveEditSupplier(): Promise<void> {
+    if (!supplierDraft.name.trim()) { supplierError = "Name required"; return; }
+    const updated = store.suppliers.map(s =>
+      s.id === editingSupplierId ? { ...supplierDraft, name: supplierDraft.name.trim() } : s
+    );
+    await store.updateSuppliers(updated);
+    editingSupplierId = null; supplierError = null;
   }
 
   async function deleteSupplier(id: string): Promise<void> {
     await store.updateSuppliers(store.suppliers.filter(s => s.id !== id));
     confirmDeleteSupplierId = null;
+  }
+
+  async function addSupplier(): Promise<void> {
+    if (!newSupplierDraft.name.trim()) { supplierError = "Name required"; return; }
+    const newS: Supplier = {
+      id: crypto.randomUUID(),
+      name: newSupplierDraft.name.trim(),
+    };
+    await store.updateSuppliers([...store.suppliers, newS]);
+    newSupplierDraft = { name: "" };
+    showNewSupplierForm = false;
+    supplierError = null;
   }
 </script>
 
@@ -213,25 +267,54 @@
     <section class="section">
       <div class="section-header">
         <h2>Inventory categories</h2>
+        <button class="add-btn" onclick={() => { showNewInvForm = true; invError = null; }}>＋ Add</button>
       </div>
 
-      <div class="inv-list">
-        {#each store.inventoryCategories as cat (cat.id)}
-          <div class="inv-row">
-            <span class="inv-name">{cat.name}</span>
-            <button class="icon-action danger small" onclick={() => deleteInventoryCategory(cat.id)} title="Delete">🗑</button>
-          </div>
-        {/each}
-        <div class="inv-add-row">
-          <input
-            class="inv-input"
-            bind:value={newInvName}
-            placeholder="New category name…"
-            onkeydown={(e) => { if (e.key === "Enter") addInventoryCategory(); }}
-          />
-          <button class="add-btn" onclick={addInventoryCategory}>＋</button>
-        </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Name</th><th></th></tr>
+          </thead>
+          <tbody>
+            {#each store.inventoryCategories as cat (cat.id)}
+              {#if editingInvId === cat.id}
+                <tr class="editing-row">
+                  <td><input class="name-input wide" bind:value={invDraft.name} placeholder="Name" /></td>
+                  <td class="actions">
+                    <button class="icon-action ok" onclick={saveEditInv} title="Save">✓</button>
+                    <button class="icon-action" onclick={cancelEditInv} title="Cancel">✕</button>
+                  </td>
+                </tr>
+              {:else}
+                <tr>
+                  <td>{cat.name}</td>
+                  <td class="actions">
+                    {#if confirmDeleteInvId === cat.id}
+                      <span class="confirm-text">Delete?</span>
+                      <button class="icon-action danger" onclick={() => deleteInventoryCategory(cat.id)}>✓</button>
+                      <button class="icon-action" onclick={() => { confirmDeleteInvId = null; }}>✕</button>
+                    {:else}
+                      <button class="icon-action" onclick={() => startEditInv(cat)} title="Edit">✏</button>
+                      <button class="icon-action danger" onclick={() => { confirmDeleteInvId = cat.id; }} title="Delete">🗑</button>
+                    {/if}
+                  </td>
+                </tr>
+              {/if}
+            {/each}
+
+            {#if showNewInvForm}
+              <tr class="editing-row">
+                <td><input class="name-input wide" bind:value={newInvDraft.name} placeholder="Name *" /></td>
+                <td class="actions">
+                  <button class="icon-action ok" onclick={addInventoryCategory} title="Add">✓</button>
+                  <button class="icon-action" onclick={() => { showNewInvForm = false; invError = null; }} title="Cancel">✕</button>
+                </td>
+              </tr>
+            {/if}
+          </tbody>
+        </table>
       </div>
+      {#if invError}<div class="error">{invError}</div>{/if}
     </section>
 
     <!-- Work categories -->
@@ -293,30 +376,52 @@
     <section class="section">
       <div class="section-header">
         <h2>Suppliers</h2>
+        <button class="add-btn" onclick={() => { showNewSupplierForm = true; supplierError = null; }}>＋ Add</button>
       </div>
-      <div class="inv-list">
-        {#each store.suppliers as s (s.id)}
-          <div class="inv-row">
-            <span class="inv-name">{s.name}</span>
-            {#if confirmDeleteSupplierId === s.id}
-              <span class="confirm-text" style="font-size:10px">Delete?</span>
-              <button class="icon-action danger small" onclick={() => deleteSupplier(s.id)}>✓</button>
-              <button class="icon-action small" onclick={() => { confirmDeleteSupplierId = null; }}>✕</button>
-            {:else}
-              <button class="icon-action danger small" onclick={() => { confirmDeleteSupplierId = s.id; }} title="Delete">🗑</button>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Name</th><th></th></tr>
+          </thead>
+          <tbody>
+            {#each store.suppliers as s (s.id)}
+              {#if editingSupplierId === s.id}
+                <tr class="editing-row">
+                  <td><input class="name-input wide" bind:value={supplierDraft.name} placeholder="Name" /></td>
+                  <td class="actions">
+                    <button class="icon-action ok" onclick={saveEditSupplier} title="Save">✓</button>
+                    <button class="icon-action" onclick={cancelEditSupplier} title="Cancel">✕</button>
+                  </td>
+                </tr>
+              {:else}
+                <tr>
+                  <td>{s.name}</td>
+                  <td class="actions">
+                    {#if confirmDeleteSupplierId === s.id}
+                      <span class="confirm-text">Delete?</span>
+                      <button class="icon-action danger" onclick={() => deleteSupplier(s.id)}>✓</button>
+                      <button class="icon-action" onclick={() => { confirmDeleteSupplierId = null; }}>✕</button>
+                    {:else}
+                      <button class="icon-action" onclick={() => startEditSupplier(s)} title="Edit">✏</button>
+                      <button class="icon-action danger" onclick={() => { confirmDeleteSupplierId = s.id; }} title="Delete">🗑</button>
+                    {/if}
+                  </td>
+                </tr>
+              {/if}
+            {/each}
+            {#if showNewSupplierForm}
+              <tr class="editing-row">
+                <td><input class="name-input wide" bind:value={newSupplierDraft.name} placeholder="Name *" /></td>
+                <td class="actions">
+                  <button class="icon-action ok" onclick={addSupplier} title="Add">✓</button>
+                  <button class="icon-action" onclick={() => { showNewSupplierForm = false; supplierError = null; }} title="Cancel">✕</button>
+                </td>
+              </tr>
             {/if}
-          </div>
-        {/each}
-        <div class="inv-add-row">
-          <input
-            class="inv-input"
-            bind:value={newSupplierName}
-            placeholder="New supplier name…"
-            onkeydown={(e) => { if (e.key === "Enter") addSupplier(); }}
-          />
-          <button class="add-btn" onclick={addSupplier}>＋</button>
-        </div>
+          </tbody>
+        </table>
       </div>
+      {#if supplierError}<div class="error">{supplierError}</div>{/if}
     </section>
 
   </div>
@@ -359,6 +464,7 @@
   .color-input { width: 36px; height: 24px; border: 1px solid #2a2a4a; border-radius: 3px; padding: 0; cursor: pointer; background: none; }
   .emoji-input { width: 36px; background: #0f0f24; border: 1px solid #2a2a4a; color: #ccc; padding: 3px 4px; border-radius: 3px; font-size: 14px; text-align: center; }
   .name-input { width: 160px; background: #0f0f24; border: 1px solid #2a2a4a; color: #ccc; padding: 3px 7px; border-radius: 3px; font-size: 12px; }
+  .name-input.wide { width: 260px; }
   .unit-input { width: 100px; background: #0f0f24; border: 1px solid #2a2a4a; color: #ccc; padding: 3px 7px; border-radius: 3px; font-size: 12px; }
 
   .actions { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
@@ -378,20 +484,6 @@
     padding: 4px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;
   }
   .add-btn:hover { background: #224a34; }
-
-  .inv-list { display: flex; flex-direction: column; gap: 4px; max-width: 400px; }
-  .inv-row {
-    display: flex; align-items: center; gap: 8px;
-    padding: 5px 10px; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 4px;
-  }
-  .inv-name { flex: 1; font-size: 12px; color: #bbb; }
-  .icon-action.small { font-size: 11px; padding: 1px 4px; }
-  .inv-add-row { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
-  .inv-input {
-    flex: 1; background: #0f0f24; border: 1px solid #2a2a4a; color: #ccc;
-    padding: 5px 8px; border-radius: 4px; font-size: 12px;
-  }
-  .inv-input:focus { outline: none; border-color: #5566cc; }
 
   .error { color: #f44336; font-size: 11px; margin-top: 6px; }
 </style>
