@@ -21,6 +21,7 @@ export interface InventoryItem {
   purchasePrice: number | null;
   warrantyExpiryDate: string | null;
   notes: string;
+  attachments: string[];
   placement: InventoryPlacement | null;
 }
 
@@ -63,7 +64,7 @@ export function createInventoryStore() {
   }
 
   async function createItem(
-    data: Omit<InventoryItem, "id" | "placement">
+    data: Omit<InventoryItem, "id" | "attachments" | "placement">
   ): Promise<void> {
     const resp = await fetch("/api/inventory/items", {
       method: "POST",
@@ -76,7 +77,7 @@ export function createInventoryStore() {
 
   async function updateItem(
     id: string,
-    patch: Partial<Omit<InventoryItem, "id" | "placement">>
+    patch: Partial<Omit<InventoryItem, "id" | "attachments" | "placement">>
   ): Promise<void> {
     const resp = await fetch(`/api/inventory/items/${id}`, {
       method: "PUT",
@@ -108,6 +109,27 @@ export function createInventoryStore() {
     await init();
   }
 
+  async function uploadAttachment(id: string, file: File): Promise<string> {
+    const form = new FormData();
+    form.append("file", file);
+    const resp = await fetch(`/api/inventory/items/${id}/attachments`, {
+      method: "POST",
+      body: form,
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const result = await resp.json();
+    await init();
+    return result.filename as string;
+  }
+
+  async function deleteAttachment(id: string, filename: string): Promise<void> {
+    const resp = await fetch(`/api/inventory/items/${id}/attachments/${filename}`, {
+      method: "DELETE",
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
   init();
 
   return {
@@ -121,5 +143,7 @@ export function createInventoryStore() {
     updateItem,
     deleteItem,
     setPlacement,
+    uploadAttachment,
+    deleteAttachment,
   };
 }

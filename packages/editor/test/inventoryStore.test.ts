@@ -29,6 +29,7 @@ function makeItem(overrides: Partial<InventoryItem> = {}): InventoryItem {
     purchasePrice: 1200,
     warrantyExpiryDate: null,
     notes: "",
+    attachments: [],
     placement: null,
     ...overrides,
   };
@@ -116,5 +117,71 @@ describe("inventoryStore — placedItems / unplacedItems", () => {
     await tick();
     expect(store.placedItems()).toEqual([]);
     expect(store.unplacedItems().length).toBe(1);
+  });
+});
+
+describe("inventoryStore — uploadAttachment", () => {
+  it("posts to /attachments and returns filename", async () => {
+    const updatedDoc = { version: 1, items: [makeItem({ attachments: ["invoice.pdf"] })] };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn()
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => emptyDoc })
+        .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ filename: "invoice.pdf" }) })
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => updatedDoc }),
+    );
+    const store = createInventoryStore();
+    await tick();
+    const file = new File(["%PDF-1.4"], "invoice.pdf", { type: "application/pdf" });
+    const filename = await store.uploadAttachment("i1", file);
+    await tick();
+    expect(filename).toBe("invoice.pdf");
+    expect(store.items[0].attachments).toContain("invoice.pdf");
+  });
+
+  it("throws on HTTP error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn()
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => emptyDoc })
+        .mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({}) }),
+    );
+    const store = createInventoryStore();
+    await tick();
+    await expect(
+      store.uploadAttachment("i1", new File(["img"], "img.png")),
+    ).rejects.toThrow("HTTP 400");
+  });
+});
+
+describe("inventoryStore — deleteAttachment", () => {
+  it("calls DELETE and removes filename from store", async () => {
+    const initDoc = { version: 1, items: [makeItem({ attachments: ["invoice.pdf"] })] };
+    const clearedDoc = { version: 1, items: [makeItem({ attachments: [] })] };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn()
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => initDoc })
+        .mockResolvedValueOnce({ ok: true, status: 204, json: async () => ({}) })
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => clearedDoc }),
+    );
+    const store = createInventoryStore();
+    await tick();
+    expect(store.items[0].attachments).toContain("invoice.pdf");
+    await store.deleteAttachment("i1", "invoice.pdf");
+    await tick();
+    expect(store.items[0].attachments).not.toContain("invoice.pdf");
+  });
+
+  it("throws on HTTP error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn()
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => emptyDoc })
+        .mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}) }),
+    );
+    const store = createInventoryStore();
+    await tick();
+    await expect(store.deleteAttachment("i1", "invoice.pdf")).rejects.toThrow("HTTP 404");
   });
 });
