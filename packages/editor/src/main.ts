@@ -1,5 +1,10 @@
+// packages/editor/src/main.ts
+import "./lib/theme.css";
+import { initTheme } from "./lib/theme";
 import { mount } from "svelte";
 import App from "./App.svelte";
+
+initTheme();
 
 const target = document.getElementById("app");
 if (!target) throw new Error("Missing #app element");
