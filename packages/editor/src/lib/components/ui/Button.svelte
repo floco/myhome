@@ -12,7 +12,7 @@
   let { variant = "primary", onclick, disabled = false, title, children }: Props = $props();
 </script>
 
-<button class="ui-button ui-button-{variant}" {disabled} {title} {onclick}>
+<button type="button" class="ui-button ui-button-{variant}" {disabled} {title} {onclick}>
   {@render children?.()}
 </button>
 
