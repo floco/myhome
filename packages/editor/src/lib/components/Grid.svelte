@@ -41,7 +41,7 @@
 
 <style>
   .grid-line {
-    stroke: #2f2f2f;
+    stroke: var(--canvas-grid);
     stroke-width: 1;
   }
 </style>
