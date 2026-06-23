@@ -41,9 +41,9 @@
     flex-direction: row;
     align-items: center;
     gap: 2px;
-    padding: 4px 8px;
-    background: #252535;
-    border-bottom: 1px solid #333;
+    padding: var(--space-1) var(--space-2);
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--border);
     flex-shrink: 0;
     height: 36px;
     box-sizing: border-box;
@@ -51,7 +51,7 @@
   .sep {
     width: 1px;
     height: 18px;
-    background: #444;
+    background: var(--border);
     margin: 0 4px;
     flex-shrink: 0;
   }
@@ -59,9 +59,9 @@
     width: 30px;
     height: 28px;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     background: transparent;
-    color: #999;
+    color: var(--text-muted);
     cursor: pointer;
     font-size: 14px;
     display: flex;
@@ -70,9 +70,9 @@
     flex-shrink: 0;
     padding: 0;
   }
-  button:hover:not(:disabled) { background: #3a3a5a; color: #eee; }
-  button.active { background: #3a3a6a; color: #ccf; }
-  button.delete { color: #c66; }
-  button.delete:hover:not(:disabled) { background: #522; color: #f88; }
+  button:hover:not(:disabled) { background: var(--surface-hover); color: var(--text); }
+  button.active { background: var(--accent); color: var(--accent-contrast); }
+  button.delete { color: var(--danger); }
+  button.delete:hover:not(:disabled) { background: var(--surface-hover); color: var(--danger); }
   button:disabled { opacity: 0.35; cursor: default; }
 </style>
