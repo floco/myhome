@@ -37,12 +37,19 @@
 
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
-  /* Floor-plan canvas (tuned separately from UI chrome; consumed in Phase 2) */
+  /* Floor-plan canvas (tuned separately from UI chrome) */
   --canvas-bg: #eceef1;
   --canvas-grid: #d8dadf;
   --canvas-wall: #2a2a30;
   --canvas-wall-selected: #111111;
   --canvas-room-fill: #ffffff;
+  --canvas-room-fill-selected: #bcdcf0;
+  --canvas-divider: #5d7a96;
+  --canvas-opening-door: #a6862a;
+  --canvas-opening-window: #3b7dd8;
+  --canvas-label: #44546b;
+  --canvas-draw-preview: #d97f1f;
+  --canvas-selected-fill: rgba(17, 17, 17, 0.12);
 }
 
 [data-theme="dark"] {
@@ -70,4 +77,11 @@
   --canvas-wall: #d8d8dc;
   --canvas-wall-selected: #ffffff;
   --canvas-room-fill: #232328;
+  --canvas-room-fill-selected: #2a6a8a;
+  --canvas-divider: #99aadd;
+  --canvas-opening-door: #eea;
+  --canvas-opening-window: #8cf;
+  --canvas-label: #cde;
+  --canvas-draw-preview: #ffb84d;
+  --canvas-selected-fill: rgba(85, 170, 255, 0.15);
 }
