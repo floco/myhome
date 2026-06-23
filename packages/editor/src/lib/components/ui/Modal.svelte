@@ -6,10 +6,11 @@
     open: boolean;
     title: string;
     onclose: () => void;
+    width?: string;
     children?: Snippet;
     footer?: Snippet;
   }
-  let { open, title, onclose, children, footer }: Props = $props();
+  let { open, title, onclose, width = "480px", children, footer }: Props = $props();
 
   let dialogEl: HTMLDivElement | undefined = $state();
 
@@ -27,7 +28,15 @@
 {#if open}
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div class="ui-modal-backdrop" role="presentation" onclick={onclose}></div>
-  <div class="ui-modal" role="dialog" aria-modal="true" aria-label={title} bind:this={dialogEl} tabindex="-1">
+  <div
+    class="ui-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-label={title}
+    bind:this={dialogEl}
+    tabindex="-1"
+    style="width: {width}"
+  >
     <div class="ui-modal-header">
       <h2 class="ui-modal-title">{title}</h2>
       <button type="button" class="ui-modal-close" onclick={onclose} aria-label="Close">✕</button>
@@ -54,7 +63,7 @@
     background: var(--surface);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
-    width: 480px; max-width: 90vw; max-height: 90vh;
+    max-width: 90vw; max-height: 90vh;
     display: flex; flex-direction: column;
     overflow: hidden;
   }
@@ -75,6 +84,6 @@
   .ui-modal-footer {
     padding: var(--space-3) var(--space-4);
     border-top: 1px solid var(--border);
-    display: flex; justify-content: flex-end; gap: var(--space-2);
+    display: flex; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-2);
   }
 </style>

@@ -52,4 +52,31 @@ describe("ui/Modal", () => {
     unmount(comp);
     target.remove();
   });
+
+  it("defaults to 480px width", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(Modal, { target, props: { open: true, title: "Edit item", onclose: vi.fn() } });
+
+    const dialog = target.querySelector(".ui-modal") as HTMLElement;
+    expect(dialog.style.width).toBe("480px");
+
+    unmount(comp);
+    target.remove();
+  });
+
+  it("applies a custom width when provided", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(Modal, {
+      target,
+      props: { open: true, title: "Edit item", onclose: vi.fn(), width: "560px" },
+    });
+
+    const dialog = target.querySelector(".ui-modal") as HTMLElement;
+    expect(dialog.style.width).toBe("560px");
+
+    unmount(comp);
+    target.remove();
+  });
 });

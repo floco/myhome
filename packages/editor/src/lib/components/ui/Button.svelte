@@ -3,7 +3,7 @@
   import type { Snippet } from "svelte";
 
   interface Props {
-    variant?: "primary" | "secondary" | "ghost";
+    variant?: "primary" | "secondary" | "ghost" | "danger";
     onclick?: () => void;
     disabled?: boolean;
     title?: string;
@@ -37,4 +37,7 @@
 
   .ui-button-ghost { background: transparent; color: var(--text-muted); }
   .ui-button-ghost:hover:not(:disabled) { background: var(--surface-hover); color: var(--text); }
+
+  .ui-button-danger { background: var(--danger); color: var(--accent-contrast); }
+  .ui-button-danger:hover:not(:disabled) { opacity: 0.85; }
 </style>
