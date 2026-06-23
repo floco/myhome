@@ -19,8 +19,12 @@
     box-shadow: var(--shadow-sm);
     padding: var(--space-3);
   }
-  .ui-stat-value { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.2; }
+  .ui-stat-value {
+    font-family: var(--font-sans);
+    font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.2;
+  }
   .ui-stat-label {
+    font-family: var(--font-sans);
     font-size: 10px; color: var(--text-faint);
     text-transform: uppercase; letter-spacing: 0.05em;
     margin-top: 2px;
