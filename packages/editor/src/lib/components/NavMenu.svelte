@@ -70,32 +70,33 @@
     position: relative; z-index: 20;
     display: flex; flex-direction: column;
     width: 44px; flex-shrink: 0;
-    background: #14142a; border-right: 1px solid #2a2a3a;
+    background: var(--surface); border-right: 1px solid var(--border);
     overflow: hidden;
     transition: width 0.18s ease;
   }
   .nav.expanded { width: 180px; }
 
-  .nav-body { flex: 1; display: flex; flex-direction: column; min-width: 180px; padding-top: 6px; }
+  .nav-body { flex: 1; display: flex; flex-direction: column; min-width: 180px; padding: 8px 6px 0; gap: 2px; }
 
   .nav-item {
     display: flex; align-items: center; gap: 10px;
     height: 40px; padding: 0 12px;
-    color: #777; text-decoration: none; white-space: nowrap;
-    border-left: 2px solid transparent;
+    margin: 0 2px;
+    color: var(--text-muted); text-decoration: none; white-space: nowrap;
+    border-radius: var(--radius-pill);
   }
-  .nav-item:hover { background: #1e1e3a; color: #ccc; }
-  .nav-item.active { color: #aab; border-left-color: #5566cc; background: #1c1c38; }
+  .nav-item:hover { background: var(--surface-hover); color: var(--text); }
+  .nav-item.active { color: var(--accent-contrast); background: var(--accent); }
 
   .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; line-height: 1; }
-  .nav-label { font-size: 12px; }
+  .nav-label { font-size: 12px; font-weight: 500; }
 
-  .nav-separator { border: none; border-top: 1px solid #2a2a4a; margin: 8px 4px; }
+  .nav-separator { border: none; border-top: 1px solid var(--border); margin: 8px 10px; }
 
   @media (max-width: 600px) {
     .nav {
       position: fixed;
-      top: 36px; bottom: 0; left: 0;
+      top: 48px; bottom: 0; left: 0;
       width: 0;
     }
     .nav.expanded { width: 200px; }
