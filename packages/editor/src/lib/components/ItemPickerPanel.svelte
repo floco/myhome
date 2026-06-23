@@ -115,38 +115,38 @@
 
 <style>
   .panel {
-    width: 220px; height: 100%; background: #1e1e2e; border-left: 1px solid #333;
-    display: flex; flex-direction: column; font-size: 12px; color: #ccc;
+    width: 220px; height: 100%; background: var(--surface); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; font-size: 12px; color: var(--text-muted);
     flex-shrink: 0; overflow: hidden;
   }
   .search {
-    margin: 6px 8px; padding: 4px 7px; background: #0a0a20;
-    border: 1px solid #2a2a4a; color: #bbb; border-radius: 4px;
-    font-size: 11px; flex-shrink: 0;
+    margin: var(--space-2) var(--space-2); padding: var(--space-1) var(--space-2);
+    background: var(--surface-alt); border: 1px solid var(--border); color: var(--text-muted);
+    border-radius: var(--radius-sm); font-size: 11px; flex-shrink: 0;
   }
-  .section { border-bottom: 1px solid #2a2a3a; flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+  .section { border-bottom: 1px solid var(--border); flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
   .section-header {
     width: 100%; display: flex; align-items: center; gap: 6px;
-    padding: 6px 10px; background: #252535; border: none; color: #aaf;
+    padding: var(--space-2) var(--space-3); background: var(--surface-alt); border: none; color: var(--text);
     cursor: pointer; font-size: 11px; font-weight: 600; text-align: left;
     flex-shrink: 0;
   }
-  .section-header:hover { background: #2a2a45; }
-  .section-count { margin-left: auto; color: #556; font-size: 10px; }
-  .chevron { color: #556; font-size: 9px; flex-shrink: 0; }
+  .section-header:hover { background: var(--surface-hover); }
+  .section-count { margin-left: auto; color: var(--text-faint); font-size: 10px; }
+  .chevron { color: var(--text-faint); font-size: 9px; flex-shrink: 0; }
   .section-body { overflow-y: auto; flex: 1; min-height: 0; }
   .group-title {
-    color: #556; font-size: 9px; text-transform: uppercase;
+    color: var(--text-faint); font-size: 9px; text-transform: uppercase;
     letter-spacing: .05em; padding: 4px 10px 2px;
   }
   .item-row {
     display: flex; align-items: center; gap: 8px; padding: 5px 10px;
-    cursor: grab; user-select: none; border-radius: 3px; margin: 1px 4px;
+    cursor: grab; user-select: none; border-radius: var(--radius-sm); margin: 1px 4px;
   }
-  .item-row:hover { background: #2a2a4a; }
+  .item-row:hover { background: var(--surface-hover); }
   .item-row.placed { opacity: .45; }
-  .item-row.dragging { opacity: .5; background: #2a2a4a; }
+  .item-row.dragging { opacity: .5; background: var(--surface-hover); }
   .item-emoji { font-size: 14px; flex-shrink: 0; }
   .item-name { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .empty { color: #445; font-size: 10px; padding: 8px 10px; }
+  .empty { color: var(--text-faint); font-size: 10px; padding: 8px 10px; }
 </style>
