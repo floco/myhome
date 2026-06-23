@@ -30,7 +30,7 @@
   <div class="ui-modal" role="dialog" aria-modal="true" aria-label={title} bind:this={dialogEl} tabindex="-1">
     <div class="ui-modal-header">
       <h2 class="ui-modal-title">{title}</h2>
-      <button class="ui-modal-close" onclick={onclose} aria-label="Close">✕</button>
+      <button type="button" class="ui-modal-close" onclick={onclose} aria-label="Close">✕</button>
     </div>
     <div class="ui-modal-body">
       {@render children?.()}
