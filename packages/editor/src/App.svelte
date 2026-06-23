@@ -39,6 +39,7 @@
   import type { Work } from "./lib/worksStore.svelte";
   import WorksOverlay from "./lib/components/WorksOverlay.svelte";
   import WorksPinPopup from "./lib/components/WorksPinPopup.svelte";
+  import { getStoredTheme, toggleTheme, type Theme } from "./lib/theme";
 
   const floorStore = createHouseStore();
   const viewportStore = createViewportStore();
@@ -48,6 +49,11 @@
   const settingsStore = createSettingsStore();
   const costsStore = createCostsStore();
   const worksStore = createWorksStore();
+
+  let theme = $state<Theme>(getStoredTheme());
+  function handleToggleTheme(): void {
+    theme = toggleTheme(theme);
+  }
 
   let selectedInventoryPin = $state<{
     item: InventoryItem;
@@ -465,6 +471,12 @@
     >{navExpanded ? "✕" : "☰"}</button>
 
     <span class="app-title">myhome</span>
+
+    <button
+      class="icon-btn theme-toggle"
+      title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+      onclick={handleToggleTheme}
+    >{theme === "light" ? "🌙" : "☀️"}</button>
 
     {#if isFloorPlan}
       <FloorSwitcher
@@ -898,34 +910,36 @@
 
   .app {
     display: flex; flex-direction: column;
-    height: 100vh; font-family: sans-serif;
-    background: #1a1a2e;
+    height: 100vh; font-family: var(--font-sans);
+    background: var(--bg);
   }
 
   .topbar {
-    height: 36px;
-    background: #1e1e2e; color: #ccc;
+    height: 48px;
+    background: var(--surface); color: var(--text);
     display: flex; align-items: center;
-    padding: 0 8px; gap: 8px;
+    padding: 0 var(--space-3); gap: var(--space-2);
     flex-shrink: 0;
-    border-bottom: 1px solid #2a2a3a;
+    border-bottom: 1px solid var(--border);
   }
 
   .hamburger {
     width: 32px; height: 32px; flex-shrink: 0;
-    border: none; background: transparent; color: #999;
-    font-size: 16px; cursor: pointer; border-radius: 4px;
+    border: none; background: transparent; color: var(--text-muted);
+    font-size: 16px; cursor: pointer; border-radius: var(--radius-sm);
     display: flex; align-items: center; justify-content: center;
   }
-  .hamburger:hover { background: #2a2a4a; color: #eee; }
+  .hamburger:hover { background: var(--surface-hover); color: var(--text); }
 
   .app-title {
-    font-size: 14px; font-weight: 600; color: #eee;
-    margin-right: 8px; flex-shrink: 0;
+    font-size: 14px; font-weight: 600; color: var(--text);
+    margin-right: var(--space-2); flex-shrink: 0;
   }
 
+  .theme-toggle { margin-right: var(--space-2); }
+
   .topbar-sep {
-    width: 1px; height: 18px; background: #333; flex-shrink: 0; margin: 0 4px;
+    width: 1px; height: 18px; background: var(--border); flex-shrink: 0; margin: 0 4px;
   }
   .spacer { flex: 1; }
 
@@ -933,36 +947,36 @@
     display: flex; align-items: center; gap: 2px; flex-shrink: 0;
   }
   .toolbar .sep {
-    width: 1px; height: 16px; background: #333; margin: 0 3px; flex-shrink: 0;
+    width: 1px; height: 16px; background: var(--border); margin: 0 3px; flex-shrink: 0;
   }
   .toolbar button {
     width: 28px; height: 28px;
-    border: none; border-radius: 4px; background: transparent;
-    color: #999; cursor: pointer; font-size: 14px;
+    border: none; border-radius: var(--radius-sm); background: transparent;
+    color: var(--text-muted); cursor: pointer; font-size: 14px;
     display: flex; align-items: center; justify-content: center; padding: 0;
   }
-  .toolbar button:hover:not(:disabled) { background: #2a2a4a; color: #eee; }
-  .toolbar button.active { background: #2a2a5a; color: #aaf; }
-  .toolbar button.delete { color: #c66; }
-  .toolbar button.delete:hover:not(:disabled) { background: #422; color: #f88; }
+  .toolbar button:hover:not(:disabled) { background: var(--surface-hover); color: var(--text); }
+  .toolbar button.active { background: var(--surface-hover); color: var(--accent); }
+  .toolbar button.delete { color: var(--danger); }
+  .toolbar button.delete:hover:not(:disabled) { background: var(--surface-hover); color: var(--danger); }
   .toolbar button:disabled { opacity: 0.35; cursor: default; }
 
   .icon-btn {
     width: 30px; height: 30px;
-    border: none; border-radius: 4px; background: transparent;
-    color: #999; cursor: pointer; font-size: 15px;
+    border: none; border-radius: var(--radius-sm); background: transparent;
+    color: var(--text-muted); cursor: pointer; font-size: 15px;
     display: flex; align-items: center; justify-content: center; padding: 0;
     flex-shrink: 0; text-decoration: none;
   }
-  .icon-btn:hover:not(:disabled) { background: #2a2a4a; color: #eee; }
-  .icon-btn.active { background: #2a2a5a; color: #aaf; }
-  .icon-btn.save-btn { color: #4c9; }
-  .icon-btn.save-btn:hover:not(:disabled) { background: #1a3a2a; color: #6eb; }
-  .icon-btn.save-btn.saved { color: #2a6; }
-  .icon-btn.save-btn.save-error { color: #f44; }
+  .icon-btn:hover:not(:disabled) { background: var(--surface-hover); color: var(--text); }
+  .icon-btn.active { background: var(--surface-hover); color: var(--accent); }
+  .icon-btn.save-btn { color: var(--success); }
+  .icon-btn.save-btn:hover:not(:disabled) { background: var(--surface-hover); }
+  .icon-btn.save-btn.saved { color: var(--success); }
+  .icon-btn.save-btn.save-error { color: var(--danger); }
   .icon-btn:disabled { opacity: 0.5; cursor: default; }
-  .new-chore-btn { color: #4c9; font-size: 18px; font-weight: 600; }
-  .new-chore-btn:hover { background: #1a3a2a; color: #6eb; }
+  .new-chore-btn { color: var(--success); font-size: 18px; font-weight: 600; }
+  .new-chore-btn:hover { background: var(--surface-hover); }
 
   .workspace {
     display: flex; flex: 1; overflow: hidden;
