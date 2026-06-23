@@ -10,12 +10,24 @@
     footer?: Snippet;
   }
   let { open, title, onclose, children, footer }: Props = $props();
+
+  let dialogEl: HTMLDivElement | undefined = $state();
+
+  $effect(() => {
+    if (open) dialogEl?.focus();
+  });
+
+  function handleKeydown(e: KeyboardEvent): void {
+    if (open && e.key === "Escape") onclose();
+  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 {#if open}
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div class="ui-modal-backdrop" role="presentation" onclick={onclose}></div>
-  <div class="ui-modal" role="dialog" aria-label={title}>
+  <div class="ui-modal" role="dialog" aria-modal="true" aria-label={title} bind:this={dialogEl} tabindex="-1">
     <div class="ui-modal-header">
       <h2 class="ui-modal-title">{title}</h2>
       <button class="ui-modal-close" onclick={onclose} aria-label="Close">✕</button>
@@ -46,6 +58,7 @@
     display: flex; flex-direction: column;
     overflow: hidden;
   }
+  .ui-modal:focus { outline: none; }
   .ui-modal-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: var(--space-4);
