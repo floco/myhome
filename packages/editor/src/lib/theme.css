@@ -79,9 +79,9 @@
   --canvas-room-fill: #232328;
   --canvas-room-fill-selected: #2a6a8a;
   --canvas-divider: #99aadd;
-  --canvas-opening-door: #eea;
-  --canvas-opening-window: #8cf;
-  --canvas-label: #cde;
+  --canvas-opening-door: #eeeeaa;
+  --canvas-opening-window: #88ccff;
+  --canvas-label: #ccddee;
   --canvas-draw-preview: #ffb84d;
   --canvas-selected-fill: rgba(85, 170, 255, 0.15);
 }
