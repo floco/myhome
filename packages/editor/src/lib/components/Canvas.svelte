@@ -246,7 +246,7 @@
       y1={openingPreview.sp1.y}
       x2={openingPreview.sp2.x}
       y2={openingPreview.sp2.y}
-      stroke={tool === "door" ? "#eea" : "#8cf"}
+      stroke={tool === "door" ? "var(--canvas-opening-door)" : "var(--canvas-opening-window)"}
       stroke-width="6"
       stroke-dasharray="4 2"
       opacity="0.6"
@@ -260,7 +260,7 @@
 
 <style>
   .canvas {
-    background: #1c1c1c;
+    background: var(--canvas-bg);
     display: block;
   }
 </style>
