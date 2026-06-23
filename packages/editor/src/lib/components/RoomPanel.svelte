@@ -66,36 +66,36 @@
 <style>
   .room-panel {
     width: 200px;
-    background: #2a2a2a;
-    border-left: 1px solid #444;
-    padding: 12px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    padding: var(--space-3);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--space-3);
     flex-shrink: 0;
     overflow-y: auto;
   }
   h2 {
     margin: 0;
     font-size: 13px;
-    color: #ccc;
+    color: var(--text);
     font-weight: 600;
   }
   label {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--space-1);
   }
   span {
     font-size: 11px;
-    color: #888;
+    color: var(--text-muted);
   }
   input,
   select {
-    background: #1c1c1c;
-    border: 1px solid #555;
-    border-radius: 3px;
-    color: #eee;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
     padding: 4px 6px;
     font-size: 12px;
     font-family: inherit;
@@ -103,11 +103,11 @@
   input:focus,
   select:focus {
     outline: none;
-    border-color: #5af;
+    border-color: var(--accent);
   }
   .area-display {
     margin: 0;
     font-size: 12px;
-    color: #888;
+    color: var(--text-muted);
   }
 </style>
