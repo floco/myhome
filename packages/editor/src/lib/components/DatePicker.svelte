@@ -116,19 +116,19 @@
 
   .dp-field {
     display: flex; align-items: center; gap: 6px;
-    background: #0f0f24; border: 1px solid #2a2a4a; color: #ccc;
-    padding: 5px 8px; border-radius: 4px; cursor: pointer;
-    font-size: 12px; font-family: sans-serif; min-width: 160px;
-    user-select: none;
+    background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 12px; border-radius: var(--radius-md); cursor: pointer;
+    font-size: 13px; font-family: var(--font-sans); min-width: 160px;
+    user-select: none; box-sizing: border-box;
   }
-  .dp-field:hover { border-color: #5566cc; }
+  .dp-field:hover { border-color: var(--accent); }
   .dp-text { flex: 1; }
   .dp-icon { font-size: 13px; flex-shrink: 0; }
 
   .dp-calendar {
     position: absolute; top: calc(100% + 4px); left: 0;
-    background: #1a1a30; border: 1px solid #3a3a5a; border-radius: 8px;
-    padding: 10px; z-index: 300; box-shadow: 0 4px 16px #0008;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 10px; z-index: 300; box-shadow: var(--shadow-md);
     min-width: 220px;
   }
 
@@ -137,27 +137,27 @@
     margin-bottom: 8px;
   }
   .dp-nav {
-    background: none; border: none; color: #88a; font-size: 16px;
+    background: none; border: none; color: var(--text-muted); font-size: 16px;
     cursor: pointer; padding: 0 6px; line-height: 1;
   }
-  .dp-nav:hover { color: #aaf; }
-  .dp-month-label { font-size: 12px; color: #ccc; font-family: sans-serif; font-weight: 600; }
+  .dp-nav:hover { color: var(--text); }
+  .dp-month-label { font-size: 12px; color: var(--text); font-family: var(--font-sans); font-weight: 600; }
 
   .dp-grid {
     display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
   }
   .dp-dh {
-    text-align: center; font-size: 9px; color: #445; padding: 2px 0;
-    font-family: sans-serif;
+    text-align: center; font-size: 9px; color: var(--text-faint); padding: 2px 0;
+    font-family: var(--font-sans);
   }
   .dp-cell {
-    text-align: center; font-size: 11px; font-family: sans-serif;
+    text-align: center; font-size: 11px; font-family: var(--font-sans);
     padding: 4px 2px; border-radius: 3px; cursor: pointer;
-    background: none; border: none; color: #aaa;
+    background: none; border: none; color: var(--text-muted);
   }
-  .dp-cell:hover:not(.dp-selected) { background: #2a2a4a; color: #eee; }
+  .dp-cell:hover:not(.dp-selected) { background: var(--surface-hover); color: var(--text); }
   .dp-empty { cursor: default; }
-  .dp-today { color: #88aaff; font-weight: 600; }
-  .dp-selected { background: #3344aa; color: #fff; font-weight: 600; }
-  .dp-selected:hover { background: #4455cc; }
+  .dp-today { color: var(--accent); font-weight: 600; }
+  .dp-selected { background: var(--accent); color: var(--accent-contrast); font-weight: 600; }
+  .dp-selected:hover { opacity: 0.85; }
 </style>
