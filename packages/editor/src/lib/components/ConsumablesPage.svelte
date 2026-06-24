@@ -8,14 +8,14 @@
 <style>
   .stub {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    height: 100%; gap: 12px; color: #667; font-family: sans-serif;
+    height: 100%; gap: 12px; color: var(--text-muted); font-family: var(--font-sans);
   }
   .stub-icon { font-size: 56px; line-height: 1; }
-  h2 { margin: 0; font-size: 22px; color: #99a; font-weight: 600; }
-  p { margin: 0; font-size: 14px; max-width: 320px; text-align: center; line-height: 1.6; }
+  h2 { margin: 0; font-size: 22px; color: var(--text); font-weight: 600; }
+  p { margin: 0; font-size: 14px; max-width: 320px; text-align: center; line-height: 1.6; color: var(--text-muted); }
   .coming-soon {
-    margin-top: 8px; padding: 4px 14px; border-radius: 12px;
-    background: #1e1e38; color: #556; font-size: 11px; text-transform: uppercase;
+    margin-top: 8px; padding: 4px 14px; border-radius: var(--radius-pill);
+    background: var(--surface-alt); color: var(--text-faint); font-size: 11px; text-transform: uppercase;
     letter-spacing: 0.1em;
   }
 </style>
