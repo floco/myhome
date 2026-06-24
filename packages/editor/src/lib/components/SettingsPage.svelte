@@ -1,6 +1,9 @@
 <!-- packages/editor/src/lib/components/SettingsPage.svelte -->
 <script lang="ts">
   import type { createSettingsStore, CostCategory, InventoryCategory, WorkCategory, Supplier } from "../settingsStore.svelte";
+  import Button from "./ui/Button.svelte";
+  import Input from "./ui/Input.svelte";
+  import Card from "./ui/Card.svelte";
 
   type SettingsStore = ReturnType<typeof createSettingsStore>;
 
@@ -195,10 +198,10 @@
   <div class="sections">
 
     <!-- Cost categories -->
-    <section class="section">
+    <Card>
       <div class="section-header">
         <h2>Cost categories</h2>
-        <button class="add-btn" onclick={() => { showNewCostForm = true; costError = null; }}>＋ Add</button>
+        <Button onclick={() => { showNewCostForm = true; costError = null; }}>＋ Add</Button>
       </div>
 
       <div class="table-wrapper">
@@ -218,8 +221,8 @@
                 <tr class="editing-row">
                   <td><input type="color" bind:value={costDraft.color} class="color-input" /></td>
                   <td><input class="emoji-input" bind:value={costDraft.emoji} maxlength="2" /></td>
-                  <td><input class="name-input" bind:value={costDraft.name} placeholder="Name" /></td>
-                  <td><input class="unit-input" bind:value={costDraftUnit} placeholder="L, kWh…" /></td>
+                  <td class="name-cell-input"><Input bind:value={costDraft.name} placeholder="Name" /></td>
+                  <td class="unit-cell-input"><Input bind:value={costDraftUnit} placeholder="L, kWh…" /></td>
                   <td class="actions">
                     <button class="icon-action ok" onclick={saveEditCost} title="Save">✓</button>
                     <button class="icon-action" onclick={cancelEditCost} title="Cancel">✕</button>
@@ -249,8 +252,8 @@
               <tr class="editing-row">
                 <td><input type="color" bind:value={newCostDraft.color} class="color-input" /></td>
                 <td><input class="emoji-input" bind:value={newCostDraft.emoji} maxlength="2" placeholder="💰" /></td>
-                <td><input class="name-input" bind:value={newCostDraft.name} placeholder="Name *" /></td>
-                <td><input class="unit-input" bind:value={newCostDraft.unit} placeholder="L, kWh… (optional)" /></td>
+                <td class="name-cell-input"><Input bind:value={newCostDraft.name} placeholder="Name *" /></td>
+                <td class="unit-cell-input"><Input bind:value={newCostDraft.unit} placeholder="L, kWh… (optional)" /></td>
                 <td class="actions">
                   <button class="icon-action ok" onclick={addCostCategory} title="Add">✓</button>
                   <button class="icon-action" onclick={() => { showNewCostForm = false; costError = null; }} title="Cancel">✕</button>
@@ -261,13 +264,13 @@
         </table>
       </div>
       {#if costError}<div class="error">{costError}</div>{/if}
-    </section>
+    </Card>
 
     <!-- Inventory categories -->
-    <section class="section">
+    <Card>
       <div class="section-header">
         <h2>Inventory categories</h2>
-        <button class="add-btn" onclick={() => { showNewInvForm = true; invError = null; }}>＋ Add</button>
+        <Button onclick={() => { showNewInvForm = true; invError = null; }}>＋ Add</Button>
       </div>
 
       <div class="table-wrapper">
@@ -279,7 +282,7 @@
             {#each store.inventoryCategories as cat (cat.id)}
               {#if editingInvId === cat.id}
                 <tr class="editing-row">
-                  <td><input class="name-input wide" bind:value={invDraft.name} placeholder="Name" /></td>
+                  <td class="name-cell-input wide"><Input bind:value={invDraft.name} placeholder="Name" /></td>
                   <td class="actions">
                     <button class="icon-action ok" onclick={saveEditInv} title="Save">✓</button>
                     <button class="icon-action" onclick={cancelEditInv} title="Cancel">✕</button>
@@ -304,7 +307,7 @@
 
             {#if showNewInvForm}
               <tr class="editing-row">
-                <td><input class="name-input wide" bind:value={newInvDraft.name} placeholder="Name *" /></td>
+                <td class="name-cell-input wide"><Input bind:value={newInvDraft.name} placeholder="Name *" /></td>
                 <td class="actions">
                   <button class="icon-action ok" onclick={addInventoryCategory} title="Add">✓</button>
                   <button class="icon-action" onclick={() => { showNewInvForm = false; invError = null; }} title="Cancel">✕</button>
@@ -315,13 +318,13 @@
         </table>
       </div>
       {#if invError}<div class="error">{invError}</div>{/if}
-    </section>
+    </Card>
 
     <!-- Work categories -->
-    <section class="section">
+    <Card>
       <div class="section-header">
         <h2>Work categories</h2>
-        <button class="add-btn" onclick={() => { showNewWorkForm = true; workError = null; }}>＋ Add</button>
+        <Button onclick={() => { showNewWorkForm = true; workError = null; }}>＋ Add</Button>
       </div>
       <div class="table-wrapper">
         <table>
@@ -333,7 +336,7 @@
               {#if editingWorkId === cat.id}
                 <tr class="editing-row">
                   <td><input class="emoji-input" bind:value={workDraft.emoji} maxlength="2" /></td>
-                  <td><input class="name-input" bind:value={workDraft.name} placeholder="Name" /></td>
+                  <td class="name-cell-input"><Input bind:value={workDraft.name} placeholder="Name" /></td>
                   <td class="actions">
                     <button class="icon-action ok" onclick={saveEditWork} title="Save">✓</button>
                     <button class="icon-action" onclick={cancelEditWork} title="Cancel">✕</button>
@@ -359,7 +362,7 @@
             {#if showNewWorkForm}
               <tr class="editing-row">
                 <td><input class="emoji-input" bind:value={newWorkDraft.emoji} maxlength="2" placeholder="🔧" /></td>
-                <td><input class="name-input" bind:value={newWorkDraft.name} placeholder="Name *" /></td>
+                <td class="name-cell-input"><Input bind:value={newWorkDraft.name} placeholder="Name *" /></td>
                 <td class="actions">
                   <button class="icon-action ok" onclick={addWorkCategory} title="Add">✓</button>
                   <button class="icon-action" onclick={() => { showNewWorkForm = false; workError = null; }} title="Cancel">✕</button>
@@ -370,13 +373,13 @@
         </table>
       </div>
       {#if workError}<div class="error">{workError}</div>{/if}
-    </section>
+    </Card>
 
     <!-- Suppliers -->
-    <section class="section">
+    <Card>
       <div class="section-header">
         <h2>Suppliers</h2>
-        <button class="add-btn" onclick={() => { showNewSupplierForm = true; supplierError = null; }}>＋ Add</button>
+        <Button onclick={() => { showNewSupplierForm = true; supplierError = null; }}>＋ Add</Button>
       </div>
       <div class="table-wrapper">
         <table>
@@ -387,7 +390,7 @@
             {#each store.suppliers as s (s.id)}
               {#if editingSupplierId === s.id}
                 <tr class="editing-row">
-                  <td><input class="name-input wide" bind:value={supplierDraft.name} placeholder="Name" /></td>
+                  <td class="name-cell-input wide"><Input bind:value={supplierDraft.name} placeholder="Name" /></td>
                   <td class="actions">
                     <button class="icon-action ok" onclick={saveEditSupplier} title="Save">✓</button>
                     <button class="icon-action" onclick={cancelEditSupplier} title="Cancel">✕</button>
@@ -411,7 +414,7 @@
             {/each}
             {#if showNewSupplierForm}
               <tr class="editing-row">
-                <td><input class="name-input wide" bind:value={newSupplierDraft.name} placeholder="Name *" /></td>
+                <td class="name-cell-input wide"><Input bind:value={newSupplierDraft.name} placeholder="Name *" /></td>
                 <td class="actions">
                   <button class="icon-action ok" onclick={addSupplier} title="Add">✓</button>
                   <button class="icon-action" onclick={() => { showNewSupplierForm = false; supplierError = null; }} title="Cancel">✕</button>
@@ -422,7 +425,7 @@
         </table>
       </div>
       {#if supplierError}<div class="error">{supplierError}</div>{/if}
-    </section>
+    </Card>
 
   </div>
 </div>
@@ -430,60 +433,56 @@
 <style>
   .page {
     display: flex; flex-direction: column; height: 100%;
-    background: #141428; font-family: sans-serif; overflow-y: auto;
+    background: var(--bg); font-family: var(--font-sans); overflow-y: auto;
   }
   .page-header {
-    padding: 16px 20px 8px; border-bottom: 1px solid #2a2a4a; flex-shrink: 0;
+    padding: var(--space-4) var(--space-4) var(--space-2); border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
-  h1 { margin: 0; font-size: 16px; color: #eee; font-weight: 600; }
-  .sections { padding: 16px 20px; display: flex; flex-direction: column; gap: 32px; }
+  h1 { margin: 0; font-size: 16px; color: var(--text); font-weight: 600; }
+  .sections { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-5); }
 
-  .section {}
   .section-header {
     display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 10px;
+    margin-bottom: var(--space-2);
   }
-  h2 { margin: 0; font-size: 13px; color: #99a; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  h2 { margin: 0; font-size: 13px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
 
   .table-wrapper { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; color: #bbb; }
-  thead { background: #1a1a30; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text-muted); }
+  thead { background: var(--surface-alt); }
   th {
-    padding: 5px 10px; color: #445; font-size: 10px;
+    padding: 5px 10px; color: var(--text-faint); font-size: 10px;
     text-transform: uppercase; letter-spacing: .05em; text-align: left;
-    border-bottom: 1px solid #2a2a3a;
+    border-bottom: 1px solid var(--border);
   }
-  td { padding: 6px 10px; border-bottom: 1px solid #1e1e2e; vertical-align: middle; }
-  tr:hover td { background: #1c1c38; }
-  .editing-row td { background: #1a1a38; }
+  td { padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:hover td { background: var(--surface-hover); }
+  .editing-row td { background: var(--surface-alt); }
 
   .color-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; }
   .emoji-cell { font-size: 15px; }
-  .unit-cell { color: #667; }
+  .unit-cell { color: var(--text-faint); }
 
-  .color-input { width: 36px; height: 24px; border: 1px solid #2a2a4a; border-radius: 3px; padding: 0; cursor: pointer; background: none; }
-  .emoji-input { width: 36px; background: #0f0f24; border: 1px solid #2a2a4a; color: #ccc; padding: 3px 4px; border-radius: 3px; font-size: 14px; text-align: center; }
-  .name-input { width: 160px; background: #0f0f24; border: 1px solid #2a2a4a; color: #ccc; padding: 3px 7px; border-radius: 3px; font-size: 12px; }
-  .name-input.wide { width: 260px; }
-  .unit-input { width: 100px; background: #0f0f24; border: 1px solid #2a2a4a; color: #ccc; padding: 3px 7px; border-radius: 3px; font-size: 12px; }
+  .color-input { width: 36px; height: 24px; border: 1px solid var(--border); border-radius: 3px; padding: 0; cursor: pointer; background: none; }
+  .emoji-input {
+    width: 36px; background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
+    padding: 3px 4px; border-radius: 3px; font-size: 14px; text-align: center;
+  }
+  .name-cell-input :global(.ui-input) { width: 160px; }
+  .name-cell-input.wide :global(.ui-input) { width: 260px; }
+  .unit-cell-input :global(.ui-input) { width: 100px; }
 
   .actions { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
   .icon-action {
-    background: none; border: none; color: #667; cursor: pointer; font-size: 12px;
+    background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 12px;
     padding: 2px 5px; border-radius: 3px;
   }
-  .icon-action:hover { background: #2a2a4a; color: #aaa; }
-  .icon-action.ok { color: #4c9; }
-  .icon-action.ok:hover { background: #1a3a2a; color: #6eb; }
-  .icon-action.danger { color: #c66; }
-  .icon-action.danger:hover { background: #2a1010; color: #f88; }
-  .confirm-text { font-size: 10px; color: #c66; }
+  .icon-action:hover { background: var(--surface-hover); color: var(--text-muted); }
+  .icon-action.ok { color: var(--success); }
+  .icon-action.ok:hover { background: color-mix(in srgb, var(--success) 18%, var(--surface)); }
+  .icon-action.danger { color: var(--danger); }
+  .icon-action.danger:hover { background: color-mix(in srgb, var(--danger) 18%, var(--surface)); }
+  .confirm-text { font-size: 10px; color: var(--danger); }
 
-  .add-btn {
-    background: #1a3a2a; border: none; color: #4c9;
-    padding: 4px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;
-  }
-  .add-btn:hover { background: #224a34; }
-
-  .error { color: #f44336; font-size: 11px; margin-top: 6px; }
+  .error { color: var(--danger); font-size: 11px; margin-top: 6px; }
 </style>
