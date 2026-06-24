@@ -1,9 +1,10 @@
-<!-- packages/editor/src/lib/components/CostsEntryModal.svelte -->
 <script lang="ts">
   import type { createCostsStore, CostEntry } from "../costsStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
   import type { createHouseStore } from "../houseStore.svelte";
   import DatePicker from "./DatePicker.svelte";
+  import Modal from "./ui/Modal.svelte";
+  import Button from "./ui/Button.svelte";
 
   type CostsStore = ReturnType<typeof createCostsStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -50,13 +51,10 @@
     const ppuOk = !isNaN(ppu) && ppu > 0;
 
     if ((changed === "qty" || changed === "price") && qtyOk && ppuOk) {
-      // qty × price → always update total
       totalAmount = (qty * ppu).toFixed(2);
     } else if (changed === "total" && totOk && qtyOk) {
-      // total / qty → update unit price
       unitPrice = (tot / qty).toFixed(4);
     } else if (changed === "total" && totOk && ppuOk && quantity === "") {
-      // total / price → update qty (only when qty is empty)
       quantity = (tot / ppu).toFixed(2);
     }
   }
@@ -109,167 +107,123 @@
   }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="overlay" onclick={(e) => { if (e.target === e.currentTarget) onclose(); }}>
-  <div class="modal">
-    <div class="modal-header">
-      <h2>{isCreate ? "＋ New entry" : "Edit entry"}</h2>
-      <button class="close-btn" onclick={onclose}>✕</button>
-    </div>
-
-    <div class="modal-body">
-      <div class="row">
-        <label>Category *</label>
-        <select class="flex-input" bind:value={categoryId}>
-          {#each settingsStore.costCategories as cat}
-            <option value={cat.id}>{cat.emoji} {cat.name}</option>
-          {/each}
-        </select>
-      </div>
-
-      <div class="row">
-        <label>Date *</label>
-        <DatePicker bind:value={date} />
-      </div>
-
-      {#if hasUnit}
-        <div class="row">
-          <label>Quantity ({selectedCategory!.unit})</label>
-          <input
-            class="num-input"
-            bind:value={quantity}
-            type="number"
-            min="0"
-            step="any"
-            placeholder="0"
-            oninput={() => autoCalc("qty")}
-          />
-          <label style="margin-left:12px">Unit price (€/{selectedCategory!.unit})</label>
-          <input
-            class="num-input"
-            bind:value={unitPrice}
-            type="number"
-            min="0"
-            step="any"
-            placeholder="0.00"
-            oninput={() => autoCalc("price")}
-          />
-        </div>
-      {/if}
-
-      <div class="row">
-        <label>Total amount (€) *</label>
-        <input
-          class="num-input"
-          bind:value={totalAmount}
-          type="number"
-          min="0"
-          step="any"
-          placeholder="0.00"
-          oninput={() => autoCalc("total")}
-        />
-      </div>
-
-      <div class="row">
-        <label>Supplier</label>
-        <select class="flex-input" bind:value={supplierId}>
-          <option value="">— No supplier —</option>
-          {#each settingsStore.suppliers as s}
-            <option value={s.id}>{s.name}</option>
-          {/each}
-        </select>
-      </div>
-
-      <div class="row">
-        <label>Room</label>
-        <select class="flex-input" bind:value={roomId}>
-          <option value="">No room</option>
-          {#each allRooms as room}
-            <option value={room.id}>{room.label}</option>
-          {/each}
-        </select>
-      </div>
-
-      <div class="row col">
-        <label>Notes</label>
-        <textarea bind:value={notes} rows="2" placeholder="Optional notes…"></textarea>
-      </div>
-
-      {#if error}<div class="error">{error}</div>{/if}
-    </div>
-
-    <div class="modal-footer">
-      <span class="spacer"></span>
-      {#if !isCreate}
-        {#if confirmDelete}
-          <span class="confirm-text">Delete this entry?</span>
-          <button class="danger-btn" disabled={deleting} onclick={handleDelete}>
-            {deleting ? "…" : "Confirm delete"}
-          </button>
-          <button onclick={() => { confirmDelete = false; }}>Cancel</button>
-        {:else}
-          <button class="delete-btn" onclick={() => { confirmDelete = true; }}>🗑 Delete</button>
-        {/if}
-      {/if}
-      <button class="save-btn" disabled={saving} onclick={handleSave}>
-        {saving ? "Saving…" : isCreate ? "Create" : "Save"}
-      </button>
-    </div>
+<Modal open={true} title={isCreate ? "＋ New entry" : "Edit entry"} {onclose} width="520px">
+  <div class="row">
+    <label>Category *</label>
+    <select class="native-input flex-grow" bind:value={categoryId}>
+      {#each settingsStore.costCategories as cat}
+        <option value={cat.id}>{cat.emoji} {cat.name}</option>
+      {/each}
+    </select>
   </div>
-</div>
+
+  <div class="row">
+    <label>Date *</label>
+    <DatePicker bind:value={date} />
+  </div>
+
+  {#if hasUnit}
+    <div class="row">
+      <label>Quantity ({selectedCategory!.unit})</label>
+      <input
+        class="native-input num-input"
+        bind:value={quantity}
+        type="number"
+        min="0"
+        step="any"
+        placeholder="0"
+        oninput={() => autoCalc("qty")}
+      />
+      <label style="margin-left:12px">Unit price (€/{selectedCategory!.unit})</label>
+      <input
+        class="native-input num-input"
+        bind:value={unitPrice}
+        type="number"
+        min="0"
+        step="any"
+        placeholder="0.00"
+        oninput={() => autoCalc("price")}
+      />
+    </div>
+  {/if}
+
+  <div class="row">
+    <label>Total amount (€) *</label>
+    <input
+      class="native-input num-input"
+      bind:value={totalAmount}
+      type="number"
+      min="0"
+      step="any"
+      placeholder="0.00"
+      oninput={() => autoCalc("total")}
+    />
+  </div>
+
+  <div class="row">
+    <label>Supplier</label>
+    <select class="native-input flex-grow" bind:value={supplierId}>
+      <option value="">— No supplier —</option>
+      {#each settingsStore.suppliers as s}
+        <option value={s.id}>{s.name}</option>
+      {/each}
+    </select>
+  </div>
+
+  <div class="row">
+    <label>Room</label>
+    <select class="native-input flex-grow" bind:value={roomId}>
+      <option value="">No room</option>
+      {#each allRooms as room}
+        <option value={room.id}>{room.label}</option>
+      {/each}
+    </select>
+  </div>
+
+  <div class="row col">
+    <label>Notes</label>
+    <textarea class="native-input" bind:value={notes} rows="2" placeholder="Optional notes…"></textarea>
+  </div>
+
+  {#if error}<div class="error">{error}</div>{/if}
+
+  {#snippet footer()}
+    <span class="spacer"></span>
+    {#if !isCreate}
+      {#if confirmDelete}
+        <span class="confirm-text">Delete this entry?</span>
+        <Button variant="danger" disabled={deleting} onclick={handleDelete}>
+          {deleting ? "…" : "Confirm delete"}
+        </Button>
+        <Button variant="ghost" onclick={() => { confirmDelete = false; }}>Cancel</Button>
+      {:else}
+        <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 Delete</Button>
+      {/if}
+    {/if}
+    <Button variant="primary" disabled={saving} onclick={handleSave}>
+      {saving ? "Saving…" : isCreate ? "Create" : "Save"}
+    </Button>
+  {/snippet}
+</Modal>
 
 <style>
-  .overlay {
-    position: fixed; inset: 0; z-index: 200;
-    background: rgba(0,0,0,.6);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .modal {
-    background: #1a1a30; border: 1px solid #3a3a5a; border-radius: 10px;
-    width: 520px; max-width: 95vw; max-height: 90vh;
-    display: flex; flex-direction: column; overflow: hidden;
-    box-shadow: 0 8px 32px #0008;
-  }
-  .modal-header {
-    display: flex; align-items: center; padding: 14px 18px;
-    border-bottom: 1px solid #2a2a4a; flex-shrink: 0;
-  }
-  h2 { margin: 0; font-size: 15px; color: #eee; font-family: sans-serif; font-weight: 600; flex: 1; }
-  .close-btn { background: none; border: none; color: #667; font-size: 16px; cursor: pointer; }
-  .close-btn:hover { color: #aaa; }
-
-  .modal-body { padding: 16px 18px; overflow-y: auto; flex: 1; font-family: sans-serif; }
   .row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
   .row.col { flex-direction: column; align-items: stretch; }
-  label { font-size: 11px; color: #778; white-space: nowrap; }
-  input, select, textarea {
-    background: #0f0f24; border: 1px solid #2a2a4a; color: #ccc;
-    padding: 5px 8px; border-radius: 4px;
-    font-size: 12px; font-family: sans-serif;
-  }
-  input:focus, select:focus, textarea:focus { outline: none; border-color: #5566cc; }
-  .flex-input { flex: 1; min-width: 0; }
-  .num-input { width: 110px; }
-  textarea { resize: vertical; }
-  .error { color: #f44336; font-size: 11px; margin-top: 4px; font-family: sans-serif; }
+  .flex-grow { flex: 1; min-width: 0; }
+  label { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
 
-  .modal-footer {
-    display: flex; align-items: center; gap: 8px; padding: 12px 18px;
-    border-top: 1px solid #2a2a4a; flex-shrink: 0; flex-wrap: wrap;
-    font-family: sans-serif;
+  .native-input {
+    background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 12px; border-radius: var(--radius-md);
+    font-size: 13px; font-family: var(--font-sans); box-sizing: border-box;
   }
+  .native-input:focus { outline: none; border-color: var(--accent); }
+  .native-input::placeholder { color: var(--text-faint); }
+  select.native-input { cursor: pointer; }
+  .num-input { width: 120px; }
+  textarea.native-input { width: 100%; resize: vertical; }
+  .error { color: var(--danger); font-size: 11px; margin-top: 4px; font-family: var(--font-sans); }
+
   .spacer { flex: 1; }
-  button { padding: 5px 14px; border-radius: 4px; font-size: 12px; cursor: pointer; }
-  .save-btn { background: #1a3a2a; border: none; color: #4c9; }
-  .save-btn:hover:not(:disabled) { background: #224a34; }
-  .save-btn:disabled { opacity: .5; cursor: default; }
-  .delete-btn { background: none; border: 1px solid #3a1a1a; color: #c66; }
-  .delete-btn:hover { background: #2a1010; }
-  .danger-btn { background: #3a1010; border: none; color: #f88; }
-  .danger-btn:hover:not(:disabled) { background: #4a1515; }
-  .danger-btn:disabled { opacity: .5; cursor: default; }
-  .confirm-text { font-size: 11px; color: #c66; }
-  button:not(.save-btn):not(.danger-btn):not(.delete-btn):not(.close-btn) {
-    background: none; border: 1px solid #2a2a4a; color: #778;
-  }
+  .confirm-text { font-size: 11px; color: var(--danger); }
 </style>
