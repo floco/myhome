@@ -1,8 +1,10 @@
-<!-- packages/editor/src/lib/components/WorkModal.svelte -->
 <script lang="ts">
   import type { createWorksStore, Work } from "../worksStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
   import DatePicker from "./DatePicker.svelte";
+  import Modal from "./ui/Modal.svelte";
+  import Input from "./ui/Input.svelte";
+  import Button from "./ui/Button.svelte";
   import { marked } from "marked";
   import DOMPurify from "dompurify";
 
@@ -114,274 +116,206 @@
   );
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div class="overlay" onclick={(e) => { if (e.target === e.currentTarget) onclose(); }}>
-  <div class="modal">
-    <div class="modal-header">
-      <h2>{isCreate ? "＋ New work" : "Edit work"}</h2>
-      <button class="close-btn" onclick={onclose}>✕</button>
-    </div>
-
-    <div class="tabs">
-      <button class="tab" class:active={activeTab === "info"} onclick={() => { activeTab = "info"; }}>Info</button>
-      <button class="tab" class:active={activeTab === "notes"} onclick={() => { activeTab = "notes"; }}>Notes</button>
-      <button
-        class="tab"
-        class:active={activeTab === "attachments"}
-        disabled={isCreate}
-        onclick={() => { activeTab = "attachments"; }}
-      >Attachments{attachmentCount > 0 ? ` (${attachmentCount})` : ""}</button>
-    </div>
-
-    <div class="modal-body">
-      {#if activeTab === "info"}
-        <div class="row">
-          <label>Title *</label>
-          <input class="flex-input" bind:value={title} placeholder="Work title" />
-        </div>
-        <div class="row-pair">
-          <div class="row">
-            <label>Category</label>
-            <select class="flex-input" bind:value={categoryId}>
-              <option value="">— None —</option>
-              {#each settingsStore.workCategories as cat}
-                <option value={cat.id}>{cat.emoji} {cat.name}</option>
-              {/each}
-            </select>
-          </div>
-          <div class="row">
-            <label>Status</label>
-            <select class="flex-input" bind:value={status}>
-              <option value="planned">Planned</option>
-              <option value="in_progress">In progress</option>
-              <option value="done">Done</option>
-            </select>
-          </div>
-        </div>
-        <div class="row-pair">
-          <div class="row">
-            <label>Date *</label>
-            <DatePicker bind:value={date} />
-          </div>
-          <div class="row">
-            <label>Total cost (€)</label>
-            <input class="flex-input" type="number" min="0" step="0.01" bind:value={totalCost} placeholder="0.00" />
-          </div>
-        </div>
-        <div class="row">
-          <label>Supplier</label>
-          <select class="flex-input" bind:value={supplierId}>
-            <option value="">— None —</option>
-            {#each settingsStore.suppliers as s}
-              <option value={s.id}>{s.name}</option>
-            {/each}
-          </select>
-        </div>
-        <div class="row">
-          <label>Description</label>
-          <textarea class="flex-input desc-area" bind:value={description} placeholder="Short summary of the work…" rows="2"></textarea>
-        </div>
-      {:else if activeTab === "notes"}
-        {#if editingNotes}
-          <textarea class="flex-input notes-area" bind:value={notes} placeholder="Markdown notes…"></textarea>
-          {#if !isCreate}
-            <button class="notes-done-btn" onclick={() => { editingNotes = false; }}>Done editing</button>
-          {/if}
-        {:else}
-          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-          <div
-            class="notes-preview {notes.trim() ? '' : 'notes-empty'}"
-            onclick={() => { editingNotes = true; }}
-            title="Click to edit"
-          >
-            {#if notes.trim()}
-              {@html notesHtml}
-            {:else}
-              <span class="notes-placeholder">Click to add markdown notes…</span>
-            {/if}
-          </div>
-        {/if}
-      {:else}
-        <div class="attachments">
-          {#if currentWork && currentWork.attachments.length > 0}
-            {#each currentWork.attachments as filename}
-              <div class="attach-row">
-                <span class="attach-icon">📄</span>
-                <a class="attach-name" href="/api/works/{work!.id}/attachments/{filename}" target="_blank" rel="noopener">{filename}</a>
-                <button class="attach-del" onclick={() => handleDeleteAttachment(filename)} title="Delete">✕</button>
-              </div>
-            {/each}
-          {:else}
-            <div class="attach-empty">No attachments yet.</div>
-          {/if}
-          <label class="upload-btn" class:uploading>
-            {uploading ? "Uploading…" : "＋ Upload PDF"}
-            <input type="file" accept=".pdf" style="display:none" onchange={handleUpload} />
-          </label>
-          {#if uploadError}<div class="upload-error">{uploadError}</div>{/if}
-        </div>
-      {/if}
-    </div>
-
-    {#if error}<div class="modal-error">{error}</div>{/if}
-
-    <div class="modal-footer">
-      {#if !isCreate}
-        {#if confirmDelete}
-          <span class="confirm-text">Delete?</span>
-          <button class="danger-btn" onclick={handleDelete} disabled={deleting}>✓ Confirm</button>
-          <button class="cancel-btn" onclick={() => { confirmDelete = false; }}>✕</button>
-        {:else}
-          <button class="danger-btn" onclick={() => { confirmDelete = true; }}>🗑 Delete</button>
-        {/if}
-      {/if}
-      <span class="spacer"></span>
-      {#if onplaceonmap && !isCreate}
-        <button class="place-btn" onclick={() => { onplaceonmap(work!.id); onclose(); }}>📍 Place on map</button>
-      {/if}
-      <button class="save-btn" onclick={handleSave} disabled={saving}>
-        {saving ? "Saving…" : isCreate ? "Create" : "Save"}
-      </button>
-    </div>
+<Modal open={true} title={isCreate ? "＋ New work" : "Edit work"} {onclose} width="min(92vw, 820px)">
+  <div class="tabs">
+    <button class="tab" class:active={activeTab === "info"} onclick={() => { activeTab = "info"; }}>Info</button>
+    <button class="tab" class:active={activeTab === "notes"} onclick={() => { activeTab = "notes"; }}>Notes</button>
+    <button
+      class="tab"
+      class:active={activeTab === "attachments"}
+      disabled={isCreate}
+      onclick={() => { activeTab = "attachments"; }}
+    >Attachments{attachmentCount > 0 ? ` (${attachmentCount})` : ""}</button>
   </div>
-</div>
+
+  {#if activeTab === "info"}
+    <div class="row">
+      <label>Title *</label>
+      <Input bind:value={title} placeholder="Work title" />
+    </div>
+    <div class="row-pair">
+      <div class="row">
+        <label>Category</label>
+        <select class="native-input" bind:value={categoryId}>
+          <option value="">— None —</option>
+          {#each settingsStore.workCategories as cat}
+            <option value={cat.id}>{cat.emoji} {cat.name}</option>
+          {/each}
+        </select>
+      </div>
+      <div class="row">
+        <label>Status</label>
+        <select class="native-input" bind:value={status}>
+          <option value="planned">Planned</option>
+          <option value="in_progress">In progress</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+    </div>
+    <div class="row-pair">
+      <div class="row">
+        <label>Date *</label>
+        <DatePicker bind:value={date} />
+      </div>
+      <div class="row">
+        <label>Total cost (€)</label>
+        <input class="native-input" type="number" min="0" step="0.01" bind:value={totalCost} placeholder="0.00" />
+      </div>
+    </div>
+    <div class="row">
+      <label>Supplier</label>
+      <select class="native-input" bind:value={supplierId}>
+        <option value="">— None —</option>
+        {#each settingsStore.suppliers as s}
+          <option value={s.id}>{s.name}</option>
+        {/each}
+      </select>
+    </div>
+    <div class="row">
+      <label>Description</label>
+      <textarea class="native-input desc-area" bind:value={description} placeholder="Short summary of the work…" rows="2"></textarea>
+    </div>
+  {:else if activeTab === "notes"}
+    {#if editingNotes}
+      <textarea class="native-input notes-area" bind:value={notes} placeholder="Markdown notes…"></textarea>
+      {#if !isCreate}
+        <Button variant="secondary" onclick={() => { editingNotes = false; }}>Done editing</Button>
+      {/if}
+    {:else}
+      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+      <div
+        class="notes-preview {notes.trim() ? '' : 'notes-empty'}"
+        onclick={() => { editingNotes = true; }}
+        title="Click to edit"
+      >
+        {#if notes.trim()}
+          {@html notesHtml}
+        {:else}
+          <span class="notes-placeholder">Click to add markdown notes…</span>
+        {/if}
+      </div>
+    {/if}
+  {:else}
+    <div class="attachments">
+      {#if currentWork && currentWork.attachments.length > 0}
+        {#each currentWork.attachments as filename}
+          <div class="attach-row">
+            <span class="attach-icon">📄</span>
+            <a class="attach-name" href="/api/works/{work!.id}/attachments/{filename}" target="_blank" rel="noopener">{filename}</a>
+            <button class="attach-del" onclick={() => handleDeleteAttachment(filename)} title="Delete">✕</button>
+          </div>
+        {/each}
+      {:else}
+        <div class="attach-empty">No attachments yet.</div>
+      {/if}
+      <label class="upload-btn" class:uploading>
+        {uploading ? "Uploading…" : "＋ Upload PDF"}
+        <input type="file" accept=".pdf" style="display:none" onchange={handleUpload} />
+      </label>
+      {#if uploadError}<div class="upload-error">{uploadError}</div>{/if}
+    </div>
+  {/if}
+
+  {#if error}<div class="modal-error">{error}</div>{/if}
+
+  {#snippet footer()}
+    {#if !isCreate}
+      {#if confirmDelete}
+        <span class="confirm-text">Delete?</span>
+        <Button variant="danger" disabled={deleting} onclick={handleDelete}>✓ Confirm</Button>
+        <Button variant="ghost" onclick={() => { confirmDelete = false; }}>✕</Button>
+      {:else}
+        <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 Delete</Button>
+      {/if}
+    {/if}
+    <span class="spacer"></span>
+    {#if onplaceonmap && !isCreate}
+      <Button variant="secondary" onclick={() => { onplaceonmap(work!.id); onclose(); }}>📍 Place on map</Button>
+    {/if}
+    <Button variant="primary" disabled={saving} onclick={handleSave}>
+      {saving ? "Saving…" : isCreate ? "Create" : "Save"}
+    </Button>
+  {/snippet}
+</Modal>
 
 <style>
-  .overlay {
-    position: fixed; inset: 0; z-index: 200;
-    background: rgba(0,0,0,.6);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .modal {
-    background: #1a1a30; border: 1px solid #3a3a5a; border-radius: 10px;
-    width: min(95vw, 560px); max-height: 90vh;
-    display: flex; flex-direction: column; overflow: hidden;
-    box-shadow: 0 8px 32px #0008;
-  }
-  @media (min-width: 900px) {
-    .modal { width: min(90vw, 760px); max-height: 85vh; }
-  }
-  @media (min-width: 1400px) {
-    .modal { width: min(80vw, 960px); max-height: 85vh; }
-  }
-  .modal-header {
-    display: flex; align-items: center; padding: 14px 18px;
-    border-bottom: 1px solid #2a2a4a; flex-shrink: 0;
-  }
-  h2 { margin: 0; font-size: 15px; color: #eee; font-family: sans-serif; font-weight: 600; flex: 1; }
-  .close-btn { background: none; border: none; color: #667; font-size: 16px; cursor: pointer; }
-  .close-btn:hover { color: #aaa; }
-
-  .tabs { display: flex; border-bottom: 1px solid #2a2a4a; flex-shrink: 0; }
+  .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: var(--space-3); }
   .tab {
     padding: 8px 16px; background: none; border: none; border-bottom: 2px solid transparent;
-    color: #556; font-size: 12px; cursor: pointer; font-family: sans-serif;
+    color: var(--text-muted); font-size: 12px; cursor: pointer; font-family: var(--font-sans);
   }
-  .tab:hover:not(:disabled) { color: #99a; }
-  .tab.active { border-bottom-color: #5566cc; color: #aaf; }
-  .tab:disabled { color: #334; cursor: default; }
+  .tab:hover:not(:disabled) { color: var(--text); }
+  .tab.active { border-bottom-color: var(--accent); color: var(--text); }
+  .tab:disabled { color: var(--text-faint); cursor: default; }
 
-  .modal-body {
-    padding: 16px 18px; overflow-y: auto; flex: 1;
-    font-family: sans-serif; display: flex; flex-direction: column; gap: 10px;
-  }
-  .row { display: flex; flex-direction: column; gap: 4px; }
-  .row-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  label { font-size: 10px; color: #445; text-transform: uppercase; letter-spacing: .06em; }
-  .flex-input {
-    background: #111128; border: 1px solid #2a2a4a; color: #ccc;
-    padding: 6px 8px; border-radius: 4px; font-size: 12px; font-family: sans-serif;
+  .row { display: flex; flex-direction: column; gap: 4px; margin-bottom: var(--space-3); }
+  .row-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: var(--space-3); }
+  .row-pair .row { margin-bottom: 0; }
+  label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+
+  .native-input {
+    background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 12px; border-radius: var(--radius-md); font-size: 13px; font-family: var(--font-sans);
     width: 100%; box-sizing: border-box;
   }
-  .flex-input:focus { outline: 1px solid #5566cc; border-color: #5566cc; }
-  select.flex-input { cursor: pointer; }
+  .native-input:focus { outline: none; border-color: var(--accent); }
+  select.native-input { cursor: pointer; }
   .desc-area { resize: vertical; min-height: 48px; }
-  .notes-area { resize: none; min-height: 260px; font-family: monospace; font-size: 12px; line-height: 1.5; flex: 1; }
-  .notes-done-btn {
-    align-self: flex-end; background: #1e2a4a; border: 1px solid #3a4a8a;
-    color: #aac; padding: 4px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; font-family: sans-serif;
-  }
-  .notes-done-btn:hover { background: #2a3a6a; }
+  .notes-area { resize: none; min-height: 260px; font-family: monospace; font-size: 12px; line-height: 1.5; }
+
   .notes-preview {
-    flex: 1; min-height: 260px; padding: 10px 12px; border-radius: 4px;
-    background: #111128; border: 1px solid #2a2a4a; cursor: pointer; overflow-y: auto;
-    color: #ccc; font-family: sans-serif; font-size: 13px; line-height: 1.65;
+    min-height: 260px; padding: 10px 12px; border-radius: var(--radius-md);
+    background: var(--surface-alt); border: 1px solid var(--border); cursor: pointer; overflow-y: auto;
+    color: var(--text); font-family: var(--font-sans); font-size: 13px; line-height: 1.65;
   }
-  .notes-preview:hover { border-color: #5566cc; }
+  .notes-preview:hover { border-color: var(--accent); }
   .notes-preview.notes-empty { border-style: dashed; }
-  .notes-placeholder { color: #334; font-size: 12px; font-style: italic; }
+  .notes-placeholder { color: var(--text-faint); font-size: 12px; font-style: italic; }
   .notes-preview :global(h1), .notes-preview :global(h2), .notes-preview :global(h3) {
-    color: #aaf; margin: 0.6em 0 0.3em; font-size: 14px;
+    color: var(--text); margin: 0.6em 0 0.3em; font-size: 14px;
   }
   .notes-preview :global(h1) { font-size: 16px; }
   .notes-preview :global(p) { margin: 0.4em 0; }
   .notes-preview :global(ul), .notes-preview :global(ol) { margin: 0.4em 0; padding-left: 1.4em; }
   .notes-preview :global(li) { margin: 0.2em 0; }
   .notes-preview :global(code) {
-    background: #0a0a1e; border: 1px solid #2a2a4a; border-radius: 3px;
-    padding: 0 4px; font-size: 11px; font-family: monospace; color: #88ccff;
+    background: var(--surface-hover); border: 1px solid var(--border); border-radius: 3px;
+    padding: 0 4px; font-size: 11px; font-family: monospace; color: var(--text);
   }
   .notes-preview :global(pre) {
-    background: #0a0a1e; border: 1px solid #2a2a4a; border-radius: 4px;
+    background: var(--surface-hover); border: 1px solid var(--border); border-radius: var(--radius-sm);
     padding: 10px; overflow-x: auto; margin: 0.5em 0;
   }
   .notes-preview :global(pre code) { background: none; border: none; padding: 0; }
   .notes-preview :global(blockquote) {
-    border-left: 3px solid #3a4a8a; margin: 0.5em 0; padding: 2px 12px; color: #889;
+    border-left: 3px solid var(--border); margin: 0.5em 0; padding: 2px 12px; color: var(--text-muted);
   }
-  .notes-preview :global(hr) { border: none; border-top: 1px solid #2a2a4a; margin: 0.8em 0; }
-  .notes-preview :global(a) { color: #88aaff; }
-  .notes-preview :global(strong) { color: #dde; }
-  .notes-preview :global(em) { color: #aab; }
+  .notes-preview :global(hr) { border: none; border-top: 1px solid var(--border); margin: 0.8em 0; }
+  .notes-preview :global(a) { color: var(--accent); }
+  .notes-preview :global(strong) { color: var(--text); }
+  .notes-preview :global(em) { color: var(--text-muted); }
 
   .attachments { display: flex; flex-direction: column; gap: 6px; }
   .attach-row {
     display: flex; align-items: center; gap: 8px;
-    background: #111128; border: 1px solid #2a2a4a; border-radius: 4px; padding: 6px 10px;
+    background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px;
   }
   .attach-icon { font-size: 14px; }
-  .attach-name { flex: 1; font-size: 11px; color: #88aaff; text-decoration: none; }
+  .attach-name { flex: 1; font-size: 11px; color: var(--accent); text-decoration: none; }
   .attach-name:hover { text-decoration: underline; }
-  .attach-del { background: none; border: none; color: #446; cursor: pointer; font-size: 12px; }
-  .attach-del:hover { color: #f44; }
-  .attach-empty { font-size: 11px; color: #334; text-align: center; padding: 12px 0; }
+  .attach-del { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 12px; }
+  .attach-del:hover { color: var(--danger); }
+  .attach-empty { font-size: 11px; color: var(--text-faint); text-align: center; padding: 12px 0; }
   .upload-btn {
-    background: #1a1a2e; border: 1px dashed #2a2a4a; color: #556;
-    padding: 7px 12px; border-radius: 4px; font-size: 11px; cursor: pointer;
-    text-align: center; font-family: sans-serif; display: block;
+    background: var(--surface-alt); border: 1px dashed var(--border); color: var(--text-muted);
+    padding: 7px 12px; border-radius: var(--radius-md); font-size: 11px; cursor: pointer;
+    text-align: center; font-family: var(--font-sans); display: block;
   }
-  .upload-btn:hover:not(.uploading) { background: #2a2a4a; color: #99a; }
-  .upload-btn.uploading { color: #334; cursor: default; }
-  .upload-error { font-size: 10px; color: #f88; }
+  .upload-btn:hover:not(.uploading) { background: var(--surface-hover); color: var(--text); }
+  .upload-btn.uploading { color: var(--text-faint); cursor: default; }
+  .upload-error { font-size: 10px; color: var(--danger); }
 
-  .modal-error {
-    padding: 4px 18px; font-size: 11px; color: #f88;
-    background: #2a1a1a; border-top: 1px solid #4a2a2a; flex-shrink: 0;
-  }
-  .modal-footer {
-    display: flex; align-items: center; gap: 8px; padding: 12px 18px;
-    border-top: 1px solid #2a2a4a; flex-shrink: 0; font-family: sans-serif;
-  }
+  .modal-error { padding: 8px 0 0; font-size: 11px; color: var(--danger); }
   .spacer { flex: 1; }
-  .confirm-text { font-size: 11px; color: #f88; }
-  .danger-btn {
-    background: #2a1a1a; border: 1px solid #4a2a2a; color: #f88;
-    padding: 5px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;
-  }
-  .danger-btn:hover:not(:disabled) { background: #3a1a1a; }
-  .cancel-btn {
-    background: none; border: 1px solid #2a2a4a; color: #667;
-    padding: 5px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;
-  }
-  .place-btn {
-    background: #1e2a4a; border: 1px solid #3a4a8a; color: #aac;
-    padding: 5px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;
-  }
-  .place-btn:hover { background: #2a3a6a; }
-  .save-btn {
-    background: #3344aa; color: #ccf; border: none;
-    padding: 5px 16px; border-radius: 4px; font-size: 12px; cursor: pointer;
-  }
-  .save-btn:hover:not(:disabled) { background: #4455bb; }
-  .save-btn:disabled { opacity: .5; cursor: default; }
+  .confirm-text { font-size: 11px; color: var(--danger); }
 </style>

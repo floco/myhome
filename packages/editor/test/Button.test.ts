@@ -54,4 +54,16 @@ describe("ui/Button", () => {
     unmount(comp);
     target.remove();
   });
+
+  it("supports the danger variant", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(Button, { target, props: { variant: "danger" } });
+
+    const btn = target.querySelector("button")!;
+    expect(btn.classList.contains("ui-button-danger")).toBe(true);
+
+    unmount(comp);
+    target.remove();
+  });
 });
