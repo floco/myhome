@@ -32,9 +32,8 @@
     worksStore: WorksStore;
     onnavigate: () => void;
   }
-  let { floorStore, choreStore, inventoryStore, settingsStore, costsStore, worksStore, onnavigate }: Props =
+  let { floorStore, choreStore, inventoryStore, settingsStore, costsStore: _costsStore, worksStore, onnavigate }: Props =
     $props();
-  void costsStore;
 
   const ALL_FLOOR_ID = "__all__";
 
