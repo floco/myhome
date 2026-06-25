@@ -26,6 +26,7 @@
     onselectopening,
     ondragopeninghandlestart,
     tool = "select",
+    showGrid = true,
     drawPoints = [],
     cursorWorld = null,
     spacePressed = false,
@@ -49,6 +50,7 @@
     onselectopening?: (id: string | null) => void;
     ondragopeninghandlestart?: (openingId: string, side: "start" | "end") => void;
     tool?: ToolType;
+    showGrid?: boolean;
     drawPoints?: Point[];
     cursorWorld?: Point | null;
     spacePressed?: boolean;
@@ -199,7 +201,9 @@
   ondblclick={() => ondblclick?.()}
   onwheel={handleWheel}
 >
-  <Grid {viewport} {width} {height} />
+  {#if showGrid}
+    <Grid {viewport} {width} {height} />
+  {/if}
   {#each floor.rooms as room (room.id)}
     <RoomShape
       {room}
