@@ -47,8 +47,7 @@
   const topFive = $derived(rows.slice(0, 5));
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class="widget" role="button" tabindex="0" onclick={onnavigate}>
+<div class="widget" role="button" tabindex="0" onclick={onnavigate} onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onnavigate(); } }}>
   <Card>
     <div class="header">
       <h3>✅ Chores</h3>
