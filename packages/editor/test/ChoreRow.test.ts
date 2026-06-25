@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import ChoreRow from "../src/lib/components/ChoreRow.svelte";
+import ChoreRowParentWrapper from "./fixtures/ChoreRowParentWrapper.svelte";
 
 describe("ChoreRow", () => {
   it("renders emoji, name, location, and due label", () => {
@@ -94,10 +95,9 @@ describe("ChoreRow", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const parentClick = vi.fn();
-    target.addEventListener("click", parentClick);
-    const comp = mount(ChoreRow, {
+    const comp = mount(ChoreRowParentWrapper, {
       target,
-      props: { emoji: "🧹", name: "Sweep", dueLabel: "Today", dueColor: "#4caf50", oncomplete: vi.fn() },
+      props: { onParentClick: parentClick },
     });
 
     (target.querySelector(".done-btn") as HTMLButtonElement).click();

@@ -45,13 +45,13 @@
       class="note-input"
       bind:value={notes}
       placeholder="Note (optional)"
-      on:click={(e) => e.stopPropagation()}
-      on:keydown={handleKeydown}
+      onclick={(e) => e.stopPropagation()}
+      onkeydown={handleKeydown}
     />
-    <button class="done-btn confirm" on:click={confirm}>✓</button>
-    <button class="cancel-btn" on:click={cancel}>✕</button>
+    <button class="done-btn confirm" onclick={confirm}>✓</button>
+    <button class="cancel-btn" onclick={cancel}>✕</button>
   {:else}
-    <button class="done-btn" on:click={start} title="Mark done">✓</button>
+    <button class="done-btn" onclick={start} title="Mark done">✓</button>
   {/if}
 </div>
 
