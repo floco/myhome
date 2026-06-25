@@ -138,57 +138,57 @@
 </div>
 
 <style>
-  .page { display: flex; flex-direction: column; height: 100%; background: #1a1a2e; color: #ccc; font-family: sans-serif; }
+  .page { display: flex; flex-direction: column; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-sans); }
   .page-header {
     display: flex; align-items: center; gap: 12px;
-    padding: 10px 16px; background: #252535; border-bottom: 1px solid #333; flex-shrink: 0;
+    padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
-  .page-header h2 { margin: 0; font-size: 15px; font-weight: 600; color: #eee; }
-  .count { font-size: 11px; color: #666; }
+  .page-header h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--text); }
+  .count { font-size: 11px; color: var(--text-faint); }
 
   .list { flex: 1; overflow-y: auto; }
 
   .group-header {
     padding: 8px 16px 4px;
     font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
-    color: #666; background: #1a1a2e; position: sticky; top: 0;
+    color: var(--text-faint); background: var(--bg); position: sticky; top: 0;
   }
-  .group-header.urgent { color: #f44336; }
-  .group-divider { height: 8px; background: #1a1a2e; }
+  .group-header.urgent { color: var(--danger); }
+  .group-divider { height: 8px; background: var(--bg); }
 
   .row {
     display: flex; align-items: center; gap: 10px;
-    padding: 9px 16px; border-bottom: 1px solid #22223a;
+    padding: 9px 16px; border-bottom: 1px solid var(--border);
     font-size: 13px;
   }
-  .row:hover { background: #1e1e38; }
+  .row:hover { background: var(--surface-hover); }
 
   .emoji { font-size: 16px; flex-shrink: 0; width: 22px; text-align: center; }
-  .name { flex: 2; min-width: 80px; font-weight: 500; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .location { flex: 2; min-width: 80px; color: #888; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .name { flex: 2; min-width: 80px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .location { flex: 2; min-width: 80px; color: var(--text-muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .due { flex: 1; min-width: 70px; font-size: 12px; text-align: right; white-space: nowrap; }
 
   .note-input {
     flex: 1; min-width: 80px; max-width: 160px;
-    padding: 3px 8px; background: #2a2a3a; border: 1px solid #555;
-    border-radius: 3px; color: #ccc; font-size: 11px;
+    padding: 3px 8px; background: var(--surface-alt); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text); font-size: 11px;
   }
+  .note-input:focus { outline: none; border-color: var(--accent); }
   .done-btn {
-    padding: 4px 10px; border: none; border-radius: 4px;
-    background: #2a6; color: #fff; cursor: pointer; font-size: 12px;
+    padding: 4px 10px; border: none; border-radius: var(--radius-sm);
+    background: var(--success); color: var(--accent-contrast); cursor: pointer; font-size: 12px;
     min-height: 30px; flex-shrink: 0; touch-action: manipulation;
   }
-  .done-btn:hover { background: #3b7; }
+  .done-btn:hover { opacity: 0.85; }
   .done-btn:disabled { opacity: 0.5; cursor: default; }
-  .done-btn.confirm { background: #2a6; }
   .cancel-btn {
-    padding: 4px 8px; border: none; border-radius: 4px;
-    background: #3a3a5a; color: #ccc; cursor: pointer; font-size: 12px;
+    padding: 4px 8px; border: none; border-radius: var(--radius-sm);
+    background: var(--surface-alt); color: var(--text-muted); cursor: pointer; font-size: 12px;
     min-height: 30px; flex-shrink: 0;
   }
-  .cancel-btn:hover { background: #4a4a6a; }
+  .cancel-btn:hover { background: var(--surface-hover); }
 
-  .empty { padding: 40px 20px; text-align: center; color: #555; font-size: 13px; line-height: 1.6; }
+  .empty { padding: 40px 20px; text-align: center; color: var(--text-faint); font-size: 13px; line-height: 1.6; }
 
   @media (max-width: 500px) {
     .row { flex-wrap: wrap; gap: 6px; }

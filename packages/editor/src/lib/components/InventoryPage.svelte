@@ -2,6 +2,8 @@
   import type { createInventoryStore, InventoryItem } from "../inventoryStore.svelte";
   import type { createHouseStore } from "../houseStore.svelte";
   import InventoryModal from "./InventoryModal.svelte";
+  import Button from "./ui/Button.svelte";
+  import Input from "./ui/Input.svelte";
 
   type InvStore = ReturnType<typeof createInventoryStore>;
   type HouseStore = ReturnType<typeof createHouseStore>;
@@ -96,26 +98,20 @@
 
 <div class="page">
   <div class="toolbar">
-    <input
-      class="search"
-      bind:value={searchQuery}
-      placeholder="🔍 Search items…"
-    />
-    <select bind:value={roomFilter}>
+    <Input bind:value={searchQuery} placeholder="🔍 Search items…" />
+    <select class="native-input" bind:value={roomFilter}>
       <option value="">All rooms</option>
       {#each allRooms as room}
         <option value={room.id}>{room.label}</option>
       {/each}
     </select>
-    <select bind:value={categoryFilter}>
+    <select class="native-input" bind:value={categoryFilter}>
       <option value="">All categories</option>
       {#each allCategories as cat}
         <option value={cat}>{cat}</option>
       {/each}
     </select>
-    <button class="add-btn" onclick={() => { modalItem = "create"; }}>
-      ＋ Add item
-    </button>
+    <Button onclick={() => { modalItem = "create"; }}>＋ Add item</Button>
   </div>
 
   <div class="table-wrapper">
@@ -183,45 +179,38 @@
 <style>
   .page {
     display: flex; flex-direction: column; height: 100%;
-    background: #141428; font-family: sans-serif;
+    background: var(--bg); font-family: var(--font-sans);
   }
 
   .toolbar {
-    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
-    background: #1e1e3a; border-bottom: 1px solid #2a2a4a; flex-shrink: 0;
+    display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
+    background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
-  .search {
-    flex: 1; background: #111128; border: 1px solid #2a2a4a; color: #ccc;
-    padding: 4px 8px; border-radius: 4px; font-size: 12px;
+  .toolbar :global(.ui-input) { flex: 1; }
+  .native-input {
+    background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 12px; border-radius: var(--radius-md); font-size: 13px;
+    font-family: var(--font-sans); box-sizing: border-box; cursor: pointer;
   }
-  .toolbar select {
-    background: #111128; border: 1px solid #2a2a4a; color: #aaa;
-    padding: 4px 6px; border-radius: 4px; font-size: 11px;
-  }
-  .add-btn {
-    background: #1a3a2a; border: none; color: #4c9;
-    padding: 4px 12px; border-radius: 4px; font-size: 12px;
-    cursor: pointer; white-space: nowrap;
-  }
-  .add-btn:hover { background: #224a34; }
+  .native-input:focus { outline: none; border-color: var(--accent); }
 
   .table-wrapper { flex: 1; overflow-y: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; color: #bbb; }
-  thead { position: sticky; top: 0; background: #1a1a30; z-index: 1; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text-muted); }
+  thead { position: sticky; top: 0; background: var(--surface-alt); z-index: 1; }
   th {
-    padding: 6px 10px; color: #556; font-size: 10px;
+    padding: 6px 10px; color: var(--text-faint); font-size: 10px;
     text-transform: uppercase; letter-spacing: 0.05em;
-    text-align: left; border-bottom: 1px solid #2a2a3a;
+    text-align: left; border-bottom: 1px solid var(--border);
   }
-  td { padding: 7px 10px; border-bottom: 1px solid #1e1e2e; }
-  tr:hover td { background: #1c1c38; cursor: pointer; }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: var(--surface-hover); cursor: pointer; }
   .emoji-cell { font-size: 16px; width: 32px; text-align: center; }
-  .name-cell { color: #ddd; }
+  .name-cell { color: var(--text); }
   .chip { font-size: 10px; font-weight: 500; }
-  .empty { text-align: center; color: #445; padding: 32px; }
+  .empty { text-align: center; color: var(--text-faint); padding: 32px; }
 
   .footer {
-    padding: 6px 12px; font-size: 11px; color: #445;
-    border-top: 1px solid #1e1e2e; flex-shrink: 0;
+    padding: 6px 12px; font-size: 11px; color: var(--text-faint);
+    border-top: 1px solid var(--border); flex-shrink: 0;
   }
 </style>

@@ -1,8 +1,9 @@
-<!-- packages/editor/src/lib/components/WorksPage.svelte -->
 <script lang="ts">
   import type { createWorksStore, Work } from "../worksStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
   import WorkModal from "./WorkModal.svelte";
+  import Button from "./ui/Button.svelte";
+  import Input from "./ui/Input.svelte";
 
   type WorksStore = ReturnType<typeof createWorksStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -59,20 +60,20 @@
 
 <div class="page">
   <div class="toolbar">
-    <input class="search" placeholder="🔍 Search…" bind:value={searchQuery} />
-    <select class="filter-sel" bind:value={statusFilter}>
+    <Input placeholder="🔍 Search…" bind:value={searchQuery} />
+    <select class="native-input filter-sel" bind:value={statusFilter}>
       <option value="">All statuses</option>
       <option value="planned">Planned</option>
       <option value="in_progress">In progress</option>
       <option value="done">Done</option>
     </select>
-    <select class="filter-sel" bind:value={categoryFilter}>
+    <select class="native-input filter-sel" bind:value={categoryFilter}>
       <option value="">All categories</option>
       {#each settingsStore.workCategories as cat}
         <option value={cat.id}>{cat.emoji} {cat.name}</option>
       {/each}
     </select>
-    <button class="add-btn" onclick={() => { modalWork = "create"; }}>＋ Add work</button>
+    <Button onclick={() => { modalWork = "create"; }}>＋ Add work</Button>
   </div>
 
   <div class="list">
@@ -124,41 +125,36 @@
 {/if}
 
 <style>
-  .page { display: flex; flex-direction: column; height: 100%; background: #141428; font-family: sans-serif; }
+  .page { display: flex; flex-direction: column; height: 100%; background: var(--bg); font-family: var(--font-sans); }
 
   .toolbar {
-    display: flex; gap: 8px; padding: 10px 16px;
-    border-bottom: 1px solid #2a2a4a; flex-shrink: 0; align-items: center;
+    display: flex; gap: var(--space-2); padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border); flex-shrink: 0; align-items: center;
   }
-  .search {
-    flex: 1; background: #111128; border: 1px solid #2a2a4a; color: #ccc;
-    padding: 5px 10px; border-radius: 4px; font-size: 12px;
+  .toolbar :global(.ui-input) { flex: 1; }
+  .native-input {
+    background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 12px; border-radius: var(--radius-md); font-size: 13px;
+    font-family: var(--font-sans); box-sizing: border-box;
   }
-  .filter-sel {
-    background: #111128; border: 1px solid #2a2a4a; color: #aaa;
-    padding: 5px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;
-  }
-  .add-btn {
-    background: #3344aa; color: #ccf; border: none;
-    padding: 5px 14px; border-radius: 4px; font-size: 12px; cursor: pointer; white-space: nowrap;
-  }
-  .add-btn:hover { background: #4455bb; }
+  .native-input:focus { outline: none; border-color: var(--accent); }
+  .filter-sel { cursor: pointer; }
 
-  .list { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
-  .empty { color: #445; font-size: 13px; text-align: center; padding: 40px 0; }
+  .list { flex: 1; overflow-y: auto; padding: var(--space-3) var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+  .empty { color: var(--text-faint); font-size: 13px; text-align: center; padding: 40px 0; }
 
   .card {
-    background: #111128; border: 1px solid #2a2a4a; border-left-width: 3px;
-    border-radius: 6px; padding: 10px 14px; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--border); border-left-width: 3px;
+    border-radius: var(--radius-md); padding: 10px 14px; cursor: pointer;
   }
-  .card:hover { background: #161638; }
-  .card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .card:hover { background: var(--surface-hover); }
+  .card-top { display: flex; align-items: center; gap: var(--space-2); margin-bottom: 4px; }
   .cat-emoji { font-size: 16px; flex-shrink: 0; }
-  .card-title { font-size: 13px; color: #eee; font-weight: 600; flex: 1; }
-  .status-chip { padding: 2px 7px; border-radius: 3px; font-size: 10px; font-weight: 500; flex-shrink: 0; }
-  .card-meta { display: flex; gap: 12px; font-size: 11px; color: #556; flex-wrap: wrap; }
+  .card-title { font-size: 13px; color: var(--text); font-weight: 600; flex: 1; }
+  .status-chip { padding: 2px 7px; border-radius: var(--radius-sm); font-size: 10px; font-weight: 500; flex-shrink: 0; }
+  .card-meta { display: flex; gap: 12px; font-size: 11px; color: var(--text-faint); flex-wrap: wrap; }
   .pin-indicator { font-size: 11px; }
-  .card-desc { font-size: 11px; color: #445; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-desc { font-size: 11px; color: var(--text-faint); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  .footer { padding: 8px 16px; border-top: 1px solid #2a2a4a; font-size: 11px; color: #445; flex-shrink: 0; }
+  .footer { padding: var(--space-2) var(--space-4); border-top: 1px solid var(--border); font-size: 11px; color: var(--text-faint); flex-shrink: 0; }
 </style>
