@@ -53,29 +53,29 @@
   .layers-dropdown { position: relative; }
 
   .layers-btn {
-    background: #2a2a4a; border: 1px solid #3a3a5a; color: #aaf;
-    padding: 3px 10px; border-radius: 4px; font-size: 11px;
+    background: var(--surface-alt); border: 1px solid var(--border); color: var(--text-muted);
+    padding: 3px 10px; border-radius: var(--radius-sm); font-size: 11px;
     cursor: pointer; display: flex; align-items: center; gap: 5px;
     white-space: nowrap; height: 26px;
   }
-  .layers-btn:hover { background: #333360; }
-  .layers-btn.active { border-color: #5566cc; color: #ccf; }
+  .layers-btn:hover { background: var(--surface-hover); }
+  .layers-btn.active { border-color: var(--accent); color: var(--text); }
   .caret { font-size: 9px; }
 
   .dropdown {
     position: absolute; top: calc(100% + 4px); right: 0;
-    background: #1a1a30; border: 1px solid #3a3a5a;
-    border-radius: 6px; padding: 6px; min-width: 160px;
-    z-index: 100; box-shadow: 0 4px 12px #0006;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 6px; min-width: 160px;
+    z-index: 100; box-shadow: var(--shadow-md);
   }
 
   .layer-row {
     display: flex; align-items: center; gap: 8px;
-    padding: 5px 8px; border-radius: 4px; cursor: pointer;
-    color: #aaa; font-size: 12px;
+    padding: 5px 8px; border-radius: var(--radius-sm); cursor: pointer;
+    color: var(--text-muted); font-size: 12px;
   }
-  .layer-row:hover { background: #2a2a4a; }
-  .layer-row.checked { color: #eee; }
-  .layer-row input { accent-color: #5566cc; cursor: pointer; }
+  .layer-row:hover { background: var(--surface-hover); }
+  .layer-row.checked { color: var(--text); }
+  .layer-row input { accent-color: var(--accent); cursor: pointer; }
   .layer-icon { font-size: 14px; width: 18px; text-align: center; }
 </style>

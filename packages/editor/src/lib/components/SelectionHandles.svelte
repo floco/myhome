@@ -39,8 +39,8 @@
 
 <style>
   .handle {
-    fill: #5af;
-    stroke: #fff;
+    fill: var(--canvas-wall-selected);
+    stroke: var(--text);
     stroke-width: 1;
     cursor: grab;
   }

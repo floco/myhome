@@ -63,19 +63,19 @@
 
 <style>
   .room {
-    fill: #3a5a3a;
+    fill: var(--canvas-room-fill);
     fill-opacity: 0.5;
     stroke: none;
     cursor: pointer;
   }
   .room.selected {
-    fill: #2a6a8a;
+    fill: var(--canvas-room-fill-selected);
     fill-opacity: 0.6;
-    stroke: #5af;
+    stroke: var(--canvas-wall-selected);
     stroke-width: 2;
   }
   .room-label {
-    fill: #cde;
+    fill: var(--canvas-label);
     font-size: 12px;
     dominant-baseline: middle;
     pointer-events: none;

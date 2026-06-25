@@ -52,12 +52,12 @@
 
 <style>
   .wall {
-    fill: #eeeeee;
-    stroke: #eeeeee;
+    fill: var(--canvas-wall);
+    stroke: var(--canvas-wall);
     cursor: pointer;
   }
   .wall.selected {
-    fill: #5af;
-    stroke: #5af;
+    fill: var(--canvas-wall-selected);
+    stroke: var(--canvas-wall-selected);
   }
 </style>

@@ -92,7 +92,7 @@
 {#if dir.length >= 1e-9}
   <polygon
     points={gapPoints}
-    fill="#1c1c1c"
+    fill="var(--canvas-bg)"
     stroke="none"
     class:selected-gap={selected}
     onclick={handleClick}
@@ -107,7 +107,7 @@
       y1={sp1.y}
       x2={sp2.x}
       y2={sp2.y}
-      stroke={selected ? "#5af" : "#8cf"}
+      stroke={selected ? "var(--canvas-wall-selected)" : "var(--canvas-opening-window)"}
       stroke-width="3"
       onclick={handleClick}
       role="button"
@@ -120,7 +120,7 @@
       y1={doorData.hinge.y}
       x2={doorData.openEnd.x}
       y2={doorData.openEnd.y}
-      stroke={selected ? "#5af" : "#eea"}
+      stroke={selected ? "var(--canvas-wall-selected)" : "var(--canvas-opening-door)"}
       stroke-width="2"
       onclick={handleClick}
       role="button"
@@ -130,7 +130,7 @@
       class="door-arc"
       d="M {doorData.other.x} {doorData.other.y} A {doorData.radius} {doorData.radius} 0 0 {doorData.sweep} {doorData.openEnd.x} {doorData.openEnd.y}"
       fill="none"
-      stroke={selected ? "#5af" : "#eea"}
+      stroke={selected ? "var(--canvas-wall-selected)" : "var(--canvas-opening-door)"}
       stroke-width="1"
       stroke-dasharray="4 2"
       onclick={handleClick}
@@ -163,12 +163,12 @@
 
 <style>
   .selected-gap {
-    fill: rgba(0, 128, 255, 0.15);
+    fill: var(--canvas-selected-fill);
   }
 
   .handle {
-    fill: #5af;
-    stroke: #fff;
+    fill: var(--canvas-wall-selected);
+    stroke: var(--text);
     stroke-width: 1.5;
     cursor: ew-resize;
   }

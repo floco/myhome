@@ -103,71 +103,68 @@
   .floor-btn {
     display: flex;
     align-items: center;
-    border-radius: 4px;
-    background: #444;
+    border-radius: var(--radius-sm);
+    background: var(--surface-alt);
     overflow: hidden;
   }
 
   .floor-btn.active {
-    background: #555;
-    outline: 1px solid #5af;
+    background: var(--surface-hover);
+    outline: 1px solid var(--accent);
   }
 
   .floor-label {
     padding: 3px 8px;
     border: none;
     background: transparent;
-    color: #ccc;
+    color: var(--text-muted);
     cursor: pointer;
     font-size: 12px;
     white-space: nowrap;
   }
 
   .floor-btn.active .floor-label {
-    color: #eee;
+    color: var(--text);
   }
 
   .remove-btn {
     padding: 3px 5px;
     border: none;
-    border-left: 1px solid #333;
+    border-left: 1px solid var(--border);
     background: transparent;
-    color: #888;
+    color: var(--text-faint);
     cursor: pointer;
     font-size: 11px;
     line-height: 1;
   }
 
   .remove-btn:hover {
-    color: #f66;
-    background: rgba(255, 0, 0, 0.1);
+    color: var(--danger);
+    background: var(--surface-hover);
   }
 
   .rename-input {
     width: 90px;
     padding: 2px 6px;
-    background: #2a2a2a;
-    border: 1px solid #5af;
-    border-radius: 2px;
-    color: #eee;
+    background: var(--surface-alt);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+    color: var(--text);
     font-size: 12px;
   }
 
   .add-btn {
     padding: 3px 8px;
     border: none;
-    border-radius: 4px;
-    background: #383838;
-    color: #aaa;
+    border-radius: var(--radius-sm);
+    background: var(--surface-alt);
+    color: var(--text-muted);
     cursor: pointer;
     font-size: 12px;
   }
 
   .add-btn:hover {
-    background: #444;
-    color: #ccc;
+    background: var(--surface-hover);
+    color: var(--text);
   }
-
-  .all-btn .floor-label { color: #aaf; }
-  .all-btn.active .floor-label { color: #ccf; }
 </style>

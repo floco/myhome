@@ -45,13 +45,13 @@
 
 <style>
   .divider {
-    stroke: #9ad;
+    stroke: var(--canvas-divider);
     stroke-width: 2;
     stroke-dasharray: 6 4;
     cursor: pointer;
   }
   .divider.selected {
-    stroke: #5af;
+    stroke: var(--canvas-wall-selected);
     stroke-width: 3;
   }
 </style>

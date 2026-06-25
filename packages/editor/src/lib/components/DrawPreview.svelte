@@ -59,20 +59,20 @@
 
 <style>
   .rubber-band {
-    stroke: #ffb84d;
+    stroke: var(--canvas-draw-preview);
     stroke-width: 2;
     stroke-dasharray: 6 4;
   }
   .length-label {
-    fill: #aaa;
+    fill: var(--canvas-label);
     font-size: 11px;
   }
   .chain-start {
-    fill: #ffb84d;
+    fill: var(--canvas-draw-preview);
   }
   .snap-ring {
     fill: none;
-    stroke: #5af;
+    stroke: var(--canvas-wall-selected);
     stroke-width: 2;
   }
 </style>
