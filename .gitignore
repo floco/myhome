@@ -1,5 +1,6 @@
 .superpowers/
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 .worktrees/
 node_modules/
 dist/
