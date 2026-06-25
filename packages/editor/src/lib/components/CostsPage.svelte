@@ -410,7 +410,7 @@
   .empty-icon { font-size: 36px; }
   .empty-charts p { margin: 0; font-size: 13px; }
 
-  .chart-card-wrap { flex-shrink: 0; }
+  .chart-card-wrap { padding: var(--space-4) var(--space-4) 0; flex-shrink: 0; }
   .chart-inner {
     display: flex; gap: 24px; align-items: flex-start;
   }
