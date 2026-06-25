@@ -13,6 +13,12 @@
 
   const PALETTE = ["#5b8def", "#f2994a", "#27ae60", "#eb5757", "#9b51e0", "#17a2b8", "#f2c94c", "#bdbdbd"];
 
+  function paletteFor(str: string): string {
+    let h = 0;
+    for (const ch of str) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return PALETTE[h % PALETTE.length];
+  }
+
   interface CategoryCount {
     category: string;
     count: number;
@@ -32,18 +38,18 @@
   const total = $derived(categoryCounts.reduce((a, c) => a + c.count, 0));
 
   const segments = $derived(
-    categoryCounts.map((c, i) => ({
+    categoryCounts.map((c) => ({
       id: c.category,
       label: c.category,
       emoji: "📦",
-      color: PALETTE[i % PALETTE.length],
+      color: paletteFor(c.category),
       valueLabel: `${c.count}`,
       pct: total > 0 ? (c.count / total) * 100 : 0,
     }))
   );
 
   function colorFor(category: string): string {
-    return segments.find((s) => s.id === category)?.color ?? PALETTE[0];
+    return paletteFor(category);
   }
 </script>
 
