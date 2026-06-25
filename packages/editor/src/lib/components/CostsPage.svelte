@@ -5,6 +5,9 @@
   import type { createHouseStore } from "../houseStore.svelte";
   import CostsEntryModal from "./CostsEntryModal.svelte";
   import CostsCategoryModal from "./CostsCategoryModal.svelte";
+  import Button from "./ui/Button.svelte";
+  import Input from "./ui/Input.svelte";
+  import Card from "./ui/Card.svelte";
 
   type CostsStore = ReturnType<typeof createCostsStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -183,143 +186,145 @@
       <p>No entries yet — click ＋ Add entry to get started.</p>
     </div>
   {:else}
-    <div class="chart-section">
-      <div class="chart-inner">
+    <div class="chart-card-wrap">
+      <Card>
+        <div class="chart-inner">
 
-        <!-- Pie chart with connector labels -->
-        <div class="pie-area">
-          <div class="chart-label">
-            {lastCompleteYearNum} — breakdown by category
-          </div>
-          <svg
-            viewBox="0 0 310 220"
-            width="310"
-            height="220"
-            style="overflow:visible"
-          >
-            <!-- Slices -->
-            {#each slices as s (s.cat.categoryId)}
-              <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-              <path
-                d={donutPath(PIE_CX, PIE_CY, PIE_OUTER_R, PIE_INNER_R, s.startDeg, s.endDeg)}
-                fill={s.cat.color}
-                opacity="0.9"
-                style="cursor:pointer"
-                onclick={() => { chartModalCategoryId = s.cat.categoryId; }}
-              />
-            {/each}
-
-            <!-- Donut hole -->
-            <circle cx={PIE_CX} cy={PIE_CY} r={PIE_INNER_R} fill="#141428" />
-            <text x={PIE_CX} y={PIE_CY - 6} text-anchor="middle" fill="#778" font-size="8" font-family="sans-serif">Total</text>
-            <text x={PIE_CX} y={PIE_CY + 8} text-anchor="middle" fill="#ddd" font-size="11" font-family="sans-serif" font-weight="600">
-              {breakdown.reduce((a, b) => a + b.totalAmount, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} €
-            </text>
-
-            <!-- Connector lines + labels -->
-            {#each slices as s (s.cat.categoryId + "-label")}
-              {@const mid = polarPoint(PIE_CX, PIE_CY, PIE_OUTER_R + 4, s.midDeg)}
-              {@const elbow = polarPoint(PIE_CX, PIE_CY, PIE_OUTER_R + 18, s.midDeg)}
-              {@const isRight = elbow.x >= PIE_CX}
-              {@const lineEnd = { x: elbow.x + (isRight ? 28 : -28), y: elbow.y }}
-              {@const textX = lineEnd.x + (isRight ? 4 : -4)}
-              <line x1={mid.x} y1={mid.y} x2={elbow.x} y2={elbow.y} stroke={s.cat.color} stroke-width="1" opacity="0.7" />
-              <line x1={elbow.x} y1={elbow.y} x2={lineEnd.x} y2={lineEnd.y} stroke={s.cat.color} stroke-width="1" opacity="0.7" />
-              <circle cx={mid.x} cy={mid.y} r="2" fill={s.cat.color} />
-              <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-              <text
-                x={textX}
-                y={elbow.y - 3}
-                text-anchor={isRight ? "start" : "end"}
-                fill={s.cat.color}
-                font-size="9"
-                font-family="sans-serif"
-                font-weight="600"
-                style="cursor:pointer"
-                onclick={() => { chartModalCategoryId = s.cat.categoryId; }}
-              >{s.cat.emoji} {s.cat.name}</text>
-              <text
-                x={textX}
-                y={elbow.y + 9}
-                text-anchor={isRight ? "start" : "end"}
-                fill="#99a"
-                font-size="8"
-                font-family="sans-serif"
-              >{s.cat.totalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} € · {s.cat.pct.toFixed(0)}%</text>
-            {/each}
-          </svg>
-        </div>
-
-        <div class="chart-divider"></div>
-
-        <!-- 10-year total bar chart -->
-        <div class="bar-area">
-          <div class="chart-label">Total house costs — last 10 years (€)</div>
-          <div class="bar-chart-wrap">
-            <div class="y-axis">
-              <span>{formatK(maxBarAmount)}</span>
-              <span>{formatK(Math.round(maxBarAmount / 2))}</span>
-              <span>0</span>
+          <!-- Pie chart with connector labels -->
+          <div class="pie-area">
+            <div class="chart-label">
+              {lastCompleteYearNum} — breakdown by category
             </div>
-            <div class="bars">
-              {#each chartYears as y}
-                {@const h = barHeight(y, 100)}
-                {@const isLastComplete = y === lastCompleteYearNum}
-                {@const isCurrent = y === currentYear}
-                {@const hasData = (yearlyTotals.get(y) ?? 0) > 0}
-                <div class="bar-col">
-                  <div
-                    class="bar"
-                    class:highlight={isLastComplete}
-                    class:partial={isCurrent}
-                    class:empty={!hasData}
-                    style="height:{h}px"
-                    title="{y}: {(yearlyTotals.get(y) ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} €"
-                  ></div>
-                  <span class="bar-label" class:current-label={isCurrent}>{y}</span>
-                </div>
+            <svg
+              viewBox="0 0 310 220"
+              width="310"
+              height="220"
+              style="overflow:visible"
+            >
+              <!-- Slices -->
+              {#each slices as s (s.cat.categoryId)}
+                <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+                <path
+                  d={donutPath(PIE_CX, PIE_CY, PIE_OUTER_R, PIE_INNER_R, s.startDeg, s.endDeg)}
+                  fill={s.cat.color}
+                  opacity="0.9"
+                  style="cursor:pointer"
+                  onclick={() => { chartModalCategoryId = s.cat.categoryId; }}
+                />
               {/each}
-            </div>
+
+              <!-- Donut hole -->
+              <circle cx={PIE_CX} cy={PIE_CY} r={PIE_INNER_R} fill="var(--surface)" />
+              <text x={PIE_CX} y={PIE_CY - 6} text-anchor="middle" fill="var(--text-muted)" font-size="8" font-family="sans-serif">Total</text>
+              <text x={PIE_CX} y={PIE_CY + 8} text-anchor="middle" fill="var(--text)" font-size="11" font-family="sans-serif" font-weight="600">
+                {breakdown.reduce((a, b) => a + b.totalAmount, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} €
+              </text>
+
+              <!-- Connector lines + labels -->
+              {#each slices as s (s.cat.categoryId + "-label")}
+                {@const mid = polarPoint(PIE_CX, PIE_CY, PIE_OUTER_R + 4, s.midDeg)}
+                {@const elbow = polarPoint(PIE_CX, PIE_CY, PIE_OUTER_R + 18, s.midDeg)}
+                {@const isRight = elbow.x >= PIE_CX}
+                {@const lineEnd = { x: elbow.x + (isRight ? 28 : -28), y: elbow.y }}
+                {@const textX = lineEnd.x + (isRight ? 4 : -4)}
+                <line x1={mid.x} y1={mid.y} x2={elbow.x} y2={elbow.y} stroke={s.cat.color} stroke-width="1" opacity="0.7" />
+                <line x1={elbow.x} y1={elbow.y} x2={lineEnd.x} y2={lineEnd.y} stroke={s.cat.color} stroke-width="1" opacity="0.7" />
+                <circle cx={mid.x} cy={mid.y} r="2" fill={s.cat.color} />
+                <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+                <text
+                  x={textX}
+                  y={elbow.y - 3}
+                  text-anchor={isRight ? "start" : "end"}
+                  fill={s.cat.color}
+                  font-size="9"
+                  font-family="sans-serif"
+                  font-weight="600"
+                  style="cursor:pointer"
+                  onclick={() => { chartModalCategoryId = s.cat.categoryId; }}
+                >{s.cat.emoji} {s.cat.name}</text>
+                <text
+                  x={textX}
+                  y={elbow.y + 9}
+                  text-anchor={isRight ? "start" : "end"}
+                  fill="var(--text-faint)"
+                  font-size="8"
+                  font-family="sans-serif"
+                >{s.cat.totalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} € · {s.cat.pct.toFixed(0)}%</text>
+              {/each}
+            </svg>
           </div>
-          <div class="stat-chips">
-            <div class="stat-chip">
-              <div class="stat-title">10-year avg</div>
-              <div class="stat-value">{tenYearAvg.toLocaleString(undefined, { maximumFractionDigits: 0 })} €/yr</div>
+
+          <div class="chart-divider"></div>
+
+          <!-- 10-year total bar chart -->
+          <div class="bar-area">
+            <div class="chart-label">Total house costs — last 10 years (€)</div>
+            <div class="bar-chart-wrap">
+              <div class="y-axis">
+                <span>{formatK(maxBarAmount)}</span>
+                <span>{formatK(Math.round(maxBarAmount / 2))}</span>
+                <span>0</span>
+              </div>
+              <div class="bars">
+                {#each chartYears as y}
+                  {@const h = barHeight(y, 100)}
+                  {@const isLastComplete = y === lastCompleteYearNum}
+                  {@const isCurrent = y === currentYear}
+                  {@const hasData = (yearlyTotals.get(y) ?? 0) > 0}
+                  <div class="bar-col">
+                    <div
+                      class="bar"
+                      class:highlight={isLastComplete}
+                      class:partial={isCurrent}
+                      class:empty={!hasData}
+                      style="height:{h}px"
+                      title="{y}: {(yearlyTotals.get(y) ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} €"
+                    ></div>
+                    <span class="bar-label" class:current-label={isCurrent}>{y}</span>
+                  </div>
+                {/each}
+              </div>
             </div>
-            <div class="stat-chip">
-              <div class="stat-title">Last complete yr</div>
-              <div class="stat-value">
-                {lastCompleteTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} €
-                {#if yoyPct !== null}
-                  <span class="yoy" class:up={yoyPct > 0} class:down={yoyPct < 0}>
-                    {yoyPct > 0 ? "▲" : "▼"}{Math.abs(yoyPct)}%
-                  </span>
-                {/if}
+            <div class="stat-chips">
+              <div class="stat-chip">
+                <div class="stat-title">10-year avg</div>
+                <div class="stat-value">{tenYearAvg.toLocaleString(undefined, { maximumFractionDigits: 0 })} €/yr</div>
+              </div>
+              <div class="stat-chip">
+                <div class="stat-title">Last complete yr</div>
+                <div class="stat-value">
+                  {lastCompleteTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} €
+                  {#if yoyPct !== null}
+                    <span class="yoy" class:up={yoyPct > 0} class:down={yoyPct < 0}>
+                      {yoyPct > 0 ? "▲" : "▼"}{Math.abs(yoyPct)}%
+                    </span>
+                  {/if}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-      </div>
+        </div>
+      </Card>
     </div>
   {/if}
 
   <!-- Toolbar -->
   <div class="toolbar">
-    <input class="search" bind:value={searchQuery} placeholder="🔍 Search entries…" />
-    <select bind:value={categoryFilter}>
+    <Input bind:value={searchQuery} placeholder="🔍 Search entries…" />
+    <select class="native-input" bind:value={categoryFilter}>
       <option value="">All categories</option>
       {#each settingsStore.costCategories as cat}
         <option value={cat.id}>{cat.emoji} {cat.name}</option>
       {/each}
     </select>
-    <select bind:value={yearFilter}>
+    <select class="native-input" bind:value={yearFilter}>
       <option value="">All years</option>
       {#each allYears as y}
         <option value={String(y)}>{y}</option>
       {/each}
     </select>
-    <button class="add-btn" onclick={() => { modalEntry = "create"; }}>＋ Add entry</button>
+    <Button onclick={() => { modalEntry = "create"; }}>＋ Add entry</Button>
   </div>
 
   <!-- Table -->
@@ -395,95 +400,85 @@
 <style>
   .page {
     display: flex; flex-direction: column; height: 100%;
-    background: #141428; font-family: sans-serif;
+    background: var(--bg); font-family: var(--font-sans);
   }
 
   .empty-charts {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 32px; gap: 10px; color: #445; border-bottom: 1px solid #1e1e2e; flex-shrink: 0;
+    padding: 32px; gap: 10px; color: var(--text-faint); border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
   .empty-icon { font-size: 36px; }
   .empty-charts p { margin: 0; font-size: 13px; }
 
-  .chart-section {
-    padding: 0; border-bottom: 1px solid #1e1e2e; flex-shrink: 0;
-  }
+  .chart-card-wrap { padding: var(--space-4) var(--space-4) 0; flex-shrink: 0; }
   .chart-inner {
-    display: flex; gap: 24px; align-items: flex-start; padding: 12px 16px;
-    background: #141428;
+    display: flex; gap: 24px; align-items: flex-start;
   }
   .chart-label {
-    font-size: 10px; color: #556; text-transform: uppercase;
+    font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
   }
   .pie-area { flex-shrink: 0; }
-  .chart-divider { width: 1px; background: #2a2a4a; align-self: stretch; flex-shrink: 0; margin: 0 8px; }
+  .chart-divider { width: 1px; background: var(--border); align-self: stretch; flex-shrink: 0; margin: 0 8px; }
 
   .bar-area { flex: 1; min-width: 0; }
   .bar-chart-wrap { display: flex; align-items: flex-end; gap: 4px; height: 120px; }
   .y-axis {
     display: flex; flex-direction: column; justify-content: space-between;
     align-items: flex-end; height: 100px; padding-bottom: 16px;
-    font-size: 8px; color: #334; flex-shrink: 0; padding-right: 4px;
+    font-size: 8px; color: var(--text-faint); flex-shrink: 0; padding-right: 4px;
   }
-  .bars { display: flex; align-items: flex-end; gap: 4px; flex: 1; height: 100%; padding-bottom: 16px; border-bottom: 1px solid #1e1e2e; border-left: 1px solid #1e1e2e; }
+  .bars { display: flex; align-items: flex-end; gap: 4px; flex: 1; height: 100%; padding-bottom: 16px; border-bottom: 1px solid var(--border); border-left: 1px solid var(--border); }
   .bar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: 1; height: 100%; gap: 2px; }
-  .bar { width: 100%; border-radius: 2px 2px 0 0; background: #2a3a6a; min-height: 2px; transition: height .2s; }
-  .bar.highlight { background: #4466cc; }
-  .bar.partial { background: #2a3a5a; outline: 1px dashed #4466cc; opacity: .6; }
+  .bar { width: 100%; border-radius: 2px 2px 0 0; background: color-mix(in srgb, var(--accent) 35%, var(--surface)); min-height: 2px; transition: height .2s; }
+  .bar.highlight { background: var(--accent); }
+  .bar.partial { background: var(--surface-alt); outline: 1px dashed var(--accent); opacity: .8; }
   .bar.empty { background: transparent; }
-  .bar-label { font-size: 7px; color: #445; white-space: nowrap; }
-  .bar-label.current-label { color: #88aaff; }
+  .bar-label { font-size: 7px; color: var(--text-faint); white-space: nowrap; }
+  .bar-label.current-label { color: var(--accent); }
 
   .stat-chips { display: flex; gap: 8px; margin-top: 8px; }
   .stat-chip {
-    flex: 1; background: #111128; border: 1px solid #2a2a4a;
-    border-radius: 4px; padding: 6px 10px;
+    flex: 1; background: var(--surface-alt); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 6px 10px;
   }
-  .stat-title { font-size: 8px; color: #445; text-transform: uppercase; margin-bottom: 2px; }
-  .stat-value { font-size: 13px; color: #eee; font-weight: 600; }
+  .stat-title { font-size: 8px; color: var(--text-faint); text-transform: uppercase; margin-bottom: 2px; }
+  .stat-value { font-size: 13px; color: var(--text); font-weight: 600; }
   .yoy { font-size: 10px; margin-left: 4px; }
-  .yoy.up { color: #f97; }
-  .yoy.down { color: #4c9; }
+  .yoy.up { color: var(--danger); }
+  .yoy.down { color: var(--success); }
 
   .toolbar {
-    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
-    background: #1e1e3a; border-bottom: 1px solid #2a2a4a; flex-shrink: 0;
+    display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
-  .search {
-    flex: 1; background: #111128; border: 1px solid #2a2a4a; color: #ccc;
-    padding: 4px 8px; border-radius: 4px; font-size: 12px;
+  .toolbar :global(.ui-input) { flex: 1; }
+  .native-input {
+    background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 12px; border-radius: var(--radius-md); font-size: 13px;
+    font-family: var(--font-sans); box-sizing: border-box; cursor: pointer;
   }
-  .toolbar select {
-    background: #111128; border: 1px solid #2a2a4a; color: #aaa;
-    padding: 4px 6px; border-radius: 4px; font-size: 11px;
-  }
-  .add-btn {
-    background: #1a3a2a; border: none; color: #4c9;
-    padding: 4px 12px; border-radius: 4px; font-size: 12px;
-    cursor: pointer; white-space: nowrap;
-  }
-  .add-btn:hover { background: #224a34; }
+  .native-input:focus { outline: none; border-color: var(--accent); }
 
   .table-wrapper { flex: 1; overflow-y: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; color: #bbb; }
-  thead { position: sticky; top: 0; background: #1a1a30; z-index: 1; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text-muted); }
+  thead { position: sticky; top: 0; background: var(--surface-alt); z-index: 1; }
   th {
-    padding: 6px 10px; color: #556; font-size: 10px;
+    padding: 6px 10px; color: var(--text-faint); font-size: 10px;
     text-transform: uppercase; letter-spacing: .05em;
-    text-align: left; border-bottom: 1px solid #2a2a3a;
+    text-align: left; border-bottom: 1px solid var(--border);
   }
   th.num-col { text-align: right; }
-  td { padding: 7px 10px; border-bottom: 1px solid #1e1e2e; }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
   td.num-col { text-align: right; }
-  tr:hover td { background: #1c1c38; cursor: pointer; }
+  tr:hover td { background: var(--surface-hover); cursor: pointer; }
   .emoji-cell { font-size: 15px; width: 28px; text-align: center; }
-  .name-cell { color: #ddd; }
-  .amount-cell { color: #eee; }
-  .empty { text-align: center; color: #445; padding: 32px; }
+  .name-cell { color: var(--text); }
+  .amount-cell { color: var(--text); }
+  .empty { text-align: center; color: var(--text-faint); padding: 32px; }
 
   .footer {
-    padding: 6px 12px; font-size: 11px; color: #445;
-    border-top: 1px solid #1e1e2e; flex-shrink: 0;
+    padding: 6px 12px; font-size: 11px; color: var(--text-faint);
+    border-top: 1px solid var(--border); flex-shrink: 0;
   }
 </style>
