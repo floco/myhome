@@ -1,9 +1,15 @@
 <script lang="ts">
   import ChoreRow from "../../src/lib/components/ChoreRow.svelte";
   let { onParentClick }: { onParentClick: () => void } = $props();
+
+  function handleKeydown(e: KeyboardEvent): void {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onParentClick();
+    }
+  }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div onclick={onParentClick}>
+<div role="button" tabindex="0" onclick={onParentClick} onkeydown={handleKeydown}>
   <ChoreRow emoji="🧹" name="Sweep" dueLabel="Today" dueColor="#4caf50" oncomplete={() => {}} />
 </div>

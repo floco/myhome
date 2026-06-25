@@ -91,6 +91,60 @@ describe("ChoreRow", () => {
     target.remove();
   });
 
+  it("pressing Enter in note input calls oncomplete with notes value", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const oncomplete = vi.fn();
+    const comp = mount(ChoreRow, {
+      target,
+      props: { emoji: "🧹", name: "Sweep", dueLabel: "Today", dueColor: "#4caf50", oncomplete },
+    });
+
+    (target.querySelector(".done-btn") as HTMLButtonElement).click();
+    flushSync();
+
+    const input = target.querySelector(".note-input") as HTMLInputElement;
+    input.value = "done and dusted";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    flushSync();
+
+    expect(oncomplete).toHaveBeenCalledWith("done and dusted");
+    expect(target.querySelector(".note-input")).toBeNull();
+
+    unmount(comp);
+    target.remove();
+  });
+
+  it("pressing Escape in note input hides input without calling oncomplete", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const oncomplete = vi.fn();
+    const comp = mount(ChoreRow, {
+      target,
+      props: { emoji: "🧹", name: "Sweep", dueLabel: "Today", dueColor: "#4caf50", oncomplete },
+    });
+
+    (target.querySelector(".done-btn") as HTMLButtonElement).click();
+    flushSync();
+
+    const input = target.querySelector(".note-input") as HTMLInputElement;
+    input.value = "some notes";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    flushSync();
+
+    expect(target.querySelector(".note-input")).toBeNull();
+    expect(oncomplete).not.toHaveBeenCalled();
+
+    unmount(comp);
+    target.remove();
+  });
+
   it("clicking the checkmark stops propagation so a parent onclick isn't triggered", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
