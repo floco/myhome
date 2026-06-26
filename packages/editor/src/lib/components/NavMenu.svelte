@@ -7,7 +7,8 @@
   let { currentRoute, expanded, onclose }: Props = $props();
 
   const modules = [
-    { href: "#/",            icon: "🏠", label: "Floor Plan"   },
+    { href: "#/",            icon: "🏡", label: "Home"         },
+    { href: "#/plan",        icon: "🏠", label: "Floor Plan"   },
     { href: "#/chores",      icon: "✅", label: "Chores"       },
     { href: "#/inventory",   icon: "📦", label: "Inventory"    },
     { href: "#/consumables", icon: "🛒", label: "Consumables"  },
