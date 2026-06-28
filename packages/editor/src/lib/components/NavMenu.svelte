@@ -7,13 +7,14 @@
   let { currentRoute, expanded, onclose }: Props = $props();
 
   const modules = [
-    { href: "#/",            icon: "🏡", label: "Home"         },
-    { href: "#/plan",        icon: "📐", label: "Floor Plan"   },
-    { href: "#/chores",      icon: "✅", label: "Chores"       },
-    { href: "#/inventory",   icon: "📦", label: "Inventory"    },
-    { href: "#/consumables", icon: "🛒", label: "Consumables"  },
-    { href: "#/works",       icon: "🔧", label: "Works"        },
-    { href: "#/costs",       icon: "💶", label: "Costs"        },
+    { href: "#/",            icon: "🏡", label: "Home"             },
+    { href: "#/plan",        icon: "📐", label: "Floor Plan"       },
+    { href: "#/chores",      icon: "✅", label: "Chores"           },
+    { href: "#/inventory",   icon: "📦", label: "Inventory"        },
+    { href: "#/consumables", icon: "🛒", label: "Consumables"      },
+    { href: "#/works",       icon: "🔧", label: "Works"            },
+    { href: "#/kb",          icon: "📖", label: "Knowledge Base"   },
+    { href: "#/costs",       icon: "💶", label: "Costs"            },
   ];
 
   const settingsLink = { href: "#/settings", icon: "⚙️", label: "Settings" };
