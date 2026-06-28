@@ -40,6 +40,8 @@
   import type { Work } from "./lib/worksStore.svelte";
   import WorksOverlay from "./lib/components/WorksOverlay.svelte";
   import WorksPinPopup from "./lib/components/WorksPinPopup.svelte";
+  import { createKBStore } from "./lib/kbStore.svelte";
+  import KBPage from "./lib/components/KBPage.svelte";
   import { getStoredTheme, toggleTheme, type Theme } from "./lib/theme";
 
   const floorStore = createHouseStore();
@@ -50,6 +52,7 @@
   const settingsStore = createSettingsStore();
   const costsStore = createCostsStore();
   const worksStore = createWorksStore();
+  const kbStore = createKBStore();
 
   let theme = $state<Theme>(getStoredTheme());
   function handleToggleTheme(): void {
@@ -893,6 +896,9 @@
             window.location.hash = "#/";
           }}
         />
+
+      {:else if currentRoute === "#/kb"}
+        <KBPage store={kbStore} />
 
       {:else if currentRoute === "#/costs"}
         <CostsPage
