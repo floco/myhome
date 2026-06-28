@@ -98,11 +98,13 @@
     </div>
     <div class="entry-list">
       {#each filteredEntries as entry (entry.id)}
-        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
         <div
+          role="button"
+          tabindex="0"
           class="entry-row"
           class:active={entry.id === selectedId}
           onclick={() => selectEntry(entry)}
+          onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") selectEntry(entry); }}
         >
           <div class="entry-title">{entry.title}</div>
           <div class="entry-date">{fmtDate(entry.updatedAt)}</div>

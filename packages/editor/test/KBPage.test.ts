@@ -189,6 +189,41 @@ describe("KBPage — save / cancel", () => {
     unmount(app);
     target.remove();
   });
+
+  it("Save shows error when title is empty", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore([makeEntry()]);
+    const app = mount(KBPage, { target, props: { store } });
+    flushSync();
+    (target.querySelector(".entry-row") as HTMLElement).click();
+    flushSync();
+    (
+      Array.from(target.querySelectorAll("button")).find(
+        (b) => b.textContent?.trim() === "Edit",
+      ) as HTMLButtonElement
+    ).click();
+    flushSync();
+    // Clear the title
+    const titleInput = target.querySelector(".title-input") as HTMLInputElement;
+    titleInput.value = "";
+    titleInput.dispatchEvent(new Event("input"));
+    flushSync();
+    // Try to save
+    (
+      Array.from(target.querySelectorAll("button")).find(
+        (b) => b.textContent?.trim() === "Save",
+      ) as HTMLButtonElement
+    ).click();
+    await tick();
+    flushSync();
+    expect(store.updateEntry).not.toHaveBeenCalled();
+    expect(target.querySelector(".content-error")?.textContent).toContain("Title cannot be empty");
+    // Still in edit mode
+    expect(target.querySelector("textarea.md-editor")).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
 });
 
 describe("KBPage — delete", () => {
