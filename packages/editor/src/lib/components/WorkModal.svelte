@@ -5,8 +5,7 @@
   import Modal from "./ui/Modal.svelte";
   import Input from "./ui/Input.svelte";
   import Button from "./ui/Button.svelte";
-  import { marked } from "marked";
-  import DOMPurify from "dompurify";
+  import MarkdownEditor from "./ui/MarkdownEditor.svelte";
 
   type WorksStore = ReturnType<typeof createWorksStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -111,9 +110,6 @@
     work ? (store.works.find(w => w.id === work.id) ?? work) : null
   );
   const attachmentCount = $derived(currentWork?.attachments.length ?? 0);
-  const notesHtml = $derived(
-    notes.trim() ? DOMPurify.sanitize(marked(notes) as string) : ""
-  );
 </script>
 
 <Modal open={true} title={isCreate ? "＋ New work" : "Edit work"} {onclose} width="min(92vw, 820px)">
@@ -176,24 +172,14 @@
       <textarea class="native-input desc-area" bind:value={description} placeholder="Short summary of the work…" rows="2"></textarea>
     </div>
   {:else if activeTab === "notes"}
-    {#if editingNotes}
-      <textarea class="native-input notes-area" bind:value={notes} placeholder="Markdown notes…"></textarea>
-      {#if !isCreate}
-        <Button variant="secondary" onclick={() => { editingNotes = false; }}>Done editing</Button>
-      {/if}
-    {:else}
-      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-      <div
-        class="notes-preview {notes.trim() ? '' : 'notes-empty'}"
-        onclick={() => { editingNotes = true; }}
-        title="Click to edit"
-      >
-        {#if notes.trim()}
-          {@html notesHtml}
-        {:else}
-          <span class="notes-placeholder">Click to add markdown notes…</span>
-        {/if}
-      </div>
+    <MarkdownEditor
+      bind:value={notes}
+      bind:editing={editingNotes}
+      placeholder="Click to add markdown notes…"
+      minHeight="260px"
+    />
+    {#if editingNotes && !isCreate}
+      <Button variant="secondary" onclick={() => { editingNotes = false; }}>Done editing</Button>
     {/if}
   {:else}
     <div class="attachments">
@@ -261,39 +247,6 @@
   .native-input:focus { outline: none; border-color: var(--accent); }
   select.native-input { cursor: pointer; }
   .desc-area { resize: vertical; min-height: 48px; }
-  .notes-area { resize: none; min-height: 260px; font-family: monospace; font-size: 12px; line-height: 1.5; }
-
-  .notes-preview {
-    min-height: 260px; padding: 10px 12px; border-radius: var(--radius-md);
-    background: var(--surface-alt); border: 1px solid var(--border); cursor: pointer; overflow-y: auto;
-    color: var(--text); font-family: var(--font-sans); font-size: 13px; line-height: 1.65;
-  }
-  .notes-preview:hover { border-color: var(--accent); }
-  .notes-preview.notes-empty { border-style: dashed; }
-  .notes-placeholder { color: var(--text-faint); font-size: 12px; font-style: italic; }
-  .notes-preview :global(h1), .notes-preview :global(h2), .notes-preview :global(h3) {
-    color: var(--text); margin: 0.6em 0 0.3em; font-size: 14px;
-  }
-  .notes-preview :global(h1) { font-size: 16px; }
-  .notes-preview :global(p) { margin: 0.4em 0; }
-  .notes-preview :global(ul), .notes-preview :global(ol) { margin: 0.4em 0; padding-left: 1.4em; }
-  .notes-preview :global(li) { margin: 0.2em 0; }
-  .notes-preview :global(code) {
-    background: var(--surface-hover); border: 1px solid var(--border); border-radius: 3px;
-    padding: 0 4px; font-size: 11px; font-family: monospace; color: var(--text);
-  }
-  .notes-preview :global(pre) {
-    background: var(--surface-hover); border: 1px solid var(--border); border-radius: var(--radius-sm);
-    padding: 10px; overflow-x: auto; margin: 0.5em 0;
-  }
-  .notes-preview :global(pre code) { background: none; border: none; padding: 0; }
-  .notes-preview :global(blockquote) {
-    border-left: 3px solid var(--border); margin: 0.5em 0; padding: 2px 12px; color: var(--text-muted);
-  }
-  .notes-preview :global(hr) { border: none; border-top: 1px solid var(--border); margin: 0.8em 0; }
-  .notes-preview :global(a) { color: var(--accent); }
-  .notes-preview :global(strong) { color: var(--text); }
-  .notes-preview :global(em) { color: var(--text-muted); }
 
   .attachments { display: flex; flex-direction: column; gap: 6px; }
   .attach-row {
