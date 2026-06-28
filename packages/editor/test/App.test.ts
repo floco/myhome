@@ -35,7 +35,8 @@ function toolbarBtn(target: HTMLElement, title: string): HTMLButtonElement {
 
 /** Mount the app and wait for the houseStore async init to complete so the
  *  loaded guard resolves and Toolbar/Canvas are in the DOM. */
-async function mountAndLoad(target: HTMLElement): Promise<ReturnType<typeof mount>> {
+async function mountAndLoad(target: HTMLElement, route = "#/plan"): Promise<ReturnType<typeof mount>> {
+  window.location.hash = route;
   const app = mount(App, { target });
   // Let the fetch micro-tasks resolve (init() awaits fetch then sets loaded=true)
   await tick();
@@ -318,6 +319,7 @@ describe("App", () => {
 describe("App — room panel", () => {
   it("room panel is not visible initially", async () => {
     stubFetch404();
+    window.location.hash = "#/plan";
     const target = document.createElement("div");
     document.body.appendChild(target);
     const app = mount(App, { target });
@@ -422,3 +424,8 @@ describe("App — item picker visibility across floor modes", () => {
     target.remove();
   });
 });
+
+// NOTE: Home dashboard routing tests live in App.routing.test.ts
+// They need an isolated JSDOM environment to avoid a Svelte 5 reactive-context
+// issue that only surfaces when HomePage is first rendered after many prior
+// App mounts within the same test file environment.

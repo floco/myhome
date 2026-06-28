@@ -19,6 +19,7 @@
   import ChoresPage from "./lib/components/ChoresPage.svelte";
   import ChoreListPage from "./lib/components/ChoreListPage.svelte";
   import NavMenu from "./lib/components/NavMenu.svelte";
+  import HomePage from "./lib/components/HomePage.svelte";
   import NewChoreModal from "./lib/components/NewChoreModal.svelte";
   import LayersDropdown from "./lib/components/LayersDropdown.svelte";
   import InventoryPage from "./lib/components/InventoryPage.svelte";
@@ -176,7 +177,8 @@
     return () => window.removeEventListener("hashchange", onHashChange);
   });
 
-  const isFloorPlan = $derived(currentRoute === "#/" || currentRoute === "");
+  const isFloorPlan = $derived(currentRoute === "#/plan");
+  const isHome = $derived(currentRoute === "#/" || currentRoute === "");
   const isChores = $derived(currentRoute.startsWith("#/chores"));
 
   const selectedRoom = $derived(
@@ -844,6 +846,16 @@
             </div>
           {/if}
         </div>
+
+      {:else if isHome}
+        <HomePage
+          {floorStore}
+          {choreStore}
+          {inventoryStore}
+          {settingsStore}
+          {costsStore}
+          {worksStore}
+        />
 
       {:else if currentRoute === "#/chores"}
         <ChoreListPage store={choreStore} {floorStore} />
