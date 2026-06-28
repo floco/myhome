@@ -18,6 +18,7 @@ export function createKBStore() {
 
   async function init(): Promise<void> {
     try {
+      loadError = null;
       const resp = await fetch("/api/kb");
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const doc: KBDocument = await resp.json();
