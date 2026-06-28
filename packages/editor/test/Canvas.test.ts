@@ -368,4 +368,20 @@ describe("Canvas", () => {
       expect(document.querySelectorAll("path.door-arc").length).toBeGreaterThan(0);
     });
   });
+
+  it("hides the grid when showGrid is false", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const floor = createSampleFloor();
+
+    app = mount(Canvas, {
+      target,
+      props: { floor, viewport: { ...DEFAULT_VIEWPORT }, width: 800, height: 600, showGrid: false },
+    });
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas");
+    expect(svg!.querySelectorAll("line.grid-line")).toHaveLength(0);
+  });
 });
