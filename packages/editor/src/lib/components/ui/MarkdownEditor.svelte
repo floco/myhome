@@ -16,6 +16,7 @@
     minHeight = "200px",
   }: Props = $props();
 
+  // marked() is sync here (no async extensions); cast to string is safe.
   const renderedHtml = $derived(
     value.trim() ? DOMPurify.sanitize(marked(value) as string) : "",
   );
@@ -24,16 +25,19 @@
 {#if editing}
   <textarea
     class="md-editor"
-    style="min-height: {minHeight}"
+    style:min-height={minHeight}
     bind:value
     placeholder="Write in Markdown…"
   ></textarea>
 {:else}
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div
-    class="md-preview {renderedHtml ? '' : 'md-empty'}"
-    style="min-height: {minHeight}"
+    role="button"
+    tabindex="0"
+    class="md-preview"
+    class:md-empty={!renderedHtml}
+    style:min-height={minHeight}
     onclick={() => { editing = true; }}
+    onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") editing = true; }}
     title="Click to edit"
   >
     {#if renderedHtml}
