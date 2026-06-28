@@ -47,7 +47,8 @@
   }
 
   async function handleSave(): Promise<void> {
-    if (!selectedId || !draftTitle.trim()) return;
+    if (!selectedId) return;
+    if (!draftTitle.trim()) { error = "Title cannot be empty"; return; }
     saving = true;
     error = null;
     try {

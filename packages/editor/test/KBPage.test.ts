@@ -248,7 +248,7 @@ describe("KBPage — delete", () => {
 });
 
 describe("KBPage — create new entry", () => {
-  it("＋ New button calls createEntry", async () => {
+  it("＋ New button calls createEntry and enters edit mode", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const newEntry = makeEntry({ id: "new1", title: "New entry", content: "" });
@@ -262,8 +262,12 @@ describe("KBPage — create new entry", () => {
     ) as HTMLButtonElement;
     newBtn.click();
     await tick();
+    // Simulate init() refresh — push the new entry so selectedEntry becomes non-null
+    store.entries.push(newEntry);
     flushSync();
     expect(store.createEntry).toHaveBeenCalledWith({ title: "New entry", content: "" });
+    // After create, the new entry is selected and edit mode is active
+    expect(target.querySelector("textarea.md-editor")).not.toBeNull();
     unmount(app);
     target.remove();
   });
