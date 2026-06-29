@@ -11,6 +11,7 @@ from ..persistence_works import (
     _attachments_dir,
     delete_all_attachments,
     delete_attachment,
+    generate_pdf_thumbnail,
     get_attachment_path,
     load_works,
     save_attachment,
@@ -92,6 +93,10 @@ async def upload_attachment(id: str, file: UploadFile) -> dict:
     filename = _sanitise_filename(original)
     data = await file.read()
     save_attachment(id, filename, data)
+    if ext == ".pdf":
+        pdf_path = get_attachment_path(id, filename)
+        thumb_path = pdf_path.parent / (filename + ".thumb.jpg")
+        generate_pdf_thumbnail(pdf_path, thumb_path)
     if filename not in work.attachments:
         work.attachments.append(filename)
     save_works(doc)

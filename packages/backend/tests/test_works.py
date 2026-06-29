@@ -272,6 +272,49 @@ def test_clear_placement(client, tmp_path):
     assert work["placement"] is None
 
 
+def _make_valid_pdf() -> bytes:
+    import fitz
+    doc = fitz.open()
+    doc.new_page(width=200, height=200)
+    return doc.write()
+
+
+def test_upload_pdf_creates_thumbnail(client, tmp_path):
+    save_works(make_doc())
+    pdf_bytes = _make_valid_pdf()
+    resp = client.post(
+        "/api/works/w1/attachments",
+        files={"file": ("invoice.pdf", pdf_bytes, "application/pdf")},
+    )
+    assert resp.status_code == 201
+    thumb = tmp_path / "works-attachments" / "w1" / "invoice.pdf.thumb.jpg"
+    assert thumb.exists(), "thumbnail should be created on PDF upload"
+
+
+def test_upload_corrupt_pdf_still_succeeds(client, tmp_path):
+    save_works(make_doc())
+    resp = client.post(
+        "/api/works/w1/attachments",
+        files={"file": ("bad.pdf", b"%PDF corrupt garbage", "application/pdf")},
+    )
+    assert resp.status_code == 201
+    thumb = tmp_path / "works-attachments" / "w1" / "bad.pdf.thumb.jpg"
+    assert not thumb.exists(), "no thumbnail expected for corrupt PDF"
+
+
+def test_delete_pdf_removes_thumbnail(client, tmp_path):
+    save_works(make_doc())
+    pdf_bytes = _make_valid_pdf()
+    client.post(
+        "/api/works/w1/attachments",
+        files={"file": ("invoice.pdf", pdf_bytes, "application/pdf")},
+    )
+    thumb = tmp_path / "works-attachments" / "w1" / "invoice.pdf.thumb.jpg"
+    assert thumb.exists()
+    client.delete("/api/works/w1/attachments/invoice.pdf")
+    assert not thumb.exists(), "thumbnail should be removed when PDF is deleted"
+
+
 def test_delete_work_removes_attachments(client, tmp_path):
     save_works(make_doc())
     client.post(
