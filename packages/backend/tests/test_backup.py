@@ -38,3 +38,52 @@ def test_download_backup_empty_data_dir(client):
     resp = client.get("/api/backup/download")
     assert resp.status_code == 200
     assert zipfile.ZipFile(io.BytesIO(resp.content)).namelist() == []
+
+
+def test_restore_replaces_data_dir_contents(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    (tmp_path / "old.json").write_text('{"old": true}')
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("house.json", '{"floors": []}')
+        zf.writestr("settings.json", '{"version": 1}')
+    buf.seek(0)
+
+    resp = TestClient(app).post(
+        "/api/backup/restore",
+        files={"file": ("backup.zip", buf.read(), "application/zip")},
+    )
+
+    assert resp.status_code == 204
+    assert not (tmp_path / "old.json").exists()
+    assert (tmp_path / "house.json").read_text() == '{"floors": []}'
+    assert (tmp_path / "settings.json").read_text() == '{"version": 1}'
+
+
+def test_restore_handles_subdirectories(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("kb/e1.md", "# Article")
+        zf.writestr("inventory-attachments/i1/photo.jpg", b"fake-jpeg")
+    buf.seek(0)
+
+    resp = TestClient(app).post(
+        "/api/backup/restore",
+        files={"file": ("backup.zip", buf.read(), "application/zip")},
+    )
+
+    assert resp.status_code == 204
+    assert (tmp_path / "kb" / "e1.md").read_text() == "# Article"
+    assert (tmp_path / "inventory-attachments" / "i1" / "photo.jpg").exists()
+
+
+def test_restore_rejects_non_zip(client):
+    resp = client.post(
+        "/api/backup/restore",
+        files={"file": ("data.json", b'{"not": "a zip"}', "application/json")},
+    )
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == "Invalid backup file"
