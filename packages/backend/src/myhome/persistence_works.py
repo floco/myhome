@@ -1,9 +1,12 @@
 import json
+import logging
 import os
 import shutil
 from pathlib import Path
 
 from .models_works import WorksDocument
+
+_log = logging.getLogger(__name__)
 
 
 def _works_file() -> Path:
@@ -48,6 +51,9 @@ def delete_attachment(work_id: str, filename: str) -> bool:
     if not path.exists():
         return False
     path.unlink()
+    thumb = path.parent / (filename + ".thumb.jpg")
+    if thumb.exists():
+        thumb.unlink()
     return True
 
 
@@ -55,3 +61,15 @@ def delete_all_attachments(work_id: str) -> None:
     path = _attachments_dir(work_id)
     if path.exists():
         shutil.rmtree(path)
+
+
+def generate_pdf_thumbnail(pdf_path: Path, thumb_path: Path) -> None:
+    try:
+        import fitz  # pymupdf
+        doc = fitz.open(str(pdf_path))
+        page = doc[0]
+        mat = fitz.Matrix(1.5, 1.5)
+        pix = page.get_pixmap(matrix=mat)
+        pix.save(str(thumb_path))
+    except Exception as exc:
+        _log.warning("PDF thumbnail generation failed for %s: %s", pdf_path, exc)
