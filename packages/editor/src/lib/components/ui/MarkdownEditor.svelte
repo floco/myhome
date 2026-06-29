@@ -2,6 +2,9 @@
   import { marked } from "marked";
   import DOMPurify from "dompurify";
 
+  // Single newlines become <br>; GFM adds ~~strikethrough~~, tables, task lists.
+  marked.use({ breaks: true, gfm: true });
+
   interface Props {
     value: string;
     editing: boolean;
@@ -16,16 +19,60 @@
     minHeight = "200px",
   }: Props = $props();
 
+  let textareaEl: HTMLTextAreaElement | null = $state(null);
+
   // marked() is sync here (no async extensions); cast to string is safe.
   const renderedHtml = $derived(
     value.trim() ? DOMPurify.sanitize(marked(value) as string) : "",
   );
+
+  /** Wrap the current selection (or insert placeholder text) with before/after. */
+  function insert(before: string, after = "", defaultText = "") {
+    if (!textareaEl) return;
+    const s = textareaEl.selectionStart;
+    const e = textareaEl.selectionEnd;
+    const sel = value.slice(s, e) || defaultText;
+    value = value.slice(0, s) + before + sel + after + value.slice(e);
+    const ns = s + before.length;
+    const ne = ns + sel.length;
+    setTimeout(() => { if (textareaEl) { textareaEl.focus(); textareaEl.setSelectionRange(ns, ne); } }, 0);
+  }
+
+  /** Prepend prefix to the line where the cursor currently sits. */
+  function linePrefix(prefix: string) {
+    if (!textareaEl) return;
+    const s = textareaEl.selectionStart;
+    const lineStart = value.lastIndexOf("\n", s - 1) + 1;
+    value = value.slice(0, lineStart) + prefix + value.slice(lineStart);
+    const ns = lineStart + prefix.length;
+    setTimeout(() => { if (textareaEl) { textareaEl.focus(); textareaEl.setSelectionRange(ns, ns); } }, 0);
+  }
 </script>
 
 {#if editing}
+  <div class="md-toolbar" role="toolbar" aria-label="Markdown formatting">
+    <button class="tb-btn" type="button" title="Heading 1" onclick={() => linePrefix("# ")}>H1</button>
+    <button class="tb-btn" type="button" title="Heading 2" onclick={() => linePrefix("## ")}>H2</button>
+    <button class="tb-btn" type="button" title="Heading 3" onclick={() => linePrefix("### ")}>H3</button>
+    <span class="tb-sep" aria-hidden="true"></span>
+    <button class="tb-btn tb-bold" type="button" title="Bold" onclick={() => insert("**", "**", "bold")}>B</button>
+    <button class="tb-btn tb-italic" type="button" title="Italic" onclick={() => insert("_", "_", "italic")}>I</button>
+    <button class="tb-btn" type="button" title="Strikethrough" onclick={() => insert("~~", "~~", "text")}>S̶</button>
+    <span class="tb-sep" aria-hidden="true"></span>
+    <button class="tb-btn" type="button" title="Bullet list" onclick={() => linePrefix("- ")}>• List</button>
+    <button class="tb-btn" type="button" title="Numbered list" onclick={() => linePrefix("1. ")}>1. List</button>
+    <button class="tb-btn" type="button" title="Blockquote" onclick={() => linePrefix("> ")}>❝</button>
+    <span class="tb-sep" aria-hidden="true"></span>
+    <button class="tb-btn" type="button" title="Inline code" onclick={() => insert("`", "`", "code")}>`code`</button>
+    <button class="tb-btn" type="button" title="Code block" onclick={() => insert("```\n", "\n```", "code")}>```</button>
+    <span class="tb-sep" aria-hidden="true"></span>
+    <button class="tb-btn" type="button" title="Link" onclick={() => insert("[", "](url)", "link text")}>🔗</button>
+    <button class="tb-btn" type="button" title="Horizontal rule" onclick={() => insert("\n---\n", "", "")}>—</button>
+  </div>
   <textarea
     class="md-editor"
     style:min-height={minHeight}
+    bind:this={textareaEl}
     bind:value
     placeholder="Write in Markdown…"
   ></textarea>
@@ -49,11 +96,30 @@
 {/if}
 
 <style>
+  .md-toolbar {
+    display: flex; align-items: center; gap: 2px; flex-wrap: wrap;
+    padding: 4px 6px;
+    background: var(--surface-hover);
+    border: 1px solid var(--border); border-bottom: none;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
+  .tb-btn {
+    padding: 2px 7px; font-size: 11px; font-family: var(--font-sans);
+    border: 1px solid transparent; border-radius: var(--radius-sm);
+    background: none; color: var(--text-muted); cursor: pointer;
+    line-height: 1.6; white-space: nowrap;
+  }
+  .tb-btn:hover { background: var(--surface); border-color: var(--border); color: var(--text); }
+  .tb-bold { font-weight: bold; }
+  .tb-italic { font-style: italic; }
+  .tb-sep { width: 1px; height: 14px; background: var(--border); margin: 0 3px; flex-shrink: 0; }
+
   .md-editor {
     width: 100%; box-sizing: border-box;
     padding: 10px 12px; resize: vertical;
     background: var(--surface-alt); border: 1px solid var(--border);
-    border-radius: var(--radius-md); color: var(--text);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    color: var(--text);
     font-family: monospace; font-size: 12px; line-height: 1.5;
   }
   .md-editor:focus { outline: none; border-color: var(--accent); }
