@@ -142,13 +142,66 @@ def test_upload_sanitises_filename(client, tmp_path):
     assert resp.json()["filename"] == "my_invoice_2025.pdf"
 
 
-def test_upload_non_pdf_rejected(client, tmp_path):
+def test_upload_unsupported_type_rejected(client, tmp_path):
     save_works(make_doc())
     resp = client.post(
         "/api/works/w1/attachments",
-        files={"file": ("image.png", b"fake-png", "image/png")},
+        files={"file": ("notes.txt", b"hello", "text/plain")},
     )
     assert resp.status_code == 400
+
+
+def test_upload_image_jpeg_accepted(client, tmp_path):
+    save_works(make_doc())
+    resp = client.post(
+        "/api/works/w1/attachments",
+        files={"file": ("photo.jpg", b"\xff\xd8\xff\xe0" + b"\x00" * 100, "image/jpeg")},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["filename"] == "photo.jpg"
+    work = client.get("/api/works").json()["works"][0]
+    assert "photo.jpg" in work["attachments"]
+
+
+def test_upload_image_png_accepted(client, tmp_path):
+    save_works(make_doc())
+    resp = client.post(
+        "/api/works/w1/attachments",
+        files={"file": ("shot.png", b"\x89PNG\r\n" + b"\x00" * 100, "image/png")},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["filename"] == "shot.png"
+
+
+def test_upload_image_webp_accepted(client, tmp_path):
+    save_works(make_doc())
+    resp = client.post(
+        "/api/works/w1/attachments",
+        files={"file": ("photo.webp", b"RIFF" + b"\x00" * 100, "image/webp")},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["filename"] == "photo.webp"
+
+
+def test_sanitise_preserves_image_extension(client, tmp_path):
+    save_works(make_doc())
+    resp = client.post(
+        "/api/works/w1/attachments",
+        files={"file": ("my photo 2025.jpg", b"\xff\xd8\xff\xe0" + b"\x00" * 100, "image/jpeg")},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["filename"] == "my_photo_2025.jpg"
+
+
+def test_get_image_attachment_returns_correct_content_type(client, tmp_path):
+    save_works(make_doc())
+    client.post(
+        "/api/works/w1/attachments",
+        files={"file": ("photo.png", b"\x89PNG\r\n" + b"\x00" * 100, "image/png")},
+    )
+    resp = client.get("/api/works/w1/attachments/photo.png")
+    assert resp.status_code == 200
+    assert "image/png" in resp.headers["content-type"]
 
 
 def test_upload_attachment_work_not_found(client):
