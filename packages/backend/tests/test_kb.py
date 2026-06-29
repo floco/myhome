@@ -1,13 +1,17 @@
 import pytest
 from fastapi.testclient import TestClient
 from myhome.main import app
-from myhome.models_kb import KBDocument, KBEntry
-from myhome.persistence_kb import save_kb
+from myhome.models_kb import KBEntry
+from myhome.persistence_kb import save_entry
 
 
-def make_doc() -> KBDocument:
-    return KBDocument(
-        entries=[KBEntry(id="e1", title="How to paint", content="# Painting", createdAt="2026-06-28T10:00:00Z", updatedAt="2026-06-28T10:00:00Z")]
+def make_entry() -> KBEntry:
+    return KBEntry(
+        id="e1",
+        title="How to paint",
+        content="# Painting",
+        createdAt="2026-06-28T10:00:00Z",
+        updatedAt="2026-06-28T10:00:00Z",
     )
 
 
@@ -17,7 +21,7 @@ def client(tmp_path, monkeypatch):
     return TestClient(app)
 
 
-def test_get_kb_empty_when_no_file(client):
+def test_get_kb_empty_when_no_dir(client):
     resp = client.get("/api/kb")
     assert resp.status_code == 200
     assert resp.json()["entries"] == []
@@ -25,7 +29,7 @@ def test_get_kb_empty_when_no_file(client):
 
 def test_get_kb_returns_saved_data(client, tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    save_kb(make_doc())
+    save_entry(make_entry())
     resp = client.get("/api/kb")
     assert resp.status_code == 200
     assert resp.json()["entries"][0]["id"] == "e1"
@@ -44,13 +48,10 @@ def test_create_entry(client):
 
 
 def test_update_entry(client):
-    # Create first
     resp = client.post("/api/kb", json={"title": "Old title", "content": ""})
     entry_id = resp.json()["id"]
-    # Update
     resp = client.put(f"/api/kb/{entry_id}", json={"title": "New title"})
     assert resp.status_code == 204
-    # Verify
     entries = client.get("/api/kb").json()["entries"]
     assert entries[0]["title"] == "New title"
 
