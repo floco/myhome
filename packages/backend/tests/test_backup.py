@@ -87,3 +87,30 @@ def test_restore_rejects_non_zip(client):
     )
     assert resp.status_code == 400
     assert resp.json()["detail"] == "Invalid backup file"
+
+
+def test_restore_rejects_zip_slip(client, tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("../../evil.txt", "pwned")
+    buf.seek(0)
+    resp = TestClient(app).post(
+        "/api/backup/restore",
+        files={"file": ("backup.zip", buf.read(), "application/zip")},
+    )
+    assert resp.status_code == 400
+    assert not (tmp_path.parent / "evil.txt").exists()
+
+
+def test_download_skips_symlinks(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    (tmp_path / "real.json").write_text('{"ok": true}')
+    link = tmp_path / "link.json"
+    link.symlink_to(tmp_path / "real.json")
+
+    resp = TestClient(app).get("/api/backup/download")
+
+    names = zipfile.ZipFile(io.BytesIO(resp.content)).namelist()
+    assert "real.json" in names
+    assert "link.json" not in names
