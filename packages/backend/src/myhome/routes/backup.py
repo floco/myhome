@@ -32,6 +32,9 @@ def _validate_zip_entries(zf: zipfile.ZipFile, data_dir: Path) -> None:
         target = (data_dir / name).resolve()
         if not target.is_relative_to(resolved_root):
             raise HTTPException(status_code=400, detail="Invalid backup file")
+        # info.file_size is metadata and can be forged in a crafted zip; a
+        # fully hardened version would stream-extract and count bytes_written.
+        # Acceptable here: endpoint is local-only, backups are self-generated.
         total_size += info.file_size
         if total_size > _MAX_RESTORE_BYTES:
             raise HTTPException(status_code=400, detail="Backup too large")
