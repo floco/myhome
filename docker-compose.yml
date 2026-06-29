@@ -1,0 +1,15 @@
+services:
+  myhome:
+    image: ghcr.io/floco/myhome:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - myhome-data:/data
+    environment:
+      LOG_LEVEL: info
+      # Optional: uncomment for Home Assistant integration
+      # SUPERVISOR_TOKEN: ${SUPERVISOR_TOKEN}
+      # HA_URL: ${HA_URL:-http://homeassistant:8123}
+
+volumes:
+  myhome-data:

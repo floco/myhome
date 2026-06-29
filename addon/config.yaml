@@ -1,14 +1,12 @@
 name: "My Home"
 version: "0.2.0"
 slug: "myhome"
-description: "Interactive floor plan editor with chore tracking"
+description: "Home management app — floor plans, chores, inventory, costs, works, knowledge base, and more."
 url: "https://github.com/floco/myhome"
-image: "ghcr.io/floco/myhome/{arch}"
+image: "ghcr.io/floco/myhome"
 arch:
   - amd64
   - aarch64
-  - armhf
-  - armv7
 startup: application
 boot: auto
 init: false
