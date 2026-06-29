@@ -1,11 +1,14 @@
 <script lang="ts">
   import type { createWorksStore, Work } from "../worksStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
+  import type { MediaItem } from "./ui/mediaTypes";
   import DatePicker from "./DatePicker.svelte";
   import Modal from "./ui/Modal.svelte";
   import Input from "./ui/Input.svelte";
   import Button from "./ui/Button.svelte";
   import MarkdownEditor from "./ui/MarkdownEditor.svelte";
+  import MediaGallery from "./ui/MediaGallery.svelte";
+  import Lightbox from "./ui/Lightbox.svelte";
 
   type WorksStore = ReturnType<typeof createWorksStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -22,7 +25,7 @@
 
   const isCreate = work === null;
 
-  let activeTab = $state<"info" | "notes" | "attachments">("info");
+  let activeTab = $state<"info" | "notes" | "media">("info");
   let title = $state(work?.title ?? "");
   let description = $state(work?.description ?? "");
   let status = $state<Work["status"]>(work?.status ?? "planned");
@@ -39,6 +42,9 @@
   let error = $state<string | null>(null);
   let uploading = $state(false);
   let uploadError = $state<string | null>(null);
+
+  let lightboxOpen = $state(false);
+  let lightboxIndex = $state(0);
 
   async function handleSave(): Promise<void> {
     if (!title.trim()) { error = "Title is required"; return; }
@@ -82,34 +88,52 @@
     }
   }
 
-  async function handleUpload(e: Event): Promise<void> {
-    const input = e.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file || !work) return;
+  async function handleUpload(files: File[]): Promise<void> {
+    if (!work) return;
     uploading = true; uploadError = null;
     try {
-      await store.uploadAttachment(work.id, file);
+      for (const file of files) {
+        await store.uploadAttachment(work.id, file);
+      }
     } catch (err) {
       uploadError = err instanceof Error ? err.message : "Upload failed";
     } finally {
       uploading = false;
-      input.value = "";
     }
   }
 
-  async function handleDeleteAttachment(filename: string): Promise<void> {
+  async function handleDeleteAttachment(id: string): Promise<void> {
     if (!work) return;
     try {
-      await store.deleteAttachment(work.id, filename);
+      await store.deleteAttachment(work.id, id);
     } catch (err) {
       uploadError = err instanceof Error ? err.message : "Delete failed";
     }
+  }
+
+  function handleItemClick(index: number): void {
+    lightboxIndex = index;
+    lightboxOpen = true;
   }
 
   const currentWork = $derived(
     work ? (store.works.find(w => w.id === work.id) ?? work) : null
   );
   const attachmentCount = $derived(currentWork?.attachments.length ?? 0);
+
+  const mediaItems = $derived<MediaItem[]>(
+    (currentWork?.attachments ?? []).map(name => {
+      const url = `/api/works/${work!.id}/attachments/${name}`;
+      const isPdf = name.toLowerCase().endsWith(".pdf");
+      return {
+        id: name,
+        name,
+        url,
+        thumbnailUrl: isPdf ? `${url}.thumb.jpg` : url,
+        type: isPdf ? "document" : "image",
+      };
+    })
+  );
 </script>
 
 <Modal open={true} title={isCreate ? "＋ New work" : "Edit work"} {onclose} width="min(92vw, 820px)">
@@ -118,10 +142,10 @@
     <button class="tab" class:active={activeTab === "notes"} onclick={() => { activeTab = "notes"; }}>Notes</button>
     <button
       class="tab"
-      class:active={activeTab === "attachments"}
+      class:active={activeTab === "media"}
       disabled={isCreate}
-      onclick={() => { activeTab = "attachments"; }}
-    >Attachments{attachmentCount > 0 ? ` (${attachmentCount})` : ""}</button>
+      onclick={() => { activeTab = "media"; }}
+    >Media{attachmentCount > 0 ? ` (${attachmentCount})` : ""}</button>
   </div>
 
   {#if activeTab === "info"}
@@ -182,24 +206,14 @@
       <Button variant="secondary" onclick={() => { editingNotes = false; }}>Done editing</Button>
     {/if}
   {:else}
-    <div class="attachments">
-      {#if currentWork && currentWork.attachments.length > 0}
-        {#each currentWork.attachments as filename}
-          <div class="attach-row">
-            <span class="attach-icon">📄</span>
-            <a class="attach-name" href="/api/works/{work!.id}/attachments/{filename}" target="_blank" rel="noopener">{filename}</a>
-            <button class="attach-del" onclick={() => handleDeleteAttachment(filename)} title="Delete">✕</button>
-          </div>
-        {/each}
-      {:else}
-        <div class="attach-empty">No attachments yet.</div>
-      {/if}
-      <label class="upload-btn" class:uploading>
-        {uploading ? "Uploading…" : "＋ Upload PDF"}
-        <input type="file" accept=".pdf" style="display:none" onchange={handleUpload} />
-      </label>
-      {#if uploadError}<div class="upload-error">{uploadError}</div>{/if}
-    </div>
+    <MediaGallery
+      items={mediaItems}
+      {uploading}
+      {uploadError}
+      onUpload={handleUpload}
+      onDelete={handleDeleteAttachment}
+      onItemClick={handleItemClick}
+    />
   {/if}
 
   {#if error}<div class="modal-error">{error}</div>{/if}
@@ -224,6 +238,10 @@
   {/snippet}
 </Modal>
 
+{#if lightboxOpen && mediaItems.length > 0}
+  <Lightbox items={mediaItems} initialIndex={lightboxIndex} onclose={() => { lightboxOpen = false; }} />
+{/if}
+
 <style>
   .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: var(--space-3); }
   .tab {
@@ -247,26 +265,6 @@
   .native-input:focus { outline: none; border-color: var(--accent); }
   select.native-input { cursor: pointer; }
   .desc-area { resize: vertical; min-height: 48px; }
-
-  .attachments { display: flex; flex-direction: column; gap: 6px; }
-  .attach-row {
-    display: flex; align-items: center; gap: 8px;
-    background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px;
-  }
-  .attach-icon { font-size: 14px; }
-  .attach-name { flex: 1; font-size: 11px; color: var(--accent); text-decoration: none; }
-  .attach-name:hover { text-decoration: underline; }
-  .attach-del { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 12px; }
-  .attach-del:hover { color: var(--danger); }
-  .attach-empty { font-size: 11px; color: var(--text-faint); text-align: center; padding: 12px 0; }
-  .upload-btn {
-    background: var(--surface-alt); border: 1px dashed var(--border); color: var(--text-muted);
-    padding: 7px 12px; border-radius: var(--radius-md); font-size: 11px; cursor: pointer;
-    text-align: center; font-family: var(--font-sans); display: block;
-  }
-  .upload-btn:hover:not(.uploading) { background: var(--surface-hover); color: var(--text); }
-  .upload-btn.uploading { color: var(--text-faint); cursor: default; }
-  .upload-error { font-size: 10px; color: var(--danger); }
 
   .modal-error { padding: 8px 0 0; font-size: 11px; color: var(--danger); }
   .spacer { flex: 1; }
