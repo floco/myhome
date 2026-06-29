@@ -12,9 +12,9 @@
     floors: Floor[];
     currentFloorId: string;
     onswitchfloor: (id: string) => void;
-    onaddfloor: (name: string) => void;
-    onrenamefloor: (id: string, name: string) => void;
-    onremovefloor: (id: string) => void;
+    onaddfloor?: (name: string) => void;
+    onrenamefloor?: (id: string, name: string) => void;
+    onremovefloor?: (id: string) => void;
   } = $props();
 
   const ALL_FLOOR_ID = "__all__";
@@ -27,7 +27,7 @@
       onswitchfloor(floor.id);
       return;
     }
-    if ((event as MouseEvent & { detail: number }).detail === 2) {
+    if (onrenamefloor && (event as MouseEvent & { detail: number }).detail === 2) {
       editingId = floor.id;
       editingName = floor.name;
     }
@@ -36,7 +36,7 @@
   function commitRename(): void {
     if (!editingId) return;
     const trimmed = editingName.trim();
-    if (trimmed) onrenamefloor(editingId, trimmed);
+    if (trimmed) onrenamefloor?.(editingId, trimmed);
     editingId = null;
   }
 
@@ -49,7 +49,7 @@
     const n = floors.length + 1;
     const names = ["Ground Floor", "First Floor", "Second Floor", "Third Floor", "Basement"];
     const name = names[n - 1] ?? `Floor ${n}`;
-    onaddfloor(name);
+    onaddfloor?.(name);
   }
 </script>
 
@@ -80,7 +80,7 @@
           {floor.name}
         </button>
       {/if}
-      {#if floors.length > 1}
+      {#if onremovefloor && floors.length > 1}
         <button
           class="remove-btn"
           onclick={() => onremovefloor(floor.id)}
@@ -90,7 +90,9 @@
       {/if}
     </div>
   {/each}
-  <button class="add-btn" onclick={handleAddFloor}>+ Floor</button>
+  {#if onaddfloor}
+    <button class="add-btn" onclick={handleAddFloor}>+ Floor</button>
+  {/if}
 </div>
 
 <style>

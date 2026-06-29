@@ -72,20 +72,6 @@
     selectedFloorId = id;
   }
 
-  function handleAddFloor(name: string): void {
-    floorStore.addFloor(name);
-    selectedFloorId = floorStore.currentFloorId;
-  }
-
-  function handleRemoveFloor(id: string): void {
-    floorStore.removeFloor(id);
-    if (selectedFloorId === id) selectedFloorId = floorStore.currentFloorId;
-  }
-
-  function handleRenameFloor(id: string, name: string): void {
-    floorStore.renameFloor(id, name);
-  }
-
   function toggleLayer(layer: string): void {
     const next = new Set(activeLayers);
     if (next.has(layer)) next.delete(layer);
@@ -105,9 +91,6 @@
           floors={floorStore.floors}
           currentFloorId={effectiveFloorId ?? ""}
           onswitchfloor={handleSwitchFloor}
-          onaddfloor={handleAddFloor}
-          onrenamefloor={handleRenameFloor}
-          onremovefloor={handleRemoveFloor}
         />
       </div>
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->

@@ -19,6 +19,7 @@
   import ChoresPage from "./lib/components/ChoresPage.svelte";
   import ChoreListPage from "./lib/components/ChoreListPage.svelte";
   import NavMenu from "./lib/components/NavMenu.svelte";
+  import HomePage from "./lib/components/HomePage.svelte";
   import NewChoreModal from "./lib/components/NewChoreModal.svelte";
   import LayersDropdown from "./lib/components/LayersDropdown.svelte";
   import InventoryPage from "./lib/components/InventoryPage.svelte";
@@ -39,6 +40,8 @@
   import type { Work } from "./lib/worksStore.svelte";
   import WorksOverlay from "./lib/components/WorksOverlay.svelte";
   import WorksPinPopup from "./lib/components/WorksPinPopup.svelte";
+  import { createKBStore } from "./lib/kbStore.svelte";
+  import KBPage from "./lib/components/KBPage.svelte";
   import { getStoredTheme, toggleTheme, type Theme } from "./lib/theme";
 
   const floorStore = createHouseStore();
@@ -49,6 +52,7 @@
   const settingsStore = createSettingsStore();
   const costsStore = createCostsStore();
   const worksStore = createWorksStore();
+  const kbStore = createKBStore();
 
   let theme = $state<Theme>(getStoredTheme());
   function handleToggleTheme(): void {
@@ -176,7 +180,8 @@
     return () => window.removeEventListener("hashchange", onHashChange);
   });
 
-  const isFloorPlan = $derived(currentRoute === "#/" || currentRoute === "");
+  const isFloorPlan = $derived(currentRoute === "#/plan");
+  const isHome = $derived(currentRoute === "#/" || currentRoute === "");
   const isChores = $derived(currentRoute.startsWith("#/chores"));
 
   const selectedRoom = $derived(
@@ -845,6 +850,16 @@
           {/if}
         </div>
 
+      {:else if isHome}
+        <HomePage
+          {floorStore}
+          {choreStore}
+          {inventoryStore}
+          {settingsStore}
+          {costsStore}
+          {worksStore}
+        />
+
       {:else if currentRoute === "#/chores"}
         <ChoreListPage store={choreStore} {floorStore} />
 
@@ -881,6 +896,9 @@
             window.location.hash = "#/";
           }}
         />
+
+      {:else if currentRoute === "#/kb"}
+        <KBPage store={kbStore} />
 
       {:else if currentRoute === "#/costs"}
         <CostsPage
