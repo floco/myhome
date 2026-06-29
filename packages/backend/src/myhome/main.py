@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from fastapi import FastAPI
-from .routes import house, svg, ha, chores, inventory, settings, costs, works, kb
+from .routes import house, svg, ha, chores, inventory, settings, costs, works, kb, backup
 
 app = FastAPI(title="MyHome Backend", version="0.1.0")
 app.include_router(house.router)
@@ -13,6 +13,7 @@ app.include_router(settings.router)
 app.include_router(costs.router)
 app.include_router(works.router)
 app.include_router(kb.router)
+app.include_router(backup.router)
 
 # Serve built Svelte frontend (only present in production Docker image).
 # Path is explicit so it works whether myhome is installed into site-packages or run from source.

@@ -4,6 +4,7 @@
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
   import Card from "./ui/Card.svelte";
+  import Modal from "./ui/Modal.svelte";
 
   type SettingsStore = ReturnType<typeof createSettingsStore>;
 
@@ -187,6 +188,83 @@
     newSupplierDraft = { name: "" };
     showNewSupplierForm = false;
     supplierError = null;
+  }
+
+  // --- Backup & Restore ---
+  let downloadingBackup = $state(false);
+  let backupError = $state<string | null>(null);
+  let restoreFile = $state<File | null>(null);
+  let showRestoreConfirm = $state(false);
+  let restoringBackup = $state(false);
+  let restoreSuccess = $state(false);
+  let restoreError = $state<string | null>(null);
+  let fileInputEl: HTMLInputElement | undefined = $state();
+
+  async function downloadBackup(): Promise<void> {
+    downloadingBackup = true;
+    backupError = null;
+    restoreSuccess = false;
+    try {
+      const resp = await fetch("/api/backup/download");
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const blob = await resp.blob();
+      const disposition = resp.headers.get("content-disposition") ?? "";
+      const match = disposition.match(/filename="([^"]+)"/);
+      const filename = match ? match[1] : "myhome-backup.zip";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      backupError = "Backup failed. Please try again.";
+    } finally {
+      downloadingBackup = false;
+    }
+  }
+
+  function onFileSelected(e: Event): void {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    restoreFile = file;
+    restoreError = null;
+    restoreSuccess = false;
+    showRestoreConfirm = true;
+  }
+
+  async function confirmRestore(): Promise<void> {
+    if (!restoreFile) return;
+    restoringBackup = true;
+    restoreError = null;
+    try {
+      const form = new FormData();
+      form.append("file", restoreFile);
+      const resp = await fetch("/api/backup/restore", { method: "POST", body: form });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        const msg = (data as { detail?: string }).detail ?? `HTTP ${resp.status}`;
+        throw new Error(msg);
+      }
+      restoreSuccess = true;
+      showRestoreConfirm = false;
+    } catch (e) {
+      restoreError = e instanceof Error ? e.message : "Restore failed.";
+    } finally {
+      restoringBackup = false;
+      restoreFile = null;
+      if (fileInputEl) fileInputEl.value = "";
+    }
+  }
+
+  function cancelRestore(): void {
+    showRestoreConfirm = false;
+    restoreFile = null;
+    restoreError = null;
+    if (fileInputEl) fileInputEl.value = "";
   }
 </script>
 
@@ -427,8 +505,49 @@
       {#if supplierError}<div class="error">{supplierError}</div>{/if}
     </Card>
 
+    <!-- Backup & Restore -->
+    <Card>
+      <div class="section-header">
+        <h2>Backup & Restore</h2>
+      </div>
+      <div class="backup-actions">
+        <div class="backup-action">
+          <p class="backup-desc">Download a zip archive of all your data.</p>
+          <Button onclick={downloadBackup} disabled={downloadingBackup}>
+            {downloadingBackup ? "Downloading…" : "Download Backup"}
+          </Button>
+        </div>
+        <div class="backup-action">
+          <p class="backup-desc">Replace all current data from a previously downloaded backup.</p>
+          <Button variant="secondary" onclick={() => fileInputEl?.click()}>Restore from Backup</Button>
+          <input
+            bind:this={fileInputEl}
+            type="file"
+            accept=".zip"
+            class="hidden-file-input"
+            onchange={onFileSelected}
+          />
+        </div>
+      </div>
+      {#if backupError}<div class="error">{backupError}</div>{/if}
+      {#if restoreError}<div class="error">{restoreError}</div>{/if}
+      {#if restoreSuccess}<div class="success-msg">Restore complete. Reload the page to see updated data.</div>{/if}
+    </Card>
+
   </div>
 </div>
+
+<Modal open={showRestoreConfirm} title="Restore Backup" onclose={cancelRestore} width="400px">
+  {#snippet children()}
+    <p class="restore-warning">This will replace all current data with the contents of the backup. This cannot be undone.</p>
+  {/snippet}
+  {#snippet footer()}
+    <Button variant="secondary" onclick={cancelRestore}>Cancel</Button>
+    <Button onclick={confirmRestore} disabled={restoringBackup}>
+      {restoringBackup ? "Restoring…" : "Restore"}
+    </Button>
+  {/snippet}
+</Modal>
 
 <style>
   .page {
