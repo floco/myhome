@@ -50,6 +50,30 @@ From the **Chores** module, use the ⚙ button (left of `+`) to open chore setti
 
 Data is stored in `/data` inside the addon and persists across restarts and updates.
 
+## Deploying with Docker Compose
+
+The easiest way to run MyHome outside of Home Assistant.
+
+**Prerequisites:** Docker and Docker Compose v2.
+
+```bash
+curl -O https://raw.githubusercontent.com/floco/myhome/main/docker-compose.yml
+docker compose up -d
+```
+
+Open `http://localhost:8000` in your browser. Data persists in a Docker volume (`myhome-data`).
+
+### Optional: Home Assistant integration
+
+To connect to a Home Assistant instance on the same host, create a `.env` file next to `docker-compose.yml`:
+
+```env
+SUPERVISOR_TOKEN=your_token_here
+HA_URL=http://homeassistant:8123
+```
+
+Then uncomment the corresponding lines in `docker-compose.yml` and restart: `docker compose up -d`.
+
 ## Running locally (development)
 
 Requirements: Node.js 22+, Python 3.12+
@@ -67,9 +91,17 @@ Frontend at `http://localhost:5173`, API at `http://localhost:8000`.
 
 ## Building the Docker image
 
+Pre-built multi-arch images (amd64 + aarch64) are available at `ghcr.io/floco/myhome`:
+
+```bash
+docker pull ghcr.io/floco/myhome:latest
+```
+
+To build locally:
+
 ```bash
 docker build -t myhome .
-docker run -p 8000:8000 myhome
+docker run -p 8000:8000 -v myhome-data:/data myhome
 ```
 
 ## Architecture
