@@ -374,6 +374,8 @@
   function handleZoom(screen: Point, factor: number): void { viewportStore.zoomAt(screen, factor); }
 
   function handleKeydown(event: KeyboardEvent): void {
+    const target = event.target as HTMLElement;
+    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
     if (event.code === "Space") { event.preventDefault(); spacePressed = true; return; }
     if (event.ctrlKey && event.key === "z" && !event.shiftKey) { event.preventDefault(); handleUndo(); return; }
     if (event.ctrlKey && (event.key === "y" || (event.key === "z" && event.shiftKey))) { event.preventDefault(); handleRedo(); return; }

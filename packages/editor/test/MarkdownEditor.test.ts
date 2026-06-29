@@ -18,6 +18,19 @@ describe("MarkdownEditor — preview mode", () => {
     target.remove();
   });
 
+  it("renders single newlines as <br> (breaks mode)", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "line one\nline two", editing: false },
+    });
+    flushSync();
+    expect(target.querySelector(".md-preview")!.innerHTML).toContain("<br");
+    unmount(app);
+    target.remove();
+  });
+
   it("shows placeholder when value is empty", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
@@ -100,6 +113,73 @@ describe("MarkdownEditor — edit mode", () => {
     flushSync();
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
     expect(textarea.style.minHeight).toBe("400px");
+    unmount(app);
+    target.remove();
+  });
+});
+
+describe("MarkdownEditor — toolbar", () => {
+  it("shows toolbar in edit mode", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true },
+    });
+    flushSync();
+    expect(target.querySelector(".md-toolbar")).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("hides toolbar in preview mode", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "content", editing: false },
+    });
+    flushSync();
+    expect(target.querySelector(".md-toolbar")).toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("toolbar has heading, bold, italic, list, code and link buttons", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true },
+    });
+    flushSync();
+    const titles = [...target.querySelectorAll(".tb-btn")].map(b => b.getAttribute("title"));
+    expect(titles).toContain("Heading 1");
+    expect(titles).toContain("Heading 2");
+    expect(titles).toContain("Bold");
+    expect(titles).toContain("Italic");
+    expect(titles).toContain("Bullet list");
+    expect(titles).toContain("Inline code");
+    expect(titles).toContain("Link");
+    unmount(app);
+    target.remove();
+  });
+
+  it("Bold button inserts ** markers into value", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true },
+    });
+    flushSync();
+    const boldBtn = [...target.querySelectorAll(".tb-btn")].find(
+      b => b.getAttribute("title") === "Bold",
+    ) as HTMLButtonElement;
+    boldBtn.click();
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toContain("**");
     unmount(app);
     target.remove();
   });
