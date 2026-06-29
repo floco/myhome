@@ -1,3 +1,5 @@
+import mimetypes
+import os
 import re
 import uuid
 
@@ -15,6 +17,7 @@ from ..persistence_inventory import (
     _attachments_dir,
     delete_all_attachments,
     delete_attachment,
+    generate_pdf_thumbnail,
     load_inventory,
     save_attachment,
     save_inventory,
@@ -69,12 +72,13 @@ def update_placement(id: str, body: PlacementUpdate) -> None:
     save_inventory(doc)
 
 
+_ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
+
+
 def _sanitise_filename(name: str) -> str:
     name = name.replace(" ", "_")
     name = re.sub(r"[^a-zA-Z0-9._-]", "", name)
-    if not name.lower().endswith(".pdf"):
-        name = name + ".pdf"
-    return name or "attachment.pdf"
+    return name or "attachment"
 
 
 _ID_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")
@@ -98,12 +102,17 @@ async def upload_attachment(id: str, file: UploadFile) -> dict:
     if not item:
         raise HTTPException(status_code=404)
     original = file.filename or ""
-    content_type = file.content_type or ""
-    if content_type not in ("application/pdf", "application/octet-stream") and not original.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are accepted")
+    ext = os.path.splitext(original.lower())[1]
+    if ext not in _ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="File type not supported")
     filename = _sanitise_filename(original)
     data = await file.read()
     save_attachment(id, filename, data)
+    if ext == ".pdf":
+        generate_pdf_thumbnail(
+            _attachments_dir(id) / filename,
+            _attachments_dir(id) / (filename + ".thumb.jpg"),
+        )
     if filename not in item.attachments:
         item.attachments.append(filename)
     save_inventory(doc)
@@ -118,7 +127,8 @@ def get_attachment(id: str, filename: str) -> FileResponse:
     path = (base / filename).resolve()
     if not str(path).startswith(str(base) + "/") or not path.is_file():
         raise HTTPException(status_code=404)
-    return FileResponse(str(path), media_type="application/pdf", content_disposition_type="inline")
+    media_type, _ = mimetypes.guess_type(filename)
+    return FileResponse(str(path), media_type=media_type or "application/octet-stream", content_disposition_type="inline")
 
 
 @router.delete("/api/inventory/items/{id}/attachments/{filename}", status_code=204)
