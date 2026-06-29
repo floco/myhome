@@ -1,9 +1,12 @@
 <script lang="ts">
   import type { createInventoryStore, InventoryItem } from "../inventoryStore.svelte";
+  import type { MediaItem } from "./ui/mediaTypes";
   import DatePicker from "./DatePicker.svelte";
   import Modal from "./ui/Modal.svelte";
   import Input from "./ui/Input.svelte";
   import Button from "./ui/Button.svelte";
+  import MediaGallery from "./ui/MediaGallery.svelte";
+  import Lightbox from "./ui/Lightbox.svelte";
 
   type InvStore = ReturnType<typeof createInventoryStore>;
 
@@ -19,7 +22,7 @@
 
   const isCreate = item === null;
 
-  let activeTab = $state<"info" | "attachments">("info");
+  let activeTab = $state<"info" | "media">("info");
   let name = $state(item?.name ?? "");
   let emoji = $state(item?.emoji ?? "📦");
   let category = $state(item?.category ?? "");
@@ -39,11 +42,21 @@
   let error = $state<string | null>(null);
   let uploading = $state(false);
   let uploadError = $state<string | null>(null);
+  let lightboxOpen = $state(false);
+  let lightboxIndex = $state(0);
 
   const currentItem = $derived(
     item ? (store.items.find((i) => i.id === item.id) ?? item) : null
   );
   const attachmentCount = $derived(currentItem?.attachments.length ?? 0);
+
+  const mediaItems = $derived<MediaItem[]>(
+    (currentItem?.attachments ?? []).map(fname => {
+      const url = `/api/inventory/items/${item!.id}/attachments/${fname}`;
+      const isPdf = fname.toLowerCase().endsWith(".pdf");
+      return { id: fname, name: fname, url, thumbnailUrl: isPdf ? `${url}.thumb.jpg` : url, type: isPdf ? "document" : "image" };
+    })
+  );
 
   async function handleSave(): Promise<void> {
     if (!name.trim()) { error = "Name is required"; return; }
@@ -87,28 +100,30 @@
     }
   }
 
-  async function handleUpload(e: Event): Promise<void> {
-    const input = e.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file || !item) return;
+  async function handleUpload(files: File[]): Promise<void> {
+    if (!item) return;
     uploading = true; uploadError = null;
     try {
-      await store.uploadAttachment(item.id, file);
+      for (const file of files) await store.uploadAttachment(item.id, file);
     } catch (err) {
       uploadError = err instanceof Error ? err.message : "Upload failed";
     } finally {
       uploading = false;
-      input.value = "";
     }
   }
 
-  async function handleDeleteAttachment(filename: string): Promise<void> {
+  async function handleDeleteAttachment(id: string): Promise<void> {
     if (!item) return;
     try {
-      await store.deleteAttachment(item.id, filename);
+      await store.deleteAttachment(item.id, id);
     } catch (err) {
       uploadError = err instanceof Error ? err.message : "Delete failed";
     }
+  }
+
+  function handleItemClick(index: number): void {
+    lightboxIndex = index;
+    lightboxOpen = true;
   }
 </script>
 
@@ -117,10 +132,10 @@
     <button class="tab" class:active={activeTab === "info"} onclick={() => { activeTab = "info"; }}>Info</button>
     <button
       class="tab"
-      class:active={activeTab === "attachments"}
+      class:active={activeTab === "media"}
       disabled={isCreate}
-      onclick={() => { activeTab = "attachments"; }}
-    >Attachments{attachmentCount > 0 ? ` (${attachmentCount})` : ""}</button>
+      onclick={() => { activeTab = "media"; }}
+    >Media{attachmentCount > 0 ? ` (${attachmentCount})` : ""}</button>
   </div>
 
   {#if activeTab === "info"}
@@ -175,29 +190,14 @@
     </div>
     {#if error}<div class="error">{error}</div>{/if}
   {:else}
-    <div class="attachments">
-      {#if currentItem && currentItem.attachments.length > 0}
-        {#each currentItem.attachments as filename}
-          <div class="attach-row">
-            <span class="attach-icon">📄</span>
-            <a
-              class="attach-name"
-              href="/api/inventory/items/{item!.id}/attachments/{filename}"
-              target="_blank"
-              rel="noopener"
-            >{filename}</a>
-            <button class="attach-del" onclick={() => handleDeleteAttachment(filename)} title="Delete">✕</button>
-          </div>
-        {/each}
-      {:else}
-        <div class="attach-empty">No attachments yet.</div>
-      {/if}
-      <label class="upload-btn" class:uploading>
-        {uploading ? "Uploading…" : "＋ Upload PDF"}
-        <input type="file" accept=".pdf" style="display:none" onchange={handleUpload} />
-      </label>
-      {#if uploadError}<div class="upload-error">{uploadError}</div>{/if}
-    </div>
+    <MediaGallery
+      items={mediaItems}
+      {uploading}
+      {uploadError}
+      onUpload={handleUpload}
+      onDelete={handleDeleteAttachment}
+      onItemClick={handleItemClick}
+    />
   {/if}
 
   {#snippet footer()}
@@ -223,6 +223,10 @@
     {/if}
   {/snippet}
 </Modal>
+
+{#if lightboxOpen && mediaItems.length > 0}
+  <Lightbox items={mediaItems} initialIndex={lightboxIndex} onclose={() => { lightboxOpen = false; }} />
+{/if}
 
 <style>
   .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: var(--space-3); }
@@ -253,26 +257,6 @@
   .price-input { width: 100px; }
   textarea.native-input { width: 100%; resize: vertical; }
   .error { color: var(--danger); font-size: 11px; margin-top: 4px; font-family: var(--font-sans); }
-
-  .attachments { display: flex; flex-direction: column; gap: 6px; }
-  .attach-row {
-    display: flex; align-items: center; gap: 8px;
-    background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px;
-  }
-  .attach-icon { font-size: 14px; }
-  .attach-name { flex: 1; font-size: 11px; color: var(--accent); text-decoration: none; }
-  .attach-name:hover { text-decoration: underline; }
-  .attach-del { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 12px; }
-  .attach-del:hover { color: var(--danger); }
-  .attach-empty { font-size: 11px; color: var(--text-faint); text-align: center; padding: 12px 0; }
-  .upload-btn {
-    background: var(--surface-alt); border: 1px dashed var(--border); color: var(--text-muted);
-    padding: 7px 12px; border-radius: var(--radius-md); font-size: 11px; cursor: pointer;
-    text-align: center; font-family: var(--font-sans); display: block;
-  }
-  .upload-btn:hover:not(.uploading) { background: var(--surface-hover); color: var(--text); }
-  .upload-btn.uploading { color: var(--text-faint); cursor: default; }
-  .upload-error { font-size: 10px; color: var(--danger); }
 
   .spacer { flex: 1; }
   .confirm-text { font-size: 11px; color: var(--danger); }
