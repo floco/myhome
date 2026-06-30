@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import logging
 import os
+import shutil
 from pathlib import Path
 
 from .models_kb import KBEntry
+
+_log = logging.getLogger(__name__)
 
 
 def _kb_dir() -> Path:
@@ -14,8 +18,11 @@ def _entry_path(id: str) -> Path:
     return _kb_dir() / f"{id}.md"
 
 
+def _attachments_dir(entry_id: str) -> Path:
+    return Path(os.environ.get("DATA_DIR", "/data")) / "kb-attachments" / entry_id
+
+
 def _parse_frontmatter(text: str) -> tuple[dict, str]:
-    """Parse simple YAML-style frontmatter from a .md file."""
     if not text.startswith("---\n"):
         return {}, text
     end = text.find("\n---\n", 4)
@@ -32,15 +39,17 @@ def _parse_frontmatter(text: str) -> tuple[dict, str]:
 
 def _build_file(entry: KBEntry) -> str:
     title = entry.title.replace("\n", " ")
-    return (
-        f"---\n"
-        f"id: {entry.id}\n"
-        f"title: {title}\n"
-        f"createdAt: {entry.createdAt}\n"
-        f"updatedAt: {entry.updatedAt}\n"
-        f"---\n\n"
-        f"{entry.content}"
-    )
+    lines = [
+        "---",
+        f"id: {entry.id}",
+        f"title: {title}",
+        f"createdAt: {entry.createdAt}",
+        f"updatedAt: {entry.updatedAt}",
+    ]
+    if entry.attachments:
+        lines.append(f"attachments: {','.join(entry.attachments)}")
+    lines += ["---", "", entry.content]
+    return "\n".join(lines)
 
 
 def _read_entry_file(path: Path) -> KBEntry | None:
@@ -51,17 +60,19 @@ def _read_entry_file(path: Path) -> KBEntry | None:
     meta, body = _parse_frontmatter(text)
     if not meta.get("id") or not meta.get("title"):
         return None
+    att_str = meta.get("attachments", "")
+    attachments = [a for a in att_str.split(",") if a] if att_str else []
     return KBEntry(
         id=meta["id"],
         title=meta["title"],
         content=body.lstrip("\n"),
         createdAt=meta.get("createdAt", ""),
         updatedAt=meta.get("updatedAt", ""),
+        attachments=attachments,
     )
 
 
 def load_all() -> list[KBEntry]:
-    """Return all entries sorted oldest-first."""
     d = _kb_dir()
     if not d.exists():
         return []
@@ -88,4 +99,36 @@ def delete_entry(id: str) -> bool:
     if not path.exists():
         return False
     path.unlink()
+    att_dir = _attachments_dir(id)
+    if att_dir.exists():
+        shutil.rmtree(att_dir)
     return True
+
+
+def save_attachment(entry_id: str, filename: str, data: bytes) -> None:
+    path = _attachments_dir(entry_id)
+    path.mkdir(parents=True, exist_ok=True)
+    (path / filename).write_bytes(data)
+
+
+def delete_attachment(entry_id: str, filename: str) -> bool:
+    path = _attachments_dir(entry_id) / filename
+    if not path.exists():
+        return False
+    path.unlink()
+    thumb = path.parent / (filename + ".thumb.jpg")
+    if thumb.exists():
+        thumb.unlink()
+    return True
+
+
+def generate_pdf_thumbnail(pdf_path: Path, thumb_path: Path) -> None:
+    try:
+        import fitz
+        doc = fitz.open(str(pdf_path))
+        page = doc[0]
+        mat = fitz.Matrix(1.5, 1.5)
+        pix = page.get_pixmap(matrix=mat)
+        pix.save(str(thumb_path))
+    except Exception as exc:
+        _log.warning("PDF thumbnail generation failed for %s: %s", pdf_path, exc)

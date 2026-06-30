@@ -1,14 +1,18 @@
 <script lang="ts">
   import type { createKBStore, KBEntry } from "../kbStore.svelte";
+  import type { MediaItem } from "./ui/mediaTypes";
   import MarkdownEditor from "./ui/MarkdownEditor.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
+  import MediaGallery from "./ui/MediaGallery.svelte";
+  import Lightbox from "./ui/Lightbox.svelte";
 
   type KBStore = ReturnType<typeof createKBStore>;
   interface Props { store: KBStore; }
   let { store }: Props = $props();
 
   let selectedId = $state<string | null>(null);
+  let contentTab = $state<"content" | "media">("content");
   let editing = $state(false);
   let draftTitle = $state("");
   let draftContent = $state("");
@@ -16,6 +20,10 @@
   let saving = $state(false);
   let error = $state<string | null>(null);
   let searchQuery = $state("");
+  let uploading = $state(false);
+  let uploadError = $state<string | null>(null);
+  let lightboxOpen = $state(false);
+  let lightboxIndex = $state(0);
 
   const filteredEntries = $derived(
     store.entries.filter((e) =>
@@ -27,12 +35,21 @@
     selectedId ? (store.entries.find((e) => e.id === selectedId) ?? null) : null,
   );
 
+  const mediaItems = $derived<MediaItem[]>(
+    (selectedEntry?.attachments ?? []).map(fname => {
+      const url = `/api/kb/${selectedId}/attachments/${fname}`;
+      const isPdf = fname.toLowerCase().endsWith(".pdf");
+      return { id: fname, name: fname, url, thumbnailUrl: isPdf ? `${url}.thumb.jpg` : url, type: isPdf ? "document" : "image" };
+    })
+  );
+
   function selectEntry(entry: KBEntry): void {
     selectedId = entry.id;
     draftTitle = entry.title;
     draftContent = entry.content;
     editing = false;
     confirmDelete = false;
+    contentTab = "content";
     error = null;
   }
 
@@ -85,6 +102,22 @@
     }
   }
 
+  async function handleUpload(files: File[]): Promise<void> {
+    if (!selectedId) return;
+    uploading = true; uploadError = null;
+    try { for (const file of files) await store.uploadAttachment(selectedId, file); }
+    catch (err) { uploadError = err instanceof Error ? err.message : "Upload failed"; }
+    finally { uploading = false; }
+  }
+
+  async function handleDeleteAttachment(id: string): Promise<void> {
+    if (!selectedId) return;
+    try { await store.deleteAttachment(selectedId, id); }
+    catch (err) { uploadError = err instanceof Error ? err.message : "Delete failed"; }
+  }
+
+  function handleItemClick(index: number): void { lightboxIndex = index; lightboxOpen = true; }
+
   function fmtDate(iso: string): string {
     return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
   }
@@ -122,13 +155,23 @@
       <div class="content-empty">Select an entry or create one</div>
     {:else}
       <div class="content-header">
-        {#if editing}
-          <input class="title-input" bind:value={draftTitle} placeholder="Entry title" />
-        {:else}
-          <h1 class="content-title">{selectedEntry.title}</h1>
-        {/if}
+        <div class="content-header-left">
+          {#if editing}
+            <input class="title-input" bind:value={draftTitle} placeholder="Entry title" />
+          {:else}
+            <h1 class="content-title">{selectedEntry.title}</h1>
+          {/if}
+          <div class="content-tab-bar">
+            <button class="content-tab" class:active={contentTab === "content"}
+              onclick={() => { contentTab = "content"; }}>Content</button>
+            <button class="content-tab" class:active={contentTab === "media"}
+              onclick={() => { contentTab = "media"; editing = false; }}>
+              Media{selectedEntry.attachments.length > 0 ? ` (${selectedEntry.attachments.length})` : ""}
+            </button>
+          </div>
+        </div>
         <div class="header-actions">
-          {#if !editing}
+          {#if contentTab === "content" && !editing}
             <Button variant="secondary" onclick={() => { editing = true; }}>Edit</Button>
           {/if}
           {#if confirmDelete}
@@ -142,18 +185,29 @@
       </div>
 
       <div class="content-body">
-        <MarkdownEditor
-          bind:value={draftContent}
-          bind:editing
-          placeholder="Start writing in Markdown…"
-        />
+        {#if contentTab === "content"}
+          <MarkdownEditor
+            bind:value={draftContent}
+            bind:editing
+            placeholder="Start writing in Markdown…"
+          />
+        {:else}
+          <MediaGallery
+            items={mediaItems}
+            {uploading}
+            {uploadError}
+            onUpload={handleUpload}
+            onDelete={handleDeleteAttachment}
+            onItemClick={handleItemClick}
+          />
+        {/if}
       </div>
 
       {#if error}
         <div class="content-error">{error}</div>
       {/if}
 
-      {#if editing}
+      {#if editing && contentTab === "content"}
         <div class="content-footer">
           <Button variant="primary" disabled={saving} onclick={handleSave}>
             {saving ? "Saving…" : "Save"}
@@ -164,6 +218,10 @@
     {/if}
   </div>
 </div>
+
+{#if lightboxOpen && mediaItems.length > 0}
+  <Lightbox items={mediaItems} initialIndex={lightboxIndex} onclose={() => { lightboxOpen = false; }} />
+{/if}
 
 <style>
   .kb-page { display: flex; height: 100%; background: var(--bg); font-family: var(--font-sans); }
@@ -200,17 +258,26 @@
   }
 
   .content-header {
-    display: flex; align-items: center; gap: var(--space-2);
+    display: flex; align-items: flex-start; gap: var(--space-2);
     padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
-  .content-title { flex: 1; font-size: 18px; font-weight: 600; color: var(--text); margin: 0; }
+  .content-header-left { flex: 1; min-width: 0; }
+  .content-title { font-size: 18px; font-weight: 600; color: var(--text); margin: 0 0 6px; }
   .title-input {
-    flex: 1; background: var(--surface-alt); border: 1px solid var(--accent);
-    border-radius: var(--radius-md); color: var(--text);
+    width: 100%; background: var(--surface-alt); border: 1px solid var(--accent);
+    border-radius: var(--radius-md); color: var(--text); box-sizing: border-box;
     font-size: 16px; font-weight: 600; padding: 6px 10px; font-family: var(--font-sans);
+    margin-bottom: 6px;
   }
   .title-input:focus { outline: none; }
+  .content-tab-bar { display: flex; }
+  .content-tab {
+    padding: 4px 12px; background: none; border: none; border-bottom: 2px solid transparent;
+    color: var(--text-muted); font-size: 11px; cursor: pointer; font-family: var(--font-sans);
+  }
+  .content-tab:hover { color: var(--text); }
+  .content-tab.active { border-bottom-color: var(--accent); color: var(--text); }
   .header-actions { display: flex; align-items: center; gap: var(--space-1); flex-shrink: 0; }
   .confirm-text { font-size: 11px; color: var(--danger); }
 

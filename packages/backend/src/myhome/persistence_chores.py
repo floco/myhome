@@ -1,13 +1,21 @@
 import json
+import logging
 import os
+import shutil
 from pathlib import Path
 
 from .models_chores import ChoreDocument
+
+_log = logging.getLogger(__name__)
 
 
 def _chores_file() -> Path:
     data_dir = Path(os.environ.get("DATA_DIR", "/data"))
     return data_dir / "chores.json"
+
+
+def _attachments_dir(chore_id: str) -> Path:
+    return Path(os.environ.get("DATA_DIR", "/data")) / "chores-attachments" / chore_id
 
 
 def load_chores() -> ChoreDocument:
@@ -37,3 +45,38 @@ def save_chores(doc: ChoreDocument) -> None:
     with tmp.open("w") as f:
         json.dump(doc.model_dump(), f, indent=2)
     tmp.replace(path)
+
+
+def save_attachment(chore_id: str, filename: str, data: bytes) -> None:
+    path = _attachments_dir(chore_id)
+    path.mkdir(parents=True, exist_ok=True)
+    (path / filename).write_bytes(data)
+
+
+def delete_attachment(chore_id: str, filename: str) -> bool:
+    path = _attachments_dir(chore_id) / filename
+    if not path.exists():
+        return False
+    path.unlink()
+    thumb = path.parent / (filename + ".thumb.jpg")
+    if thumb.exists():
+        thumb.unlink()
+    return True
+
+
+def delete_all_attachments(chore_id: str) -> None:
+    att_dir = _attachments_dir(chore_id)
+    if att_dir.exists():
+        shutil.rmtree(att_dir)
+
+
+def generate_pdf_thumbnail(pdf_path: Path, thumb_path: Path) -> None:
+    try:
+        import fitz
+        doc = fitz.open(str(pdf_path))
+        page = doc[0]
+        mat = fitz.Matrix(1.5, 1.5)
+        pix = page.get_pixmap(matrix=mat)
+        pix.save(str(thumb_path))
+    except Exception as exc:
+        _log.warning("PDF thumbnail generation failed for %s: %s", pdf_path, exc)

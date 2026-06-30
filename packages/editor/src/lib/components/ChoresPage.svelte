@@ -2,10 +2,10 @@
   import type { createChoreStore } from "../choreStore.svelte";
   import type { Chore } from "../choreStore.svelte";
   import { scheduleLabel } from "../choreStore.svelte";
-  import DatePicker from "./DatePicker.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
   import Card from "./ui/Card.svelte";
+  import ChoreEditModal from "./ChoreEditModal.svelte";
 
   type ChoreStore = ReturnType<typeof createChoreStore>;
 
@@ -25,33 +25,7 @@
     return "Unknown room";
   }
 
-  let editingId = $state<string | null>(null);
-  let editName = $state("");
-  let editEmoji = $state("");
-  let editPeriodDays = $state(30);
-  let editNextDue = $state("");
-  let editScheduleFromDue = $state(false);
-
-  function startEdit(chore: Chore): void {
-    editingId = chore.id;
-    editName = chore.name;
-    editEmoji = chore.emoji;
-    editPeriodDays = chore.periodDays;
-    editNextDue = chore.nextDueDate.slice(0, 10);
-    editScheduleFromDue = chore.scheduleFromDue;
-  }
-
-  async function handleUpdate(): Promise<void> {
-    if (!editingId) return;
-    await store.updateChore(editingId, {
-      name: editName.trim(),
-      emoji: editEmoji.trim() || "📋",
-      periodDays: editPeriodDays,
-      nextDueDate: new Date(editNextDue).toISOString(),
-      scheduleFromDue: editScheduleFromDue,
-    });
-    editingId = null;
-  }
+  let editChore = $state<Chore | null>(null);
 
   function assignmentsForChore(choreId: string) {
     return store.assignments.filter((a) => a.choreId === choreId);
@@ -122,31 +96,15 @@
   <div class="chore-list">
     {#each store.chores as chore (chore.id)}
       <Card>
-        {#if editingId === chore.id}
-          <div class="edit-form">
-            <Input bind:value={editName} placeholder="Name" />
-            <input class="native-input emoji-field" bind:value={editEmoji} placeholder="Emoji" maxlength="4" />
-            <label>Period (days) <input class="native-input" type="number" bind:value={editPeriodDays} min="1"/></label>
-            <label>Default due <DatePicker bind:value={editNextDue} /></label>
-            <div class="sfd-row">
-              <input type="checkbox" id="sfd-{chore.id}" bind:checked={editScheduleFromDue}/>
-              <label for="sfd-{chore.id}" title="Next due = planned date + period">Schedule from due date</label>
-            </div>
-            <div class="row-btns">
-              <Button onclick={handleUpdate}>Save</Button>
-              <Button variant="ghost" onclick={() => { editingId = null; }}>Cancel</Button>
-            </div>
+        <div class="chore-header">
+          <span class="chore-emoji">{chore.emoji}</span>
+          <div class="chore-info">
+            <span class="chore-name">{displayName(chore)}</span>
+            <span class="chore-meta">
+              {scheduleLabel(chore)}
+              {#if chore.scheduleFromDue}<span class="sfd-badge" title="Schedules from due date">📅</span>{/if}
+            </span>
           </div>
-        {:else}
-          <div class="chore-header">
-            <span class="chore-emoji">{chore.emoji}</span>
-            <div class="chore-info">
-              <span class="chore-name">{displayName(chore)}</span>
-              <span class="chore-meta">
-                {scheduleLabel(chore)}
-                {#if chore.scheduleFromDue}<span class="sfd-badge" title="Schedules from due date">📅</span>{/if}
-              </span>
-            </div>
 
             {#if completing?.kind === "chore" && completing.id === chore.id}
               <input
@@ -161,7 +119,7 @@
               <button class="icon-btn" title="Mark all done" onclick={() => { completing = { kind: "chore", id: chore.id, notes: "" }; }}>✓ All done</button>
             {/if}
 
-            <button class="icon-btn" onclick={() => startEdit(chore)}>✏️</button>
+            <button class="icon-btn" onclick={() => { editChore = chore; }}>✏️</button>
             <button
               class="icon-btn"
               title={expandedHistory === chore.id ? "Hide history" : "Show history"}
@@ -217,7 +175,6 @@
               {/if}
             </div>
           {/if}
-        {/if}
       </Card>
     {/each}
 
@@ -228,6 +185,8 @@
     {/if}
   </div>
 </div>
+
+<ChoreEditModal chore={editChore} {store} onclose={() => { editChore = null; }} />
 
 <style>
   .page { display: flex; flex-direction: column; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-sans); }
@@ -285,14 +244,6 @@
   .hist-due { color: var(--text-faint); white-space: nowrap; }
   .hist-notes { color: var(--text-muted); font-style: italic; }
 
-  .sfd-row { display: flex; align-items: center; gap: 6px; font-size: 12px; }
-  .sfd-row input[type="checkbox"] { width: auto; }
-  .sfd-row label { color: var(--text-muted); cursor: pointer; }
-
-  .edit-form { display: flex; flex-direction: column; gap: 6px; }
-  .edit-form input[type="number"] { width: 100px; }
-  label { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--text-faint); }
-  .row-btns { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
 
   .error-msg { color: var(--danger); font-size: 11px; }
   .success-msg { color: var(--success); font-size: 11px; }

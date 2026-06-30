@@ -1,9 +1,12 @@
 import calendar
+import mimetypes
 import os
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 
 from ..models_chores import (
     Assignment,
@@ -18,11 +21,37 @@ from ..models_chores import (
     ImportRequest,
     ImportResponse,
 )
-from ..persistence_chores import load_chores, save_chores
+from ..persistence_chores import (
+    _attachments_dir,
+    delete_all_attachments,
+    delete_attachment,
+    generate_pdf_thumbnail,
+    load_chores,
+    save_attachment,
+    save_chores,
+)
 
 router = APIRouter()
 
 _DONETICK_BASE = os.environ.get("DONETICK_URL", "https://chores.casa.mutualis.com")
+_ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
+_ID_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")
+
+
+def _validate_id(chore_id: str) -> None:
+    if not _ID_RE.fullmatch(chore_id):
+        raise HTTPException(status_code=400, detail="Invalid id")
+
+
+def _validate_filename(filename: str) -> None:
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", filename) or filename.startswith("."):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+
+def _sanitise_filename(name: str) -> str:
+    name = name.replace(" ", "_")
+    name = re.sub(r"[^a-zA-Z0-9._-]", "", name)
+    return name or "attachment"
 
 UNIT_DAYS: dict[str, float] = {"days": 1, "weeks": 7, "months": 30, "years": 365}
 
@@ -216,6 +245,7 @@ def delete_chore(chore_id: str) -> None:
     doc.chores = [c for c in doc.chores if c.id != chore_id]
     doc.assignments = [a for a in doc.assignments if a.choreId != chore_id]
     save_chores(doc)
+    delete_all_attachments(chore_id)
 
 
 @router.post("/api/chores/{chore_id}/complete", response_model=Chore)
@@ -248,6 +278,59 @@ def complete_chore(chore_id: str, body: CompleteRequest | None = None) -> Chore:
     chore.nextDueDate = next_due_str
     save_chores(doc)
     return chore
+
+
+# --- Chore attachment routes ---
+
+@router.post("/api/chores/{chore_id}/attachments", status_code=201)
+async def upload_chore_attachment(chore_id: str, file: UploadFile) -> dict:
+    _validate_id(chore_id)
+    doc = load_chores()
+    chore = next((c for c in doc.chores if c.id == chore_id), None)
+    if chore is None:
+        raise HTTPException(status_code=404, detail="Chore not found")
+    original = file.filename or ""
+    ext = os.path.splitext(original.lower())[1]
+    if ext not in _ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="File type not supported")
+    filename = _sanitise_filename(original)
+    data = await file.read()
+    save_attachment(chore_id, filename, data)
+    if ext == ".pdf":
+        generate_pdf_thumbnail(
+            _attachments_dir(chore_id) / filename,
+            _attachments_dir(chore_id) / (filename + ".thumb.jpg"),
+        )
+    if filename not in chore.attachments:
+        chore.attachments.append(filename)
+    save_chores(doc)
+    return {"filename": filename}
+
+
+@router.get("/api/chores/{chore_id}/attachments/{filename}")
+def get_chore_attachment(chore_id: str, filename: str) -> FileResponse:
+    _validate_id(chore_id)
+    _validate_filename(filename)
+    base = _attachments_dir(chore_id).resolve()
+    path = (base / filename).resolve()
+    if not str(path).startswith(str(base) + "/") or not path.is_file():
+        raise HTTPException(status_code=404)
+    media_type, _ = mimetypes.guess_type(filename)
+    return FileResponse(str(path), media_type=media_type or "application/octet-stream", content_disposition_type="inline")
+
+
+@router.delete("/api/chores/{chore_id}/attachments/{filename}", status_code=204)
+def delete_chore_attachment(chore_id: str, filename: str) -> None:
+    _validate_id(chore_id)
+    _validate_filename(filename)
+    doc = load_chores()
+    chore = next((c for c in doc.chores if c.id == chore_id), None)
+    if chore is None:
+        raise HTTPException(status_code=404, detail="Chore not found")
+    if not delete_attachment(chore_id, filename):
+        raise HTTPException(status_code=404)
+    chore.attachments = [a for a in chore.attachments if a != filename]
+    save_chores(doc)
 
 
 # --- Assignment routes ---

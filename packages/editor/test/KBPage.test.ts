@@ -10,6 +10,7 @@ function makeEntry(overrides: Partial<KBEntry> = {}): KBEntry {
     content: "# Painting\n\nUse good brushes.",
     createdAt: "2026-06-28T10:00:00Z",
     updatedAt: "2026-06-28T10:00:00Z",
+    attachments: [],
     ...overrides,
   };
 }
@@ -24,6 +25,8 @@ function makeStore(entries: KBEntry[] = [], overrides: Partial<ReturnType<typeof
     ),
     updateEntry: vi.fn().mockResolvedValue(undefined),
     deleteEntry: vi.fn().mockResolvedValue(undefined),
+    uploadAttachment: vi.fn().mockResolvedValue("file.jpg"),
+    deleteAttachment: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -303,6 +306,64 @@ describe("KBPage — create new entry", () => {
     expect(store.createEntry).toHaveBeenCalledWith({ title: "New entry", content: "" });
     // After create, the new entry is selected and edit mode is active
     expect(target.querySelector("textarea.md-editor")).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+});
+
+describe("KBPage — Media tab", () => {
+  it("shows Content and Media tab buttons when entry is selected", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore([makeEntry()]);
+    const app = mount(KBPage, { target, props: { store } });
+    flushSync();
+    (target.querySelector(".entry-row") as HTMLElement).click();
+    flushSync();
+    const tabs = Array.from(target.querySelectorAll(".content-tab")).map(t => t.textContent?.trim());
+    expect(tabs).toContain("Content");
+    expect(tabs.some(t => t?.includes("Media"))).toBe(true);
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking Media tab renders MediaGallery drop-zone", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const entry = makeEntry({ attachments: ["photo.jpg"] });
+    const store = makeStore([entry]);
+    const app = mount(KBPage, { target, props: { store } });
+    flushSync();
+    (target.querySelector(".entry-row") as HTMLElement).click();
+    flushSync();
+    const mediaTab = Array.from(target.querySelectorAll(".content-tab"))
+      .find(t => t.textContent?.includes("Media")) as HTMLButtonElement;
+    mediaTab.click();
+    flushSync();
+    expect(target.querySelector(".drop-zone") || target.querySelector(".media-grid")).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("switching entries resets to Content tab", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore([makeEntry({ id: "e1" }), makeEntry({ id: "e2", title: "Second entry" })]);
+    const app = mount(KBPage, { target, props: { store } });
+    flushSync();
+    // Select first entry, switch to media
+    (target.querySelectorAll(".entry-row")[0] as HTMLElement).click();
+    flushSync();
+    const mediaTab = Array.from(target.querySelectorAll(".content-tab"))
+      .find(t => t.textContent?.includes("Media")) as HTMLButtonElement;
+    mediaTab.click();
+    flushSync();
+    // Select second entry — tab should reset to content
+    (target.querySelectorAll(".entry-row")[1] as HTMLElement).click();
+    flushSync();
+    const activeTab = Array.from(target.querySelectorAll(".content-tab"))
+      .find(t => t.classList.contains("active"));
+    expect(activeTab?.textContent?.trim()).toBe("Content");
     unmount(app);
     target.remove();
   });

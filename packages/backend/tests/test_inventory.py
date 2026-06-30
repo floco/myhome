@@ -201,13 +201,13 @@ def test_upload_attachment_no_duplicate(tmp_path, monkeypatch):
     assert item["attachments"].count("invoice.pdf") == 1
 
 
-def test_upload_attachment_rejects_non_pdf(tmp_path, monkeypatch):
+def test_upload_attachment_rejects_unsupported_type(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     save_inventory(make_doc())
     c = TestClient(app)
     resp = c.post(
         "/api/inventory/items/i1/attachments",
-        files={"file": ("image.png", b"fake-png", "image/png")},
+        files={"file": ("malware.exe", b"\x4d\x5a", "application/octet-stream")},
     )
     assert resp.status_code == 400
 
@@ -290,3 +290,90 @@ def test_delete_item_cascades_attachments(tmp_path, monkeypatch):
     c.delete("/api/inventory/items/i1")
     attach_dir = tmp_path / "inventory-attachments" / "i1"
     assert not attach_dir.exists()
+
+
+def _make_valid_pdf() -> bytes:
+    import fitz
+    doc = fitz.open()
+    doc.new_page(width=200, height=200)
+    return doc.write()
+
+
+def _item_id(client) -> str:
+    resp = client.post("/api/inventory/items", json={"name": "TV"})
+    return resp.json()["id"]
+
+
+def test_inv_upload_jpeg_accepted(client):
+    iid = _item_id(client)
+    resp = client.post(
+        f"/api/inventory/items/{iid}/attachments",
+        files={"file": ("photo.jpg", b"\xff\xd8\xff" + b"\x00" * 50, "image/jpeg")},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["filename"] == "photo.jpg"
+    item = next(i for i in client.get("/api/inventory").json()["items"] if i["id"] == iid)
+    assert "photo.jpg" in item["attachments"]
+
+
+def test_inv_upload_png_accepted(client):
+    iid = _item_id(client)
+    resp = client.post(
+        f"/api/inventory/items/{iid}/attachments",
+        files={"file": ("shot.png", b"\x89PNG" + b"\x00" * 50, "image/png")},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["filename"] == "shot.png"
+
+
+def test_inv_upload_webp_accepted(client):
+    iid = _item_id(client)
+    resp = client.post(
+        f"/api/inventory/items/{iid}/attachments",
+        files={"file": ("photo.webp", b"RIFF" + b"\x00" * 50, "image/webp")},
+    )
+    assert resp.status_code == 201
+
+
+def test_inv_sanitise_preserves_extension(client):
+    iid = _item_id(client)
+    resp = client.post(
+        f"/api/inventory/items/{iid}/attachments",
+        files={"file": ("my photo 2025.jpg", b"\xff\xd8\xff" + b"\x00" * 50, "image/jpeg")},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["filename"] == "my_photo_2025.jpg"
+
+
+def test_inv_upload_pdf_creates_thumbnail(client, tmp_path):
+    iid = _item_id(client)
+    resp = client.post(
+        f"/api/inventory/items/{iid}/attachments",
+        files={"file": ("manual.pdf", _make_valid_pdf(), "application/pdf")},
+    )
+    assert resp.status_code == 201
+    thumb = tmp_path / "inventory-attachments" / iid / "manual.pdf.thumb.jpg"
+    assert thumb.exists()
+
+
+def test_inv_delete_pdf_removes_thumbnail(client, tmp_path):
+    iid = _item_id(client)
+    client.post(
+        f"/api/inventory/items/{iid}/attachments",
+        files={"file": ("manual.pdf", _make_valid_pdf(), "application/pdf")},
+    )
+    thumb = tmp_path / "inventory-attachments" / iid / "manual.pdf.thumb.jpg"
+    assert thumb.exists()
+    client.delete(f"/api/inventory/items/{iid}/attachments/manual.pdf")
+    assert not thumb.exists()
+
+
+def test_inv_get_jpeg_returns_image_content_type(client):
+    iid = _item_id(client)
+    client.post(
+        f"/api/inventory/items/{iid}/attachments",
+        files={"file": ("photo.jpg", b"\xff\xd8\xff" + b"\x00" * 50, "image/jpeg")},
+    )
+    resp = client.get(f"/api/inventory/items/{iid}/attachments/photo.jpg")
+    assert resp.status_code == 200
+    assert "image/jpeg" in resp.headers["content-type"]

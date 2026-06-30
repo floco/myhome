@@ -11,6 +11,7 @@ export interface CostEntry {
   supplierId: string | null;
   notes: string;
   roomId: string | null;
+  attachments: string[];
 }
 
 export interface CostsDocument {
@@ -52,7 +53,7 @@ export function createCostsStore() {
     }
   }
 
-  async function createEntry(data: Omit<CostEntry, "id">): Promise<void> {
+  async function createEntry(data: Omit<CostEntry, "id" | "attachments">): Promise<void> {
     const resp = await fetch("/api/costs/entries", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -77,6 +78,22 @@ export function createCostsStore() {
 
   async function deleteEntry(id: string): Promise<void> {
     const resp = await fetch(`/api/costs/entries/${id}`, { method: "DELETE" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
+  async function uploadAttachment(id: string, file: File): Promise<string> {
+    const form = new FormData();
+    form.append("file", file);
+    const resp = await fetch(`/api/costs/entries/${id}/attachments`, { method: "POST", body: form });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const result = await resp.json();
+    await init();
+    return result.filename as string;
+  }
+
+  async function deleteAttachment(id: string, filename: string): Promise<void> {
+    const resp = await fetch(`/api/costs/entries/${id}/attachments/${filename}`, { method: "DELETE" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }
@@ -149,6 +166,8 @@ export function createCostsStore() {
     createEntry,
     updateEntry,
     deleteEntry,
+    uploadAttachment,
+    deleteAttachment,
     totalByYear,
     breakdownLastCompleteYear,
     entriesByYear,

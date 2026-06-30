@@ -8,6 +8,7 @@ class KBEntry(BaseModel):
     content: str = ""
     createdAt: str
     updatedAt: str
+    attachments: list[str] = []
 
 
 class KBDocument(BaseModel):

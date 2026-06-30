@@ -10,6 +10,7 @@ export interface Chore {
   scheduleFromDue: boolean;
   nextDueDate: string;
   description: string;
+  attachments: string[];
 }
 
 export interface CompletionRecord {
@@ -116,6 +117,22 @@ export function createChoreStore() {
     return assignments.filter((a) => a.roomId === null);
   }
 
+  async function uploadAttachment(id: string, file: File): Promise<string> {
+    const form = new FormData();
+    form.append("file", file);
+    const resp = await fetch(`/api/chores/${id}/attachments`, { method: "POST", body: form });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const result = await resp.json();
+    await init();
+    return result.filename as string;
+  }
+
+  async function deleteAttachment(id: string, filename: string): Promise<void> {
+    const resp = await fetch(`/api/chores/${id}/attachments/${filename}`, { method: "DELETE" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
   async function createChore(data: Omit<Chore, "id">): Promise<void> {
     const resp = await fetch("/api/chores", {
       method: "POST",
@@ -217,6 +234,8 @@ export function createChoreStore() {
     assignmentsForRoom,
     houseAssignments,
     getCompletionsForChore,
+    uploadAttachment,
+    deleteAttachment,
     createChore,
     updateChore,
     deleteChore,
