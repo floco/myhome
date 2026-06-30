@@ -95,7 +95,8 @@
 
   <div class="chore-list">
     {#each store.chores as chore (chore.id)}
-      <Card>
+      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+      <Card onclick={() => { editChore = chore; }} style="cursor:pointer">
         <div class="chore-header">
           <span class="chore-emoji">{chore.emoji}</span>
           <div class="chore-info">
@@ -112,21 +113,21 @@
                 bind:value={completing.notes}
                 placeholder="Note (optional)"
                 onkeydown={(e) => { if (e.key === "Enter") confirmComplete(); if (e.key === "Escape") completing = null; }}
+                onclick={(e) => { e.stopPropagation(); }}
               />
-              <button class="icon-btn confirm-btn" onclick={confirmComplete}>✓</button>
-              <button class="icon-btn" onclick={() => { completing = null; }}>✕</button>
+              <button class="icon-btn confirm-btn" onclick={(e) => { e.stopPropagation(); confirmComplete(); }}>✓</button>
+              <button class="icon-btn" onclick={(e) => { e.stopPropagation(); completing = null; }}>✕</button>
             {:else}
-              <button class="icon-btn" title="Mark all done" onclick={() => { completing = { kind: "chore", id: chore.id, notes: "" }; }}>✓ All done</button>
+              <button class="icon-btn" title="Mark all done" onclick={(e) => { e.stopPropagation(); completing = { kind: "chore", id: chore.id, notes: "" }; }}>✓ All done</button>
             {/if}
 
-            <button class="icon-btn" onclick={() => { editChore = chore; }}>✏️</button>
+            <button class="icon-btn" onclick={(e) => { e.stopPropagation(); editChore = chore; }}>✏️</button>
             <button
               class="icon-btn"
               title={expandedHistory === chore.id ? "Hide history" : "Show history"}
               class:active-hist={expandedHistory === chore.id}
-              onclick={() => { expandedHistory = expandedHistory === chore.id ? null : chore.id; }}
+              onclick={(e) => { e.stopPropagation(); expandedHistory = expandedHistory === chore.id ? null : chore.id; }}
             >🕐</button>
-            <button class="icon-btn danger" onclick={() => store.deleteChore(chore.id)}>🗑️</button>
           </div>
 
           {@const instances = assignmentsForChore(chore.id)}

@@ -24,6 +24,7 @@ function makeChore(overrides: Partial<Chore> = {}): Chore {
 function makeStore(overrides = {}) {
   return {
     updateChore: vi.fn().mockResolvedValue(undefined),
+    deleteChore: vi.fn().mockResolvedValue(undefined),
     uploadAttachment: vi.fn().mockResolvedValue("file.jpg"),
     deleteAttachment: vi.fn().mockResolvedValue(undefined),
     ...overrides,
@@ -40,7 +41,7 @@ describe("ChoreEditModal — tabs", () => {
       props: { chore: makeChore(), store, onclose: vi.fn() },
     });
     flushSync();
-    const tabs = Array.from(target.querySelectorAll(".modal-tab")).map(t => t.textContent?.trim());
+    const tabs = Array.from(target.querySelectorAll(".tab")).map(t => t.textContent?.trim());
     expect(tabs).toContain("Info");
     expect(tabs.some(t => t?.includes("Media"))).toBe(true);
     unmount(app);
@@ -55,7 +56,7 @@ describe("ChoreEditModal — tabs", () => {
       props: { chore: makeChore({ attachments: ["photo.jpg"] }), store: makeStore(), onclose: vi.fn() },
     });
     flushSync();
-    const mediaTab = Array.from(target.querySelectorAll(".modal-tab"))
+    const mediaTab = Array.from(target.querySelectorAll(".tab"))
       .find(t => t.textContent?.includes("Media")) as HTMLButtonElement;
     mediaTab.click();
     flushSync();
@@ -81,6 +82,24 @@ describe("ChoreEditModal — tabs", () => {
     await tick();
     expect(store.updateChore).toHaveBeenCalledWith("c1", expect.objectContaining({ name: "Sweep" }));
     unmount(app);
+    target.remove();
+  });
+
+  it("Delete button triggers confirm then calls deleteChore", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore({ deleteChore: vi.fn().mockResolvedValue(undefined) });
+    const onclose = vi.fn();
+    mount(ChoreEditModal, { target, props: { chore: makeChore(), store, onclose } });
+    flushSync();
+    // Click delete → shows confirm
+    const del = Array.from(target.querySelectorAll("button")).find(b => b.textContent?.includes("🗑")) as HTMLButtonElement;
+    del.click(); flushSync();
+    expect(target.textContent).toContain("Delete this chore?");
+    // Confirm
+    const confirm = Array.from(target.querySelectorAll("button")).find(b => b.textContent?.trim() === "Confirm delete") as HTMLButtonElement;
+    confirm.click(); await tick();
+    expect(store.deleteChore).toHaveBeenCalledWith("c1");
     target.remove();
   });
 });

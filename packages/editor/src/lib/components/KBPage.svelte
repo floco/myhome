@@ -31,9 +31,15 @@
     ),
   );
 
-  const selectedEntry = $derived(
-    selectedId ? (store.entries.find((e) => e.id === selectedId) ?? null) : null,
-  );
+  let selectedEntry = $state<KBEntry | null>(null);
+  $effect(() => {
+    const found = selectedId ? (store.entries.find((e) => e.id === selectedId) ?? null) : null;
+    selectedEntry = found;
+    if (found && !editing) {
+      draftTitle = found.title;
+      draftContent = found.content;
+    }
+  });
 
   const mediaItems = $derived<MediaItem[]>(
     (selectedEntry?.attachments ?? []).map(fname => {

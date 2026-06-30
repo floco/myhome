@@ -85,27 +85,27 @@
         {@const supplier = work.supplierId ? supplierMap.get(work.supplierId) : null}
         <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
         <div
-          class="card"
+          class="row"
           style="border-left-color:{statusColor(work.status)}"
           onclick={() => { modalWork = work; }}
         >
-          <div class="card-top">
-            <span class="cat-emoji">{cat?.emoji ?? "🔧"}</span>
-            <span class="card-title">{work.title}</span>
+          <span class="cat-emoji">{cat?.emoji ?? "🔧"}</span>
+          <div class="row-main">
+            <span class="row-title">{work.title}</span>
+            {#if work.description}
+              <span class="row-desc">{work.description}</span>
+            {/if}
+          </div>
+          <div class="row-meta">
+            <span>{work.date}</span>
+            {#if supplier}<span>{supplier.name}</span>{/if}
+            {#if work.totalCost != null}<span>{fmt(work.totalCost)} €</span>{/if}
             <span
               class="status-chip"
               style="background:{statusColor(work.status)}22;color:{statusColor(work.status)};border:1px solid {statusColor(work.status)}44"
             >{statusLabel(work.status)}</span>
-          </div>
-          <div class="card-meta">
-            <span>{work.date}</span>
-            {#if supplier}<span>{supplier.name}</span>{/if}
-            {#if work.totalCost != null}<span>{fmt(work.totalCost)} €</span>{/if}
             {#if work.placement}<span class="pin-indicator" title="Pinned on floor plan">📍</span>{/if}
           </div>
-          {#if work.description}
-            <div class="card-desc">{work.description}</div>
-          {/if}
         </div>
       {/each}
     {/if}
@@ -140,21 +140,22 @@
   .native-input:focus { outline: none; border-color: var(--accent); }
   .filter-sel { cursor: pointer; }
 
-  .list { flex: 1; overflow-y: auto; padding: var(--space-3) var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+  .list { flex: 1; overflow-y: auto; padding: 0; display: flex; flex-direction: column; }
   .empty { color: var(--text-faint); font-size: 13px; text-align: center; padding: 40px 0; }
 
-  .card {
-    background: var(--surface); border: 1px solid var(--border); border-left-width: 3px;
-    border-radius: var(--radius-md); padding: 10px 14px; cursor: pointer;
+  .row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    border-left: 3px solid transparent; cursor: pointer;
   }
-  .card:hover { background: var(--surface-hover); }
-  .card-top { display: flex; align-items: center; gap: var(--space-2); margin-bottom: 4px; }
+  .row:hover { background: var(--surface-hover); }
   .cat-emoji { font-size: 16px; flex-shrink: 0; }
-  .card-title { font-size: 13px; color: var(--text); font-weight: 600; flex: 1; }
+  .row-main { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+  .row-title { font-size: 13px; color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-desc { font-size: 11px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+  .row-meta { display: flex; gap: 12px; align-items: center; font-size: 11px; color: var(--text-faint); flex-shrink: 0; flex-wrap: wrap; }
   .status-chip { padding: 2px 7px; border-radius: var(--radius-sm); font-size: 10px; font-weight: 500; flex-shrink: 0; }
-  .card-meta { display: flex; gap: 12px; font-size: 11px; color: var(--text-faint); flex-wrap: wrap; }
   .pin-indicator { font-size: 11px; }
-  .card-desc { font-size: 11px; color: var(--text-faint); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .footer { padding: var(--space-2) var(--space-4); border-top: 1px solid var(--border); font-size: 11px; color: var(--text-faint); flex-shrink: 0; }
 </style>

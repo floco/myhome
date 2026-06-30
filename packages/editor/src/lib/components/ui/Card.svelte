@@ -4,11 +4,12 @@
 
   interface Props {
     children?: Snippet;
+    [key: string]: unknown;
   }
-  let { children }: Props = $props();
+  let { children, ...rest }: Props = $props();
 </script>
 
-<div class="ui-card">
+<div class="ui-card" {...rest}>
   {@render children?.()}
 </div>
 
