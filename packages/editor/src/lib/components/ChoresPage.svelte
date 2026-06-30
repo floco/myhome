@@ -19,7 +19,17 @@
 
   let editChore = $state<Chore | null>(null);
   let searchQuery = $state("");
+  let roomFilter = $state("");
+  let scheduleFilter = $state("");
+  let dueFilter = $state<"all" | "attention">("attention");
   let expandedHistory = $state<string | null>(null);
+
+  function needsAttention(assignments: Assignment[]): boolean {
+    if (assignments.length === 0) return false;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() + 7);
+    return assignments.some((a) => a.nextDueDate && new Date(a.nextDueDate) <= cutoff);
+  }
 
   type CompletingState = { kind: "chore"; id: string; notes: string } | { kind: "assignment"; id: string; notes: string };
   let completing = $state<CompletingState | null>(null);
@@ -29,10 +39,35 @@
   let importStatus = $state<"idle" | "loading" | "done" | "error">("idle");
   let importCount = $state(0);
 
+  const allRooms = $derived(floorStore.floors.flatMap((f) => f.rooms));
+
+  function scheduleCategory(chore: Chore): string {
+    const { frequencyType: ft, frequency: n, frequencyMetadata: meta } = chore;
+    const unit = (meta as Record<string, string>)?.unit ?? "days";
+    if (ft === "days_of_the_week" || ft === "weekly") return "weekly";
+    if (ft === "day_of_the_month" || ft === "monthly") return "monthly";
+    if (ft === "yearly") return "yearly";
+    if (ft === "interval") {
+      if (unit === "years") return "yearly";
+      if (unit === "months") return "monthly";
+      if (unit === "weeks") return "weekly";
+      if (n <= 1) return "daily";
+      if (n < 14) return "weekly";
+      if (n < 60) return "monthly";
+      return "yearly";
+    }
+    return "other";
+  }
+
   const filteredChores = $derived(
-    searchQuery
-      ? store.chores.filter((c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
-      : store.chores,
+    store.chores.filter((c) => {
+      if (searchQuery && !c.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (scheduleFilter && scheduleCategory(c) !== scheduleFilter) return false;
+      const assignments = store.assignments.filter((a) => a.choreId === c.id);
+      if (roomFilter && !assignments.some((a) => a.roomId === roomFilter)) return false;
+      if (dueFilter === "attention" && !needsAttention(assignments)) return false;
+      return true;
+    }),
   );
 
   function getRoomName(roomId: string): string {
@@ -97,7 +132,24 @@
 <div class="page">
   <div class="toolbar">
     <Input placeholder="🔍 Search…" bind:value={searchQuery} />
-    <Button onclick={() => onnewchore?.()}>＋ New chore</Button>
+    <select class="native-input" bind:value={roomFilter}>
+      <option value="">All rooms</option>
+      {#each allRooms as room}
+        <option value={room.id}>{room.label}</option>
+      {/each}
+    </select>
+    <select class="native-input" bind:value={scheduleFilter}>
+      <option value="">All schedules</option>
+      <option value="daily">Daily</option>
+      <option value="weekly">Weekly</option>
+      <option value="monthly">Monthly</option>
+      <option value="yearly">Yearly</option>
+    </select>
+    <div class="filter-toggle">
+      <button class="toggle-btn" class:active={dueFilter === "all"} onclick={() => { dueFilter = "all"; }}>All</button>
+      <button class="toggle-btn" class:active={dueFilter === "attention"} onclick={() => { dueFilter = "attention"; }}>⚠ Needs attention</button>
+    </div>
+    <Button onclick={() => onnewchore?.()}>＋ Add chore</Button>
     {#if !showImportInput}
       <Button variant="secondary" onclick={() => { showImportInput = true; }}>Import from Donetick</Button>
     {:else}
@@ -157,6 +209,7 @@
                 title={isExpanded ? "Hide history" : "Show history & assignments"}
                 onclick={() => { expandedHistory = isExpanded ? null : chore.id; }}
               >🕐</button>
+              <button class="icon-btn" title="Delay all assignments by 1 week" onclick={() => store.delayChore(chore.id, 7)}>⏭</button>
             </td>
           </tr>
 
@@ -186,6 +239,7 @@
                             <button class="icon-btn" onclick={() => { completing = { kind: "assignment", id: a.id, notes: "" }; }}>✓</button>
                           {/if}
                           <button class="icon-btn danger" onclick={() => store.deleteAssignment(a.id)}>✕</button>
+                          <button class="icon-btn" title="Delay by 1 week" onclick={() => store.delayAssignment(a.id, 7)}>⏭</button>
                         </div>
                       {/each}
                     {:else}
@@ -217,8 +271,10 @@
           <tr>
             <td colspan="6" class="empty">
               {store.chores.length === 0
-                ? "No chores yet — click ＋ New chore to get started."
-                : "No chores match your search."}
+                ? "No chores yet — click ＋ Add chore to get started."
+                : dueFilter === "attention"
+                  ? "No chores need attention right now."
+                  : "No chores match your filters."}
             </td>
           </tr>
         {/if}
@@ -239,6 +295,17 @@
     background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap;
   }
   .toolbar :global(.ui-input) { flex: 1; min-width: 140px; }
+  .native-input {
+    background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 12px; border-radius: var(--radius-md); font-size: 13px;
+    font-family: var(--font-sans); box-sizing: border-box; cursor: pointer;
+  }
+  .native-input:focus { outline: none; border-color: var(--accent); }
+  .filter-toggle { display: flex; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; flex-shrink: 0; }
+  .toggle-btn { padding: 6px 12px; border: none; background: var(--surface-alt); color: var(--text-muted); cursor: pointer; font-size: 12px; white-space: nowrap; }
+  .toggle-btn:not(:last-child) { border-right: 1px solid var(--border); }
+  .toggle-btn.active { background: var(--accent); color: var(--accent-contrast); }
+  .toggle-btn:not(.active):hover { background: var(--surface-hover); color: var(--text); }
   .msg-error { color: var(--danger); font-size: 11px; }
   .msg-success { color: var(--success); font-size: 11px; }
 
@@ -259,8 +326,9 @@
   .empty { text-align: center; color: var(--text-faint); padding: 32px; }
 
   .icon-btn {
-    padding: 4px 8px; border: none; border-radius: var(--radius-sm);
-    background: var(--surface-alt); color: var(--text-muted); cursor: pointer; font-size: 12px;
+    padding: 8px 14px; border: none; border-radius: var(--radius-sm);
+    background: var(--surface-alt); color: var(--text-muted); cursor: pointer; font-size: 15px;
+    min-height: 38px;
   }
   .icon-btn:hover { background: var(--surface-hover); color: var(--text); }
   .icon-btn.danger:hover { color: var(--danger); }
@@ -279,6 +347,7 @@
 
   .assign-section { display: flex; flex-direction: column; gap: 6px; min-width: 260px; }
   .assign-row { display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap; }
+  .assign-row .icon-btn { padding: 4px 8px; font-size: 13px; min-height: 28px; }
   .assign-where { flex: 1; min-width: 80px; color: var(--text-muted); }
   .assign-due { color: var(--text-faint); font-size: 11px; white-space: nowrap; }
   .no-assign { font-size: 11px; color: var(--text-faint); font-style: italic; }
