@@ -5,6 +5,7 @@
   import Modal from "./ui/Modal.svelte";
   import Input from "./ui/Input.svelte";
   import Button from "./ui/Button.svelte";
+  import Tabs from "./ui/Tabs.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
 
@@ -128,15 +129,14 @@
 </script>
 
 <Modal open={true} title={isCreate ? "＋ New item" : "Edit item"} {onclose} width="560px">
-  <div class="tabs">
-    <button class="tab" class:active={activeTab === "info"} onclick={() => { activeTab = "info"; }}>Info</button>
-    <button
-      class="tab"
-      class:active={activeTab === "media"}
-      disabled={isCreate}
-      onclick={() => { activeTab = "media"; }}
-    >Media{attachmentCount > 0 ? ` (${attachmentCount})` : ""}</button>
-  </div>
+  <Tabs
+    tabs={[
+      { id: "info", label: "Info" },
+      { id: "media", label: attachmentCount > 0 ? `Media (${attachmentCount})` : "Media", disabled: isCreate },
+    ]}
+    active={activeTab}
+    onchange={(id) => { activeTab = id as "info" | "media"; }}
+  />
 
   {#if activeTab === "info"}
     <div class="row">
@@ -229,15 +229,6 @@
 {/if}
 
 <style>
-  .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: var(--space-3); }
-  .tab {
-    padding: 8px 16px; background: none; border: none; border-bottom: 2px solid transparent;
-    color: var(--text-muted); font-size: 12px; cursor: pointer; font-family: var(--font-sans);
-  }
-  .tab:hover:not(:disabled) { color: var(--text); }
-  .tab.active { border-bottom-color: var(--accent); color: var(--text); }
-  .tab:disabled { color: var(--text-faint); cursor: default; }
-
   .row {
     display: flex; align-items: center; gap: 8px;
     margin-bottom: 12px; flex-wrap: wrap;

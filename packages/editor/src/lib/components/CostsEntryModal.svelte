@@ -6,6 +6,7 @@
   import DatePicker from "./DatePicker.svelte";
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
+  import Tabs from "./ui/Tabs.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
 
@@ -23,17 +24,31 @@
 
   let { entry, costsStore, settingsStore, floorStore, onclose }: Props = $props();
 
-  const isCreate = entry === null;
+  const isCreate = $derived(entry === null);
 
   let activeTab = $state<"info" | "media">("info");
-  let categoryId = $state(entry?.categoryId ?? settingsStore.costCategories[0]?.id ?? "");
-  let date = $state(entry?.date ?? new Date().toISOString().slice(0, 10));
-  let totalAmount = $state<string>(entry?.totalAmount != null ? String(entry.totalAmount) : "");
-  let quantity = $state<string>(entry?.quantity != null ? String(entry.quantity) : "");
-  let unitPrice = $state<string>(entry?.unitPrice != null ? String(entry.unitPrice) : "");
-  let supplierId = $state(entry?.supplierId ?? "");
-  let notes = $state(entry?.notes ?? "");
-  let roomId = $state(entry?.roomId ?? "");
+  let categoryId = $state("");
+  let date = $state("");
+  let totalAmount = $state("");
+  let quantity = $state("");
+  let unitPrice = $state("");
+  let supplierId = $state("");
+  let notes = $state("");
+  let roomId = $state("");
+
+  $effect(() => {
+    categoryId = entry?.categoryId ?? settingsStore.costCategories[0]?.id ?? "";
+    date = entry?.date ?? new Date().toISOString().slice(0, 10);
+    totalAmount = entry?.totalAmount != null ? String(entry.totalAmount) : "";
+    quantity = entry?.quantity != null ? String(entry.quantity) : "";
+    unitPrice = entry?.unitPrice != null ? String(entry.unitPrice) : "";
+    supplierId = entry?.supplierId ?? "";
+    notes = entry?.notes ?? "";
+    roomId = entry?.roomId ?? "";
+    activeTab = "info";
+    confirmDelete = false;
+    error = null;
+  });
 
   let saving = $state(false);
   let deleting = $state(false);
@@ -130,15 +145,14 @@
 </script>
 
 <Modal open={true} title={isCreate ? "＋ New entry" : "Edit entry"} {onclose} width="520px">
-  <div class="tabs">
-    <button class="tab" class:active={activeTab === "info"} onclick={() => { activeTab = "info"; }}>Info</button>
-    <button
-      class="tab"
-      class:active={activeTab === "media"}
-      disabled={isCreate}
-      onclick={() => { activeTab = "media"; }}
-    >Media{attachmentCount > 0 ? ` (${attachmentCount})` : ""}</button>
-  </div>
+  <Tabs
+    tabs={[
+      { id: "info", label: "Info" },
+      { id: "media", label: attachmentCount > 0 ? `Media (${attachmentCount})` : "Media", disabled: isCreate },
+    ]}
+    active={activeTab}
+    onchange={(id) => { activeTab = id as "info" | "media"; }}
+  />
 
   {#if activeTab === "info"}
     <div class="row">
@@ -226,15 +240,6 @@
 {/if}
 
 <style>
-  .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: var(--space-3); }
-  .tab {
-    padding: 8px 16px; background: none; border: none; border-bottom: 2px solid transparent;
-    color: var(--text-muted); font-size: 12px; cursor: pointer; font-family: var(--font-sans);
-  }
-  .tab:hover:not(:disabled) { color: var(--text); }
-  .tab.active { border-bottom-color: var(--accent); color: var(--text); }
-  .tab:disabled { color: var(--text-faint); cursor: default; }
-
   .row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
   .row.col { flex-direction: column; align-items: stretch; }
   .flex-grow { flex: 1; min-width: 0; }

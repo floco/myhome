@@ -4,11 +4,12 @@
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
+  import Tabs from "./ui/Tabs.svelte";
   import DatePicker from "./DatePicker.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
 
-  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "uploadAttachment" | "deleteAttachment">;
+  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment">;
 
   interface Props {
     chore: Chore | null;
@@ -25,6 +26,8 @@
   let draftNextDue = $state("");
   let draftScheduleFromDue = $state(false);
   let saving = $state(false);
+  let deleting = $state(false);
+  let confirmDelete = $state(false);
   let error = $state<string | null>(null);
   let uploading = $state(false);
   let uploadError = $state<string | null>(null);
@@ -71,6 +74,13 @@
     }
   }
 
+  async function handleDelete(): Promise<void> {
+    if (!chore) return;
+    deleting = true;
+    try { await store.deleteChore(chore.id); onclose(); }
+    catch (e) { error = e instanceof Error ? e.message : "Delete failed"; deleting = false; }
+  }
+
   async function handleUpload(files: File[]): Promise<void> {
     if (!chore) return;
     uploading = true; uploadError = null;
@@ -90,14 +100,14 @@
 
 {#if chore}
   <Modal open={true} title={chore.emoji + " " + chore.name} onclose={onclose}>
-    <div class="tab-bar">
-      <button class="modal-tab" class:active={activeTab === "info"}
-        onclick={() => { activeTab = "info"; }}>Info</button>
-      <button class="modal-tab" class:active={activeTab === "media"}
-        onclick={() => { activeTab = "media"; }}>
-        Media{chore.attachments.length > 0 ? ` (${chore.attachments.length})` : ""}
-      </button>
-    </div>
+    <Tabs
+      tabs={[
+        { id: "info", label: "Info" },
+        { id: "media", label: chore.attachments.length > 0 ? `Media (${chore.attachments.length})` : "Media" },
+      ]}
+      active={activeTab}
+      onchange={(id) => { activeTab = id as "info" | "media"; }}
+    />
 
     {#if activeTab === "info"}
       <div class="edit-form">
@@ -134,6 +144,14 @@
     {/if}
 
     {#snippet footer()}
+      <span class="spacer"></span>
+      {#if confirmDelete}
+        <span class="confirm-text">Delete this chore?</span>
+        <Button variant="danger" disabled={deleting} onclick={handleDelete}>{deleting ? "…" : "Confirm delete"}</Button>
+        <Button variant="ghost" onclick={() => { confirmDelete = false; }}>Cancel</Button>
+      {:else}
+        <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 Delete</Button>
+      {/if}
       {#if activeTab === "info"}
         <Button variant="primary" disabled={saving} onclick={handleSave}>
           {saving ? "Saving…" : "Save"}
@@ -149,17 +167,9 @@
 {/if}
 
 <style>
-  .tab-bar { display: flex; gap: 0; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
-  .modal-tab {
-    padding: 6px 14px; background: none; border: none;
-    border-bottom: 2px solid transparent;
-    color: var(--text-muted); font-size: 12px; cursor: pointer; font-family: var(--font-sans);
-    margin-bottom: -1px;
-  }
-  .modal-tab:hover { color: var(--text); }
-  .modal-tab.active { border-bottom-color: var(--accent); color: var(--text); font-weight: 500; }
-
   .edit-form { display: flex; flex-direction: column; gap: 10px; }
+  .spacer { flex: 1; }
+  .confirm-text { font-size: 11px; color: var(--danger); }
   label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-faint); }
   .native-input {
     padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm);
