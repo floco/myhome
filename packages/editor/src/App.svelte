@@ -17,7 +17,6 @@
   import type { PickerLayer } from "./lib/components/ItemPickerPanel.svelte";
   import BadgePopup from "./lib/components/BadgePopup.svelte";
   import ChoresPage from "./lib/components/ChoresPage.svelte";
-  import ChoreListPage from "./lib/components/ChoreListPage.svelte";
   import NavMenu from "./lib/components/NavMenu.svelte";
   import HomePage from "./lib/components/HomePage.svelte";
   import NewChoreModal from "./lib/components/NewChoreModal.svelte";
@@ -182,7 +181,6 @@
 
   const isFloorPlan = $derived(currentRoute === "#/plan");
   const isHome = $derived(currentRoute === "#/" || currentRoute === "");
-  const isChores = $derived(currentRoute.startsWith("#/chores"));
 
   const selectedRoom = $derived(
     toolStore.state.selectedRoomId
@@ -540,20 +538,6 @@
       <span class="topbar-sep"></span>
     {/if}
 
-    {#if isChores}
-      {#if !isFloorPlan}<span class="spacer"></span>{/if}
-      <a
-        href={currentRoute === "#/chores/manage" ? "#/chores" : "#/chores/manage"}
-        class="icon-btn"
-        class:active={currentRoute === "#/chores/manage"}
-        title="Chore settings"
-      >⚙</a>
-      <button
-        class="icon-btn new-chore-btn"
-        title="New chore"
-        onclick={() => { showNewChoreModal = true; }}
-      >＋</button>
-    {/if}
   </header>
 
   <div class="workspace">
@@ -862,10 +846,7 @@
           {worksStore}
         />
 
-      {:else if currentRoute === "#/chores"}
-        <ChoreListPage store={choreStore} {floorStore} />
-
-      {:else if currentRoute === "#/chores/manage"}
+      {:else if currentRoute === "#/chores" || currentRoute === "#/chores/manage"}
         <ChoresPage store={choreStore} {floorStore} onnewchore={() => { showNewChoreModal = true; }} />
 
       {:else if currentRoute === "#/inventory"}
@@ -995,8 +976,6 @@
   .icon-btn.save-btn.saved { color: var(--success); }
   .icon-btn.save-btn.save-error { color: var(--danger); }
   .icon-btn:disabled { opacity: 0.5; cursor: default; }
-  .new-chore-btn { color: var(--success); font-size: 18px; font-weight: 600; }
-  .new-chore-btn:hover { background: var(--surface-hover); }
 
   .workspace {
     display: flex; flex: 1; overflow: hidden;
