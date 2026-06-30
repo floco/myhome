@@ -193,8 +193,8 @@
   .page { display: flex; flex-direction: column; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-sans); }
 
   .page-header {
-    display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap;
-    padding: var(--space-2) var(--space-4); background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
+    display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;
+    padding: var(--space-2) var(--space-3); background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
   .page-header h1 { font-size: 16px; margin: 0; flex: 1; min-width: 120px; color: var(--text); }
   .page-header :global(.ui-input) { flex: 0 1 220px; }

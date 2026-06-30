@@ -362,8 +362,8 @@
   .yoy.down { color: var(--success); }
 
   .toolbar {
-    display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-4);
-    border-bottom: 1px solid var(--border); flex-shrink: 0;
+    display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
+    background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
   .toolbar :global(.ui-input) { flex: 1; }
   .native-input {

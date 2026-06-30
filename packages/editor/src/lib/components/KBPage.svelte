@@ -238,8 +238,8 @@
     border-right: 1px solid var(--border);
   }
   .sidebar-toolbar {
-    display: flex; gap: var(--space-2); padding: var(--space-3);
-    border-bottom: 1px solid var(--border); flex-shrink: 0; align-items: center;
+    display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
+    background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
   .sidebar-toolbar :global(.ui-input) { flex: 1; }
 

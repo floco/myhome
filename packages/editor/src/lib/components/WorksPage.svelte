@@ -141,14 +141,14 @@
   .page { display: flex; flex-direction: column; height: 100%; background: var(--bg); font-family: var(--font-sans); }
 
   .toolbar {
-    display: flex; gap: var(--space-2); padding: var(--space-3) var(--space-4);
-    border-bottom: 1px solid var(--border); flex-shrink: 0; align-items: center;
+    display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
+    background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
   .toolbar :global(.ui-input) { flex: 1; }
   .native-input {
     background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
     padding: 8px 12px; border-radius: var(--radius-md); font-size: 13px;
-    font-family: var(--font-sans); box-sizing: border-box;
+    font-family: var(--font-sans); box-sizing: border-box; cursor: pointer;
   }
   .native-input:focus { outline: none; border-color: var(--accent); }
   .filter-sel { cursor: pointer; }
