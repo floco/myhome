@@ -394,6 +394,8 @@ def update_assignment(assignment_id: str, body: AssignmentUpdate) -> None:
         raise HTTPException(status_code=404, detail="Assignment not found")
     if body.position is not None:
         assignment.position = body.position
+    if body.nextDueDate is not None:
+        assignment.nextDueDate = body.nextDueDate
     save_chores(doc)
 
 

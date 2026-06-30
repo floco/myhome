@@ -689,3 +689,19 @@ def test_chore_delete_chore_removes_attachment_dir(tmp_path, monkeypatch):
     resp = c.delete(f"/api/chores/{cid}")
     assert resp.status_code == 204
     assert not att_dir.exists()
+
+
+def test_update_assignment_next_due_date(client):
+    chore_id = _chore_id(client)
+    a_resp = client.post("/api/assignments", json={
+        "choreId": chore_id, "nextDueDate": "2027-01-08T00:00:00Z"
+    })
+    assert a_resp.status_code == 201
+    assignment_id = a_resp.json()["id"]
+
+    resp = client.put(f"/api/assignments/{assignment_id}", json={"nextDueDate": "2027-01-15T00:00:00Z"})
+    assert resp.status_code == 204
+
+    doc = client.get("/api/chores").json()
+    a = next(a for a in doc["assignments"] if a["id"] == assignment_id)
+    assert a["nextDueDate"] == "2027-01-15T00:00:00Z"
