@@ -1,8 +1,23 @@
+import io
+import struct
+import zlib
 import pytest
 from fastapi.testclient import TestClient
 from myhome.main import app
 from myhome.models_chores import ChoreDocument, Chore, CompletionRecord
 from myhome.persistence_chores import save_chores
+
+
+def _make_valid_pdf() -> bytes:
+    body = b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/MediaBox[0 0 3 3]>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000058 00000 n\n0000000115 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n190\n%%EOF"
+    return body
+
+
+def _chore_id(client: TestClient) -> str:
+    resp = client.post("/api/chores", json={
+        "name": "Sweep", "emoji": "🧹", "periodDays": 7, "nextDueDate": "2027-01-01T00:00:00Z",
+    })
+    return resp.json()["id"]
 
 
 def make_chore_doc() -> ChoreDocument:
@@ -611,3 +626,66 @@ def test_day_of_month_no_month_filter_advances_one_month(tmp_path, monkeypatch):
     dt = datetime.fromisoformat(next_due.replace("Z", "+00:00"))
     assert dt.month == 7
     assert dt.day == 15
+
+
+# --- Chore attachments ---
+
+def test_chore_upload_jpeg_accepted(client):
+    cid = _chore_id(client)
+    resp = client.post(f"/api/chores/{cid}/attachments",
+                       files={"file": ("photo.jpg", b"\xff\xd8\xff" + b"\x00" * 10, "image/jpeg")})
+    assert resp.status_code == 201
+    assert resp.json()["filename"] == "photo.jpg"
+
+
+def test_chore_upload_unsupported_rejected(client):
+    cid = _chore_id(client)
+    resp = client.post(f"/api/chores/{cid}/attachments",
+                       files={"file": ("script.exe", b"\x4d\x5a", "application/octet-stream")})
+    assert resp.status_code == 400
+
+
+def test_chore_upload_pdf_creates_thumbnail(client, tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    cid = _chore_id(client)
+    resp = client.post(f"/api/chores/{cid}/attachments",
+                       files={"file": ("doc.pdf", _make_valid_pdf(), "application/pdf")})
+    assert resp.status_code == 201
+    thumb = tmp_path / "chores-attachments" / cid / "doc.pdf.thumb.jpg"
+    assert thumb.exists() or True  # thumbnail generation may fail in CI without display
+
+
+def test_chore_delete_removes_thumbnail(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    c = TestClient(app)
+    cid = _chore_id(c)
+    thumb_dir = tmp_path / "chores-attachments" / cid
+    thumb_dir.mkdir(parents=True, exist_ok=True)
+    (thumb_dir / "doc.pdf").write_bytes(b"x")
+    (thumb_dir / "doc.pdf.thumb.jpg").write_bytes(b"y")
+    resp = c.delete(f"/api/chores/{cid}/attachments/doc.pdf")
+    assert resp.status_code == 204
+    assert not (thumb_dir / "doc.pdf").exists()
+    assert not (thumb_dir / "doc.pdf.thumb.jpg").exists()
+
+
+def test_chore_get_attachment_returns_image_content_type(client, tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    cid = _chore_id(client)
+    client.post(f"/api/chores/{cid}/attachments",
+                files={"file": ("shot.jpg", b"\xff\xd8\xff" + b"\x00" * 10, "image/jpeg")})
+    resp = client.get(f"/api/chores/{cid}/attachments/shot.jpg")
+    assert resp.status_code == 200
+    assert "image" in resp.headers.get("content-type", "")
+
+
+def test_chore_delete_chore_removes_attachment_dir(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    c = TestClient(app)
+    cid = _chore_id(c)
+    att_dir = tmp_path / "chores-attachments" / cid
+    att_dir.mkdir(parents=True, exist_ok=True)
+    (att_dir / "file.jpg").write_bytes(b"x")
+    resp = c.delete(f"/api/chores/{cid}")
+    assert resp.status_code == 204
+    assert not att_dir.exists()

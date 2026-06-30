@@ -19,6 +19,7 @@ class Chore(BaseModel):
     scheduleFromDue: bool = False   # True = next due from planned date, False = from completion date
     nextDueDate: str            # ISO 8601
     description: str = ""
+    attachments: list[str] = []
 
 
 class CompletionRecord(BaseModel):
