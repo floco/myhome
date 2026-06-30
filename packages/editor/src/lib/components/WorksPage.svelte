@@ -76,39 +76,52 @@
     <Button onclick={() => { modalWork = "create"; }}>＋ Add work</Button>
   </div>
 
-  <div class="list">
-    {#if filteredWorks.length === 0}
-      <div class="empty">No works yet — click ＋ Add work to get started.</div>
-    {:else}
-      {#each filteredWorks as work (work.id)}
-        {@const cat = work.categoryId ? categoryMap.get(work.categoryId) : null}
-        {@const supplier = work.supplierId ? supplierMap.get(work.supplierId) : null}
-        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-        <div
-          class="row"
-          style="border-left-color:{statusColor(work.status)}"
-          onclick={() => { modalWork = work; }}
-        >
-          <span class="cat-emoji">{cat?.emoji ?? "🔧"}</span>
-          <div class="row-main">
-            <span class="row-title">{work.title}</span>
-            {#if work.description}
-              <span class="row-desc">{work.description}</span>
-            {/if}
-          </div>
-          <div class="row-meta">
-            <span>{work.date}</span>
-            {#if supplier}<span>{supplier.name}</span>{/if}
-            {#if work.totalCost != null}<span>{fmt(work.totalCost)} €</span>{/if}
-            <span
-              class="status-chip"
-              style="background:{statusColor(work.status)}22;color:{statusColor(work.status)};border:1px solid {statusColor(work.status)}44"
-            >{statusLabel(work.status)}</span>
-            {#if work.placement}<span class="pin-indicator" title="Pinned on floor plan">📍</span>{/if}
-          </div>
-        </div>
-      {/each}
-    {/if}
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Date</th>
+          <th>Supplier</th>
+          <th>Cost</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each filteredWorks as work (work.id)}
+          {@const cat = work.categoryId ? categoryMap.get(work.categoryId) : null}
+          {@const supplier = work.supplierId ? supplierMap.get(work.supplierId) : null}
+          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
+          <tr onclick={() => { modalWork = work; }}>
+            <td class="emoji-cell">{cat?.emoji ?? "🔧"}</td>
+            <td class="name-cell">
+              {work.title}
+              {#if work.description}<span class="desc">{work.description}</span>{/if}
+            </td>
+            <td>{cat?.name ?? "—"}</td>
+            <td>{work.date}</td>
+            <td>{supplier?.name ?? "—"}</td>
+            <td>{work.totalCost != null ? fmt(work.totalCost) + " €" : "—"}</td>
+            <td>
+              <span
+                class="status-chip"
+                style="background:{statusColor(work.status)}22;color:{statusColor(work.status)};border:1px solid {statusColor(work.status)}44"
+              >{statusLabel(work.status)}</span>
+              {#if work.placement}<span class="pin-indicator" title="Pinned">📍</span>{/if}
+            </td>
+          </tr>
+        {/each}
+        {#if filteredWorks.length === 0}
+          <tr>
+            <td colspan="7" class="empty">
+              {store.works.length === 0 ? "No works yet — click ＋ Add work to get started." : "No works match your filters."}
+            </td>
+          </tr>
+        {/if}
+      </tbody>
+    </table>
   </div>
 
   <div class="footer">{filteredWorks.length} works · total: {fmt(totalCost)} €</div>
@@ -140,22 +153,22 @@
   .native-input:focus { outline: none; border-color: var(--accent); }
   .filter-sel { cursor: pointer; }
 
-  .list { flex: 1; overflow-y: auto; padding: 0; display: flex; flex-direction: column; }
-  .empty { color: var(--text-faint); font-size: 13px; text-align: center; padding: 40px 0; }
-
-  .row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 8px 12px; border-bottom: 1px solid var(--border);
-    border-left: 3px solid transparent; cursor: pointer;
+  .table-wrapper { flex: 1; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text-muted); }
+  thead { position: sticky; top: 0; background: var(--surface-alt); z-index: 1; }
+  th {
+    padding: 6px 10px; color: var(--text-faint); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    text-align: left; border-bottom: 1px solid var(--border);
   }
-  .row:hover { background: var(--surface-hover); }
-  .cat-emoji { font-size: 16px; flex-shrink: 0; }
-  .row-main { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
-  .row-title { font-size: 13px; color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .row-desc { font-size: 11px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
-  .row-meta { display: flex; gap: 12px; align-items: center; font-size: 11px; color: var(--text-faint); flex-shrink: 0; flex-wrap: wrap; }
-  .status-chip { padding: 2px 7px; border-radius: var(--radius-sm); font-size: 10px; font-weight: 500; flex-shrink: 0; }
-  .pin-indicator { font-size: 11px; }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:hover td { background: var(--surface-hover); cursor: pointer; }
+  .emoji-cell { font-size: 16px; width: 32px; text-align: center; }
+  .name-cell { color: var(--text); font-weight: 600; }
+  .desc { font-size: 11px; color: var(--text-faint); font-weight: 400; margin-left: 6px; }
+  .status-chip { padding: 2px 7px; border-radius: var(--radius-sm); font-size: 10px; font-weight: 500; }
+  .pin-indicator { font-size: 11px; margin-left: 4px; }
+  .empty { text-align: center; color: var(--text-faint); padding: 32px; }
 
   .footer { padding: var(--space-2) var(--space-4); border-top: 1px solid var(--border); font-size: 11px; color: var(--text-faint); flex-shrink: 0; }
 </style>
