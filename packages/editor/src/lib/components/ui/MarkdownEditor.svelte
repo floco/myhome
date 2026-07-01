@@ -65,11 +65,28 @@
     setTimeout(() => { if (textareaEl) { textareaEl.focus(); textareaEl.setSelectionRange(ns, ns); } }, 0);
   }
 
+  function escapeAttr(s: string): string {
+    return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // Allow relative paths and http/https absolute URLs; block javascript:, data:, etc.
+  function safeUrl(u: string): string {
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(u)) {
+      const scheme = u.split(":")[0].toLowerCase();
+      return scheme === "http" || scheme === "https" ? u : "#";
+    }
+    return u;
+  }
+
   function insertMedia(item: MediaItem, width: number): void {
+    const name = escapeAttr(item.name);
+    const url = escapeAttr(safeUrl(item.url));
+    const thumb = escapeAttr(safeUrl(item.thumbnailUrl));
+    const w = Math.floor(Number(width));
     const md =
       item.type === "document"
-        ? `<a href="${item.url}"><img src="${item.thumbnailUrl}" width="${width}" alt="${item.name}"></a>`
-        : `<img src="${item.url}" width="${width}" alt="${item.name}">`;
+        ? `<a href="${url}"><img src="${thumb}" width="${w}" alt="${name}"></a>`
+        : `<img src="${url}" width="${w}" alt="${name}">`;
     insert(md);
     pickerOpen = false;
   }
