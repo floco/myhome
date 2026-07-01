@@ -368,3 +368,45 @@ describe("KBPage — Media tab", () => {
     target.remove();
   });
 });
+
+describe("KBPage — media insert button", () => {
+  it("shows 📷 button when entry has attachments and Content tab is in edit mode", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const entry = makeEntry({ attachments: ["photo.jpg"] });
+    const store = makeStore([entry]);
+    const app = mount(KBPage, { target, props: { store } });
+    flushSync();
+    (target.querySelector(".entry-row") as HTMLElement).click();
+    flushSync();
+    (
+      Array.from(target.querySelectorAll("button")).find(
+        (b) => b.textContent?.trim() === "Edit",
+      ) as HTMLButtonElement
+    ).click();
+    flushSync();
+    expect(target.querySelector('[title="Insert media"]')).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("does not show 📷 button when entry has no attachments", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const entry = makeEntry({ attachments: [] });
+    const store = makeStore([entry]);
+    const app = mount(KBPage, { target, props: { store } });
+    flushSync();
+    (target.querySelector(".entry-row") as HTMLElement).click();
+    flushSync();
+    (
+      Array.from(target.querySelectorAll("button")).find(
+        (b) => b.textContent?.trim() === "Edit",
+      ) as HTMLButtonElement
+    ).click();
+    flushSync();
+    expect(target.querySelector('[title="Insert media"]')).toBeNull();
+    unmount(app);
+    target.remove();
+  });
+});
