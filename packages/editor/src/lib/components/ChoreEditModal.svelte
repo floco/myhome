@@ -9,15 +9,16 @@
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
 
-  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore">;
+  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion">;
 
   interface Props {
     chore: Chore | null;
     store: ChoreStore;
+    rooms: Array<{ id: string; label: string }>;
     onclose: () => void;
   }
 
-  let { chore, store, onclose }: Props = $props();
+  let { chore, store, rooms, onclose }: Props = $props();
 
   let activeTab = $state<"info" | "media" | "history">("info");
   let draftName = $state("");
@@ -35,6 +36,7 @@
   let lightboxIndex = $state(0);
 
   const history = $derived(chore ? store.getCompletionsForChore(chore.id).slice().reverse() : []);
+  let deletingCompletion = $state<string | null>(null);
 
   function formatDate(iso: string): string {
     if (!iso) return "—";
@@ -44,6 +46,20 @@
   function formatDateTime(iso: string): string {
     if (!iso) return "—";
     return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
+
+  function getRoomName(assignmentId: string | null): string {
+    if (!assignmentId) return "🏠 Whole house";
+    const assignment = store.assignments.find((a) => a.id === assignmentId);
+    if (!assignment?.roomId) return "🏠 Whole house";
+    return rooms.find((r) => r.id === assignment.roomId)?.label ?? "Unknown room";
+  }
+
+  async function handleDeleteCompletion(id: string): Promise<void> {
+    deletingCompletion = id;
+    try { await store.deleteCompletion(id); }
+    catch (e) { error = e instanceof Error ? e.message : "Delete failed"; }
+    finally { deletingCompletion = null; }
   }
 
   $effect(() => {
@@ -161,9 +177,11 @@
         {:else}
           {#each history as rec (rec.id)}
             <div class="history-row">
+              <span class="hist-room">{getRoomName(rec.assignmentId)}</span>
               <span class="hist-date">{formatDateTime(rec.completedAt)}</span>
-              {#if rec.scheduledDue}<span class="hist-due">was due {formatDate(rec.scheduledDue)}</span>{/if}
+              {#if rec.scheduledDue}<span class="hist-due">due {formatDate(rec.scheduledDue)}</span>{/if}
               {#if rec.notes}<span class="hist-notes">{rec.notes}</span>{/if}
+              <button class="hist-del" disabled={deletingCompletion === rec.id} title="Delete record" onclick={() => handleDeleteCompletion(rec.id)}>🗑</button>
             </div>
           {/each}
         {/if}
@@ -212,9 +230,12 @@
   .form-error { font-size: 11px; color: var(--danger); margin-top: 4px; }
   .history-pane { min-height: 160px; }
   .no-history { font-size: 12px; color: var(--text-faint); font-style: italic; padding: 12px 0; }
-  .history-row { display: flex; align-items: baseline; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; flex-wrap: wrap; }
+  .history-row { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; flex-wrap: wrap; }
   .history-row:last-child { border-bottom: none; }
-  .hist-date { color: var(--text); white-space: nowrap; font-weight: 500; }
+  .hist-room { color: var(--text); white-space: nowrap; font-weight: 500; min-width: 90px; }
+  .hist-date { color: var(--text-muted); white-space: nowrap; }
   .hist-due { color: var(--text-faint); white-space: nowrap; font-size: 11px; }
-  .hist-notes { color: var(--text-muted); font-style: italic; font-size: 11px; }
+  .hist-notes { color: var(--text-muted); font-style: italic; font-size: 11px; flex: 1; }
+  .hist-del { margin-left: auto; background: none; border: none; cursor: pointer; color: var(--text-faint); font-size: 11px; padding: 0 2px; line-height: 1; opacity: 0.5; }
+  .hist-del:hover { opacity: 1; color: var(--danger); }
 </style>

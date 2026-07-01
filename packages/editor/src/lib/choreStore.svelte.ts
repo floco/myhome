@@ -244,6 +244,12 @@ export function createChoreStore() {
     await init();
   }
 
+  async function deleteCompletion(id: string): Promise<void> {
+    const resp = await fetch(`/api/completions/${id}`, { method: "DELETE" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
   init();
 
   return {
@@ -270,5 +276,6 @@ export function createChoreStore() {
     deleteAssignment,
     delayAssignment,
     delayChore,
+    deleteCompletion,
   };
 }

@@ -266,7 +266,7 @@
 </div>
 
 {#if editChore}
-  <ChoreEditModal chore={editChore} {store} onclose={() => { editChore = null; }} />
+  <ChoreEditModal chore={editChore} {store} rooms={allRooms} onclose={() => { editChore = null; }} />
 {/if}
 
 <style>
