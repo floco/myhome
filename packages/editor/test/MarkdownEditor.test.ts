@@ -254,7 +254,7 @@ describe("MarkdownEditor — media picker", () => {
     target.remove();
   });
 
-  it("clicking image tile inserts ![name](url) and closes picker", () => {
+  it("S size button inserts image at 200px width and closes picker", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const app = mount(MarkdownEditor, {
@@ -264,16 +264,52 @@ describe("MarkdownEditor — media picker", () => {
     flushSync();
     (target.querySelector('[title="Insert media"]') as HTMLButtonElement).click();
     flushSync();
-    (target.querySelector(".media-tile") as HTMLButtonElement).click();
+    (target.querySelector('[data-size="s"]') as HTMLButtonElement).click();
     flushSync();
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
-    expect(textarea.value).toBe("![photo.jpg](/api/kb/e1/attachments/photo.jpg)");
+    expect(textarea.value).toBe('<img src="/api/kb/e1/attachments/photo.jpg" width="200" alt="photo.jpg">');
     expect(target.querySelector(".media-picker")).toBeNull();
     unmount(app);
     target.remove();
   });
 
-  it("clicking PDF tile inserts clickable thumbnail markdown and closes picker", () => {
+  it("M size button inserts image at 400px width", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true, mediaItems: [imgItem] },
+    });
+    flushSync();
+    (target.querySelector('[title="Insert media"]') as HTMLButtonElement).click();
+    flushSync();
+    (target.querySelector('[data-size="m"]') as HTMLButtonElement).click();
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe('<img src="/api/kb/e1/attachments/photo.jpg" width="400" alt="photo.jpg">');
+    unmount(app);
+    target.remove();
+  });
+
+  it("L size button inserts image at 600px width", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true, mediaItems: [imgItem] },
+    });
+    flushSync();
+    (target.querySelector('[title="Insert media"]') as HTMLButtonElement).click();
+    flushSync();
+    (target.querySelector('[data-size="l"]') as HTMLButtonElement).click();
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe('<img src="/api/kb/e1/attachments/photo.jpg" width="600" alt="photo.jpg">');
+    unmount(app);
+    target.remove();
+  });
+
+  it("S size button inserts PDF as linked thumbnail at 200px width and closes picker", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const app = mount(MarkdownEditor, {
@@ -283,11 +319,11 @@ describe("MarkdownEditor — media picker", () => {
     flushSync();
     (target.querySelector('[title="Insert media"]') as HTMLButtonElement).click();
     flushSync();
-    (target.querySelector(".media-tile") as HTMLButtonElement).click();
+    (target.querySelector('[data-size="s"]') as HTMLButtonElement).click();
     flushSync();
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
     expect(textarea.value).toBe(
-      "[![doc.pdf](/api/kb/e1/attachments/doc.pdf.thumb.jpg)](/api/kb/e1/attachments/doc.pdf)",
+      '<a href="/api/kb/e1/attachments/doc.pdf"><img src="/api/kb/e1/attachments/doc.pdf.thumb.jpg" width="200" alt="doc.pdf"></a>',
     );
     expect(target.querySelector(".media-picker")).toBeNull();
     unmount(app);
@@ -332,6 +368,65 @@ describe("MarkdownEditor — media picker", () => {
     expect(target.querySelector(".media-picker")).toBeNull();
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
     expect(textarea.value).toBe("");
+    unmount(app);
+    target.remove();
+  });
+});
+
+describe("MarkdownEditor — clickToEdit", () => {
+  it("clicking preview enters edit mode by default", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "content", editing: false },
+    });
+    flushSync();
+    (target.querySelector(".md-preview") as HTMLElement).click();
+    flushSync();
+    expect(target.querySelector("textarea.md-editor")).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking preview does not enter edit mode when clickToEdit is false", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "content", editing: false, clickToEdit: false },
+    });
+    flushSync();
+    (target.querySelector(".md-preview") as HTMLElement).click();
+    flushSync();
+    expect(target.querySelector("textarea.md-editor")).toBeNull();
+    expect(target.querySelector(".md-preview")).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("preview has md-clickable class when clickToEdit is true", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "content", editing: false, clickToEdit: true },
+    });
+    flushSync();
+    expect(target.querySelector(".md-preview.md-clickable")).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("preview does not have md-clickable class when clickToEdit is false", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "content", editing: false, clickToEdit: false },
+    });
+    flushSync();
+    expect(target.querySelector(".md-preview.md-clickable")).toBeNull();
     unmount(app);
     target.remove();
   });

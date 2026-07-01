@@ -12,6 +12,7 @@
     placeholder?: string;
     minHeight?: string;
     mediaItems?: MediaItem[];
+    clickToEdit?: boolean;
   }
 
   let {
@@ -20,6 +21,7 @@
     placeholder = "Click to add markdown content…",
     minHeight = "200px",
     mediaItems = [],
+    clickToEdit = true,
   }: Props = $props();
 
   let textareaEl: HTMLTextAreaElement | null = $state(null);
@@ -63,11 +65,11 @@
     setTimeout(() => { if (textareaEl) { textareaEl.focus(); textareaEl.setSelectionRange(ns, ns); } }, 0);
   }
 
-  function insertMedia(item: MediaItem): void {
+  function insertMedia(item: MediaItem, width: number): void {
     const md =
       item.type === "document"
-        ? `[![${item.name}](${item.thumbnailUrl})](${item.url})`
-        : `![${item.name}](${item.url})`;
+        ? `<a href="${item.url}"><img src="${item.thumbnailUrl}" width="${width}" alt="${item.name}"></a>`
+        : `<img src="${item.url}" width="${width}" alt="${item.name}">`;
     insert(md);
     pickerOpen = false;
   }
@@ -109,15 +111,15 @@
         {#if pickerOpen}
           <div class="media-picker" role="listbox" aria-label="Insert media attachment">
             {#each mediaItems as item (item.id)}
-              <button
-                class="media-tile"
-                type="button"
-                title={item.name}
-                onclick={() => insertMedia(item)}
-              >
+              <div class="media-tile" title={item.name}>
                 <img src={item.thumbnailUrl} alt={item.name} />
                 <span class="media-tile-name">{item.name}</span>
-              </button>
+                <div class="media-tile-sizes">
+                  <button type="button" class="size-btn" data-size="s" onclick={() => insertMedia(item, 200)}>S</button>
+                  <button type="button" class="size-btn" data-size="m" onclick={() => insertMedia(item, 400)}>M</button>
+                  <button type="button" class="size-btn" data-size="l" onclick={() => insertMedia(item, 600)}>L</button>
+                </div>
+              </div>
             {/each}
           </div>
         {/if}
@@ -133,14 +135,15 @@
   ></textarea>
 {:else}
   <div
-    role="button"
-    tabindex="0"
+    role={clickToEdit ? "button" : undefined}
+    tabindex={clickToEdit ? 0 : undefined}
     class="md-preview"
+    class:md-clickable={clickToEdit}
     class:md-empty={!renderedHtml}
     style:min-height={minHeight}
-    onclick={() => { editing = true; }}
-    onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") editing = true; }}
-    title="Click to edit"
+    onclick={clickToEdit ? () => { editing = true; } : undefined}
+    onkeydown={clickToEdit ? (e) => { if (e.key === "Enter" || e.key === " ") editing = true; } : undefined}
+    title={clickToEdit ? "Click to edit" : undefined}
   >
     {#if renderedHtml}
       {@html renderedHtml}
@@ -176,14 +179,12 @@
     border-radius: var(--radius-md); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     padding: var(--space-2);
     display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2);
-    max-height: 180px; overflow-y: auto; min-width: 160px;
+    max-height: 220px; overflow-y: auto; min-width: 220px;
   }
   .media-tile {
-    background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
-    cursor: pointer; padding: 4px;
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
   }
-  .media-tile:hover { background: var(--surface-hover); border-color: var(--accent); }
   .media-tile img {
     width: 40px; height: 40px; object-fit: cover;
     border-radius: var(--radius-sm); display: block;
@@ -193,6 +194,13 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     max-width: 60px; text-align: center;
   }
+  .media-tile-sizes { display: flex; gap: 2px; }
+  .size-btn {
+    padding: 1px 5px; font-size: 9px; font-weight: 600; font-family: var(--font-sans);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: none; color: var(--text-muted); cursor: pointer;
+  }
+  .size-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
 
   .md-editor {
     width: 100%; box-sizing: border-box;
@@ -208,10 +216,11 @@
     width: 100%; box-sizing: border-box;
     padding: 10px 12px; overflow-y: auto;
     background: var(--surface-alt); border: 1px solid var(--border);
-    border-radius: var(--radius-md); cursor: pointer;
+    border-radius: var(--radius-md); cursor: default;
     color: var(--text); font-family: var(--font-sans); font-size: 13px; line-height: 1.65;
   }
-  .md-preview:hover { border-color: var(--accent); }
+  .md-preview.md-clickable { cursor: pointer; }
+  .md-preview.md-clickable:hover { border-color: var(--accent); }
   .md-preview.md-empty { border-style: dashed; }
 
   .md-placeholder { color: var(--text-faint); font-size: 12px; font-style: italic; }
