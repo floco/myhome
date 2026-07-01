@@ -24,7 +24,7 @@ export function createKBStore() {
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const doc: KBDocument = await resp.json();
       entries.length = 0;
-      for (const e of doc.entries) entries.push(e);
+      for (const e of doc.entries) entries.push({ attachments: [], ...e });
     } catch (e) {
       loadError = e instanceof Error ? e.message : String(e);
     } finally {

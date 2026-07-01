@@ -166,7 +166,7 @@
               onclick={() => { contentTab = "content"; }}>Content</button>
             <button class="content-tab" class:active={contentTab === "media"}
               onclick={() => { contentTab = "media"; editing = false; }}>
-              Media{selectedEntry.attachments.length > 0 ? ` (${selectedEntry.attachments.length})` : ""}
+              Media{(selectedEntry.attachments?.length ?? 0) > 0 ? ` (${selectedEntry.attachments.length})` : ""}
             </button>
           </div>
         </div>
