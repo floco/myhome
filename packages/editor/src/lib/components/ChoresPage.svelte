@@ -146,8 +146,8 @@
       <option value="yearly">Yearly</option>
     </select>
     <div class="filter-toggle">
-      <button class="toggle-btn" class:active={dueFilter === "all"} onclick={() => { dueFilter = "all"; }}>All</button>
-      <button class="toggle-btn" class:active={dueFilter === "attention"} onclick={() => { dueFilter = "attention"; }}>⚠ Needs attention</button>
+      <button class="toggle-btn" class:active={dueFilter === "all"} title="All chores" onclick={() => { dueFilter = "all"; }}>☰</button>
+      <button class="toggle-btn" class:active={dueFilter === "attention"} title="Needs attention" onclick={() => { dueFilter = "attention"; }}>⚠</button>
     </div>
     <Button onclick={() => onnewchore?.()}>＋ Add chore</Button>
     {#if !showImportInput}
