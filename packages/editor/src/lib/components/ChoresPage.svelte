@@ -13,9 +13,10 @@
     store: ChoreStore;
     floorStore: { floors: Array<{ id: string; name: string; rooms: Array<{ id: string; label: string }> }> };
     onnewchore?: () => void;
+    onplaceonmap?: (choreId: string) => void;
   }
 
-  let { store, floorStore, onnewchore }: Props = $props();
+  let { store, floorStore, onnewchore, onplaceonmap }: Props = $props();
 
   let editChore = $state<Chore | null>(null);
   let searchQuery = $state("");
@@ -266,7 +267,7 @@
 </div>
 
 {#if editChore}
-  <ChoreEditModal chore={editChore} {store} rooms={allRooms} onclose={() => { editChore = null; }} />
+  <ChoreEditModal chore={editChore} {store} rooms={allRooms} onclose={() => { editChore = null; }} onplaceonmap={onplaceonmap ? (id) => { editChore = null; onplaceonmap!(id); } : undefined} />
 {/if}
 
 <style>

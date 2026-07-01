@@ -16,9 +16,10 @@
     store: ChoreStore;
     rooms: Array<{ id: string; label: string }>;
     onclose: () => void;
+    onplaceonmap?: (choreId: string) => void;
   }
 
-  let { chore, store, rooms, onclose }: Props = $props();
+  let { chore, store, rooms, onclose, onplaceonmap }: Props = $props();
 
   let activeTab = $state<"info" | "media" | "history">("info");
   let draftName = $state("");
@@ -196,6 +197,9 @@
         <Button variant="ghost" onclick={() => { confirmDelete = false; }}>Cancel</Button>
       {:else}
         <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 Delete</Button>
+      {/if}
+      {#if onplaceonmap && activeTab === "info"}
+        <Button variant="secondary" onclick={() => { onplaceonmap!(chore!.id); }}>📍 Place on map</Button>
       {/if}
       {#if activeTab === "info"}
         <Button variant="primary" disabled={saving} onclick={handleSave}>

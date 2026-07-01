@@ -847,7 +847,7 @@
         />
 
       {:else if currentRoute === "#/chores" || currentRoute === "#/chores/manage"}
-        <ChoresPage store={choreStore} {floorStore} onnewchore={() => { showNewChoreModal = true; }} />
+        <ChoresPage store={choreStore} {floorStore} onnewchore={() => { showNewChoreModal = true; }} onplaceonmap={() => { const next = new Set(activeLayers); next.add("chores"); activeLayers = next; window.location.hash = "#/"; }} />
 
       {:else if currentRoute === "#/inventory"}
         <InventoryPage
