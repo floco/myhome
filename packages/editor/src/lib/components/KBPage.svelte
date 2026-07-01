@@ -190,6 +190,7 @@
             bind:value={draftContent}
             bind:editing
             mediaItems={contentTab === "content" ? mediaItems : []}
+            clickToEdit={false}
             placeholder="Start writing in Markdown…"
           />
         {:else}
