@@ -9,7 +9,7 @@
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
 
-  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment">;
+  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore">;
 
   interface Props {
     chore: Chore | null;
@@ -19,7 +19,7 @@
 
   let { chore, store, onclose }: Props = $props();
 
-  let activeTab = $state<"info" | "media">("info");
+  let activeTab = $state<"info" | "media" | "history">("info");
   let draftName = $state("");
   let draftEmoji = $state("");
   let draftPeriodDays = $state(30);
@@ -33,6 +33,18 @@
   let uploadError = $state<string | null>(null);
   let lightboxOpen = $state(false);
   let lightboxIndex = $state(0);
+
+  const history = $derived(chore ? store.getCompletionsForChore(chore.id).slice().reverse() : []);
+
+  function formatDate(iso: string): string {
+    if (!iso) return "—";
+    return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  function formatDateTime(iso: string): string {
+    if (!iso) return "—";
+    return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
 
   $effect(() => {
     if (chore) {
@@ -104,9 +116,10 @@
       tabs={[
         { id: "info", label: "Info" },
         { id: "media", label: (chore.attachments?.length ?? 0) > 0 ? `Media (${chore.attachments.length})` : "Media" },
+        { id: "history", label: history.length > 0 ? `History (${history.length})` : "History" },
       ]}
       active={activeTab}
-      onchange={(id) => { activeTab = id as "info" | "media"; }}
+      onchange={(id) => { activeTab = id as "info" | "media" | "history"; }}
     />
 
     {#if activeTab === "info"}
@@ -129,7 +142,7 @@
         </div>
         {#if error}<div class="form-error">{error}</div>{/if}
       </div>
-    {:else}
+    {:else if activeTab === "media"}
       <div class="media-pane">
         <MediaGallery
           items={mediaItems}
@@ -140,6 +153,20 @@
           onItemClick={handleItemClick}
         />
         {#if uploadError}<div class="form-error">{uploadError}</div>{/if}
+      </div>
+    {:else if activeTab === "history"}
+      <div class="history-pane">
+        {#if history.length === 0}
+          <div class="no-history">No completions yet</div>
+        {:else}
+          {#each history as rec (rec.id)}
+            <div class="history-row">
+              <span class="hist-date">{formatDateTime(rec.completedAt)}</span>
+              {#if rec.scheduledDue}<span class="hist-due">was due {formatDate(rec.scheduledDue)}</span>{/if}
+              {#if rec.notes}<span class="hist-notes">{rec.notes}</span>{/if}
+            </div>
+          {/each}
+        {/if}
       </div>
     {/if}
 
@@ -183,4 +210,11 @@
 
   .media-pane { min-height: 200px; }
   .form-error { font-size: 11px; color: var(--danger); margin-top: 4px; }
+  .history-pane { min-height: 160px; }
+  .no-history { font-size: 12px; color: var(--text-faint); font-style: italic; padding: 12px 0; }
+  .history-row { display: flex; align-items: baseline; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; flex-wrap: wrap; }
+  .history-row:last-child { border-bottom: none; }
+  .hist-date { color: var(--text); white-space: nowrap; font-weight: 500; }
+  .hist-due { color: var(--text-faint); white-space: nowrap; font-size: 11px; }
+  .hist-notes { color: var(--text-muted); font-style: italic; font-size: 11px; }
 </style>

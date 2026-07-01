@@ -27,6 +27,7 @@ function makeStore(overrides = {}) {
     deleteChore: vi.fn().mockResolvedValue(undefined),
     uploadAttachment: vi.fn().mockResolvedValue("file.jpg"),
     deleteAttachment: vi.fn().mockResolvedValue(undefined),
+    getCompletionsForChore: vi.fn().mockReturnValue([]),
     ...overrides,
   };
 }
