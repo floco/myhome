@@ -73,13 +73,11 @@
     screenX: number;
     screenY: number;
   } | null>(null);
-  let placingCostCategoryId = $state<string | null>(null);
   let selectedWorkPin = $state<{
     work: Work;
     screenX: number;
     screenY: number;
   } | null>(null);
-  let placingWorkId = $state<string | null>(null);
 
   let activeLayers = $state(new Set<string>());
   const choreLayerActive = $derived(activeLayers.has("chores"));
@@ -379,8 +377,6 @@
     if (event.ctrlKey && event.key === "z" && !event.shiftKey) { event.preventDefault(); handleUndo(); return; }
     if (event.ctrlKey && (event.key === "y" || (event.key === "z" && event.shiftKey))) { event.preventDefault(); handleRedo(); return; }
     if (event.key === "Escape") {
-      if (placingCostCategoryId) { placingCostCategoryId = null; return; }
-      if (placingWorkId) { placingWorkId = null; return; }
       toolStore.resetDraw(); return;
     }
     if ((event.key === "Delete" || event.key === "Backspace") &&
@@ -726,34 +722,6 @@
                 />
               </div>
             {/if}
-            {#if placingCostCategoryId}
-              {@const placingCat = settingsStore.costCategories.find(c => c.id === placingCostCategoryId)}
-              <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-              <div
-                style="position:absolute;inset:0;z-index:70;cursor:crosshair"
-                onclick={(e) => {
-                  if (!placingCostCategoryId) return;
-                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                  const screenX = e.clientX - rect.left;
-                  const screenY = e.clientY - rect.top;
-                  const worldPos = viewportStore.screenToWorld({ x: screenX, y: screenY });
-                  settingsStore.placeCostCategory(placingCostCategoryId, {
-                    floorId: floorStore.currentFloorId,
-                    position: worldPos,
-                  });
-                  placingCostCategoryId = null;
-                }}
-              >
-                <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);background:#1e1e3a;border:1px solid #5566cc;border-radius:6px;padding:6px 14px;color:#aaf;font-size:12px;font-family:sans-serif;pointer-events:none">
-                  {#if placingCat}
-                    Click to place {placingCat.emoji} {placingCat.name}
-                  {:else}
-                    Click to place pin
-                  {/if}
-                  &nbsp;&nbsp;<span style="color:#556;font-size:10px">Press Esc to cancel</span>
-                </div>
-              </div>
-            {/if}
             {#if worksLayerActive}
               <WorksOverlay
                 works={currentFloorWorks}
@@ -796,34 +764,6 @@
                 />
               </div>
             {/if}
-            {#if placingWorkId}
-              {@const placingWork = worksStore.works.find(w => w.id === placingWorkId)}
-              <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-              <div
-                style="position:absolute;inset:0;z-index:70;cursor:crosshair"
-                onclick={(e) => {
-                  if (!placingWorkId) return;
-                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                  const screenX = e.clientX - rect.left;
-                  const screenY = e.clientY - rect.top;
-                  const worldPos = viewportStore.screenToWorld({ x: screenX, y: screenY });
-                  worksStore.setPlacement(placingWorkId, {
-                    floorId: floorStore.currentFloorId,
-                    position: worldPos,
-                  });
-                  placingWorkId = null;
-                }}
-              >
-                <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);background:#1e1e3a;border:1px solid #5566cc;border-radius:6px;padding:6px 14px;color:#aaf;font-size:12px;font-family:sans-serif;pointer-events:none">
-                  {#if placingWork}
-                    Click to place {placingWork.categoryId ? (settingsStore.workCategories.find(c => c.id === placingWork.categoryId)?.emoji ?? "🔧") : "🔧"} {placingWork.title}
-                  {:else}
-                    Click to place work pin
-                  {/if}
-                  &nbsp;&nbsp;<span style="color:#556;font-size:10px">Press Esc to cancel</span>
-                </div>
-              </div>
-            {/if}
           {/if}
           {#if pickerOpen && pickerLayers.length > 0}
             <div class="right-panels">
@@ -862,7 +802,9 @@
             const next = new Set(activeLayers);
             next.add("inventory");
             activeLayers = next;
-            window.location.hash = "#/";
+            pickerHighlightId = id;
+            pickerOpen = true;
+            window.location.hash = "#/plan";
           }}
         />
 
@@ -874,11 +816,12 @@
           store={worksStore}
           {settingsStore}
           onplaceonmap={(workId) => {
-            placingWorkId = workId;
             const next = new Set(activeLayers);
             next.add("works");
             activeLayers = next;
-            window.location.hash = "#/";
+            pickerHighlightId = workId;
+            pickerOpen = true;
+            window.location.hash = "#/plan";
           }}
         />
 
@@ -891,11 +834,12 @@
           {settingsStore}
           {floorStore}
           onplaceonmap={(catId) => {
-            placingCostCategoryId = catId;
             const next = new Set(activeLayers);
             next.add("costs");
             activeLayers = next;
-            window.location.hash = "#/";
+            pickerHighlightId = catId;
+            pickerOpen = true;
+            window.location.hash = "#/plan";
           }}
         />
 
