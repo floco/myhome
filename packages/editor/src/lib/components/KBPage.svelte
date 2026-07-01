@@ -189,6 +189,7 @@
           <MarkdownEditor
             bind:value={draftContent}
             bind:editing
+            mediaItems={contentTab === "content" ? mediaItems : []}
             placeholder="Start writing in Markdown…"
           />
         {:else}

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import MarkdownEditor from "../src/lib/components/ui/MarkdownEditor.svelte";
+import type { MediaItem } from "../src/lib/components/ui/mediaTypes";
 
 describe("MarkdownEditor — preview mode", () => {
   it("renders markdown as HTML in preview mode", () => {
@@ -180,6 +181,157 @@ describe("MarkdownEditor — toolbar", () => {
     flushSync();
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
     expect(textarea.value).toContain("**");
+    unmount(app);
+    target.remove();
+  });
+});
+
+describe("MarkdownEditor — media picker", () => {
+  const imgItem: MediaItem = {
+    id: "photo.jpg",
+    name: "photo.jpg",
+    url: "/api/kb/e1/attachments/photo.jpg",
+    thumbnailUrl: "/api/kb/e1/attachments/photo.jpg",
+    type: "image",
+  };
+  const pdfItem: MediaItem = {
+    id: "doc.pdf",
+    name: "doc.pdf",
+    url: "/api/kb/e1/attachments/doc.pdf",
+    thumbnailUrl: "/api/kb/e1/attachments/doc.pdf.thumb.jpg",
+    type: "document",
+  };
+
+  it("does not show 📷 button when mediaItems prop is omitted", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true } });
+    flushSync();
+    expect(target.querySelector('[title="Insert media"]')).toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("does not show 📷 button when mediaItems is empty", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true, mediaItems: [] },
+    });
+    flushSync();
+    expect(target.querySelector('[title="Insert media"]')).toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("shows 📷 button when mediaItems are provided", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true, mediaItems: [imgItem] },
+    });
+    flushSync();
+    expect(target.querySelector('[title="Insert media"]')).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking 📷 button opens picker panel", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true, mediaItems: [imgItem] },
+    });
+    flushSync();
+    expect(target.querySelector(".media-picker")).toBeNull();
+    (target.querySelector('[title="Insert media"]') as HTMLButtonElement).click();
+    flushSync();
+    expect(target.querySelector(".media-picker")).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking image tile inserts ![name](url) and closes picker", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true, mediaItems: [imgItem] },
+    });
+    flushSync();
+    (target.querySelector('[title="Insert media"]') as HTMLButtonElement).click();
+    flushSync();
+    (target.querySelector(".media-tile") as HTMLButtonElement).click();
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("![photo.jpg](/api/kb/e1/attachments/photo.jpg)");
+    expect(target.querySelector(".media-picker")).toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking PDF tile inserts clickable thumbnail markdown and closes picker", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true, mediaItems: [pdfItem] },
+    });
+    flushSync();
+    (target.querySelector('[title="Insert media"]') as HTMLButtonElement).click();
+    flushSync();
+    (target.querySelector(".media-tile") as HTMLButtonElement).click();
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe(
+      "[![doc.pdf](/api/kb/e1/attachments/doc.pdf.thumb.jpg)](/api/kb/e1/attachments/doc.pdf)",
+    );
+    expect(target.querySelector(".media-picker")).toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("pressing Escape closes picker without inserting", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true, mediaItems: [imgItem] },
+    });
+    flushSync();
+    (target.querySelector('[title="Insert media"]') as HTMLButtonElement).click();
+    flushSync();
+    expect(target.querySelector(".media-picker")).not.toBeNull();
+    target.querySelector(".tb-media-wrap")!.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+    );
+    flushSync();
+    expect(target.querySelector(".media-picker")).toBeNull();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("");
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking outside the picker closes it without inserting", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true, mediaItems: [imgItem] },
+    });
+    flushSync();
+    (target.querySelector('[title="Insert media"]') as HTMLButtonElement).click();
+    flushSync();
+    expect(target.querySelector(".media-picker")).not.toBeNull();
+    document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+    expect(target.querySelector(".media-picker")).toBeNull();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("");
     unmount(app);
     target.remove();
   });
