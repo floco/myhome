@@ -27,6 +27,7 @@
   let draftPeriodDays = $state(30);
   let draftNextDue = $state("");
   let draftScheduleFromDue = $state(false);
+  let draftDescription = $state("");
   let saving = $state(false);
   let deleting = $state(false);
   let confirmDelete = $state(false);
@@ -70,6 +71,7 @@
       draftPeriodDays = chore.periodDays;
       draftNextDue = chore.nextDueDate.slice(0, 10);
       draftScheduleFromDue = chore.scheduleFromDue;
+      draftDescription = chore.description ?? "";
       activeTab = "info";
       error = null;
     }
@@ -94,6 +96,7 @@
         periodDays: draftPeriodDays,
         nextDueDate: draftNextDue ? new Date(draftNextDue).toISOString() : chore.nextDueDate,
         scheduleFromDue: draftScheduleFromDue,
+        description: draftDescription,
       });
       onclose();
     } catch (e) {
@@ -157,6 +160,9 @@
           <input type="checkbox" id="sfd-modal" bind:checked={draftScheduleFromDue} />
           <label for="sfd-modal" title="Next due = planned date + period">Schedule from due date</label>
         </div>
+        <label>Notes
+          <textarea class="native-input notes-field" bind:value={draftDescription} placeholder="Instructions, tips, or reminders…" rows="4"></textarea>
+        </label>
         {#if error}<div class="form-error">{error}</div>{/if}
       </div>
     {:else if activeTab === "media"}
@@ -229,6 +235,7 @@
   .native-input[type="number"] { width: 100px; }
   .sfd-row { display: flex; align-items: center; gap: 6px; font-size: 12px; }
   .sfd-row input[type="checkbox"] { width: auto; }
+  .notes-field { resize: vertical; min-height: 72px; font-family: inherit; line-height: 1.4; }
 
   .media-pane { min-height: 200px; }
   .form-error { font-size: 11px; color: var(--danger); margin-top: 4px; }
