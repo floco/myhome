@@ -267,7 +267,7 @@ describe("MarkdownEditor — media picker", () => {
     (target.querySelector('[data-size="s"]') as HTMLButtonElement).click();
     flushSync();
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
-    expect(textarea.value).toBe('<img src="/api/kb/e1/attachments/photo.jpg" width="200" alt="photo.jpg">');
+    expect(textarea.value).toBe('<a href="/api/kb/e1/attachments/photo.jpg"><img src="/api/kb/e1/attachments/photo.jpg" width="200" alt="photo.jpg"></a>');
     expect(target.querySelector(".media-picker")).toBeNull();
     unmount(app);
     target.remove();
@@ -286,7 +286,7 @@ describe("MarkdownEditor — media picker", () => {
     (target.querySelector('[data-size="m"]') as HTMLButtonElement).click();
     flushSync();
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
-    expect(textarea.value).toBe('<img src="/api/kb/e1/attachments/photo.jpg" width="400" alt="photo.jpg">');
+    expect(textarea.value).toBe('<a href="/api/kb/e1/attachments/photo.jpg"><img src="/api/kb/e1/attachments/photo.jpg" width="400" alt="photo.jpg"></a>');
     unmount(app);
     target.remove();
   });
@@ -304,7 +304,7 @@ describe("MarkdownEditor — media picker", () => {
     (target.querySelector('[data-size="l"]') as HTMLButtonElement).click();
     flushSync();
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
-    expect(textarea.value).toBe('<img src="/api/kb/e1/attachments/photo.jpg" width="600" alt="photo.jpg">');
+    expect(textarea.value).toBe('<a href="/api/kb/e1/attachments/photo.jpg"><img src="/api/kb/e1/attachments/photo.jpg" width="600" alt="photo.jpg"></a>');
     unmount(app);
     target.remove();
   });
