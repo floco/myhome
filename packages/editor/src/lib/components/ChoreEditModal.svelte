@@ -103,7 +103,7 @@
     <Tabs
       tabs={[
         { id: "info", label: "Info" },
-        { id: "media", label: chore.attachments.length > 0 ? `Media (${chore.attachments.length})` : "Media" },
+        { id: "media", label: (chore.attachments?.length ?? 0) > 0 ? `Media (${chore.attachments.length})` : "Media" },
       ]}
       active={activeTab}
       onchange={(id) => { activeTab = id as "info" | "media"; }}
