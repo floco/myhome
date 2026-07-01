@@ -285,7 +285,9 @@
   <div class="footer">{filteredChores.length} chore{filteredChores.length !== 1 ? "s" : ""}</div>
 </div>
 
-<ChoreEditModal chore={editChore} {store} onclose={() => { editChore = null; }} />
+{#if editChore}
+  <ChoreEditModal chore={editChore} {store} onclose={() => { editChore = null; }} />
+{/if}
 
 <style>
   .page { display: flex; flex-direction: column; height: 100%; background: var(--bg); font-family: var(--font-sans); }
