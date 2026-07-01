@@ -1,6 +1,7 @@
 <script lang="ts">
   import { marked } from "marked";
   import DOMPurify from "dompurify";
+  import type { MediaItem } from "./mediaTypes";
 
   // Single newlines become <br>; GFM adds ~~strikethrough~~, tables, task lists.
   marked.use({ breaks: true, gfm: true });
@@ -10,6 +11,7 @@
     editing: boolean;
     placeholder?: string;
     minHeight?: string;
+    mediaItems?: MediaItem[];
   }
 
   let {
@@ -17,9 +19,22 @@
     editing = $bindable(),
     placeholder = "Click to add markdown content…",
     minHeight = "200px",
+    mediaItems = [],
   }: Props = $props();
 
   let textareaEl: HTMLTextAreaElement | null = $state(null);
+  let pickerOpen = $state(false);
+  let wrapEl: HTMLElement | null = $state(null);
+
+  // Close picker when user clicks anywhere outside .tb-media-wrap.
+  $effect(() => {
+    if (!pickerOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (!wrapEl?.contains(e.target as Node)) pickerOpen = false;
+    }
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  });
 
   // marked() is sync here (no async extensions); cast to string is safe.
   const renderedHtml = $derived(
@@ -47,6 +62,15 @@
     const ns = lineStart + prefix.length;
     setTimeout(() => { if (textareaEl) { textareaEl.focus(); textareaEl.setSelectionRange(ns, ns); } }, 0);
   }
+
+  function insertMedia(item: MediaItem): void {
+    const md =
+      item.type === "document"
+        ? `[![${item.name}](${item.thumbnailUrl})](${item.url})`
+        : `![${item.name}](${item.url})`;
+    insert(md);
+    pickerOpen = false;
+  }
 </script>
 
 {#if editing}
@@ -68,6 +92,37 @@
     <span class="tb-sep" aria-hidden="true"></span>
     <button class="tb-btn" type="button" title="Link" onclick={() => insert("[", "](url)", "link text")}>🔗</button>
     <button class="tb-btn" type="button" title="Horizontal rule" onclick={() => insert("\n---\n", "", "")}>—</button>
+    {#if mediaItems.length > 0}
+      <span class="tb-sep" aria-hidden="true"></span>
+      <div
+        class="tb-media-wrap"
+        role="group"
+        bind:this={wrapEl}
+        onkeydown={(e) => { if (e.key === "Escape") pickerOpen = false; }}
+      >
+        <button
+          class="tb-btn"
+          type="button"
+          title="Insert media"
+          onclick={() => { pickerOpen = !pickerOpen; }}
+        >📷</button>
+        {#if pickerOpen}
+          <div class="media-picker" role="listbox" aria-label="Insert media attachment">
+            {#each mediaItems as item (item.id)}
+              <button
+                class="media-tile"
+                type="button"
+                title={item.name}
+                onclick={() => insertMedia(item)}
+              >
+                <img src={item.thumbnailUrl} alt={item.name} />
+                <span class="media-tile-name">{item.name}</span>
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    {/if}
   </div>
   <textarea
     class="md-editor"
@@ -113,6 +168,31 @@
   .tb-bold { font-weight: bold; }
   .tb-italic { font-style: italic; }
   .tb-sep { width: 1px; height: 14px; background: var(--border); margin: 0 3px; flex-shrink: 0; }
+
+  .tb-media-wrap { position: relative; display: inline-block; }
+  .media-picker {
+    position: absolute; top: calc(100% + 4px); left: 0; z-index: 100;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: var(--space-2);
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2);
+    max-height: 180px; overflow-y: auto; min-width: 160px;
+  }
+  .media-tile {
+    background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    cursor: pointer; padding: 4px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .media-tile:hover { background: var(--surface-hover); border-color: var(--accent); }
+  .media-tile img {
+    width: 40px; height: 40px; object-fit: cover;
+    border-radius: var(--radius-sm); display: block;
+  }
+  .media-tile-name {
+    font-size: 10px; color: var(--text-muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 60px; text-align: center;
+  }
 
   .md-editor {
     width: 100%; box-sizing: border-box;

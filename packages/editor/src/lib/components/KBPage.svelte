@@ -31,15 +31,9 @@
     ),
   );
 
-  let selectedEntry = $state<KBEntry | null>(null);
-  $effect(() => {
-    const found = selectedId ? (store.entries.find((e) => e.id === selectedId) ?? null) : null;
-    selectedEntry = found;
-    if (found && !editing) {
-      draftTitle = found.title;
-      draftContent = found.content;
-    }
-  });
+  const selectedEntry = $derived(
+    selectedId ? (store.entries.find((e) => e.id === selectedId) ?? null) : null,
+  );
 
   const mediaItems = $derived<MediaItem[]>(
     (selectedEntry?.attachments ?? []).map(fname => {
@@ -172,7 +166,7 @@
               onclick={() => { contentTab = "content"; }}>Content</button>
             <button class="content-tab" class:active={contentTab === "media"}
               onclick={() => { contentTab = "media"; editing = false; }}>
-              Media{selectedEntry.attachments.length > 0 ? ` (${selectedEntry.attachments.length})` : ""}
+              Media{(selectedEntry.attachments?.length ?? 0) > 0 ? ` (${selectedEntry.attachments.length})` : ""}
             </button>
           </div>
         </div>
@@ -195,6 +189,7 @@
           <MarkdownEditor
             bind:value={draftContent}
             bind:editing
+            mediaItems={contentTab === "content" ? mediaItems : []}
             placeholder="Start writing in Markdown…"
           />
         {:else}
