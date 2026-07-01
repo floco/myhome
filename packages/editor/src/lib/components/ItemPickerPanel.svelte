@@ -16,17 +16,32 @@
   interface Props {
     layers: PickerLayer[];
     draggingId: string | null;
+    highlightId?: string | null;
     ondragstart: (layerId: string, itemId: string, event: DragEvent) => void;
     ondragend: () => void;
   }
 
-  let { layers, draggingId, ondragstart, ondragend }: Props = $props();
+  let { layers, draggingId, highlightId = null, ondragstart, ondragend }: Props = $props();
 
   let query = $state("");
   let openSections = $state<Set<string>>(new Set());
 
   $effect(() => {
     openSections = layers.length === 1 ? new Set([layers[0].id]) : new Set();
+  });
+
+  $effect(() => {
+    if (!highlightId) return;
+    for (const layer of layers) {
+      if (layer.items.some(i => i.id === highlightId)) {
+        openSections = new Set([layer.id]);
+        break;
+      }
+    }
+    queueMicrotask(() => {
+      const el = document.querySelector(`[data-picker-id="${highlightId}"]`);
+      if (el) (el as HTMLElement).scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
   });
 
   function toggleSection(id: string): void {
@@ -76,6 +91,8 @@
               <div
                 class="item-row"
                 class:dragging={draggingId === item.id}
+                class:highlighted={highlightId === item.id}
+                data-picker-id={item.id}
                 draggable={true}
                 ondragstart={(e) => startDrag(layer.id, item, e)}
                 ondragend={() => ondragend()}
@@ -93,6 +110,8 @@
               <div
                 class="item-row placed"
                 class:dragging={draggingId === item.id}
+                class:highlighted={highlightId === item.id}
+                data-picker-id={item.id}
                 draggable={true}
                 ondragstart={(e) => startDrag(layer.id, item, e)}
                 ondragend={() => ondragend()}
@@ -146,6 +165,7 @@
   .item-row:hover { background: var(--surface-hover); }
   .item-row.placed { opacity: .45; }
   .item-row.dragging { opacity: .5; background: var(--surface-hover); }
+  .item-row.highlighted { background: color-mix(in srgb, var(--accent) 18%, transparent); outline: 1px solid var(--accent); opacity: 1; }
   .item-emoji { font-size: 14px; flex-shrink: 0; }
   .item-name { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .empty { color: var(--text-faint); font-size: 10px; padding: 8px 10px; }

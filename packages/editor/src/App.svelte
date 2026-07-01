@@ -66,6 +66,7 @@
   let selectedInventoryItemId = $state<string | null>(null);
   let draggingItemId = $state<string | null>(null);
   let draggingLayerId = $state<string | null>(null);
+  let pickerHighlightId = $state<string | null>(null);
 
   let selectedCostCategoryPin = $state<{
     category: CostCategory;
@@ -829,7 +830,8 @@
               <ItemPickerPanel
                 layers={pickerLayers}
                 draggingId={draggingItemId}
-                ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; }}
+                highlightId={pickerHighlightId}
+                ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; pickerHighlightId = null; }}
                 ondragend={() => { draggingLayerId = null; draggingItemId = null; }}
               />
             </div>
@@ -847,7 +849,7 @@
         />
 
       {:else if currentRoute === "#/chores" || currentRoute === "#/chores/manage"}
-        <ChoresPage store={choreStore} {floorStore} onnewchore={() => { showNewChoreModal = true; }} onplaceonmap={() => { const next = new Set(activeLayers); next.add("chores"); activeLayers = next; window.location.hash = "#/plan"; }} />
+        <ChoresPage store={choreStore} {floorStore} onnewchore={() => { showNewChoreModal = true; }} onplaceonmap={(choreId) => { const next = new Set(activeLayers); next.add("chores"); activeLayers = next; pickerHighlightId = choreId; pickerOpen = true; window.location.hash = "#/plan"; }} />
 
       {:else if currentRoute === "#/inventory"}
         <InventoryPage
