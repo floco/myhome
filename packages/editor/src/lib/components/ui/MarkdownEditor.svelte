@@ -86,7 +86,7 @@
     const md =
       item.type === "document"
         ? `<a href="${url}"><img src="${thumb}" width="${w}" alt="${name}"></a>`
-        : `<img src="${url}" width="${w}" alt="${name}">`;
+        : `<a href="${url}"><img src="${url}" width="${w}" alt="${name}"></a>`;
     insert(md);
     pickerOpen = false;
   }
