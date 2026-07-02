@@ -133,3 +133,32 @@ def test_put_suppliers_replaces_all(client):
     data = client.get("/api/settings").json()
     assert len(data["suppliers"]) == 1
     assert data["suppliers"][0]["name"] == "C"
+
+
+def test_get_settings_returns_default_consumable_units(client):
+    resp = client.get("/api/settings")
+    assert resp.status_code == 200
+    units = resp.json()["consumableUnits"]
+    assert "count" in units
+    assert "L" in units
+    assert len(units) >= 8
+
+
+def test_get_settings_returns_empty_consumable_categories(client):
+    resp = client.get("/api/settings")
+    assert resp.json()["consumableCategories"] == []
+
+
+def test_put_consumable_units(client):
+    resp = client.put("/api/settings/consumable-units", json=["count", "kg", "L"])
+    assert resp.status_code == 204
+    data = client.get("/api/settings").json()
+    assert data["consumableUnits"] == ["count", "kg", "L"]
+
+
+def test_put_consumable_categories(client):
+    cats = [{"id": "cc1", "name": "Cleaning", "emoji": "🧹"}]
+    resp = client.put("/api/settings/consumable-categories", json=cats)
+    assert resp.status_code == 204
+    data = client.get("/api/settings").json()
+    assert data["consumableCategories"][0]["name"] == "Cleaning"
