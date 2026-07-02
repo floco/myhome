@@ -37,9 +37,21 @@
   let open = $state(false);
   let customValue = $state("");
   let wrapper = $state<HTMLElement | null>(null);
+  let panelEl = $state<HTMLElement | null>(null);
   let triggerEl = $state<HTMLButtonElement | null>(null);
   let panelLeft = $state(0);
   let panelTop = $state(0);
+
+  // Teleport the panel to <body> so position:fixed isn't affected by
+  // ancestor CSS transforms (e.g. Modal uses translate(-50%,-50%)).
+  function portal(node: HTMLElement): { destroy(): void } {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        if (document.body.contains(node)) document.body.removeChild(node);
+      },
+    };
+  }
 
   function openPicker(): void {
     if (!open && triggerEl) {
@@ -64,11 +76,11 @@
   }
 
   function handleClickOutside(e: MouseEvent): void {
-    if (!wrapper) return;
-    if (!wrapper.contains(e.target as Node)) {
-      open = false;
-      customValue = "";
-    }
+    const target = e.target as Node;
+    // Panel is portal'd to body so check both trigger wrapper and panel
+    if (wrapper?.contains(target) || panelEl?.contains(target)) return;
+    open = false;
+    customValue = "";
   }
 
   function handleWindowKeydown(e: KeyboardEvent): void {
@@ -94,7 +106,7 @@
   </button>
 
   {#if open}
-    <div class="ep-panel" style="left:{panelLeft}px;top:{panelTop}px">
+    <div class="ep-panel" style="left:{panelLeft}px;top:{panelTop}px" bind:this={panelEl} use:portal>
       <div class="ep-grid">
         {#each EMOJIS as e (e)}
           <button
