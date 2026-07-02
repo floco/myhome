@@ -23,6 +23,10 @@
   import LayersDropdown from "./lib/components/LayersDropdown.svelte";
   import InventoryPage from "./lib/components/InventoryPage.svelte";
   import ConsumablesPage from "./lib/components/ConsumablesPage.svelte";
+  import { createConsumableStore } from "./lib/consumableStore.svelte";
+  import type { Consumable } from "./lib/consumableStore.svelte";
+  import ConsumableOverlay from "./lib/components/ConsumableOverlay.svelte";
+  import ConsumablePinPopup from "./lib/components/ConsumablePinPopup.svelte";
   import WorksPage from "./lib/components/WorksPage.svelte";
   import { createInventoryStore } from "./lib/inventoryStore.svelte";
   import type { InventoryItem } from "./lib/inventoryStore.svelte";
@@ -52,6 +56,7 @@
   const costsStore = createCostsStore();
   const worksStore = createWorksStore();
   const kbStore = createKBStore();
+  const consumableStore = createConsumableStore();
 
   let theme = $state<Theme>(getStoredTheme());
   function handleToggleTheme(): void {
@@ -73,6 +78,11 @@
     screenX: number;
     screenY: number;
   } | null>(null);
+  let selectedConsumablePin = $state<{
+    consumable: Consumable;
+    screenX: number;
+    screenY: number;
+  } | null>(null);
   let selectedWorkPin = $state<{
     work: Work;
     screenX: number;
@@ -87,6 +97,21 @@
     settingsStore.costCategories.filter(c => c.placement?.floorId === floorStore.currentFloorId)
   );
   const worksLayerActive = $derived(activeLayers.has("works"));
+  const consumablesLayerActive = $derived(activeLayers.has("consumables"));
+  const currentFloorConsumables = $derived(
+    consumableStore.consumables.filter(c => c.placement?.floorId === floorStore.currentFloorId)
+  );
+  const consumablesPickerLayer = $derived<PickerLayer>({
+    id: "consumables",
+    label: "Consumables",
+    emoji: "🛒",
+    items: consumableStore.consumables.map(c => ({
+      id: c.id,
+      name: c.name,
+      emoji: c.emoji,
+      placed: c.placement !== null,
+    })),
+  });
   const currentFloorWorks = $derived(
     worksStore.works.filter(w => w.placement?.floorId === floorStore.currentFloorId)
   );
@@ -148,6 +173,7 @@
   const pickerLayers = $derived<PickerLayer[]>([
     ...(choreLayerActive ? [chorePickerLayer] : []),
     ...(inventoryLayerActive ? [inventoryPickerLayer] : []),
+    ...(consumablesLayerActive ? [consumablesPickerLayer] : []),
     ...(costsLayerActive ? [costsPickerLayer] : []),
     ...(worksLayerActive ? [worksPickerLayer] : []),
   ]);
@@ -425,6 +451,16 @@
     if (layerId === "inventory") {
       const room = floorStore.floor.rooms.find(r => r.polygon && pointInPolygon({ x: worldX, y: worldY }, r.polygon));
       inventoryStore.setPlacement(itemId, {
+        floorId: floorStore.currentFloorId,
+        roomId: room?.id ?? null,
+        position: { x: worldX, y: worldY },
+      });
+      return;
+    }
+
+    if (layerId === "consumables") {
+      const room = floorStore.floor.rooms.find(r => r.polygon && pointInPolygon({ x: worldX, y: worldY }, r.polygon));
+      consumableStore.setPlacement(itemId, {
         floorId: floorStore.currentFloorId,
         roomId: room?.id ?? null,
         position: { x: worldX, y: worldY },
@@ -764,6 +800,47 @@
                 />
               </div>
             {/if}
+            {#if consumablesLayerActive}
+              <ConsumableOverlay
+                consumables={currentFloorConsumables}
+                viewport={viewportStore.viewport}
+                active={true}
+                width={canvasWidth}
+                height={canvasHeight}
+                onclick={(consumableId) => {
+                  const c = consumableStore.consumables.find((x) => x.id === consumableId);
+                  if (!c?.placement) return;
+                  const sp = viewportStore.worldToScreen(c.placement.position);
+                  selectedConsumablePin = { consumable: c, screenX: sp.x, screenY: sp.y };
+                }}
+                ondragend={(consumableId, worldPos) => {
+                  const c = consumableStore.consumables.find((x) => x.id === consumableId);
+                  if (!c?.placement) return;
+                  consumableStore.setPlacement(consumableId, { ...c.placement, position: worldPos });
+                }}
+              />
+            {/if}
+            {#if selectedConsumablePin}
+              {@const pin = selectedConsumablePin}
+              <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+              <div style="position:absolute;inset:0;z-index:55" onclick={() => { selectedConsumablePin = null; }}>
+                <ConsumablePinPopup
+                  consumable={pin.consumable}
+                  store={consumableStore}
+                  screenX={pin.screenX}
+                  screenY={pin.screenY}
+                  onedit={() => {
+                    selectedConsumablePin = null;
+                    window.location.hash = "#/consumables";
+                  }}
+                  onremove={async () => {
+                    await consumableStore.setPlacement(pin.consumable.id, null);
+                    selectedConsumablePin = null;
+                  }}
+                  onclose={() => { selectedConsumablePin = null; }}
+                />
+              </div>
+            {/if}
           {/if}
           {#if pickerOpen && pickerLayers.length > 0}
             <div class="right-panels">
@@ -786,6 +863,7 @@
           {settingsStore}
           {costsStore}
           {worksStore}
+          {consumableStore}
         />
 
       {:else if currentRoute === "#/chores" || currentRoute === "#/chores/manage"}
@@ -809,7 +887,18 @@
         />
 
       {:else if currentRoute === "#/consumables"}
-        <ConsumablesPage />
+        <ConsumablesPage
+          store={consumableStore}
+          {settingsStore}
+          onplaceonmap={(id) => {
+            const next = new Set(activeLayers);
+            next.add("consumables");
+            activeLayers = next;
+            pickerHighlightId = id;
+            pickerOpen = true;
+            window.location.hash = "#/plan";
+          }}
+        />
 
       {:else if currentRoute === "#/works"}
         <WorksPage
