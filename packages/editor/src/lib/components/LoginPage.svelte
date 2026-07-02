@@ -29,7 +29,7 @@
   <div class="login-card">
     <div class="login-header">
       <span class="login-logo">🏠</span>
-      <h1 class="login-title">MyHome</h1>
+      <h1 class="login-title">My Home</h1>
       <p class="login-subtitle">Sign in to continue</p>
     </div>
 

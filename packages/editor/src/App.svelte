@@ -546,7 +546,7 @@
       title={navExpanded ? "Close menu" : "Open menu"}
     >{navExpanded ? "✕" : "☰"}</button>
 
-    <span class="app-title">myhome</span>
+    <span class="app-title">My Home</span>
 
     <button
       class="icon-btn theme-toggle"
