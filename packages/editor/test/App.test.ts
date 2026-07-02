@@ -72,7 +72,7 @@ describe("App", () => {
 
     app = await mountAndLoad(target);
 
-    expect(target.querySelector(".app-title")?.textContent).toBe("myhome");
+    expect(target.querySelector(".app-title")?.textContent).toBe("My Home");
 
     const buttons = Array.from(target.querySelectorAll(".toolbar button"));
     const titles = buttons.map((b) => (b as HTMLButtonElement).title);
