@@ -5,9 +5,15 @@ import App from "../src/App.svelte";
 function stubFetch404() {
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockImplementation(() =>
-      Promise.resolve({ ok: false, status: 404, json: async () => undefined }),
-    ),
+    vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/auth/me") {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: async () => ({ id: "u1", username: "admin", role: "admin" }),
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404, json: async () => undefined });
+    }),
   );
 }
 
@@ -19,6 +25,7 @@ async function mountAndLoad(
   const app = mount(App, { target });
   await tick();
   await tick();
+  await tick();  // extra tick for authStore init
   flushSync();
   return app;
 }

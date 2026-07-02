@@ -4,12 +4,16 @@ import App from "../src/App.svelte";
 
 function stubFetch(handlers: Record<string, unknown> = {}) {
   vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => {
-    if (url in handlers) {
+    const defaultHandlers: Record<string, unknown> = {
+      "/api/auth/me": { id: "u1", username: "admin", role: "admin" },
+      ...handlers,
+    };
+    if (url in defaultHandlers) {
       return Promise.resolve({
         ok: true,
         status: 200,
         statusText: "OK",
-        json: async () => handlers[url],
+        json: async () => defaultHandlers[url],
       });
     }
     // Default: 404
@@ -41,6 +45,7 @@ async function mountAndLoad(target: HTMLElement, route = "#/plan"): Promise<Retu
   // Let the fetch micro-tasks resolve (init() awaits fetch then sets loaded=true)
   await tick();
   await tick();
+  await tick();  // extra tick for authStore init
   flushSync();
   return app;
 }

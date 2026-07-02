@@ -46,6 +46,11 @@
   import { createKBStore } from "./lib/kbStore.svelte";
   import KBPage from "./lib/components/KBPage.svelte";
   import { getStoredTheme, toggleTheme, type Theme } from "./lib/theme";
+  import { createAuthStore } from "./lib/authStore.svelte";
+  import LoginPage from "./lib/components/LoginPage.svelte";
+  import Modal from "./lib/components/ui/Modal.svelte";
+  import Input from "./lib/components/ui/Input.svelte";
+  import Button from "./lib/components/ui/Button.svelte";
 
   const floorStore = createHouseStore();
   const viewportStore = createViewportStore();
@@ -57,6 +62,7 @@
   const worksStore = createWorksStore();
   const kbStore = createKBStore();
   const consumableStore = createConsumableStore();
+  const authStore = createAuthStore();
 
   let theme = $state<Theme>(getStoredTheme());
   function handleToggleTheme(): void {
@@ -196,6 +202,32 @@
   let allFloorsMode = $state(false);
   let navExpanded = $state(false);
   let showNewChoreModal = $state(false);
+  let userMenuOpen = $state(false);
+  let showChangePassword = $state(false);
+  let cpCurrent = $state("");
+  let cpNew = $state("");
+  let cpError = $state<string | null>(null);
+  let cpLoading = $state(false);
+
+  async function handleChangePassword(): Promise<void> {
+    cpError = null;
+    cpLoading = true;
+    try {
+      await authStore.changePassword(cpCurrent, cpNew);
+      showChangePassword = false;
+      cpCurrent = "";
+      cpNew = "";
+    } catch (e) {
+      cpError = e instanceof Error ? e.message : "Failed";
+    } finally {
+      cpLoading = false;
+    }
+  }
+
+  async function handleSignOut(): Promise<void> {
+    await authStore.logout();
+    userMenuOpen = false;
+  }
 
   let currentRoute = $state(window.location.hash || "#/");
   $effect(() => {
@@ -500,6 +532,12 @@
   onmouseup={handleDragEnd}
 />
 
+{#if authStore.checking}
+  <div class="auth-loading">Loading…</div>
+{:else if !authStore.user}
+  <LoginPage onlogin={() => {}} login={authStore.login} />
+{:else}
+
 <div class="app">
   <header class="topbar">
     <button
@@ -515,6 +553,31 @@
       title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
       onclick={handleToggleTheme}
     >{theme === "light" ? "🌙" : "☀️"}</button>
+
+    <div class="user-menu-wrap">
+      <button
+        class="icon-btn user-chip"
+        onclick={() => { userMenuOpen = !userMenuOpen; }}
+        title="User menu"
+      >
+        {authStore.user?.username.slice(0, 2).toUpperCase()}
+      </button>
+      {#if userMenuOpen}
+        <div class="user-dropdown">
+          <div class="user-dropdown-header">
+            <span class="user-dropdown-name">{authStore.user?.username}</span>
+            <span class="user-role-badge">{authStore.user?.role}</span>
+          </div>
+          <hr class="user-dropdown-sep" />
+          <button class="user-dropdown-item" onclick={() => { showChangePassword = true; userMenuOpen = false; }}>
+            Change password
+          </button>
+          <button class="user-dropdown-item signout" onclick={handleSignOut}>
+            Sign out
+          </button>
+        </div>
+      {/if}
+    </div>
 
     {#if isFloorPlan}
       <FloorSwitcher
@@ -941,6 +1004,24 @@
 
 <NewChoreModal open={showNewChoreModal} store={choreStore} onclose={() => { showNewChoreModal = false; }} />
 
+  {#if showChangePassword}
+    <Modal title="Change Password" onclose={() => { showChangePassword = false; cpError = null; }}>
+      <div style="display:flex;flex-direction:column;gap:12px;padding:4px 0">
+        <Input label="Current password" type="password" bind:value={cpCurrent} />
+        <Input label="New password (min 8 chars)" type="password" bind:value={cpNew} />
+        {#if cpError}<div style="color:var(--danger);font-size:0.85rem">{cpError}</div>{/if}
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+          <Button variant="secondary" onclick={() => { showChangePassword = false; cpError = null; }}>Cancel</Button>
+          <Button onclick={handleChangePassword} disabled={cpLoading}>
+            {cpLoading ? "Saving…" : "Change password"}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  {/if}
+
+{/if}
+
 <style>
   :global(body) { margin: 0; padding: 0; overflow: hidden; }
 
@@ -1061,4 +1142,75 @@
     display: flex; align-items: center; justify-content: center;
     height: 100%; color: #556; font-size: 14px;
   }
+
+  .auth-loading {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .user-menu-wrap { position: relative; }
+
+  .user-chip {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .user-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 180px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 0;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    z-index: 200;
+  }
+
+  .user-dropdown-header {
+    padding: 8px 14px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .user-dropdown-name { font-size: 0.9rem; color: var(--text); font-weight: 600; }
+
+  .user-role-badge {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .user-dropdown-sep { margin: 4px 0; border: none; border-top: 1px solid var(--border); }
+
+  .user-dropdown-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 8px 14px;
+    font-size: 0.875rem;
+    color: var(--text);
+    cursor: pointer;
+    font-family: var(--font-sans);
+  }
+
+  .user-dropdown-item:hover { background: var(--surface-hover, var(--border)); }
+  .user-dropdown-item.signout { color: var(--danger, #e05); }
 </style>
