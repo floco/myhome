@@ -1,6 +1,4 @@
 import pytest
-from fastapi.testclient import TestClient
-from myhome.main import app
 from myhome.models_kb import KBEntry
 from myhome.persistence_kb import save_entry
 
@@ -15,20 +13,13 @@ def make_entry() -> KBEntry:
     )
 
 
-@pytest.fixture()
-def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    return TestClient(app)
-
-
 def test_get_kb_empty_when_no_dir(client):
     resp = client.get("/api/kb")
     assert resp.status_code == 200
     assert resp.json()["entries"] == []
 
 
-def test_get_kb_returns_saved_data(client, tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_get_kb_returns_saved_data(client, tmp_path):
     save_entry(make_entry())
     resp = client.get("/api/kb")
     assert resp.status_code == 200

@@ -27,8 +27,10 @@ def _get_or_create_secret() -> str:
     if key_file.exists():
         return key_file.read_text().strip()
     key = secrets.token_hex(32)
-    key_file.parent.mkdir(parents=True, exist_ok=True)
-    key_file.write_text(key)
+    key_file.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    fd = os.open(str(key_file), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w") as f:
+        f.write(key)
     return key
 
 

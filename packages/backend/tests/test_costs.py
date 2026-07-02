@@ -1,6 +1,4 @@
 import pytest
-from fastapi.testclient import TestClient
-from myhome.main import app
 from myhome.models_costs import CostEntry, CostsDocument
 from myhome.persistence_costs import save_costs
 
@@ -19,12 +17,6 @@ def make_doc() -> CostsDocument:
             )
         ]
     )
-
-
-@pytest.fixture()
-def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    return TestClient(app)
 
 
 def test_get_costs_empty_when_no_file(client):
