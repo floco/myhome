@@ -554,31 +554,6 @@
       onclick={handleToggleTheme}
     >{theme === "light" ? "🌙" : "☀️"}</button>
 
-    <div class="user-menu-wrap">
-      <button
-        class="icon-btn user-chip"
-        onclick={() => { userMenuOpen = !userMenuOpen; }}
-        title="User menu"
-      >
-        {authStore.user?.username.slice(0, 2).toUpperCase()}
-      </button>
-      {#if userMenuOpen}
-        <div class="user-dropdown">
-          <div class="user-dropdown-header">
-            <span class="user-dropdown-name">{authStore.user?.username}</span>
-            <span class="user-role-badge">{authStore.user?.role}</span>
-          </div>
-          <hr class="user-dropdown-sep" />
-          <button class="user-dropdown-item" onclick={() => { showChangePassword = true; userMenuOpen = false; }}>
-            Change password
-          </button>
-          <button class="user-dropdown-item signout" onclick={handleSignOut}>
-            Sign out
-          </button>
-        </div>
-      {/if}
-    </div>
-
     {#if isFloorPlan}
       <FloorSwitcher
         floors={floorStore.floors}
@@ -633,6 +608,31 @@
       <button class="icon-btn" title="Reset view" onclick={() => viewportStore.reset()}>↺</button>
       <span class="topbar-sep"></span>
     {/if}
+
+    <div class="user-menu-wrap">
+      <button
+        class="icon-btn user-chip"
+        onclick={() => { userMenuOpen = !userMenuOpen; }}
+        title="User menu"
+      >
+        {authStore.user?.username.slice(0, 2).toUpperCase()}
+      </button>
+      {#if userMenuOpen}
+        <div class="user-dropdown">
+          <div class="user-dropdown-header">
+            <span class="user-dropdown-name">{authStore.user?.username}</span>
+            <span class="user-role-badge">{authStore.user?.role}</span>
+          </div>
+          <hr class="user-dropdown-sep" />
+          <button class="user-dropdown-item" onclick={() => { showChangePassword = true; userMenuOpen = false; }}>
+            Change password
+          </button>
+          <button class="user-dropdown-item signout" onclick={handleSignOut}>
+            Sign out
+          </button>
+        </div>
+      {/if}
+    </div>
 
   </header>
 
@@ -1152,7 +1152,7 @@
     font-size: 0.9rem;
   }
 
-  .user-menu-wrap { position: relative; }
+  .user-menu-wrap { position: relative; margin-left: auto; }
 
   .user-chip {
     width: 32px;
