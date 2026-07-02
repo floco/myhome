@@ -1,0 +1,122 @@
+<script lang="ts">
+  import type { createConsumableStore, Consumable } from "../consumableStore.svelte";
+  import { stockStatus } from "../consumableStore.svelte";
+
+  type ConsumableStore = ReturnType<typeof createConsumableStore>;
+
+  interface Props {
+    consumable: Consumable;
+    store: ConsumableStore;
+    screenX: number;
+    screenY: number;
+    onedit: () => void;
+    onremove: () => void;
+    onclose: () => void;
+  }
+
+  let { consumable, store, screenX, screenY, onedit, onremove, onclose }: Props = $props();
+
+  const STATE_COLOR: Record<string, string> = {
+    ok: "#4caf50",
+    low: "#ff9800",
+    empty: "#f44336",
+  };
+  const STATE_LABEL: Record<string, string> = {
+    ok: "In stock",
+    low: "Low stock",
+    empty: "Empty",
+  };
+
+  let newQty = $state(String(consumable.quantity));
+  let note = $state("");
+  let updating = $state(false);
+  let updateError = $state<string | null>(null);
+
+  const st = $derived(stockStatus(consumable));
+  const color = $derived(STATE_COLOR[st]);
+
+  async function handleUpdate(): Promise<void> {
+    const qty = parseFloat(newQty);
+    if (isNaN(qty)) {
+      updateError = "Invalid quantity";
+      return;
+    }
+    updating = true;
+    updateError = null;
+    try {
+      await store.updateStock(consumable.id, qty, note);
+      onclose();
+    } catch {
+      updateError = "Update failed";
+    } finally {
+      updating = false;
+    }
+  }
+</script>
+
+<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+<div
+  class="popup"
+  style="left:{screenX}px;top:{screenY + 30}px"
+  onclick={(e) => e.stopPropagation()}
+>
+  <div class="popup-name">{consumable.emoji} {consumable.name}</div>
+  <div class="popup-status" style="color:{color}">
+    {STATE_LABEL[st]} — {consumable.quantity} {consumable.unit}
+  </div>
+
+  <div class="quick-update">
+    <input class="qty-input" type="number" bind:value={newQty} min="0" step="any" />
+    <span class="unit-label">{consumable.unit}</span>
+    <input class="note-input" type="text" bind:value={note} placeholder="note…" />
+    <button class="update-btn" onclick={handleUpdate} disabled={updating}>
+      {updating ? "…" : "✓"}
+    </button>
+  </div>
+  {#if updateError}<div class="popup-error">{updateError}</div>{/if}
+
+  <div class="popup-actions">
+    <button onclick={onedit}>✏️ Edit</button>
+    <button onclick={onremove}>✕ Remove pin</button>
+    <button onclick={onclose}>Close</button>
+  </div>
+</div>
+
+<style>
+  .popup {
+    position: absolute;
+    background: #1e1e3a;
+    border: 1px solid #3a3a5a;
+    border-radius: 8px;
+    padding: 10px 14px;
+    min-width: 220px;
+    z-index: 60;
+    box-shadow: 0 4px 16px #0006;
+    font-family: sans-serif;
+    transform: translateX(-50%);
+  }
+  .popup-name { font-size: 13px; color: #eee; font-weight: 600; margin-bottom: 4px; }
+  .popup-status { font-size: 11px; margin-bottom: 8px; }
+  .quick-update { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+  .qty-input {
+    width: 52px; padding: 3px 6px; background: #111128; border: 1px solid #3a3a5a;
+    border-radius: 4px; color: #eee; font-size: 12px;
+  }
+  .unit-label { font-size: 11px; color: #667; flex-shrink: 0; }
+  .note-input {
+    flex: 1; padding: 3px 6px; background: #111128; border: 1px solid #3a3a5a;
+    border-radius: 4px; color: #eee; font-size: 12px;
+  }
+  .update-btn {
+    border: none; background: #27ae60; color: #fff; padding: 3px 8px;
+    border-radius: 4px; font-size: 12px; cursor: pointer;
+  }
+  .update-btn:disabled { opacity: 0.5; cursor: default; }
+  .popup-error { font-size: 11px; color: #f44336; margin-bottom: 4px; }
+  .popup-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .popup-actions button {
+    border: 1px solid #3a3a5a; background: #111128; color: #aaa;
+    padding: 3px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;
+  }
+  .popup-actions button:hover { background: #2a2a5a; color: #eee; }
+</style>

@@ -5,11 +5,13 @@
   import type { createSettingsStore } from "../settingsStore.svelte";
   import type { createCostsStore } from "../costsStore.svelte";
   import type { createWorksStore } from "../worksStore.svelte";
+  import type { createConsumableStore } from "../consumableStore.svelte";
   import HomeMapWidget from "./HomeMapWidget.svelte";
   import HomeChoresWidget from "./HomeChoresWidget.svelte";
   import HomeCostsWidget from "./HomeCostsWidget.svelte";
   import HomeInventoryWidget from "./HomeInventoryWidget.svelte";
   import HomeWorksWidget from "./HomeWorksWidget.svelte";
+  import HomeConsumablesWidget from "./HomeConsumablesWidget.svelte";
 
   type HouseStore = ReturnType<typeof createHouseStore>;
   type ChoreStore = ReturnType<typeof createChoreStore>;
@@ -17,6 +19,7 @@
   type SettingsStore = ReturnType<typeof createSettingsStore>;
   type CostsStore = ReturnType<typeof createCostsStore>;
   type WorksStore = ReturnType<typeof createWorksStore>;
+  type ConsumableStore = ReturnType<typeof createConsumableStore>;
 
   interface Props {
     floorStore: HouseStore;
@@ -25,8 +28,9 @@
     settingsStore: SettingsStore;
     costsStore: CostsStore;
     worksStore: WorksStore;
+    consumableStore: ConsumableStore;
   }
-  let { floorStore, choreStore, inventoryStore, settingsStore, costsStore, worksStore }: Props = $props();
+  let { floorStore, choreStore, inventoryStore, settingsStore, costsStore, worksStore, consumableStore }: Props = $props();
 
   function navigate(hash: string): void {
     window.location.hash = hash;
@@ -50,6 +54,7 @@
     <HomeCostsWidget {costsStore} {settingsStore} onnavigate={() => navigate("#/costs")} />
     <HomeInventoryWidget {inventoryStore} onnavigate={() => navigate("#/inventory")} />
     <HomeWorksWidget {worksStore} onnavigate={() => navigate("#/works")} />
+    <HomeConsumablesWidget {consumableStore} onnavigate={() => navigate("#/consumables")} />
   </div>
 </div>
 

@@ -5,6 +5,7 @@ from pathlib import Path
 from .models_settings import (
     SettingsDocument,
     _default_cost_categories,
+    _default_consumable_units,
     _default_inventory_categories,
     _default_work_categories,
 )
@@ -22,9 +23,13 @@ def load_settings() -> SettingsDocument:
             costCategories=_default_cost_categories(),
             inventoryCategories=_default_inventory_categories(),
             workCategories=_default_work_categories(),
+            consumableUnits=_default_consumable_units(),
         )
     with path.open() as f:
-        return SettingsDocument.model_validate(json.load(f))
+        doc = SettingsDocument.model_validate(json.load(f))
+    if not doc.consumableUnits:
+        doc.consumableUnits = _default_consumable_units()
+    return doc
 
 
 def save_settings(doc: SettingsDocument) -> None:

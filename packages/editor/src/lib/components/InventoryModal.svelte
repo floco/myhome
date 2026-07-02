@@ -5,6 +5,7 @@
   import Modal from "./ui/Modal.svelte";
   import Input from "./ui/Input.svelte";
   import Button from "./ui/Button.svelte";
+  import EmojiPicker from "./ui/EmojiPicker.svelte";
   import Tabs from "./ui/Tabs.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
@@ -141,7 +142,7 @@
   {#if activeTab === "info"}
     <div class="row">
       <label>Emoji</label>
-      <input class="native-input emoji-input" bind:value={emoji} maxlength="2" />
+      <EmojiPicker bind:value={emoji} />
       <label style="margin-left:16px">Name *</label>
       <div class="flex-grow"><Input bind:value={name} placeholder='e.g. Samsung TV 65"' /></div>
     </div>

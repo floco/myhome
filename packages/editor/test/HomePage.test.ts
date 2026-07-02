@@ -7,6 +7,7 @@ import { createInventoryStore } from "../src/lib/inventoryStore.svelte";
 import { createSettingsStore } from "../src/lib/settingsStore.svelte";
 import { createCostsStore } from "../src/lib/costsStore.svelte";
 import { createWorksStore } from "../src/lib/worksStore.svelte";
+import { createConsumableStore } from "../src/lib/consumableStore.svelte";
 
 function makeStores() {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => undefined }));
@@ -17,6 +18,7 @@ function makeStores() {
     settingsStore: createSettingsStore(),
     costsStore: createCostsStore(),
     worksStore: createWorksStore(),
+    consumableStore: createConsumableStore(),
   };
 }
 

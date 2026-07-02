@@ -2,6 +2,7 @@
   import type { createChoreStore } from "../choreStore.svelte";
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
+  import EmojiPicker from "./ui/EmojiPicker.svelte";
 
   type ChoreStore = ReturnType<typeof createChoreStore>;
 
@@ -77,7 +78,7 @@
 
     <div class="field">
       <label for="chore-emoji">Emoji</label>
-      <input id="chore-emoji" class="native-input emoji-input" bind:value={emoji} maxlength="4" />
+      <EmojiPicker bind:value={emoji} />
     </div>
 
     <div class="field">

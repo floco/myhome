@@ -689,3 +689,40 @@ def test_chore_delete_chore_removes_attachment_dir(tmp_path, monkeypatch):
     resp = c.delete(f"/api/chores/{cid}")
     assert resp.status_code == 204
     assert not att_dir.exists()
+
+
+def test_update_assignment_next_due_date(client):
+    chore_id = _chore_id(client)
+    a_resp = client.post("/api/assignments", json={
+        "choreId": chore_id, "nextDueDate": "2027-01-08T00:00:00Z"
+    })
+    assert a_resp.status_code == 201
+    assignment_id = a_resp.json()["id"]
+
+    resp = client.put(f"/api/assignments/{assignment_id}", json={"nextDueDate": "2027-01-15T00:00:00Z"})
+    assert resp.status_code == 204
+
+    doc = client.get("/api/chores").json()
+    a = next(a for a in doc["assignments"] if a["id"] == assignment_id)
+    assert a["nextDueDate"] == "2027-01-15T00:00:00Z"
+
+
+def test_delete_completion(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    save_chores(make_chore_doc())
+    c = TestClient(app)
+    c.post("/api/chores/c1/complete", json={"notes": "first"})
+    c.post("/api/chores/c1/complete", json={"notes": "second"})
+    doc = c.get("/api/chores").json()
+    assert len(doc["completions"]) == 2
+    completion_id = doc["completions"][0]["id"]
+    resp = c.delete(f"/api/completions/{completion_id}")
+    assert resp.status_code == 204
+    doc = c.get("/api/chores").json()
+    assert len(doc["completions"]) == 1
+    assert doc["completions"][0]["id"] != completion_id
+
+
+def test_delete_completion_404(client):
+    resp = client.delete("/api/completions/nonexistent")
+    assert resp.status_code == 404

@@ -27,9 +27,14 @@ function makeStore(overrides = {}) {
     deleteChore: vi.fn().mockResolvedValue(undefined),
     uploadAttachment: vi.fn().mockResolvedValue("file.jpg"),
     deleteAttachment: vi.fn().mockResolvedValue(undefined),
+    getCompletionsForChore: vi.fn().mockReturnValue([]),
+    assignments: [],
+    deleteCompletion: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
+
+const NO_ROOMS: Array<{ id: string; label: string }> = [];
 
 describe("ChoreEditModal — tabs", () => {
   it("shows Info and Media tab buttons when chore is provided", () => {
@@ -38,7 +43,7 @@ describe("ChoreEditModal — tabs", () => {
     const store = makeStore();
     const app = mount(ChoreEditModal, {
       target,
-      props: { chore: makeChore(), store, onclose: vi.fn() },
+      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn() },
     });
     flushSync();
     const tabs = Array.from(target.querySelectorAll(".tab")).map(t => t.textContent?.trim());
@@ -53,7 +58,7 @@ describe("ChoreEditModal — tabs", () => {
     document.body.appendChild(target);
     const app = mount(ChoreEditModal, {
       target,
-      props: { chore: makeChore({ attachments: ["photo.jpg"] }), store: makeStore(), onclose: vi.fn() },
+      props: { chore: makeChore({ attachments: ["photo.jpg"] }), store: makeStore(), rooms: NO_ROOMS, onclose: vi.fn() },
     });
     flushSync();
     const mediaTab = Array.from(target.querySelectorAll(".tab"))
@@ -72,7 +77,7 @@ describe("ChoreEditModal — tabs", () => {
     const onclose = vi.fn();
     const app = mount(ChoreEditModal, {
       target,
-      props: { chore: makeChore(), store, onclose },
+      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose },
     });
     flushSync();
     const saveBtn = Array.from(target.querySelectorAll("button")).find(
@@ -90,7 +95,7 @@ describe("ChoreEditModal — tabs", () => {
     document.body.appendChild(target);
     const store = makeStore({ deleteChore: vi.fn().mockResolvedValue(undefined) });
     const onclose = vi.fn();
-    mount(ChoreEditModal, { target, props: { chore: makeChore(), store, onclose } });
+    mount(ChoreEditModal, { target, props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose } });
     flushSync();
     // Click delete → shows confirm
     const del = Array.from(target.querySelectorAll("button")).find(b => b.textContent?.includes("🗑")) as HTMLButtonElement;

@@ -394,6 +394,8 @@ def update_assignment(assignment_id: str, body: AssignmentUpdate) -> None:
         raise HTTPException(status_code=404, detail="Assignment not found")
     if body.position is not None:
         assignment.position = body.position
+    if body.nextDueDate is not None:
+        assignment.nextDueDate = body.nextDueDate
     save_chores(doc)
 
 
@@ -403,4 +405,13 @@ def delete_assignment(assignment_id: str) -> None:
     if not any(a.id == assignment_id for a in doc.assignments):
         raise HTTPException(status_code=404, detail="Assignment not found")
     doc.assignments = [a for a in doc.assignments if a.id != assignment_id]
+    save_chores(doc)
+
+
+@router.delete("/api/completions/{completion_id}", status_code=204)
+def delete_completion(completion_id: str) -> None:
+    doc = load_chores()
+    if not any(r.id == completion_id for r in doc.completions):
+        raise HTTPException(status_code=404, detail="Completion not found")
+    doc.completions = [r for r in doc.completions if r.id != completion_id]
     save_chores(doc)

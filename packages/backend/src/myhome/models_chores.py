@@ -80,6 +80,7 @@ class AssignmentCreate(BaseModel):
 
 class AssignmentUpdate(BaseModel):
     position: Position | None = None
+    nextDueDate: str | None = None
 
 
 class CompleteRequest(BaseModel):

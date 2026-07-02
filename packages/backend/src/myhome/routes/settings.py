@@ -1,5 +1,13 @@
 from fastapi import APIRouter, HTTPException
-from ..models_settings import CostCategory, CostCategoryPlacement, InventoryCategory, WorkCategory, Supplier, SettingsDocument
+from ..models_settings import (
+    ConsumableCategory,
+    CostCategory,
+    CostCategoryPlacement,
+    InventoryCategory,
+    WorkCategory,
+    Supplier,
+    SettingsDocument,
+)
 from ..persistence_settings import load_settings, save_settings
 
 router = APIRouter()
@@ -55,4 +63,18 @@ def put_work_categories(body: list[WorkCategory]) -> None:
 def put_suppliers(body: list[Supplier]) -> None:
     doc = load_settings()
     doc.suppliers = body
+    save_settings(doc)
+
+
+@router.put("/api/settings/consumable-units", status_code=204)
+def put_consumable_units(body: list[str]) -> None:
+    doc = load_settings()
+    doc.consumableUnits = body
+    save_settings(doc)
+
+
+@router.put("/api/settings/consumable-categories", status_code=204)
+def put_consumable_categories(body: list[ConsumableCategory]) -> None:
+    doc = load_settings()
+    doc.consumableCategories = body
     save_settings(doc)

@@ -37,6 +37,16 @@ class Supplier(BaseModel):
     name: str
 
 
+class ConsumableCategory(BaseModel):
+    id: str
+    name: str
+    emoji: str
+
+
+def _default_consumable_units() -> list[str]:
+    return ["count", "L", "mL", "kg", "g", "packs", "rolls", "pairs"]
+
+
 def _default_cost_categories() -> list[CostCategory]:
     return [
         CostCategory(id="cat-fuel",        name="Fuel / Mazout",  emoji="🛢", unit="L",      color="#4466cc"),
@@ -74,3 +84,5 @@ class SettingsDocument(BaseModel):
     inventoryCategories: list[InventoryCategory] = []
     workCategories: list[WorkCategory] = []
     suppliers: list[Supplier] = []
+    consumableUnits: list[str] = []
+    consumableCategories: list[ConsumableCategory] = []

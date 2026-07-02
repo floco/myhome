@@ -8,10 +8,11 @@
   let open = $state(false);
 
   const layers = [
-    { id: "chores", icon: "✅", label: "Chores" },
-    { id: "inventory", icon: "📦", label: "Inventory" },
-    { id: "costs", icon: "💶", label: "Costs" },
-    { id: "works", icon: "🔧", label: "Works" },
+    { id: "chores",      icon: "✅", label: "Chores"      },
+    { id: "inventory",   icon: "📦", label: "Inventory"   },
+    { id: "consumables", icon: "🛒", label: "Consumables" },
+    { id: "costs",       icon: "💶", label: "Costs"       },
+    { id: "works",       icon: "🔧", label: "Works"       },
   ];
 
   function handleClickOutside(e: MouseEvent) {

@@ -17,13 +17,16 @@
   import type { PickerLayer } from "./lib/components/ItemPickerPanel.svelte";
   import BadgePopup from "./lib/components/BadgePopup.svelte";
   import ChoresPage from "./lib/components/ChoresPage.svelte";
-  import ChoreListPage from "./lib/components/ChoreListPage.svelte";
   import NavMenu from "./lib/components/NavMenu.svelte";
   import HomePage from "./lib/components/HomePage.svelte";
   import NewChoreModal from "./lib/components/NewChoreModal.svelte";
   import LayersDropdown from "./lib/components/LayersDropdown.svelte";
   import InventoryPage from "./lib/components/InventoryPage.svelte";
   import ConsumablesPage from "./lib/components/ConsumablesPage.svelte";
+  import { createConsumableStore } from "./lib/consumableStore.svelte";
+  import type { Consumable } from "./lib/consumableStore.svelte";
+  import ConsumableOverlay from "./lib/components/ConsumableOverlay.svelte";
+  import ConsumablePinPopup from "./lib/components/ConsumablePinPopup.svelte";
   import WorksPage from "./lib/components/WorksPage.svelte";
   import { createInventoryStore } from "./lib/inventoryStore.svelte";
   import type { InventoryItem } from "./lib/inventoryStore.svelte";
@@ -53,6 +56,7 @@
   const costsStore = createCostsStore();
   const worksStore = createWorksStore();
   const kbStore = createKBStore();
+  const consumableStore = createConsumableStore();
 
   let theme = $state<Theme>(getStoredTheme());
   function handleToggleTheme(): void {
@@ -67,19 +71,23 @@
   let selectedInventoryItemId = $state<string | null>(null);
   let draggingItemId = $state<string | null>(null);
   let draggingLayerId = $state<string | null>(null);
+  let pickerHighlightId = $state<string | null>(null);
 
   let selectedCostCategoryPin = $state<{
     category: CostCategory;
     screenX: number;
     screenY: number;
   } | null>(null);
-  let placingCostCategoryId = $state<string | null>(null);
+  let selectedConsumablePin = $state<{
+    consumable: Consumable;
+    screenX: number;
+    screenY: number;
+  } | null>(null);
   let selectedWorkPin = $state<{
     work: Work;
     screenX: number;
     screenY: number;
   } | null>(null);
-  let placingWorkId = $state<string | null>(null);
 
   let activeLayers = $state(new Set<string>());
   const choreLayerActive = $derived(activeLayers.has("chores"));
@@ -89,6 +97,21 @@
     settingsStore.costCategories.filter(c => c.placement?.floorId === floorStore.currentFloorId)
   );
   const worksLayerActive = $derived(activeLayers.has("works"));
+  const consumablesLayerActive = $derived(activeLayers.has("consumables"));
+  const currentFloorConsumables = $derived(
+    consumableStore.consumables.filter(c => c.placement?.floorId === floorStore.currentFloorId)
+  );
+  const consumablesPickerLayer = $derived<PickerLayer>({
+    id: "consumables",
+    label: "Consumables",
+    emoji: "🛒",
+    items: consumableStore.consumables.map(c => ({
+      id: c.id,
+      name: c.name,
+      emoji: c.emoji,
+      placed: c.placement !== null,
+    })),
+  });
   const currentFloorWorks = $derived(
     worksStore.works.filter(w => w.placement?.floorId === floorStore.currentFloorId)
   );
@@ -150,6 +173,7 @@
   const pickerLayers = $derived<PickerLayer[]>([
     ...(choreLayerActive ? [chorePickerLayer] : []),
     ...(inventoryLayerActive ? [inventoryPickerLayer] : []),
+    ...(consumablesLayerActive ? [consumablesPickerLayer] : []),
     ...(costsLayerActive ? [costsPickerLayer] : []),
     ...(worksLayerActive ? [worksPickerLayer] : []),
   ]);
@@ -182,7 +206,6 @@
 
   const isFloorPlan = $derived(currentRoute === "#/plan");
   const isHome = $derived(currentRoute === "#/" || currentRoute === "");
-  const isChores = $derived(currentRoute.startsWith("#/chores"));
 
   const selectedRoom = $derived(
     toolStore.state.selectedRoomId
@@ -380,8 +403,6 @@
     if (event.ctrlKey && event.key === "z" && !event.shiftKey) { event.preventDefault(); handleUndo(); return; }
     if (event.ctrlKey && (event.key === "y" || (event.key === "z" && event.shiftKey))) { event.preventDefault(); handleRedo(); return; }
     if (event.key === "Escape") {
-      if (placingCostCategoryId) { placingCostCategoryId = null; return; }
-      if (placingWorkId) { placingWorkId = null; return; }
       toolStore.resetDraw(); return;
     }
     if ((event.key === "Delete" || event.key === "Backspace") &&
@@ -430,6 +451,16 @@
     if (layerId === "inventory") {
       const room = floorStore.floor.rooms.find(r => r.polygon && pointInPolygon({ x: worldX, y: worldY }, r.polygon));
       inventoryStore.setPlacement(itemId, {
+        floorId: floorStore.currentFloorId,
+        roomId: room?.id ?? null,
+        position: { x: worldX, y: worldY },
+      });
+      return;
+    }
+
+    if (layerId === "consumables") {
+      const room = floorStore.floor.rooms.find(r => r.polygon && pointInPolygon({ x: worldX, y: worldY }, r.polygon));
+      consumableStore.setPlacement(itemId, {
         floorId: floorStore.currentFloorId,
         roomId: room?.id ?? null,
         position: { x: worldX, y: worldY },
@@ -540,20 +571,6 @@
       <span class="topbar-sep"></span>
     {/if}
 
-    {#if isChores}
-      {#if !isFloorPlan}<span class="spacer"></span>{/if}
-      <a
-        href={currentRoute === "#/chores/manage" ? "#/chores" : "#/chores/manage"}
-        class="icon-btn"
-        class:active={currentRoute === "#/chores/manage"}
-        title="Chore settings"
-      >⚙</a>
-      <button
-        class="icon-btn new-chore-btn"
-        title="New chore"
-        onclick={() => { showNewChoreModal = true; }}
-      >＋</button>
-    {/if}
   </header>
 
   <div class="workspace">
@@ -741,34 +758,6 @@
                 />
               </div>
             {/if}
-            {#if placingCostCategoryId}
-              {@const placingCat = settingsStore.costCategories.find(c => c.id === placingCostCategoryId)}
-              <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-              <div
-                style="position:absolute;inset:0;z-index:70;cursor:crosshair"
-                onclick={(e) => {
-                  if (!placingCostCategoryId) return;
-                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                  const screenX = e.clientX - rect.left;
-                  const screenY = e.clientY - rect.top;
-                  const worldPos = viewportStore.screenToWorld({ x: screenX, y: screenY });
-                  settingsStore.placeCostCategory(placingCostCategoryId, {
-                    floorId: floorStore.currentFloorId,
-                    position: worldPos,
-                  });
-                  placingCostCategoryId = null;
-                }}
-              >
-                <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);background:#1e1e3a;border:1px solid #5566cc;border-radius:6px;padding:6px 14px;color:#aaf;font-size:12px;font-family:sans-serif;pointer-events:none">
-                  {#if placingCat}
-                    Click to place {placingCat.emoji} {placingCat.name}
-                  {:else}
-                    Click to place pin
-                  {/if}
-                  &nbsp;&nbsp;<span style="color:#556;font-size:10px">Press Esc to cancel</span>
-                </div>
-              </div>
-            {/if}
             {#if worksLayerActive}
               <WorksOverlay
                 works={currentFloorWorks}
@@ -811,32 +800,45 @@
                 />
               </div>
             {/if}
-            {#if placingWorkId}
-              {@const placingWork = worksStore.works.find(w => w.id === placingWorkId)}
-              <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-              <div
-                style="position:absolute;inset:0;z-index:70;cursor:crosshair"
-                onclick={(e) => {
-                  if (!placingWorkId) return;
-                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                  const screenX = e.clientX - rect.left;
-                  const screenY = e.clientY - rect.top;
-                  const worldPos = viewportStore.screenToWorld({ x: screenX, y: screenY });
-                  worksStore.setPlacement(placingWorkId, {
-                    floorId: floorStore.currentFloorId,
-                    position: worldPos,
-                  });
-                  placingWorkId = null;
+            {#if consumablesLayerActive}
+              <ConsumableOverlay
+                consumables={currentFloorConsumables}
+                viewport={viewportStore.viewport}
+                active={true}
+                width={canvasWidth}
+                height={canvasHeight}
+                onclick={(consumableId) => {
+                  const c = consumableStore.consumables.find((x) => x.id === consumableId);
+                  if (!c?.placement) return;
+                  const sp = viewportStore.worldToScreen(c.placement.position);
+                  selectedConsumablePin = { consumable: c, screenX: sp.x, screenY: sp.y };
                 }}
-              >
-                <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);background:#1e1e3a;border:1px solid #5566cc;border-radius:6px;padding:6px 14px;color:#aaf;font-size:12px;font-family:sans-serif;pointer-events:none">
-                  {#if placingWork}
-                    Click to place {placingWork.categoryId ? (settingsStore.workCategories.find(c => c.id === placingWork.categoryId)?.emoji ?? "🔧") : "🔧"} {placingWork.title}
-                  {:else}
-                    Click to place work pin
-                  {/if}
-                  &nbsp;&nbsp;<span style="color:#556;font-size:10px">Press Esc to cancel</span>
-                </div>
+                ondragend={(consumableId, worldPos) => {
+                  const c = consumableStore.consumables.find((x) => x.id === consumableId);
+                  if (!c?.placement) return;
+                  consumableStore.setPlacement(consumableId, { ...c.placement, position: worldPos });
+                }}
+              />
+            {/if}
+            {#if selectedConsumablePin}
+              {@const pin = selectedConsumablePin}
+              <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+              <div style="position:absolute;inset:0;z-index:55" onclick={() => { selectedConsumablePin = null; }}>
+                <ConsumablePinPopup
+                  consumable={pin.consumable}
+                  store={consumableStore}
+                  screenX={pin.screenX}
+                  screenY={pin.screenY}
+                  onedit={() => {
+                    selectedConsumablePin = null;
+                    window.location.hash = "#/consumables";
+                  }}
+                  onremove={async () => {
+                    await consumableStore.setPlacement(pin.consumable.id, null);
+                    selectedConsumablePin = null;
+                  }}
+                  onclose={() => { selectedConsumablePin = null; }}
+                />
               </div>
             {/if}
           {/if}
@@ -845,7 +847,8 @@
               <ItemPickerPanel
                 layers={pickerLayers}
                 draggingId={draggingItemId}
-                ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; }}
+                highlightId={pickerHighlightId}
+                ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; pickerHighlightId = null; }}
                 ondragend={() => { draggingLayerId = null; draggingItemId = null; }}
               />
             </div>
@@ -860,13 +863,11 @@
           {settingsStore}
           {costsStore}
           {worksStore}
+          {consumableStore}
         />
 
-      {:else if currentRoute === "#/chores"}
-        <ChoreListPage store={choreStore} {floorStore} />
-
-      {:else if currentRoute === "#/chores/manage"}
-        <ChoresPage store={choreStore} {floorStore} onnewchore={() => { showNewChoreModal = true; }} />
+      {:else if currentRoute === "#/chores" || currentRoute === "#/chores/manage"}
+        <ChoresPage store={choreStore} {floorStore} onnewchore={() => { showNewChoreModal = true; }} onplaceonmap={(choreId) => { const next = new Set(activeLayers); next.add("chores"); activeLayers = next; pickerHighlightId = choreId; pickerOpen = true; window.location.hash = "#/plan"; }} />
 
       {:else if currentRoute === "#/inventory"}
         <InventoryPage
@@ -879,23 +880,37 @@
             const next = new Set(activeLayers);
             next.add("inventory");
             activeLayers = next;
-            window.location.hash = "#/";
+            pickerHighlightId = id;
+            pickerOpen = true;
+            window.location.hash = "#/plan";
           }}
         />
 
       {:else if currentRoute === "#/consumables"}
-        <ConsumablesPage />
+        <ConsumablesPage
+          store={consumableStore}
+          {settingsStore}
+          onplaceonmap={(id) => {
+            const next = new Set(activeLayers);
+            next.add("consumables");
+            activeLayers = next;
+            pickerHighlightId = id;
+            pickerOpen = true;
+            window.location.hash = "#/plan";
+          }}
+        />
 
       {:else if currentRoute === "#/works"}
         <WorksPage
           store={worksStore}
           {settingsStore}
           onplaceonmap={(workId) => {
-            placingWorkId = workId;
             const next = new Set(activeLayers);
             next.add("works");
             activeLayers = next;
-            window.location.hash = "#/";
+            pickerHighlightId = workId;
+            pickerOpen = true;
+            window.location.hash = "#/plan";
           }}
         />
 
@@ -908,11 +923,12 @@
           {settingsStore}
           {floorStore}
           onplaceonmap={(catId) => {
-            placingCostCategoryId = catId;
             const next = new Set(activeLayers);
             next.add("costs");
             activeLayers = next;
-            window.location.hash = "#/";
+            pickerHighlightId = catId;
+            pickerOpen = true;
+            window.location.hash = "#/plan";
           }}
         />
 
@@ -995,8 +1011,6 @@
   .icon-btn.save-btn.saved { color: var(--success); }
   .icon-btn.save-btn.save-error { color: var(--danger); }
   .icon-btn:disabled { opacity: 0.5; cursor: default; }
-  .new-chore-btn { color: var(--success); font-size: 18px; font-weight: 600; }
-  .new-chore-btn:hover { background: var(--surface-hover); }
 
   .workspace {
     display: flex; flex: 1; overflow: hidden;

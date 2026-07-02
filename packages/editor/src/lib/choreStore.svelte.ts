@@ -215,8 +215,37 @@ export function createChoreStore() {
     await init();
   }
 
+  async function _putAssignmentDelay(id: string, days: number): Promise<void> {
+    const assignment = assignments.find((a) => a.id === id);
+    const base = assignment?.nextDueDate ? new Date(assignment.nextDueDate) : new Date();
+    base.setDate(base.getDate() + days);
+    const resp = await fetch(`/api/assignments/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nextDueDate: base.toISOString() }),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  }
+
+  async function delayAssignment(id: string, days: number): Promise<void> {
+    await _putAssignmentDelay(id, days);
+    await init();
+  }
+
+  async function delayChore(choreId: string, days: number): Promise<void> {
+    const choreAssignments = assignments.filter((a) => a.choreId === choreId);
+    await Promise.all(choreAssignments.map((a) => _putAssignmentDelay(a.id, days)));
+    await init();
+  }
+
   async function deleteAssignment(id: string): Promise<void> {
     const resp = await fetch(`/api/assignments/${id}`, { method: "DELETE" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
+  async function deleteCompletion(id: string): Promise<void> {
+    const resp = await fetch(`/api/completions/${id}`, { method: "DELETE" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }
@@ -245,5 +274,8 @@ export function createChoreStore() {
     completeAssignment,
     updateAssignmentPosition,
     deleteAssignment,
+    delayAssignment,
+    delayChore,
+    deleteCompletion,
   };
 }
