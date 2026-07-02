@@ -2,25 +2,16 @@ import io
 import zipfile
 
 import pytest
-from fastapi.testclient import TestClient
-from myhome.main import app
 
 
-@pytest.fixture()
-def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    return TestClient(app)
-
-
-def test_download_backup_returns_zip_with_expected_files(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_download_backup_returns_zip_with_expected_files(client, tmp_path):
     (tmp_path / "house.json").write_text('{"floors": []}')
     (tmp_path / "settings.json").write_text('{"version": 1}')
     kb_dir = tmp_path / "kb"
     kb_dir.mkdir()
     (kb_dir / "e1.md").write_text("# Article")
 
-    resp = TestClient(app).get("/api/backup/download")
+    resp = client.get("/api/backup/download")
 
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "application/zip"
@@ -37,11 +28,13 @@ def test_download_backup_returns_zip_with_expected_files(tmp_path, monkeypatch):
 def test_download_backup_empty_data_dir(client):
     resp = client.get("/api/backup/download")
     assert resp.status_code == 200
-    assert zipfile.ZipFile(io.BytesIO(resp.content)).namelist() == []
+    zip_names = zipfile.ZipFile(io.BytesIO(resp.content)).namelist()
+    # users.json is in data dir from fixture; filter it out
+    non_auth_files = [n for n in zip_names if n not in ("users.json",)]
+    assert non_auth_files == []
 
 
-def test_restore_replaces_data_dir_contents(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_restore_replaces_data_dir_contents(client, tmp_path):
     (tmp_path / "old.json").write_text('{"old": true}')
 
     buf = io.BytesIO()
@@ -50,7 +43,7 @@ def test_restore_replaces_data_dir_contents(tmp_path, monkeypatch):
         zf.writestr("settings.json", '{"version": 1}')
     buf.seek(0)
 
-    resp = TestClient(app).post(
+    resp = client.post(
         "/api/backup/restore",
         files={"file": ("backup.zip", buf.read(), "application/zip")},
     )
@@ -61,16 +54,14 @@ def test_restore_replaces_data_dir_contents(tmp_path, monkeypatch):
     assert (tmp_path / "settings.json").read_text() == '{"version": 1}'
 
 
-def test_restore_handles_subdirectories(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-
+def test_restore_handles_subdirectories(client, tmp_path):
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as zf:
         zf.writestr("kb/e1.md", "# Article")
         zf.writestr("inventory-attachments/i1/photo.jpg", b"fake-jpeg")
     buf.seek(0)
 
-    resp = TestClient(app).post(
+    resp = client.post(
         "/api/backup/restore",
         files={"file": ("backup.zip", buf.read(), "application/zip")},
     )
@@ -89,13 +80,12 @@ def test_restore_rejects_non_zip(client):
     assert resp.json()["detail"] == "Invalid backup file"
 
 
-def test_restore_rejects_zip_slip(client, tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_restore_rejects_zip_slip(client, tmp_path):
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as zf:
         zf.writestr("../../evil.txt", "pwned")
     buf.seek(0)
-    resp = TestClient(app).post(
+    resp = client.post(
         "/api/backup/restore",
         files={"file": ("backup.zip", buf.read(), "application/zip")},
     )
@@ -103,13 +93,12 @@ def test_restore_rejects_zip_slip(client, tmp_path, monkeypatch):
     assert not (tmp_path.parent / "evil.txt").exists()
 
 
-def test_download_skips_symlinks(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_download_skips_symlinks(client, tmp_path):
     (tmp_path / "real.json").write_text('{"ok": true}')
     link = tmp_path / "link.json"
     link.symlink_to(tmp_path / "real.json")
 
-    resp = TestClient(app).get("/api/backup/download")
+    resp = client.get("/api/backup/download")
 
     names = zipfile.ZipFile(io.BytesIO(resp.content)).namelist()
     assert "real.json" in names

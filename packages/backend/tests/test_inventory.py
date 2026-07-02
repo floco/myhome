@@ -1,6 +1,4 @@
 import pytest
-from fastapi.testclient import TestClient
-from myhome.main import app
 from myhome.models_inventory import InventoryDocument, InventoryItem, InventoryPlacement, InventoryPosition
 from myhome.persistence_inventory import save_inventory
 
@@ -20,12 +18,6 @@ def make_doc() -> InventoryDocument:
     )
 
 
-@pytest.fixture()
-def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    return TestClient(app)
-
-
 # --- GET /api/inventory ---
 
 def test_get_inventory_empty_when_no_file(client):
@@ -34,10 +26,9 @@ def test_get_inventory_empty_when_no_file(client):
     assert resp.json()["items"] == []
 
 
-def test_get_inventory_returns_saved_data(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_get_inventory_returns_saved_data(client, tmp_path):
     save_inventory(make_doc())
-    resp = TestClient(app).get("/api/inventory")
+    resp = client.get("/api/inventory")
     assert resp.status_code == 200
     assert resp.json()["items"][0]["id"] == "i1"
 
@@ -75,13 +66,11 @@ def test_create_item_defaults(client):
 
 # --- PUT /api/inventory/items/{id} ---
 
-def test_update_item_partial(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_update_item_partial(client, tmp_path):
     save_inventory(make_doc())
-    c = TestClient(app)
-    resp = c.put("/api/inventory/items/i1", json={"name": "LG TV", "purchasePrice": 900.0})
+    resp = client.put("/api/inventory/items/i1", json={"name": "LG TV", "purchasePrice": 900.0})
     assert resp.status_code == 204
-    item = c.get("/api/inventory").json()["items"][0]
+    item = client.get("/api/inventory").json()["items"][0]
     assert item["name"] == "LG TV"
     assert item["purchasePrice"] == 900.0
     assert item["emoji"] == "📺"          # unchanged
@@ -95,13 +84,11 @@ def test_update_item_404(client):
 
 # --- DELETE /api/inventory/items/{id} ---
 
-def test_delete_item(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_delete_item(client, tmp_path):
     save_inventory(make_doc())
-    c = TestClient(app)
-    resp = c.delete("/api/inventory/items/i1")
+    resp = client.delete("/api/inventory/items/i1")
     assert resp.status_code == 204
-    assert c.get("/api/inventory").json()["items"] == []
+    assert client.get("/api/inventory").json()["items"] == []
 
 
 def test_delete_item_404(client):
@@ -111,10 +98,8 @@ def test_delete_item_404(client):
 
 # --- PUT /api/inventory/items/{id}/placement ---
 
-def test_set_placement(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_set_placement(client, tmp_path):
     save_inventory(make_doc())
-    c = TestClient(app)
     payload = {
         "placement": {
             "floorId": "f1",
@@ -122,25 +107,23 @@ def test_set_placement(tmp_path, monkeypatch):
             "position": {"x": 3.4, "y": 2.1},
         }
     }
-    resp = c.put("/api/inventory/items/i1/placement", json=payload)
+    resp = client.put("/api/inventory/items/i1/placement", json=payload)
     assert resp.status_code == 204
-    item = c.get("/api/inventory").json()["items"][0]
+    item = client.get("/api/inventory").json()["items"][0]
     assert item["placement"]["floorId"] == "f1"
     assert item["placement"]["position"]["x"] == 3.4
     assert item["placement"]["roomId"] == "r1"
 
 
-def test_clear_placement(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_clear_placement(client, tmp_path):
     doc = make_doc()
     doc.items[0].placement = InventoryPlacement(
         floorId="f1", roomId="r1", position=InventoryPosition(x=1.0, y=2.0)
     )
     save_inventory(doc)
-    c = TestClient(app)
-    resp = c.put("/api/inventory/items/i1/placement", json={"placement": None})
+    resp = client.put("/api/inventory/items/i1/placement", json={"placement": None})
     assert resp.status_code == 204
-    assert c.get("/api/inventory").json()["items"][0]["placement"] is None
+    assert client.get("/api/inventory").json()["items"][0]["placement"] is None
 
 
 def test_placement_404(client):
@@ -153,25 +136,21 @@ def test_placement_404(client):
 
 # --- Attachment routes ---
 
-def test_upload_attachment(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_upload_attachment(client, tmp_path):
     save_inventory(make_doc())
-    c = TestClient(app)
-    resp = c.post(
+    resp = client.post(
         "/api/inventory/items/i1/attachments",
         files={"file": ("invoice.pdf", b"%PDF-1.4 content", "application/pdf")},
     )
     assert resp.status_code == 201
     assert resp.json()["filename"] == "invoice.pdf"
-    item = c.get("/api/inventory").json()["items"][0]
+    item = client.get("/api/inventory").json()["items"][0]
     assert "invoice.pdf" in item["attachments"]
 
 
-def test_upload_attachment_sanitises_filename(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_upload_attachment_sanitises_filename(client, tmp_path):
     save_inventory(make_doc())
-    c = TestClient(app)
-    resp = c.post(
+    resp = client.post(
         "/api/inventory/items/i1/attachments",
         files={"file": ("my invoice 2025.pdf", b"%PDF test", "application/pdf")},
     )
@@ -179,33 +158,27 @@ def test_upload_attachment_sanitises_filename(tmp_path, monkeypatch):
     assert resp.json()["filename"] == "my_invoice_2025.pdf"
 
 
-def test_upload_attachment_multiple(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_upload_attachment_multiple(client, tmp_path):
     save_inventory(make_doc())
-    c = TestClient(app)
-    c.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF v1", "application/pdf")})
-    c.post("/api/inventory/items/i1/attachments", files={"file": ("manual.pdf", b"%PDF v2", "application/pdf")})
-    item = c.get("/api/inventory").json()["items"][0]
+    client.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF v1", "application/pdf")})
+    client.post("/api/inventory/items/i1/attachments", files={"file": ("manual.pdf", b"%PDF v2", "application/pdf")})
+    item = client.get("/api/inventory").json()["items"][0]
     assert "invoice.pdf" in item["attachments"]
     assert "manual.pdf" in item["attachments"]
     assert len(item["attachments"]) == 2
 
 
-def test_upload_attachment_no_duplicate(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_upload_attachment_no_duplicate(client, tmp_path):
     save_inventory(make_doc())
-    c = TestClient(app)
-    c.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF v1", "application/pdf")})
-    c.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF v2", "application/pdf")})
-    item = c.get("/api/inventory").json()["items"][0]
+    client.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF v1", "application/pdf")})
+    client.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF v2", "application/pdf")})
+    item = client.get("/api/inventory").json()["items"][0]
     assert item["attachments"].count("invoice.pdf") == 1
 
 
-def test_upload_attachment_rejects_unsupported_type(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_upload_attachment_rejects_unsupported_type(client, tmp_path):
     save_inventory(make_doc())
-    c = TestClient(app)
-    resp = c.post(
+    resp = client.post(
         "/api/inventory/items/i1/attachments",
         files={"file": ("malware.exe", b"\x4d\x5a", "application/octet-stream")},
     )
@@ -228,20 +201,17 @@ def test_upload_attachment_invalid_id(client):
     assert resp.status_code == 400
 
 
-def test_get_attachment(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_get_attachment(client, tmp_path):
     save_inventory(make_doc())
-    c = TestClient(app)
-    c.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF-1.4 content", "application/pdf")})
-    resp = c.get("/api/inventory/items/i1/attachments/invoice.pdf")
+    client.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF-1.4 content", "application/pdf")})
+    resp = client.get("/api/inventory/items/i1/attachments/invoice.pdf")
     assert resp.status_code == 200
     assert "pdf" in resp.headers["content-type"]
 
 
-def test_get_attachment_not_found(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_get_attachment_not_found(client, tmp_path):
     save_inventory(make_doc())
-    resp = TestClient(app).get("/api/inventory/items/i1/attachments/nope.pdf")
+    resp = client.get("/api/inventory/items/i1/attachments/nope.pdf")
     assert resp.status_code == 404
 
 
@@ -250,44 +220,37 @@ def test_get_attachment_invalid_id(client):
     assert resp.status_code == 400
 
 
-def test_get_attachment_traversal_rejected(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_get_attachment_traversal_rejected(client, tmp_path):
     save_inventory(make_doc())
-    resp = TestClient(app).get("/api/inventory/items/i1/attachments/.hidden")
+    resp = client.get("/api/inventory/items/i1/attachments/.hidden")
     assert resp.status_code == 400
 
 
-def test_delete_attachment(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_delete_attachment(client, tmp_path):
     save_inventory(make_doc())
-    c = TestClient(app)
-    c.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")})
-    resp = c.delete("/api/inventory/items/i1/attachments/invoice.pdf")
+    client.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")})
+    resp = client.delete("/api/inventory/items/i1/attachments/invoice.pdf")
     assert resp.status_code == 204
-    item = c.get("/api/inventory").json()["items"][0]
+    item = client.get("/api/inventory").json()["items"][0]
     assert "invoice.pdf" not in item["attachments"]
 
 
-def test_delete_attachment_not_found(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_delete_attachment_not_found(client, tmp_path):
     save_inventory(make_doc())
-    resp = TestClient(app).delete("/api/inventory/items/i1/attachments/nope.pdf")
+    resp = client.delete("/api/inventory/items/i1/attachments/nope.pdf")
     assert resp.status_code == 404
 
 
-def test_delete_attachment_traversal_rejected(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_delete_attachment_traversal_rejected(client, tmp_path):
     save_inventory(make_doc())
-    resp = TestClient(app).delete("/api/inventory/items/i1/attachments/.hidden")
+    resp = client.delete("/api/inventory/items/i1/attachments/.hidden")
     assert resp.status_code == 400
 
 
-def test_delete_item_cascades_attachments(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_delete_item_cascades_attachments(client, tmp_path):
     save_inventory(make_doc())
-    c = TestClient(app)
-    c.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")})
-    c.delete("/api/inventory/items/i1")
+    client.post("/api/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")})
+    client.delete("/api/inventory/items/i1")
     attach_dir = tmp_path / "inventory-attachments" / "i1"
     assert not attach_dir.exists()
 

@@ -1,6 +1,7 @@
 <!-- packages/editor/src/lib/components/SettingsPage.svelte -->
 <script lang="ts">
   import type { createSettingsStore, CostCategory, ConsumableCategory, InventoryCategory, WorkCategory, Supplier } from "../settingsStore.svelte";
+  import type { createAuthStore } from "../authStore.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
   import EmojiPicker from "./ui/EmojiPicker.svelte";
@@ -8,11 +9,13 @@
   import Modal from "./ui/Modal.svelte";
 
   type SettingsStore = ReturnType<typeof createSettingsStore>;
+  type AuthStore = ReturnType<typeof createAuthStore>;
 
   interface Props {
     store: SettingsStore;
+    authStore: AuthStore;
   }
-  let { store }: Props = $props();
+  let { store, authStore }: Props = $props();
 
   // --- Cost categories ---
   let editingCostId = $state<string | null>(null);
@@ -250,6 +253,147 @@
     showNewConsumableCatForm = false;
     consumableCatError = null;
   }
+
+  // --- API Tokens ---
+  interface TokenInfo {
+    id: string;
+    name: string;
+    role: string;
+    owner_id: string;
+    created_at: string;
+    last_used_at: string | null;
+  }
+
+  let apiTokens = $state<TokenInfo[]>([]);
+  let tokensLoaded = $state(false);
+  let showNewTokenModal = $state(false);
+  let newTokenName = $state("");
+  let newTokenRole = $state<string>("ro");
+  let createdTokenSecret = $state<string | null>(null);
+  let confirmRevokeTokenId = $state<string | null>(null);
+  let tokenError = $state<string | null>(null);
+
+  const _allRoles = ["ro", "normal", "admin"];
+  const roleOptions = $derived(
+    _allRoles.slice(0, _allRoles.indexOf(authStore.user?.role ?? "ro") + 1)
+  );
+
+  async function loadTokens(): Promise<void> {
+    try {
+      const resp = await fetch("/api/auth/tokens");
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      apiTokens = await resp.json();
+    } finally {
+      tokensLoaded = true;
+    }
+  }
+
+  async function createApiToken(): Promise<void> {
+    if (!newTokenName.trim()) { tokenError = "Name required"; return; }
+    tokenError = null;
+    const resp = await fetch("/api/auth/tokens", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newTokenName.trim(), role: newTokenRole }),
+    });
+    if (!resp.ok) { tokenError = `Error ${resp.status}`; return; }
+    const data = await resp.json();
+    createdTokenSecret = data.token;
+    newTokenName = "";
+    newTokenRole = "ro";
+    showNewTokenModal = false;
+    await loadTokens();
+  }
+
+  async function revokeToken(id: string): Promise<void> {
+    await fetch(`/api/auth/tokens/${id}`, { method: "DELETE" });
+    confirmRevokeTokenId = null;
+    await loadTokens();
+  }
+
+  loadTokens();
+
+  // --- User management (admin only) ---
+  interface UserInfo {
+    id: string;
+    username: string;
+    role: string;
+    created_at: string;
+  }
+
+  let users = $state<UserInfo[]>([]);
+  let usersLoaded = $state(false);
+  let showNewUserModal = $state(false);
+  let newUserName = $state("");
+  let newUserPassword = $state("");
+  let newUserRole = $state<string>("normal");
+  let userError = $state<string | null>(null);
+  let editingUserId = $state<string | null>(null);
+  let editUserRole = $state<string>("normal");
+  let resetPasswordUserId = $state<string | null>(null);
+  let resetPasswordValue = $state("");
+  let confirmDeleteUserId = $state<string | null>(null);
+
+  async function loadUsers(): Promise<void> {
+    if (authStore.user?.role !== "admin") return;
+    try {
+      const resp = await fetch("/api/auth/users");
+      if (!resp.ok) return;
+      users = await resp.json();
+    } finally {
+      usersLoaded = true;
+    }
+  }
+
+  async function createUser(): Promise<void> {
+    if (!newUserName.trim()) { userError = "Username required"; return; }
+    if (newUserPassword.length < 8) { userError = "Password must be at least 8 characters"; return; }
+    userError = null;
+    const resp = await fetch("/api/auth/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: newUserName.trim(), password: newUserPassword, role: newUserRole }),
+    });
+    if (!resp.ok) {
+      const d = await resp.json().catch(() => ({}));
+      userError = (d as { detail?: string }).detail ?? `Error ${resp.status}`;
+      return;
+    }
+    showNewUserModal = false;
+    newUserName = "";
+    newUserPassword = "";
+    newUserRole = "normal";
+    await loadUsers();
+  }
+
+  async function updateUserRole(uid: string, role: string): Promise<void> {
+    await fetch(`/api/auth/users/${uid}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    });
+    editingUserId = null;
+    await loadUsers();
+  }
+
+  async function resetUserPassword(uid: string): Promise<void> {
+    if (resetPasswordValue.length < 8) return;
+    await fetch(`/api/auth/users/${uid}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: resetPasswordValue }),
+    });
+    resetPasswordUserId = null;
+    resetPasswordValue = "";
+  }
+
+  async function deleteUser(uid: string): Promise<void> {
+    await fetch(`/api/auth/users/${uid}`, { method: "DELETE" });
+    confirmDeleteUserId = null;
+    await loadUsers();
+  }
+
+  loadUsers();
 
   // --- Backup & Restore ---
   let downloadingBackup = $state(false);
@@ -641,6 +785,107 @@
       {#if consumableCatError}<div class="error">{consumableCatError}</div>{/if}
     </Card>
 
+    <!-- API Tokens -->
+    <Card>
+      <div class="section-header">
+        <h2>API Tokens</h2>
+        <Button onclick={() => { showNewTokenModal = true; tokenError = null; }}>New token</Button>
+      </div>
+      <p class="section-desc">Tokens for automation, MCP, and API access. A token's scope cannot exceed your own role.</p>
+      {#if tokensLoaded}
+        {#if apiTokens.length === 0}
+          <p class="empty-hint">No tokens yet.</p>
+        {:else}
+          <table class="token-table">
+            <thead>
+              <tr><th>Name</th><th>Scope</th><th>Created</th><th>Last used</th><th></th></tr>
+            </thead>
+            <tbody>
+              {#each apiTokens as t (t.id)}
+                <tr>
+                  <td>{t.name}</td>
+                  <td><span class="role-badge">{t.role}</span></td>
+                  <td>{t.created_at.slice(0, 10)}</td>
+                  <td>{t.last_used_at ? t.last_used_at.slice(0, 10) : "—"}</td>
+                  <td>
+                    {#if confirmRevokeTokenId === t.id}
+                      <Button variant="danger" onclick={() => revokeToken(t.id)}>Confirm revoke</Button>
+                      <Button variant="secondary" onclick={() => { confirmRevokeTokenId = null; }}>Cancel</Button>
+                    {:else}
+                      <Button variant="secondary" onclick={() => { confirmRevokeTokenId = t.id; }}>Revoke</Button>
+                    {/if}
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        {/if}
+      {/if}
+    </Card>
+
+    <!-- Users (admin only) -->
+    {#if authStore.user?.role === "admin"}
+      <Card>
+        <div class="section-header">
+          <h2>Users</h2>
+          <Button onclick={() => { showNewUserModal = true; userError = null; }}>New user</Button>
+        </div>
+        {#if usersLoaded}
+          <table class="token-table">
+            <thead>
+              <tr><th>Username</th><th>Role</th><th>Created</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              {#each users as u (u.id)}
+                <tr>
+                  <td>{u.username}</td>
+                  <td>
+                    {#if editingUserId === u.id}
+                      <select bind:value={editUserRole} class="modal-select">
+                        {#each ["ro", "normal", "admin"] as r}
+                          <option value={r}>{r}</option>
+                        {/each}
+                      </select>
+                      <Button onclick={() => updateUserRole(u.id, editUserRole)}>Save</Button>
+                      <Button variant="secondary" onclick={() => { editingUserId = null; }}>Cancel</Button>
+                    {:else}
+                      <span class="role-badge">{u.role}</span>
+                    {/if}
+                  </td>
+                  <td>{u.created_at.slice(0, 10)}</td>
+                  <td style="display:flex;gap:4px;flex-wrap:wrap">
+                    {#if editingUserId !== u.id}
+                      <Button variant="secondary" onclick={() => { editingUserId = u.id; editUserRole = u.role; }}>Edit role</Button>
+                    {/if}
+                    {#if resetPasswordUserId === u.id}
+                      <input
+                        type="password"
+                        bind:value={resetPasswordValue}
+                        placeholder="New password (min 8)"
+                        class="inline-pw-input"
+                      />
+                      <Button onclick={() => resetUserPassword(u.id)}>Set</Button>
+                      <Button variant="secondary" onclick={() => { resetPasswordUserId = null; resetPasswordValue = ""; }}>Cancel</Button>
+                    {:else}
+                      <Button variant="secondary" onclick={() => { resetPasswordUserId = u.id; }}>Reset pw</Button>
+                    {/if}
+                    {#if u.id !== authStore.user?.id}
+                      {#if confirmDeleteUserId === u.id}
+                        <Button variant="danger" onclick={() => deleteUser(u.id)}>Confirm delete</Button>
+                        <Button variant="secondary" onclick={() => { confirmDeleteUserId = null; }}>Cancel</Button>
+                      {:else}
+                        <Button variant="secondary" onclick={() => { confirmDeleteUserId = u.id; }}>Delete</Button>
+                      {/if}
+                    {/if}
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        {/if}
+      </Card>
+    {/if}
+
     <!-- Backup & Restore -->
     <Card>
       <div class="section-header">
@@ -682,6 +927,71 @@
     <Button onclick={confirmRestore} disabled={restoringBackup}>
       {restoringBackup ? "Restoring…" : "Restore"}
     </Button>
+  {/snippet}
+</Modal>
+
+<Modal open={showNewTokenModal} title="New API Token" onclose={() => { showNewTokenModal = false; tokenError = null; }}>
+  {#snippet children()}
+    <div class="modal-form">
+      <div class="modal-field">
+        <span class="modal-label">Token name</span>
+        <Input bind:value={newTokenName} placeholder="e.g. Home Assistant MCP" />
+      </div>
+      <div class="modal-field">
+        <span class="modal-label">Scope</span>
+        <select bind:value={newTokenRole} class="modal-select">
+          {#each roleOptions as r}
+            <option value={r}>{r}</option>
+          {/each}
+        </select>
+      </div>
+      {#if tokenError}<div class="error">{tokenError}</div>{/if}
+      <div class="modal-actions">
+        <Button variant="secondary" onclick={() => { showNewTokenModal = false; tokenError = null; }}>Cancel</Button>
+        <Button onclick={createApiToken}>Create</Button>
+      </div>
+    </div>
+  {/snippet}
+</Modal>
+
+<Modal open={!!createdTokenSecret} title="Token Created" onclose={() => { createdTokenSecret = null; }}>
+  {#snippet children()}
+    <div class="modal-form">
+      <p class="section-desc">Copy this token now. It will not be shown again.</p>
+      <div class="token-secret">{createdTokenSecret}</div>
+      <div class="modal-actions">
+        <Button onclick={() => navigator.clipboard.writeText(createdTokenSecret!)}>Copy to clipboard</Button>
+        <Button variant="secondary" onclick={() => { createdTokenSecret = null; }}>Done</Button>
+      </div>
+    </div>
+  {/snippet}
+</Modal>
+
+<Modal open={showNewUserModal} title="New User" onclose={() => { showNewUserModal = false; userError = null; }}>
+  {#snippet children()}
+    <div class="modal-form">
+      <div class="modal-field">
+        <span class="modal-label">Username</span>
+        <Input bind:value={newUserName} placeholder="username" />
+      </div>
+      <div class="modal-field">
+        <span class="modal-label">Password (min 8 chars)</span>
+        <Input type="password" bind:value={newUserPassword} />
+      </div>
+      <div class="modal-field">
+        <span class="modal-label">Role</span>
+        <select bind:value={newUserRole} class="modal-select">
+          {#each ["ro", "normal", "admin"] as r}
+            <option value={r}>{r}</option>
+          {/each}
+        </select>
+      </div>
+      {#if userError}<div class="error">{userError}</div>{/if}
+      <div class="modal-actions">
+        <Button variant="secondary" onclick={() => { showNewUserModal = false; userError = null; }}>Cancel</Button>
+        <Button onclick={createUser}>Create user</Button>
+      </div>
+    </div>
   {/snippet}
 </Modal>
 
@@ -750,4 +1060,19 @@
   .add-row :global(.ui-input) { flex: 1; min-width: 120px; }
 
   .hidden-file-input { display: none; }
+
+  .token-table { width: 100%; border-collapse: collapse; margin-top: var(--space-2); font-size: 0.875rem; }
+  .token-table th { text-align: left; padding: 6px 8px; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+  .token-table td { padding: 8px 8px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .role-badge { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
+  .section-desc { font-size: 0.875rem; color: var(--text-muted); margin: 0 0 var(--space-2); }
+  .empty-hint { font-size: 0.875rem; color: var(--text-faint); margin: var(--space-2) 0 0; }
+
+  .modal-form { display: flex; flex-direction: column; gap: 14px; }
+  .modal-field { display: flex; flex-direction: column; gap: 5px; }
+  .modal-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .modal-select { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; color: var(--text); font-size: 0.9rem; font-family: var(--font-sans); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+  .token-secret { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-family: var(--font-mono, monospace); font-size: 0.8rem; word-break: break-all; color: var(--text); }
+  .inline-pw-input { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; font-size: 0.85rem; color: var(--text); font-family: var(--font-sans); }
 </style>

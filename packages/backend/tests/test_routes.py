@@ -1,7 +1,5 @@
 import json
 import pytest
-from fastapi.testclient import TestClient
-from myhome.main import app
 from myhome.models import HouseDocument, House, Floor
 from myhome.persistence import save_house
 
@@ -12,12 +10,6 @@ def make_doc() -> HouseDocument:
         house=House(name="Test", units="m", gridSnap=0.1),
         floors=[Floor(id="f1", name="Ground", order=0, walls=[], openings=[], rooms=[])],
     )
-
-
-@pytest.fixture()
-def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    return TestClient(app)
 
 
 def test_get_house_404_when_missing(client):
@@ -46,19 +38,15 @@ def test_get_floor_svg_404_when_no_house(client):
     assert resp.status_code == 404
 
 
-def test_get_floor_svg_404_for_unknown_floor(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_get_floor_svg_404_for_unknown_floor(client, tmp_path):
     save_house(make_doc())
-    c = TestClient(app)
-    resp = c.get("/api/house/floors/unknown/svg")
+    resp = client.get("/api/house/floors/unknown/svg")
     assert resp.status_code == 404
 
 
-def test_get_floor_svg_returns_svg(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_get_floor_svg_returns_svg(client, tmp_path):
     save_house(make_doc())
-    c = TestClient(app)
-    resp = c.get("/api/house/floors/f1/svg")
+    resp = client.get("/api/house/floors/f1/svg")
     assert resp.status_code == 200
     assert resp.headers["content-type"].startswith("image/svg+xml")
     assert "<svg" in resp.text

@@ -1,14 +1,6 @@
 import pytest
-from fastapi.testclient import TestClient
-from myhome.main import app
 from myhome.models_settings import CostCategory, InventoryCategory, SettingsDocument
 from myhome.persistence_settings import save_settings
-
-
-@pytest.fixture()
-def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    return TestClient(app)
 
 
 def test_get_settings_returns_defaults_when_no_file(client):
@@ -20,13 +12,12 @@ def test_get_settings_returns_defaults_when_no_file(client):
     assert len(data["inventoryCategories"]) == 6
 
 
-def test_get_settings_returns_saved_data(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+def test_get_settings_returns_saved_data(client):
     save_settings(SettingsDocument(
         costCategories=[CostCategory(id="c1", name="Gas", emoji="🔥", unit="m³", color="#ff8800")],
         inventoryCategories=[],
     ))
-    resp = TestClient(app).get("/api/settings")
+    resp = client.get("/api/settings")
     assert resp.status_code == 200
     assert resp.json()["costCategories"][0]["name"] == "Gas"
 

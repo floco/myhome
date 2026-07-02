@@ -1,6 +1,4 @@
 import pytest
-from fastapi.testclient import TestClient
-from myhome.main import app
 from myhome.models_works import Work, WorkPlacement, WorkPosition, WorksDocument
 from myhome.persistence_works import save_works
 
@@ -9,12 +7,6 @@ def make_doc() -> WorksDocument:
     return WorksDocument(
         works=[Work(id="w1", title="Boiler repair", status="done", date="2025-11-10", totalCost=1200.0)]
     )
-
-
-@pytest.fixture()
-def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    return TestClient(app)
 
 
 def test_get_works_empty_when_no_file(client):
