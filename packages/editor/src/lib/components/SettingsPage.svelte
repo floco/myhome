@@ -1,6 +1,6 @@
 <!-- packages/editor/src/lib/components/SettingsPage.svelte -->
 <script lang="ts">
-  import type { createSettingsStore, CostCategory, InventoryCategory, WorkCategory, Supplier } from "../settingsStore.svelte";
+  import type { createSettingsStore, CostCategory, ConsumableCategory, InventoryCategory, WorkCategory, Supplier } from "../settingsStore.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
   import Card from "./ui/Card.svelte";
@@ -188,6 +188,66 @@
     newSupplierDraft = { name: "" };
     showNewSupplierForm = false;
     supplierError = null;
+  }
+
+  // --- Consumable units ---
+  let newUnit = $state("");
+  let unitError = $state<string | null>(null);
+
+  async function addUnit(): Promise<void> {
+    const u = newUnit.trim();
+    if (!u) return;
+    if (store.consumableUnits.includes(u)) { unitError = "Unit already exists"; return; }
+    await store.updateConsumableUnits([...store.consumableUnits, u]);
+    newUnit = "";
+    unitError = null;
+  }
+
+  async function removeUnit(u: string): Promise<void> {
+    await store.updateConsumableUnits(store.consumableUnits.filter((x) => x !== u));
+  }
+
+  // --- Consumable categories ---
+  let editingConsumableCatId = $state<string | null>(null);
+  let consumableCatDraft = $state<ConsumableCategory>({ id: "", name: "", emoji: "" });
+  let showNewConsumableCatForm = $state(false);
+  let newConsumableCatDraft = $state({ name: "", emoji: "" });
+  let confirmDeleteConsumableCatId = $state<string | null>(null);
+  let consumableCatError = $state<string | null>(null);
+
+  function startEditConsumableCat(cat: ConsumableCategory): void {
+    editingConsumableCatId = cat.id;
+    consumableCatDraft = { ...cat };
+    consumableCatError = null;
+  }
+
+  function cancelEditConsumableCat(): void { editingConsumableCatId = null; consumableCatError = null; }
+
+  async function saveEditConsumableCat(): Promise<void> {
+    if (!consumableCatDraft.name.trim()) { consumableCatError = "Name required"; return; }
+    const updated = store.consumableCategories.map((c) =>
+      c.id === editingConsumableCatId ? { ...consumableCatDraft, name: consumableCatDraft.name.trim() } : c,
+    );
+    await store.updateConsumableCategories(updated);
+    editingConsumableCatId = null; consumableCatError = null;
+  }
+
+  async function deleteConsumableCategory(id: string): Promise<void> {
+    await store.updateConsumableCategories(store.consumableCategories.filter((c) => c.id !== id));
+    confirmDeleteConsumableCatId = null;
+  }
+
+  async function addConsumableCategory(): Promise<void> {
+    if (!newConsumableCatDraft.name.trim()) { consumableCatError = "Name required"; return; }
+    const newCat: ConsumableCategory = {
+      id: crypto.randomUUID(),
+      name: newConsumableCatDraft.name.trim(),
+      emoji: newConsumableCatDraft.emoji || "📦",
+    };
+    await store.updateConsumableCategories([...store.consumableCategories, newCat]);
+    newConsumableCatDraft = { name: "", emoji: "" };
+    showNewConsumableCatForm = false;
+    consumableCatError = null;
   }
 
   // --- Backup & Restore ---
@@ -505,6 +565,81 @@
       {#if supplierError}<div class="error">{supplierError}</div>{/if}
     </Card>
 
+    <!-- Consumables -->
+    <Card>
+      <div class="section-header">
+        <h2>Consumables</h2>
+      </div>
+
+      <h3 class="subsection-title">Units</h3>
+      <div class="tag-list">
+        {#each store.consumableUnits as u}
+          <span class="tag">{u} <button class="tag-remove" onclick={() => removeUnit(u)}>✕</button></span>
+        {/each}
+      </div>
+      <div class="add-row">
+        <Input
+          bind:value={newUnit}
+          placeholder="e.g. tablets"
+          onkeydown={(e) => { if (e.key === "Enter") addUnit(); }}
+        />
+        <Button onclick={addUnit}>Add unit</Button>
+      </div>
+      {#if unitError}<div class="error">{unitError}</div>{/if}
+
+      <h3 class="subsection-title" style="margin-top: var(--space-4)">Categories</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Emoji</th><th>Name</th><th></th></tr>
+          </thead>
+          <tbody>
+            {#each store.consumableCategories as cat (cat.id)}
+              {#if editingConsumableCatId === cat.id}
+                <tr class="editing-row">
+                  <td><input class="emoji-input" bind:value={consumableCatDraft.emoji} maxlength="2" /></td>
+                  <td class="name-cell-input"><Input bind:value={consumableCatDraft.name} placeholder="Name" /></td>
+                  <td class="actions">
+                    <button class="icon-action ok" onclick={saveEditConsumableCat} title="Save">✓</button>
+                    <button class="icon-action" onclick={cancelEditConsumableCat} title="Cancel">✕</button>
+                  </td>
+                </tr>
+              {:else}
+                <tr>
+                  <td class="emoji-cell">{cat.emoji}</td>
+                  <td>{cat.name}</td>
+                  <td class="actions">
+                    {#if confirmDeleteConsumableCatId === cat.id}
+                      <span class="confirm-text">Delete?</span>
+                      <button class="icon-action danger" onclick={() => deleteConsumableCategory(cat.id)}>✓</button>
+                      <button class="icon-action" onclick={() => { confirmDeleteConsumableCatId = null; }}>✕</button>
+                    {:else}
+                      <button class="icon-action" onclick={() => startEditConsumableCat(cat)} title="Edit">✏</button>
+                      <button class="icon-action danger" onclick={() => { confirmDeleteConsumableCatId = cat.id; }} title="Delete">🗑</button>
+                    {/if}
+                  </td>
+                </tr>
+              {/if}
+            {/each}
+            {#if showNewConsumableCatForm}
+              <tr class="editing-row">
+                <td><input class="emoji-input" bind:value={newConsumableCatDraft.emoji} maxlength="2" placeholder="📦" /></td>
+                <td class="name-cell-input"><Input bind:value={newConsumableCatDraft.name} placeholder="Name *" /></td>
+                <td class="actions">
+                  <button class="icon-action ok" onclick={addConsumableCategory} title="Add">✓</button>
+                  <button class="icon-action" onclick={() => { showNewConsumableCatForm = false; consumableCatError = null; }} title="Cancel">✕</button>
+                </td>
+              </tr>
+            {/if}
+          </tbody>
+        </table>
+      </div>
+      <div class="add-row">
+        <Button onclick={() => { showNewConsumableCatForm = true; consumableCatError = null; }}>＋ Add category</Button>
+      </div>
+      {#if consumableCatError}<div class="error">{consumableCatError}</div>{/if}
+    </Card>
+
     <!-- Backup & Restore -->
     <Card>
       <div class="section-header">
@@ -604,4 +739,14 @@
   .confirm-text { font-size: 10px; color: var(--danger); }
 
   .error { color: var(--danger); font-size: 11px; margin-top: 6px; }
+
+  .subsection-title { margin: 0 0 var(--space-2); font-size: 11px; font-weight: 600; color: var(--text-faint); text-transform: uppercase; letter-spacing: .05em; }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--space-2); }
+  .tag { display: flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 10px; background: var(--surface-alt); border: 1px solid var(--border); font-size: 12px; color: var(--text-muted); }
+  .tag-remove { border: none; background: none; color: var(--text-faint); cursor: pointer; font-size: 9px; padding: 0 2px; line-height: 1; }
+  .tag-remove:hover { color: var(--danger); }
+  .add-row { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; margin-top: var(--space-2); }
+  .add-row :global(.ui-input) { flex: 1; min-width: 120px; }
+
+  .hidden-file-input { display: none; }
 </style>
