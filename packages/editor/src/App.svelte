@@ -996,7 +996,7 @@
         />
 
       {:else if currentRoute === "#/settings"}
-        <SettingsPage store={settingsStore} />
+        <SettingsPage store={settingsStore} {authStore} />
       {/if}
     </div>
   </div>
