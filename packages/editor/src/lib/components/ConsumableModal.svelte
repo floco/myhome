@@ -4,6 +4,7 @@
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
+  import EmojiPicker from "./ui/EmojiPicker.svelte";
 
   type ConsumableStore = ReturnType<typeof createConsumableStore>;
   type SettingsStore = Pick<
@@ -154,7 +155,7 @@
         <div class="row">
           <div class="field short">
             <label>Emoji</label>
-            <Input bind:value={emoji} maxlength={4} />
+            <EmojiPicker bind:value={emoji} />
           </div>
           <div class="field grow">
             <label>Name *</label>

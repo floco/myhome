@@ -63,12 +63,14 @@
         class="toggle-btn"
         class:active={!attentionFilter}
         onclick={() => { attentionFilter = false; }}
-      >☰ All</button>
+        title="All"
+      >☰</button>
       <button
         class="toggle-btn"
         class:active={attentionFilter}
         onclick={() => { attentionFilter = true; }}
-      >⚠ Needs attention</button>
+        title="Needs attention"
+      >⚠</button>
     </div>
     <Button onclick={() => { showCreate = true; }}>＋ Add consumable</Button>
   </div>

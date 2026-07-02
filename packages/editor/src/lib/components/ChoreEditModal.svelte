@@ -8,6 +8,7 @@
   import DatePicker from "./DatePicker.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
+  import EmojiPicker from "./ui/EmojiPicker.svelte";
 
   type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion">;
 
@@ -148,7 +149,7 @@
           <Input bind:value={draftName} placeholder="Chore name" />
         </label>
         <label>Emoji
-          <input class="native-input emoji-field" bind:value={draftEmoji} placeholder="Emoji" maxlength="4" />
+          <EmojiPicker bind:value={draftEmoji} />
         </label>
         <label>Period (days)
           <input class="native-input" type="number" bind:value={draftPeriodDays} min="1" />

@@ -3,6 +3,7 @@
   import type { createSettingsStore, CostCategory, ConsumableCategory, InventoryCategory, WorkCategory, Supplier } from "../settingsStore.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
+  import EmojiPicker from "./ui/EmojiPicker.svelte";
   import Card from "./ui/Card.svelte";
   import Modal from "./ui/Modal.svelte";
 
@@ -358,7 +359,7 @@
               {#if editingCostId === cat.id}
                 <tr class="editing-row">
                   <td><input type="color" bind:value={costDraft.color} class="color-input" /></td>
-                  <td><input class="emoji-input" bind:value={costDraft.emoji} maxlength="2" /></td>
+                  <td><EmojiPicker bind:value={costDraft.emoji} /></td>
                   <td class="name-cell-input"><Input bind:value={costDraft.name} placeholder="Name" /></td>
                   <td class="unit-cell-input"><Input bind:value={costDraftUnit} placeholder="L, kWh…" /></td>
                   <td class="actions">
@@ -389,7 +390,7 @@
             {#if showNewCostForm}
               <tr class="editing-row">
                 <td><input type="color" bind:value={newCostDraft.color} class="color-input" /></td>
-                <td><input class="emoji-input" bind:value={newCostDraft.emoji} maxlength="2" placeholder="💰" /></td>
+                <td><EmojiPicker bind:value={newCostDraft.emoji} /></td>
                 <td class="name-cell-input"><Input bind:value={newCostDraft.name} placeholder="Name *" /></td>
                 <td class="unit-cell-input"><Input bind:value={newCostDraft.unit} placeholder="L, kWh… (optional)" /></td>
                 <td class="actions">
@@ -473,7 +474,7 @@
             {#each store.workCategories as cat (cat.id)}
               {#if editingWorkId === cat.id}
                 <tr class="editing-row">
-                  <td><input class="emoji-input" bind:value={workDraft.emoji} maxlength="2" /></td>
+                  <td><EmojiPicker bind:value={workDraft.emoji} /></td>
                   <td class="name-cell-input"><Input bind:value={workDraft.name} placeholder="Name" /></td>
                   <td class="actions">
                     <button class="icon-action ok" onclick={saveEditWork} title="Save">✓</button>
@@ -499,7 +500,7 @@
             {/each}
             {#if showNewWorkForm}
               <tr class="editing-row">
-                <td><input class="emoji-input" bind:value={newWorkDraft.emoji} maxlength="2" placeholder="🔧" /></td>
+                <td><EmojiPicker bind:value={newWorkDraft.emoji} /></td>
                 <td class="name-cell-input"><Input bind:value={newWorkDraft.name} placeholder="Name *" /></td>
                 <td class="actions">
                   <button class="icon-action ok" onclick={addWorkCategory} title="Add">✓</button>
@@ -597,7 +598,7 @@
             {#each store.consumableCategories as cat (cat.id)}
               {#if editingConsumableCatId === cat.id}
                 <tr class="editing-row">
-                  <td><input class="emoji-input" bind:value={consumableCatDraft.emoji} maxlength="2" /></td>
+                  <td><EmojiPicker bind:value={consumableCatDraft.emoji} /></td>
                   <td class="name-cell-input"><Input bind:value={consumableCatDraft.name} placeholder="Name" /></td>
                   <td class="actions">
                     <button class="icon-action ok" onclick={saveEditConsumableCat} title="Save">✓</button>
@@ -623,7 +624,7 @@
             {/each}
             {#if showNewConsumableCatForm}
               <tr class="editing-row">
-                <td><input class="emoji-input" bind:value={newConsumableCatDraft.emoji} maxlength="2" placeholder="📦" /></td>
+                <td><EmojiPicker bind:value={newConsumableCatDraft.emoji} /></td>
                 <td class="name-cell-input"><Input bind:value={newConsumableCatDraft.name} placeholder="Name *" /></td>
                 <td class="actions">
                   <button class="icon-action ok" onclick={addConsumableCategory} title="Add">✓</button>
