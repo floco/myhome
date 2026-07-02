@@ -35,12 +35,20 @@ export interface Supplier {
   name: string;
 }
 
+export interface ConsumableCategory {
+  id: string;
+  name: string;
+  emoji: string;
+}
+
 export interface SettingsDocument {
   version: number;
   costCategories: CostCategory[];
   inventoryCategories: InventoryCategory[];
   workCategories: WorkCategory[];
   suppliers: Supplier[];
+  consumableUnits: string[];
+  consumableCategories: ConsumableCategory[];
 }
 
 export function createSettingsStore() {
@@ -48,6 +56,8 @@ export function createSettingsStore() {
   const inventoryCategories = $state<InventoryCategory[]>([]);
   const workCategories = $state<WorkCategory[]>([]);
   const suppliers = $state<Supplier[]>([]);
+  const consumableUnits = $state<string[]>([]);
+  const consumableCategories = $state<ConsumableCategory[]>([]);
   let loaded = $state(false);
   let loadError = $state<string | null>(null);
 
@@ -64,6 +74,10 @@ export function createSettingsStore() {
       for (const c of (doc.workCategories ?? [])) workCategories.push(c);
       suppliers.length = 0;
       for (const s of (doc.suppliers ?? [])) suppliers.push(s);
+      consumableUnits.length = 0;
+      for (const u of (doc.consumableUnits ?? [])) consumableUnits.push(u);
+      consumableCategories.length = 0;
+      for (const c of (doc.consumableCategories ?? [])) consumableCategories.push(c);
     } catch (e) {
       loadError = e instanceof Error ? e.message : String(e);
     } finally {
@@ -111,6 +125,26 @@ export function createSettingsStore() {
     await init();
   }
 
+  async function updateConsumableUnits(list: string[]): Promise<void> {
+    const resp = await fetch("/api/settings/consumable-units", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(list),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
+  async function updateConsumableCategories(list: ConsumableCategory[]): Promise<void> {
+    const resp = await fetch("/api/settings/consumable-categories", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(list),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
   async function placeCostCategory(id: string, placement: CostCategoryPlacement | null): Promise<void> {
     if (placement === null) {
       const resp = await fetch(`/api/settings/cost-categories/${id}/placement`, { method: "DELETE" });
@@ -133,12 +167,16 @@ export function createSettingsStore() {
     get inventoryCategories() { return inventoryCategories as InventoryCategory[]; },
     get workCategories() { return workCategories as WorkCategory[]; },
     get suppliers() { return suppliers as Supplier[]; },
+    get consumableUnits() { return consumableUnits as string[]; },
+    get consumableCategories() { return consumableCategories as ConsumableCategory[]; },
     get loaded() { return loaded; },
     get loadError() { return loadError; },
     updateCostCategories,
     updateInventoryCategories,
     updateWorkCategories,
     updateSuppliers,
+    updateConsumableUnits,
+    updateConsumableCategories,
     placeCostCategory,
   };
 }
