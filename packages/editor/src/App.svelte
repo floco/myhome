@@ -51,18 +51,38 @@
   import Modal from "./lib/components/ui/Modal.svelte";
   import Input from "./lib/components/ui/Input.svelte";
   import Button from "./lib/components/ui/Button.svelte";
+  import { homesStore } from "./lib/homesStore.svelte";
+  import NewHomeModal from "./lib/components/NewHomeModal.svelte";
+  import HomesSwitcher from "./lib/components/HomesSwitcher.svelte";
+  import PlaceholderPage from "./lib/components/PlaceholderPage.svelte";
 
-  const floorStore = createHouseStore();
+  const getHomeId = () => homesStore.activeHomeId;
+
+  const floorStore = createHouseStore(getHomeId);
   const viewportStore = createViewportStore();
   const toolStore = createToolStore();
-  const choreStore = createChoreStore();
-  const inventoryStore = createInventoryStore();
-  const settingsStore = createSettingsStore();
-  const costsStore = createCostsStore();
-  const worksStore = createWorksStore();
-  const kbStore = createKBStore();
-  const consumableStore = createConsumableStore();
+  const choreStore = createChoreStore(getHomeId);
+  const inventoryStore = createInventoryStore(getHomeId);
+  const settingsStore = createSettingsStore(getHomeId);
+  const costsStore = createCostsStore(getHomeId);
+  const worksStore = createWorksStore(getHomeId);
+  const kbStore = createKBStore(getHomeId);
+  const consumableStore = createConsumableStore(getHomeId);
   const authStore = createAuthStore();
+
+  homesStore.loadHomes();
+
+  $effect(() => {
+    const _homeId = homesStore.activeHomeId;
+    floorStore.reload();
+    choreStore.reload();
+    inventoryStore.reload();
+    settingsStore.reload();
+    costsStore.reload();
+    worksStore.reload();
+    kbStore.reload();
+    consumableStore.reload();
+  });
 
   let theme = $state<Theme>(getStoredTheme());
   function handleToggleTheme(): void {
@@ -640,7 +660,13 @@
     <NavMenu {currentRoute} expanded={navExpanded} onclose={() => { navExpanded = false; }} />
 
     <div class="content">
-      {#if isFloorPlan}
+      {#if homesStore.loaded && homesStore.homes.length === 0}
+        <div class="no-homes">
+          <p>Create your first home to get started.</p>
+        </div>
+        <NewHomeModal open={true} required={true} onclose={() => {}} />
+
+      {:else if isFloorPlan}
         <div class="canvas-area" bind:clientWidth={canvasWidth} bind:clientHeight={canvasHeight} ondragover={handleDragOver} ondrop={handleDrop}>
           {#if !floorStore.loaded}
             <div class="loading">Loading…</div>
@@ -997,6 +1023,19 @@
 
       {:else if currentRoute === "#/settings"}
         <SettingsPage store={settingsStore} {authStore} />
+
+      {:else if currentRoute === "#/locations"}
+        <PlaceholderPage icon="🌍" label="Locations" description="Pin and compare candidate locations on a map." />
+      {:else if currentRoute === "#/properties"}
+        <PlaceholderPage icon="🏘" label="Properties" description="Track property listings, prices, and details." />
+      {:else if currentRoute === "#/budget"}
+        <PlaceholderPage icon="💰" label="Budget" description="Plan and track your acquisition or build budget." />
+      {:else if currentRoute === "#/visits"}
+        <PlaceholderPage icon="📅" label="Visits" description="Schedule and log site visits and viewings." />
+      {:else if currentRoute === "#/contacts"}
+        <PlaceholderPage icon="👤" label="Contacts" description="Manage agents, notaries, builders, and other contacts." />
+      {:else if currentRoute === "#/checklist"}
+        <PlaceholderPage icon="✅" label="Checklist" description="Track tasks and due diligence items for your project." />
       {/if}
     </div>
   </div>
@@ -1213,4 +1252,9 @@
 
   .user-dropdown-item:hover { background: var(--surface-hover, var(--border)); }
   .user-dropdown-item.signout { color: var(--danger, #e05); }
+
+  .no-homes {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; color: var(--text-muted); font-size: 14px;
+  }
 </style>
