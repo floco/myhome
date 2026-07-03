@@ -1,4 +1,7 @@
 <script lang="ts">
+  import HomesSwitcher from "./HomesSwitcher.svelte";
+  import { homesStore } from "../homesStore.svelte";
+
   interface Props {
     currentRoute: string;
     expanded: boolean;
@@ -6,16 +9,26 @@
   }
   let { currentRoute, expanded, onclose }: Props = $props();
 
-  const modules = [
-    { href: "#/",            icon: "🏡", label: "Home"             },
-    { href: "#/plan",        icon: "📐", label: "Floor Plan"       },
-    { href: "#/chores",      icon: "✅", label: "Chores"           },
-    { href: "#/inventory",   icon: "📦", label: "Inventory"        },
-    { href: "#/consumables", icon: "🛒", label: "Consumables"      },
-    { href: "#/works",       icon: "🔧", label: "Works"            },
-    { href: "#/kb",          icon: "📖", label: "Knowledge Base"   },
-    { href: "#/costs",       icon: "💶", label: "Costs"            },
+  const ALL_MODULES = [
+    { id: "home",        href: "#/",            icon: "🏡", label: "Home"             },
+    { id: "plan",        href: "#/plan",        icon: "📐", label: "Floor Plan"       },
+    { id: "chores",      href: "#/chores",      icon: "✅", label: "Chores"           },
+    { id: "inventory",   href: "#/inventory",   icon: "📦", label: "Inventory"        },
+    { id: "consumables", href: "#/consumables", icon: "🛒", label: "Consumables"      },
+    { id: "works",       href: "#/works",       icon: "🔧", label: "Works"            },
+    { id: "kb",          href: "#/kb",          icon: "📖", label: "Knowledge Base"   },
+    { id: "costs",       href: "#/costs",       icon: "💶", label: "Costs"            },
+    { id: "locations",   href: "#/locations",   icon: "🌍", label: "Locations",   placeholder: true },
+    { id: "properties",  href: "#/properties",  icon: "🏘", label: "Properties",  placeholder: true },
+    { id: "budget",      href: "#/budget",      icon: "💰", label: "Budget",      placeholder: true },
+    { id: "visits",      href: "#/visits",      icon: "📅", label: "Visits",      placeholder: true },
+    { id: "contacts",    href: "#/contacts",    icon: "👤", label: "Contacts",    placeholder: true },
+    { id: "checklist",   href: "#/checklist",   icon: "✅", label: "Checklist",   placeholder: true },
   ];
+
+  const visibleModules = $derived(
+    ALL_MODULES.filter((m) => homesStore.activeHome?.enabledModules.includes(m.id) ?? true)
+  );
 
   const settingsLink = { href: "#/settings", icon: "⚙️", label: "Settings" };
 
@@ -32,26 +45,22 @@
 
 <nav class="nav" class:expanded>
   <div class="nav-body">
-    {#each modules as mod}
+    <HomesSwitcher {expanded} />
+    {#each visibleModules as mod (mod.id)}
       <a
         href={mod.href}
         class="nav-item"
         class:active={isActive(mod.href)}
-        title={mod.label}
+        class:soon={mod.placeholder}
+        title={mod.placeholder ? `${mod.label} — coming soon` : mod.label}
         onclick={onclose}
       >
         <span class="nav-icon">{mod.icon}</span>
-        <span class="nav-label">{mod.label}</span>
+        <span class="nav-label">{mod.label}{#if mod.placeholder && expanded}<span class="soon-badge">Soon</span>{/if}</span>
       </a>
     {/each}
     <hr class="nav-separator" />
-    <a
-      href={settingsLink.href}
-      class="nav-item"
-      class:active={isActive(settingsLink.href)}
-      title={settingsLink.label}
-      onclick={onclose}
-    >
+    <a href={settingsLink.href} class="nav-item" class:active={isActive(settingsLink.href)} title={settingsLink.label} onclick={onclose}>
       <span class="nav-icon">{settingsLink.icon}</span>
       <span class="nav-label">{settingsLink.label}</span>
     </a>
@@ -89,9 +98,22 @@
   }
   .nav-item:hover { background: var(--surface-hover); color: var(--text); }
   .nav-item.active { color: var(--accent-contrast); background: var(--accent); }
+  .nav-item.soon { opacity: 0.55; }
 
   .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; line-height: 1; }
   .nav-label { font-size: 12px; font-weight: 500; }
+
+  .soon-badge {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: var(--surface-hover);
+    color: var(--text-muted);
+    border-radius: var(--radius-pill);
+    padding: 1px 5px;
+    margin-left: 4px;
+  }
 
   .nav-separator { border: none; border-top: 1px solid var(--border); margin: 8px 10px; }
 
