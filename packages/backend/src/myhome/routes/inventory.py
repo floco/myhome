@@ -26,50 +26,50 @@ from ..persistence_inventory import (
 router = APIRouter()
 
 
-@router.get("/api/inventory", response_model=InventoryDocument)
-def get_inventory() -> InventoryDocument:
-    return load_inventory()
+@router.get("/api/homes/{home_id}/inventory", response_model=InventoryDocument)
+def get_inventory(home_id: str) -> InventoryDocument:
+    return load_inventory(home_id)
 
 
-@router.post("/api/inventory/items", response_model=InventoryItem, status_code=201)
-def create_item(body: InventoryItemCreate) -> InventoryItem:
-    doc = load_inventory()
+@router.post("/api/homes/{home_id}/inventory/items", response_model=InventoryItem, status_code=201)
+def create_item(home_id: str, body: InventoryItemCreate) -> InventoryItem:
+    doc = load_inventory(home_id)
     item = InventoryItem(id=str(uuid.uuid4()), **body.model_dump())
     doc.items.append(item)
-    save_inventory(doc)
+    save_inventory(home_id, doc)
     return item
 
 
-@router.put("/api/inventory/items/{id}", status_code=204)
-def update_item(id: str, body: InventoryItemUpdate) -> None:
-    doc = load_inventory()
+@router.put("/api/homes/{home_id}/inventory/items/{id}", status_code=204)
+def update_item(home_id: str, id: str, body: InventoryItemUpdate) -> None:
+    doc = load_inventory(home_id)
     item = next((i for i in doc.items if i.id == id), None)
     if not item:
         raise HTTPException(status_code=404)
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(item, field, value)
-    save_inventory(doc)
+    save_inventory(home_id, doc)
 
 
-@router.delete("/api/inventory/items/{id}", status_code=204)
-def delete_item(id: str) -> None:
-    doc = load_inventory()
+@router.delete("/api/homes/{home_id}/inventory/items/{id}", status_code=204)
+def delete_item(home_id: str, id: str) -> None:
+    doc = load_inventory(home_id)
     before = len(doc.items)
     doc.items = [i for i in doc.items if i.id != id]
     if len(doc.items) == before:
         raise HTTPException(status_code=404)
-    save_inventory(doc)
-    delete_all_attachments(id)
+    save_inventory(home_id, doc)
+    delete_all_attachments(home_id, id)
 
 
-@router.put("/api/inventory/items/{id}/placement", status_code=204)
-def update_placement(id: str, body: PlacementUpdate) -> None:
-    doc = load_inventory()
+@router.put("/api/homes/{home_id}/inventory/items/{id}/placement", status_code=204)
+def update_placement(home_id: str, id: str, body: PlacementUpdate) -> None:
+    doc = load_inventory(home_id)
     item = next((i for i in doc.items if i.id == id), None)
     if not item:
         raise HTTPException(status_code=404)
     item.placement = body.placement
-    save_inventory(doc)
+    save_inventory(home_id, doc)
 
 
 _ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
@@ -94,10 +94,10 @@ def _validate_filename(filename: str) -> None:
         raise HTTPException(status_code=400, detail="Invalid filename")
 
 
-@router.post("/api/inventory/items/{id}/attachments", status_code=201)
-async def upload_attachment(id: str, file: UploadFile) -> dict:
+@router.post("/api/homes/{home_id}/inventory/items/{id}/attachments", status_code=201)
+async def upload_attachment(home_id: str, id: str, file: UploadFile) -> dict:
     _validate_id(id)
-    doc = load_inventory()
+    doc = load_inventory(home_id)
     item = next((i for i in doc.items if i.id == id), None)
     if not item:
         raise HTTPException(status_code=404)
@@ -107,23 +107,23 @@ async def upload_attachment(id: str, file: UploadFile) -> dict:
         raise HTTPException(status_code=400, detail="File type not supported")
     filename = _sanitise_filename(original)
     data = await file.read()
-    save_attachment(id, filename, data)
+    save_attachment(home_id, id, filename, data)
     if ext == ".pdf":
         generate_pdf_thumbnail(
-            _attachments_dir(id) / filename,
-            _attachments_dir(id) / (filename + ".thumb.jpg"),
+            _attachments_dir(home_id, id) / filename,
+            _attachments_dir(home_id, id) / (filename + ".thumb.jpg"),
         )
     if filename not in item.attachments:
         item.attachments.append(filename)
-    save_inventory(doc)
+    save_inventory(home_id, doc)
     return {"filename": filename}
 
 
-@router.get("/api/inventory/items/{id}/attachments/{filename}")
-def get_attachment(id: str, filename: str) -> FileResponse:
+@router.get("/api/homes/{home_id}/inventory/items/{id}/attachments/{filename}")
+def get_attachment(home_id: str, id: str, filename: str) -> FileResponse:
     _validate_id(id)
     _validate_filename(filename)
-    base = _attachments_dir(id).resolve()
+    base = _attachments_dir(home_id, id).resolve()
     path = (base / filename).resolve()
     if not str(path).startswith(str(base) + "/") or not path.is_file():
         raise HTTPException(status_code=404)
@@ -131,15 +131,15 @@ def get_attachment(id: str, filename: str) -> FileResponse:
     return FileResponse(str(path), media_type=media_type or "application/octet-stream", content_disposition_type="inline")
 
 
-@router.delete("/api/inventory/items/{id}/attachments/{filename}", status_code=204)
-def remove_attachment(id: str, filename: str) -> None:
+@router.delete("/api/homes/{home_id}/inventory/items/{id}/attachments/{filename}", status_code=204)
+def remove_attachment(home_id: str, id: str, filename: str) -> None:
     _validate_id(id)
     _validate_filename(filename)
-    doc = load_inventory()
+    doc = load_inventory(home_id)
     item = next((i for i in doc.items if i.id == id), None)
     if not item:
         raise HTTPException(status_code=404)
-    if not delete_attachment(id, filename):
+    if not delete_attachment(home_id, id, filename):
         raise HTTPException(status_code=404)
     item.attachments = [a for a in item.attachments if a != filename]
-    save_inventory(doc)
+    save_inventory(home_id, doc)

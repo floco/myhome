@@ -1,6 +1,9 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { createConsumableStore, stockStatus, barFill } from "../src/lib/consumableStore.svelte";
 
+const HOME = "home-123";
+const getHomeId = () => HOME;
+
 function makeFetch(status: number, body?: unknown) {
   return vi.fn().mockResolvedValue({
     ok: status >= 200 && status < 300,
@@ -58,7 +61,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe("consumableStore — init", () => {
   it("loads consumables and transactions from API", async () => {
     vi.stubGlobal("fetch", makeFetch(200, sampleDoc));
-    const store = createConsumableStore();
+    const store = createConsumableStore(getHomeId);
     await tick();
     expect(store.consumables.length).toBe(2);
     expect(store.transactions.length).toBe(1);
@@ -67,10 +70,19 @@ describe("consumableStore — init", () => {
 
   it("marks loaded on fetch error", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network")));
-    const store = createConsumableStore();
+    const store = createConsumableStore(getHomeId);
     await tick();
     expect(store.loaded).toBe(true);
     expect(store.loadError).toMatch("Network");
+  });
+
+  it("does not fetch when no homeId provided", async () => {
+    const fetchFn = vi.fn();
+    vi.stubGlobal("fetch", fetchFn);
+    const store = createConsumableStore();
+    await tick();
+    expect(fetchFn).not.toHaveBeenCalled();
+    expect(store.loaded).toBe(true);
   });
 });
 
@@ -186,16 +198,17 @@ describe("barFill", () => {
 });
 
 describe("consumableStore — updateStock", () => {
-  it("calls POST /api/consumables/:id/stock and re-fetches", async () => {
+  it("calls POST /api/homes/{homeId}/consumables/:id/stock and re-fetches", async () => {
     const fetchMock = makeFetch(200, sampleDoc);
     vi.stubGlobal("fetch", fetchMock);
-    const store = createConsumableStore();
+    const store = createConsumableStore(getHomeId);
     await tick();
     fetchMock.mockResolvedValueOnce({ ok: true, status: 204, json: async () => ({}) });
     fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => emptyDoc });
     await store.updateStock("c1", 10.0, "restock");
-    const stockCall = fetchMock.mock.calls.find((c: unknown[]) => c[0] === "/api/consumables/c1/stock");
+    const stockCall = fetchMock.mock.calls.find((c: unknown[]) => (c[0] as string).includes("/consumables/c1/stock"));
     expect(stockCall).toBeTruthy();
+    expect((stockCall![0] as string)).toBe(`/api/homes/${HOME}/consumables/c1/stock`);
     const body = JSON.parse((stockCall![1] as RequestInit).body as string);
     expect(body.quantity).toBe(10.0);
     expect(body.note).toBe("restock");

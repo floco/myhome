@@ -4,6 +4,8 @@ import HomeCostsWidget from "../src/lib/components/HomeCostsWidget.svelte";
 import { createCostsStore } from "../src/lib/costsStore.svelte";
 import { createSettingsStore } from "../src/lib/settingsStore.svelte";
 
+const HOME = "home-123";
+const getHomeId = () => HOME;
 const lastYear = new Date().getFullYear() - 1;
 
 async function makeTick(): Promise<void> {
@@ -27,12 +29,12 @@ function makeStores(withEntries: boolean) {
   vi.stubGlobal(
     "fetch",
     vi.fn().mockImplementation((url: string) => {
-      if (url === "/api/costs") return Promise.resolve({ ok: true, status: 200, json: async () => costsDoc });
-      if (url === "/api/settings") return Promise.resolve({ ok: true, status: 200, json: async () => settingsDoc });
+      if (url === `/api/homes/${HOME}/costs`) return Promise.resolve({ ok: true, status: 200, json: async () => costsDoc });
+      if (url === `/api/homes/${HOME}/settings`) return Promise.resolve({ ok: true, status: 200, json: async () => settingsDoc });
       return Promise.resolve({ ok: false, status: 404, json: async () => undefined });
     })
   );
-  return { costsStore: createCostsStore(), settingsStore: createSettingsStore() };
+  return { costsStore: createCostsStore(getHomeId), settingsStore: createSettingsStore(getHomeId) };
 }
 
 afterEach(() => vi.unstubAllGlobals());

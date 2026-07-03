@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createHouseStore } from "../src/lib/houseStore.svelte";
 import type { HouseDocument } from "@myhome/geometry";
 
+const HOME = "home-123";
+const getHomeId = () => HOME;
+
 function makeFetchStub(status: number, body?: unknown) {
   return vi.fn().mockResolvedValue({
     ok: status >= 200 && status < 300,
@@ -33,20 +36,20 @@ describe("houseStore — initial state (no saved doc)", () => {
   });
 
   it("starts with the sample floor and detects rooms", async () => {
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
     expect(store.floors.length).toBe(1);
     expect(store.floor.rooms.length).toBe(2);
   });
 
   it("currentFloorId matches the single floor id", async () => {
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
     expect(store.currentFloorId).toBe(store.floors[0].id);
   });
 
   it("loaded becomes true after init", async () => {
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
     expect(store.loaded).toBe(true);
   });
@@ -55,7 +58,7 @@ describe("houseStore — initial state (no saved doc)", () => {
 describe("houseStore — loading from API", () => {
   it("replaces sample state with API data when fetch succeeds", async () => {
     vi.stubGlobal("fetch", makeFetchStub(200, makeDoc("api-floor")));
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
     expect(store.floors[0].id).toBe("api-floor");
     expect(store.currentFloorId).toBe("api-floor");
@@ -65,10 +68,19 @@ describe("houseStore — loading from API", () => {
 
   it("sets loadError on fetch failure, still marks loaded", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network error")));
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
     expect(store.loaded).toBe(true);
     expect(store.loadError).toMatch("Network error");
+  });
+
+  it("does not fetch when no homeId provided", async () => {
+    const fetchFn = vi.fn();
+    vi.stubGlobal("fetch", fetchFn);
+    const store = createHouseStore();
+    await tick();
+    expect(fetchFn).not.toHaveBeenCalled();
+    expect(store.loaded).toBe(true);
   });
 });
 
@@ -78,7 +90,7 @@ describe("houseStore — floor management", () => {
   });
 
   it("addFloor adds a new empty floor and switches to it", async () => {
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
     const before = store.floors.length;
     store.addFloor("First Floor");
@@ -90,7 +102,7 @@ describe("houseStore — floor management", () => {
   });
 
   it("switchFloor changes the active floor", async () => {
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
     store.addFloor("Upstairs");
     const upstairs = store.floors[store.floors.length - 1].id;
@@ -102,7 +114,7 @@ describe("houseStore — floor management", () => {
   });
 
   it("renameFloor changes the floor name", async () => {
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
     const id = store.floors[0].id;
     store.renameFloor(id, "Basement");
@@ -110,7 +122,7 @@ describe("houseStore — floor management", () => {
   });
 
   it("removeFloor removes floor and switches to adjacent floor", async () => {
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
     store.addFloor("Upstairs");
     const upstairs = store.floors[store.floors.length - 1].id;
@@ -122,7 +134,7 @@ describe("houseStore — floor management", () => {
   });
 
   it("cannot remove the last floor", async () => {
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
     const id = store.floors[0].id;
     store.removeFloor(id);
@@ -136,7 +148,7 @@ describe("houseStore — floor isolation", () => {
   });
 
   it("walls added on one floor do not appear on another floor", async () => {
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
     const groundId = store.floors[0].id;
     store.addFloor("Upstairs");
@@ -154,7 +166,7 @@ describe("houseStore — undo/redo", () => {
   });
 
   it("undo restores state before addWall", async () => {
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
     store.addWall({ id: "w1", start: { x: 0, y: 0 }, end: { x: 5, y: 0 }, type: "wall" });
     expect(store.floor.walls.length).toBeGreaterThan(0);
@@ -163,7 +175,7 @@ describe("houseStore — undo/redo", () => {
   });
 
   it("redo re-applies undone addWall", async () => {
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
     store.addWall({ id: "w1", start: { x: 0, y: 0 }, end: { x: 5, y: 0 }, type: "wall" });
     store.undo();
@@ -172,7 +184,7 @@ describe("houseStore — undo/redo", () => {
   });
 
   it("hasUndo is false initially, true after mutation", async () => {
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
     expect(store.hasUndo).toBe(false);
     store.addWall({ id: "w1", start: { x: 0, y: 0 }, end: { x: 5, y: 0 }, type: "wall" });
@@ -180,7 +192,7 @@ describe("houseStore — undo/redo", () => {
   });
 
   it("hasRedo is true after undo", async () => {
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
     store.addWall({ id: "w1", start: { x: 0, y: 0 }, end: { x: 5, y: 0 }, type: "wall" });
     store.undo();
@@ -189,9 +201,9 @@ describe("houseStore — undo/redo", () => {
 });
 
 describe("houseStore — save", () => {
-  it("save calls PUT /api/house with current state", async () => {
+  it("save calls PUT /api/homes/{homeId}/house with current state", async () => {
     vi.stubGlobal("fetch", makeFetchStub(404));
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
 
     const putFetch = vi.fn().mockResolvedValue({ ok: true, status: 204 });
@@ -199,7 +211,7 @@ describe("houseStore — save", () => {
     await store.save();
 
     expect(putFetch).toHaveBeenCalledWith(
-      "/api/house",
+      `/api/homes/${HOME}/house`,
       expect.objectContaining({ method: "PUT" })
     );
     const body = JSON.parse(putFetch.mock.calls[0][1].body);
@@ -209,10 +221,20 @@ describe("houseStore — save", () => {
 
   it("save throws on non-OK response", async () => {
     vi.stubGlobal("fetch", makeFetchStub(404));
-    const store = createHouseStore();
+    const store = createHouseStore(getHomeId);
     await tick();
 
     vi.stubGlobal("fetch", makeFetchStub(500));
     await expect(store.save()).rejects.toThrow();
+  });
+
+  it("save does nothing when no homeId provided", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    const store = createHouseStore();
+    await tick();
+    const fetchFn = vi.fn();
+    vi.stubGlobal("fetch", fetchFn);
+    await store.save();
+    expect(fetchFn).not.toHaveBeenCalled();
   });
 });

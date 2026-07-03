@@ -1,6 +1,9 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { createChoreStore } from "../src/lib/choreStore.svelte";
 
+const HOME = "home-123";
+const getHomeId = () => HOME;
+
 function makeFetch(status: number, body?: unknown) {
   return vi.fn().mockResolvedValue({
     ok: status >= 200 && status < 300,
@@ -32,7 +35,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe("choreStore — init", () => {
   it("starts empty and loads from API", async () => {
     vi.stubGlobal("fetch", makeFetch(200, sampleDoc));
-    const store = createChoreStore();
+    const store = createChoreStore(getHomeId);
     await tick();
     expect(store.chores.length).toBe(2);
     expect(store.assignments.length).toBe(2);
@@ -41,7 +44,7 @@ describe("choreStore — init", () => {
 
   it("marks loaded even on fetch error", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network error")));
-    const store = createChoreStore();
+    const store = createChoreStore(getHomeId);
     await tick();
     expect(store.loaded).toBe(true);
     expect(store.loadError).toMatch("Network error");
@@ -49,17 +52,26 @@ describe("choreStore — init", () => {
 
   it("returns empty arrays when API returns empty doc", async () => {
     vi.stubGlobal("fetch", makeFetch(200, emptyDoc));
-    const store = createChoreStore();
+    const store = createChoreStore(getHomeId);
     await tick();
     expect(store.chores).toEqual([]);
     expect(store.assignments).toEqual([]);
+  });
+
+  it("does not fetch when no homeId provided", async () => {
+    const fetchFn = vi.fn();
+    vi.stubGlobal("fetch", fetchFn);
+    const store = createChoreStore();
+    await tick();
+    expect(fetchFn).not.toHaveBeenCalled();
+    expect(store.loaded).toBe(true);
   });
 });
 
 describe("choreStore — getProgress", () => {
   it("returns ~0.5 when half period remains", async () => {
     vi.stubGlobal("fetch", makeFetch(200, emptyDoc));
-    const store = createChoreStore();
+    const store = createChoreStore(getHomeId);
     await tick();
     const halfRemaining = new Date(Date.now() + 7 * 86400000).toISOString();
     const assignment = { id: "a1", choreId: "x", roomId: null, position: null, nextDueDate: halfRemaining };
@@ -69,7 +81,7 @@ describe("choreStore — getProgress", () => {
 
   it("returns 0 when overdue", async () => {
     vi.stubGlobal("fetch", makeFetch(200, emptyDoc));
-    const store = createChoreStore();
+    const store = createChoreStore(getHomeId);
     await tick();
     const overdue = new Date(Date.now() - 86400000).toISOString();
     const assignment = { id: "a1", choreId: "x", roomId: null, position: null, nextDueDate: overdue };
@@ -79,7 +91,7 @@ describe("choreStore — getProgress", () => {
 
   it("returns 1 when just scheduled", async () => {
     vi.stubGlobal("fetch", makeFetch(200, emptyDoc));
-    const store = createChoreStore();
+    const store = createChoreStore(getHomeId);
     await tick();
     const fullRemaining = new Date(Date.now() + 14 * 86400000).toISOString();
     const assignment = { id: "a1", choreId: "x", roomId: null, position: null, nextDueDate: fullRemaining };
@@ -91,21 +103,21 @@ describe("choreStore — getProgress", () => {
 describe("choreStore — getColor", () => {
   it("returns green for >50%", async () => {
     vi.stubGlobal("fetch", makeFetch(200, emptyDoc));
-    const store = createChoreStore();
+    const store = createChoreStore(getHomeId);
     await tick();
     expect(store.getColor(0.8)).toBe("#4caf50");
   });
 
   it("returns orange for 25-50%", async () => {
     vi.stubGlobal("fetch", makeFetch(200, emptyDoc));
-    const store = createChoreStore();
+    const store = createChoreStore(getHomeId);
     await tick();
     expect(store.getColor(0.4)).toBe("#ff9800");
   });
 
   it("returns red for <25% or overdue", async () => {
     vi.stubGlobal("fetch", makeFetch(200, emptyDoc));
-    const store = createChoreStore();
+    const store = createChoreStore(getHomeId);
     await tick();
     expect(store.getColor(0.1)).toBe("#f44336");
     expect(store.getColor(0)).toBe("#f44336");
@@ -115,7 +127,7 @@ describe("choreStore — getColor", () => {
 describe("choreStore — assignmentsForRoom", () => {
   it("returns only assignments for the specified room", async () => {
     vi.stubGlobal("fetch", makeFetch(200, sampleDoc));
-    const store = createChoreStore();
+    const store = createChoreStore(getHomeId);
     await tick();
     const forR1 = store.assignmentsForRoom("r1");
     expect(forR1.length).toBe(1);
@@ -124,14 +136,14 @@ describe("choreStore — assignmentsForRoom", () => {
 
   it("returns empty array for unknown room", async () => {
     vi.stubGlobal("fetch", makeFetch(200, sampleDoc));
-    const store = createChoreStore();
+    const store = createChoreStore(getHomeId);
     await tick();
     expect(store.assignmentsForRoom("unknown")).toEqual([]);
   });
 
   it("does not include house-level assignments", async () => {
     vi.stubGlobal("fetch", makeFetch(200, sampleDoc));
-    const store = createChoreStore();
+    const store = createChoreStore(getHomeId);
     await tick();
     const forR1 = store.assignmentsForRoom("r1");
     expect(forR1.every((a) => a.roomId !== null)).toBe(true);

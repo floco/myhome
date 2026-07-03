@@ -6,9 +6,9 @@ from ..svg_render import render_floor_svg
 router = APIRouter()
 
 
-@router.get("/api/house/floors/{floor_id}/svg")
-def get_floor_svg(floor_id: str) -> Response:
-    doc = load_house()
+@router.get("/api/homes/{home_id}/house/floors/{floor_id}/svg")
+def get_floor_svg(home_id: str, floor_id: str) -> Response:
+    doc = load_house(home_id)
     if doc is None:
         raise HTTPException(status_code=404, detail="No house document found")
     floor = next((f for f in doc.floors if f.id == floor_id), None)

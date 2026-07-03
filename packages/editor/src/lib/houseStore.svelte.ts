@@ -19,7 +19,7 @@ function genId(): string {
   return (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36));
 }
 
-export function createHouseStore() {
+export function createHouseStore(getHomeId: () => string | null = () => null) {
   const sample = createSampleHouse();
   const floors = $state<Floor[]>(sample.floors);
   let currentFloorId = $state<string>(sample.currentFloorId);
@@ -191,8 +191,10 @@ export function createHouseStore() {
   // API load/save
 
   async function init(): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) { loaded = true; return; }
     try {
-      const resp = await fetch("/api/house");
+      const resp = await fetch(`/api/homes/${homeId}/house`);
       if (resp.status === 404) {
         // No saved document; keep sample house already in state
       } else if (!resp.ok) {
@@ -216,12 +218,14 @@ export function createHouseStore() {
   }
 
   async function save(): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) return;
     const doc: HouseDocument = {
       version: 1,
       house: house as House,
       floors: floors as Floor[],
     };
-    const resp = await fetch("/api/house", {
+    const resp = await fetch(`/api/homes/${homeId}/house`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(doc),
@@ -262,6 +266,7 @@ export function createHouseStore() {
     updateOpening,
     updateRoom,
     openingOverlaps,
+    reload: init,
     save,
   };
 }

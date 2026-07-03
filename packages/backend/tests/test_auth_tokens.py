@@ -73,11 +73,12 @@ def test_bearer_token_authenticates_request(tmp_path, monkeypatch):
     tc = TestClient(app)
     # Login to get a session, then create a token
     tc.post("/api/auth/login", json={"username": "admin", "password": "admin123"})
+    hid = tc.post("/api/homes", json={"name": "Test Home", "type": "existing"}).json()["id"]
     create_resp = tc.post("/api/auth/tokens", json={"name": "Automation", "role": "normal"})
     raw_token = create_resp.json()["token"]
     # Now use the raw token as a Bearer token on a fresh (cookieless) client
     bare = TestClient(app)
-    resp = bare.get("/api/settings", headers={"Authorization": f"Bearer {raw_token}"})
+    resp = bare.get(f"/api/homes/{hid}/settings", headers={"Authorization": f"Bearer {raw_token}"})
     assert resp.status_code == 200
 
 
@@ -96,10 +97,11 @@ def test_bearer_token_updates_last_used_at(tmp_path, monkeypatch):
     ]))
     tc = TestClient(app)
     tc.post("/api/auth/login", json={"username": "admin", "password": "admin123"})
+    hid = tc.post("/api/homes", json={"name": "Test Home", "type": "existing"}).json()["id"]
     create_resp = tc.post("/api/auth/tokens", json={"name": "Tracker", "role": "ro"})
     raw_token = create_resp.json()["token"]
     bare = TestClient(app)
-    bare.get("/api/settings", headers={"Authorization": f"Bearer {raw_token}"})
+    bare.get(f"/api/homes/{hid}/settings", headers={"Authorization": f"Bearer {raw_token}"})
     doc = load_tokens()
     used = next(t for t in doc.tokens if t.name == "Tracker")
     assert used.last_used_at is not None

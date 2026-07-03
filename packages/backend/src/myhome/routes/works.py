@@ -21,40 +21,40 @@ from ..persistence_works import (
 router = APIRouter()
 
 
-@router.get("/api/works", response_model=WorksDocument)
-def get_works() -> WorksDocument:
-    return load_works()
+@router.get("/api/homes/{home_id}/works", response_model=WorksDocument)
+def get_works(home_id: str) -> WorksDocument:
+    return load_works(home_id)
 
 
-@router.post("/api/works", response_model=Work, status_code=201)
-def create_work(body: WorkCreate) -> Work:
-    doc = load_works()
+@router.post("/api/homes/{home_id}/works", response_model=Work, status_code=201)
+def create_work(home_id: str, body: WorkCreate) -> Work:
+    doc = load_works(home_id)
     work = Work(id=str(uuid.uuid4()), **body.model_dump())
     doc.works.append(work)
-    save_works(doc)
+    save_works(home_id, doc)
     return work
 
 
-@router.put("/api/works/{id}", status_code=204)
-def update_work(id: str, body: WorkUpdate) -> None:
-    doc = load_works()
+@router.put("/api/homes/{home_id}/works/{id}", status_code=204)
+def update_work(home_id: str, id: str, body: WorkUpdate) -> None:
+    doc = load_works(home_id)
     work = next((w for w in doc.works if w.id == id), None)
     if not work:
         raise HTTPException(status_code=404)
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(work, field, value)
-    save_works(doc)
+    save_works(home_id, doc)
 
 
-@router.delete("/api/works/{id}", status_code=204)
-def delete_work(id: str) -> None:
-    doc = load_works()
+@router.delete("/api/homes/{home_id}/works/{id}", status_code=204)
+def delete_work(home_id: str, id: str) -> None:
+    doc = load_works(home_id)
     before = len(doc.works)
     doc.works = [w for w in doc.works if w.id != id]
     if len(doc.works) == before:
         raise HTTPException(status_code=404)
-    save_works(doc)
-    delete_all_attachments(id)
+    save_works(home_id, doc)
+    delete_all_attachments(home_id, id)
 
 
 _ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
@@ -79,10 +79,10 @@ def _validate_filename(filename: str) -> None:
         raise HTTPException(status_code=400, detail="Invalid filename")
 
 
-@router.post("/api/works/{id}/attachments", status_code=201)
-async def upload_attachment(id: str, file: UploadFile) -> dict:
+@router.post("/api/homes/{home_id}/works/{id}/attachments", status_code=201)
+async def upload_attachment(home_id: str, id: str, file: UploadFile) -> dict:
     _validate_id(id)
-    doc = load_works()
+    doc = load_works(home_id)
     work = next((w for w in doc.works if w.id == id), None)
     if not work:
         raise HTTPException(status_code=404)
@@ -92,22 +92,22 @@ async def upload_attachment(id: str, file: UploadFile) -> dict:
         raise HTTPException(status_code=400, detail="Unsupported file type")
     filename = _sanitise_filename(original)
     data = await file.read()
-    save_attachment(id, filename, data)
+    save_attachment(home_id, id, filename, data)
     if ext == ".pdf":
-        pdf_path = get_attachment_path(id, filename)
+        pdf_path = get_attachment_path(home_id, id, filename)
         thumb_path = pdf_path.parent / (filename + ".thumb.jpg")
         generate_pdf_thumbnail(pdf_path, thumb_path)
     if filename not in work.attachments:
         work.attachments.append(filename)
-    save_works(doc)
+    save_works(home_id, doc)
     return {"filename": filename}
 
 
-@router.get("/api/works/{id}/attachments/{filename}")
-def get_attachment(id: str, filename: str) -> FileResponse:
+@router.get("/api/homes/{home_id}/works/{id}/attachments/{filename}")
+def get_attachment(home_id: str, id: str, filename: str) -> FileResponse:
     _validate_id(id)
     _validate_filename(filename)
-    base = _attachments_dir(id).resolve()
+    base = _attachments_dir(home_id, id).resolve()
     path = (base / filename).resolve()
     if not str(path).startswith(str(base) + "/") or not path.is_file():
         raise HTTPException(status_code=404)
@@ -115,35 +115,35 @@ def get_attachment(id: str, filename: str) -> FileResponse:
     return FileResponse(str(path), media_type=media_type or "application/octet-stream", filename=filename)
 
 
-@router.delete("/api/works/{id}/attachments/{filename}", status_code=204)
-def remove_attachment(id: str, filename: str) -> None:
+@router.delete("/api/homes/{home_id}/works/{id}/attachments/{filename}", status_code=204)
+def remove_attachment(home_id: str, id: str, filename: str) -> None:
     _validate_id(id)
     _validate_filename(filename)
-    doc = load_works()
+    doc = load_works(home_id)
     work = next((w for w in doc.works if w.id == id), None)
     if not work:
         raise HTTPException(status_code=404)
-    if not delete_attachment(id, filename):
+    if not delete_attachment(home_id, id, filename):
         raise HTTPException(status_code=404)
     work.attachments = [a for a in work.attachments if a != filename]
-    save_works(doc)
+    save_works(home_id, doc)
 
 
-@router.put("/api/works/{id}/placement", status_code=204)
-def set_placement(id: str, body: WorkPlacement) -> None:
-    doc = load_works()
+@router.put("/api/homes/{home_id}/works/{id}/placement", status_code=204)
+def set_placement(home_id: str, id: str, body: WorkPlacement) -> None:
+    doc = load_works(home_id)
     work = next((w for w in doc.works if w.id == id), None)
     if not work:
         raise HTTPException(status_code=404)
     work.placement = body
-    save_works(doc)
+    save_works(home_id, doc)
 
 
-@router.delete("/api/works/{id}/placement", status_code=204)
-def clear_placement(id: str) -> None:
-    doc = load_works()
+@router.delete("/api/homes/{home_id}/works/{id}/placement", status_code=204)
+def clear_placement(home_id: str, id: str) -> None:
+    doc = load_works(home_id)
     work = next((w for w in doc.works if w.id == id), None)
     if not work:
         raise HTTPException(status_code=404)
     work.placement = None
-    save_works(doc)
+    save_works(home_id, doc)

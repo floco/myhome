@@ -2,6 +2,9 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { createInventoryStore } from "../src/lib/inventoryStore.svelte";
 import type { InventoryItem } from "../src/lib/inventoryStore.svelte";
 
+const HOME = "home-123";
+const getHomeId = () => HOME;
+
 function makeFetch(status: number, body?: unknown) {
   return vi.fn().mockResolvedValue({
     ok: status >= 200 && status < 300,
@@ -41,7 +44,7 @@ describe("inventoryStore — init", () => {
   it("loads items from API", async () => {
     const doc = { version: 1, items: [makeItem()] };
     vi.stubGlobal("fetch", makeFetch(200, doc));
-    const store = createInventoryStore();
+    const store = createInventoryStore(getHomeId);
     await tick();
     expect(store.items.length).toBe(1);
     expect(store.items[0].id).toBe("i1");
@@ -50,24 +53,33 @@ describe("inventoryStore — init", () => {
 
   it("marks loaded on fetch error", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("net fail")));
-    const store = createInventoryStore();
+    const store = createInventoryStore(getHomeId);
     await tick();
     expect(store.loaded).toBe(true);
     expect(store.loadError).toMatch("net fail");
+  });
+
+  it("does not fetch when no homeId provided", async () => {
+    const fetchFn = vi.fn();
+    vi.stubGlobal("fetch", fetchFn);
+    const store = createInventoryStore();
+    await tick();
+    expect(fetchFn).not.toHaveBeenCalled();
+    expect(store.loaded).toBe(true);
   });
 });
 
 describe("inventoryStore — warrantyStatus", () => {
   it("returns ok when no warrantyExpiryDate", async () => {
     vi.stubGlobal("fetch", makeFetch(200, emptyDoc));
-    const store = createInventoryStore();
+    const store = createInventoryStore(getHomeId);
     await tick();
     expect(store.warrantyStatus(makeItem({ warrantyExpiryDate: null }))).toBe("ok");
   });
 
   it("returns ok when expiry more than 30 days away", async () => {
     vi.stubGlobal("fetch", makeFetch(200, emptyDoc));
-    const store = createInventoryStore();
+    const store = createInventoryStore(getHomeId);
     await tick();
     const future = new Date(Date.now() + 31 * 86400 * 1000).toISOString().slice(0, 10);
     expect(store.warrantyStatus(makeItem({ warrantyExpiryDate: future }))).toBe("ok");
@@ -75,7 +87,7 @@ describe("inventoryStore — warrantyStatus", () => {
 
   it("returns soon when expiry 30 days or less away but not past", async () => {
     vi.stubGlobal("fetch", makeFetch(200, emptyDoc));
-    const store = createInventoryStore();
+    const store = createInventoryStore(getHomeId);
     await tick();
     const soon = new Date(Date.now() + 15 * 86400 * 1000).toISOString().slice(0, 10);
     expect(store.warrantyStatus(makeItem({ warrantyExpiryDate: soon }))).toBe("soon");
@@ -83,7 +95,7 @@ describe("inventoryStore — warrantyStatus", () => {
 
   it("returns soon at exactly 30 days", async () => {
     vi.stubGlobal("fetch", makeFetch(200, emptyDoc));
-    const store = createInventoryStore();
+    const store = createInventoryStore(getHomeId);
     await tick();
     const exactly30 = new Date(Date.now() + 30 * 86400 * 1000).toISOString().slice(0, 10);
     expect(store.warrantyStatus(makeItem({ warrantyExpiryDate: exactly30 }))).toBe("soon");
@@ -91,7 +103,7 @@ describe("inventoryStore — warrantyStatus", () => {
 
   it("returns expired when expiry is in the past", async () => {
     vi.stubGlobal("fetch", makeFetch(200, emptyDoc));
-    const store = createInventoryStore();
+    const store = createInventoryStore(getHomeId);
     await tick();
     const past = new Date(Date.now() - 86400 * 1000).toISOString().slice(0, 10);
     expect(store.warrantyStatus(makeItem({ warrantyExpiryDate: past }))).toBe("expired");
@@ -103,7 +115,7 @@ describe("inventoryStore — placedItems / unplacedItems", () => {
     const placed = makeItem({ id: "p1", placement: { floorId: "f1", roomId: null, position: { x: 1, y: 2 } } });
     const unplaced = makeItem({ id: "u1", placement: null });
     vi.stubGlobal("fetch", makeFetch(200, { version: 1, items: [placed, unplaced] }));
-    const store = createInventoryStore();
+    const store = createInventoryStore(getHomeId);
     await tick();
     expect(store.placedItems().length).toBe(1);
     expect(store.placedItems()[0].id).toBe("p1");
@@ -113,7 +125,7 @@ describe("inventoryStore — placedItems / unplacedItems", () => {
 
   it("returns empty arrays when all items are unplaced", async () => {
     vi.stubGlobal("fetch", makeFetch(200, { version: 1, items: [makeItem()] }));
-    const store = createInventoryStore();
+    const store = createInventoryStore(getHomeId);
     await tick();
     expect(store.placedItems()).toEqual([]);
     expect(store.unplacedItems().length).toBe(1);
@@ -130,7 +142,7 @@ describe("inventoryStore — uploadAttachment", () => {
         .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ filename: "invoice.pdf" }) })
         .mockResolvedValueOnce({ ok: true, status: 200, json: async () => updatedDoc }),
     );
-    const store = createInventoryStore();
+    const store = createInventoryStore(getHomeId);
     await tick();
     const file = new File(["%PDF-1.4"], "invoice.pdf", { type: "application/pdf" });
     const filename = await store.uploadAttachment("i1", file);
@@ -146,7 +158,7 @@ describe("inventoryStore — uploadAttachment", () => {
         .mockResolvedValueOnce({ ok: true, status: 200, json: async () => emptyDoc })
         .mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({}) }),
     );
-    const store = createInventoryStore();
+    const store = createInventoryStore(getHomeId);
     await tick();
     await expect(
       store.uploadAttachment("i1", new File(["img"], "img.png")),
@@ -165,7 +177,7 @@ describe("inventoryStore — deleteAttachment", () => {
         .mockResolvedValueOnce({ ok: true, status: 204, json: async () => ({}) })
         .mockResolvedValueOnce({ ok: true, status: 200, json: async () => clearedDoc }),
     );
-    const store = createInventoryStore();
+    const store = createInventoryStore(getHomeId);
     await tick();
     expect(store.items[0].attachments).toContain("invoice.pdf");
     await store.deleteAttachment("i1", "invoice.pdf");
@@ -180,7 +192,7 @@ describe("inventoryStore — deleteAttachment", () => {
         .mockResolvedValueOnce({ ok: true, status: 200, json: async () => emptyDoc })
         .mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}) }),
     );
-    const store = createInventoryStore();
+    const store = createInventoryStore(getHomeId);
     await tick();
     await expect(store.deleteAttachment("i1", "invoice.pdf")).rejects.toThrow("HTTP 404");
   });

@@ -9,30 +9,32 @@ from .models_inventory import InventoryDocument
 _log = logging.getLogger(__name__)
 
 
-def _inventory_file() -> Path:
-    data_dir = Path(os.environ.get("DATA_DIR", "/data"))
-    return data_dir / "inventory.json"
+def _home_dir(home_id: str) -> Path:
+    return Path(os.environ.get("DATA_DIR", "/data")) / "homes" / home_id
 
 
-def _attachments_dir(item_id: str) -> Path:
-    data_dir = Path(os.environ.get("DATA_DIR", "/data"))
-    return data_dir / "inventory-attachments" / item_id
+def _inventory_file(home_id: str) -> Path:
+    return _home_dir(home_id) / "inventory.json"
 
 
-def get_attachment_path(item_id: str, filename: str) -> Path:
-    return _attachments_dir(item_id) / filename
+def _attachments_dir(home_id: str, item_id: str) -> Path:
+    return _home_dir(home_id) / "inventory-attachments" / item_id
 
 
-def load_inventory() -> InventoryDocument:
-    path = _inventory_file()
+def get_attachment_path(home_id: str, item_id: str, filename: str) -> Path:
+    return _attachments_dir(home_id, item_id) / filename
+
+
+def load_inventory(home_id: str) -> InventoryDocument:
+    path = _inventory_file(home_id)
     if not path.exists():
         return InventoryDocument()
     with path.open() as f:
         return InventoryDocument.model_validate(json.load(f))
 
 
-def save_inventory(doc: InventoryDocument) -> None:
-    path = _inventory_file()
+def save_inventory(home_id: str, doc: InventoryDocument) -> None:
+    path = _inventory_file(home_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     with tmp.open("w") as f:
@@ -40,14 +42,14 @@ def save_inventory(doc: InventoryDocument) -> None:
     tmp.replace(path)
 
 
-def save_attachment(item_id: str, filename: str, data: bytes) -> None:
-    path = _attachments_dir(item_id)
+def save_attachment(home_id: str, item_id: str, filename: str, data: bytes) -> None:
+    path = _attachments_dir(home_id, item_id)
     path.mkdir(parents=True, exist_ok=True)
     (path / filename).write_bytes(data)
 
 
-def delete_attachment(item_id: str, filename: str) -> bool:
-    path = _attachments_dir(item_id) / filename
+def delete_attachment(home_id: str, item_id: str, filename: str) -> bool:
+    path = _attachments_dir(home_id, item_id) / filename
     if not path.exists():
         return False
     path.unlink()
@@ -57,8 +59,8 @@ def delete_attachment(item_id: str, filename: str) -> bool:
     return True
 
 
-def delete_all_attachments(item_id: str) -> None:
-    path = _attachments_dir(item_id)
+def delete_all_attachments(home_id: str, item_id: str) -> None:
+    path = _attachments_dir(home_id, item_id)
     if path.exists():
         shutil.rmtree(path)
 

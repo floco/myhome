@@ -1,6 +1,13 @@
 from myhome.models_inventory import InventoryDocument, InventoryItem, InventoryPlacement, InventoryPosition
 from myhome.persistence_inventory import load_inventory, save_inventory
 
+HOME_ID = "test-home"
+
+
+def _setup(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    (tmp_path / "homes" / HOME_ID).mkdir(parents=True)
+
 
 def make_doc() -> InventoryDocument:
     return InventoryDocument(
@@ -24,21 +31,21 @@ def make_doc() -> InventoryDocument:
 
 
 def test_load_returns_empty_when_missing(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    doc = load_inventory()
+    _setup(tmp_path, monkeypatch)
+    doc = load_inventory(HOME_ID)
     assert doc.items == []
 
 
 def test_save_creates_file(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    save_inventory(make_doc())
-    assert (tmp_path / "inventory.json").exists()
+    _setup(tmp_path, monkeypatch)
+    save_inventory(HOME_ID, make_doc())
+    assert (tmp_path / "homes" / HOME_ID / "inventory.json").exists()
 
 
 def test_round_trip(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    save_inventory(make_doc())
-    loaded = load_inventory()
+    _setup(tmp_path, monkeypatch)
+    save_inventory(HOME_ID, make_doc())
+    loaded = load_inventory(HOME_ID)
     assert loaded.items[0].id == "i1"
     assert loaded.items[0].emoji == "📺"
     assert loaded.items[0].purchasePrice == 1200.0
@@ -47,17 +54,17 @@ def test_round_trip(tmp_path, monkeypatch):
 
 
 def test_item_without_placement_round_trips(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    _setup(tmp_path, monkeypatch)
     doc = InventoryDocument(
         items=[InventoryItem(id="i2", name="Chair", emoji="🪑")]
     )
-    save_inventory(doc)
-    loaded = load_inventory()
+    save_inventory(HOME_ID, doc)
+    loaded = load_inventory(HOME_ID)
     assert loaded.items[0].placement is None
 
 
 def test_save_creates_data_dir_if_missing(tmp_path, monkeypatch):
     nested = tmp_path / "nested" / "data"
     monkeypatch.setenv("DATA_DIR", str(nested))
-    save_inventory(make_doc())
-    assert (nested / "inventory.json").exists()
+    save_inventory(HOME_ID, make_doc())
+    assert (nested / "homes" / HOME_ID / "inventory.json").exists()

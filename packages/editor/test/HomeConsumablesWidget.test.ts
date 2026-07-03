@@ -61,6 +61,9 @@ const alertDoc = {
   transactions: [],
 };
 
+const HOME = "home-123";
+const getHomeId = () => HOME;
+
 async function makeTick(): Promise<void> {
   await new Promise((r) => setTimeout(r, 0));
 }
@@ -71,7 +74,7 @@ function makeStore(doc: unknown) {
     "fetch",
     vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => doc }),
   );
-  return createConsumableStore();
+  return createConsumableStore(getHomeId);
 }
 
 describe("HomeConsumablesWidget", () => {

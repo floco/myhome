@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from .deps import ROLE_ORDER, get_user_from_request
-from .routes import auth, backup, chores, consumables, costs, ha, house, inventory, kb, settings, svg, works
+from .routes import auth, backup, chores, consumables, costs, ha, homes, house, inventory, kb, settings, svg, works
 
 app = FastAPI(title="MyHome Backend", version="0.1.0")
 
@@ -41,6 +41,9 @@ def _first_boot() -> None:
 
 _first_boot()
 
+from .persistence_homes import migrate_legacy_if_needed
+migrate_legacy_if_needed()
+
 
 # ── Auth middleware ────────────────────────────────────────────────────────
 
@@ -68,6 +71,7 @@ async def auth_middleware(request: Request, call_next):
 # ── Routers ───────────────────────────────────────────────────────────────
 
 app.include_router(auth.router)
+app.include_router(homes.router)
 app.include_router(house.router)
 app.include_router(svg.router)
 app.include_router(ha.router)

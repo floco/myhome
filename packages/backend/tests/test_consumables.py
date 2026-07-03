@@ -27,28 +27,28 @@ def make_doc() -> ConsumableDocument:
     )
 
 
-# --- GET /api/consumables ---
+# --- GET /api/homes/{home_id}/consumables ---
 
-def test_get_consumables_empty(client):
-    resp = client.get("/api/consumables")
+def test_get_consumables_empty(client, home_id):
+    resp = client.get(f"/api/homes/{home_id}/consumables")
     assert resp.status_code == 200
     data = resp.json()
     assert data["consumables"] == []
     assert data["transactions"] == []
 
 
-def test_get_consumables_returns_saved(client, tmp_path):
-    save_consumables(make_doc())
-    resp = client.get("/api/consumables")
+def test_get_consumables_returns_saved(client, tmp_path, home_id):
+    save_consumables(home_id, make_doc())
+    resp = client.get(f"/api/homes/{home_id}/consumables")
     assert resp.status_code == 200
     assert resp.json()["consumables"][0]["id"] == "c1"
 
 
-# --- POST /api/consumables ---
+# --- POST /api/homes/{home_id}/consumables ---
 
-def test_create_consumable(client):
+def test_create_consumable(client, home_id):
     payload = {"name": "Dish soap", "emoji": "🧴", "unit": "mL", "quantity": 500.0, "minQuantity": 100.0}
-    resp = client.post("/api/consumables", json=payload)
+    resp = client.post(f"/api/homes/{home_id}/consumables", json=payload)
     assert resp.status_code == 201
     data = resp.json()
     assert data["name"] == "Dish soap"
@@ -58,8 +58,8 @@ def test_create_consumable(client):
     assert data["placement"] is None
 
 
-def test_create_consumable_defaults(client):
-    resp = client.post("/api/consumables", json={"name": "Batteries"})
+def test_create_consumable_defaults(client, home_id):
+    resp = client.post(f"/api/homes/{home_id}/consumables", json={"name": "Batteries"})
     assert resp.status_code == 201
     data = resp.json()
     assert data["emoji"] == "🛒"
@@ -67,68 +67,68 @@ def test_create_consumable_defaults(client):
     assert data["quantity"] == 0.0
 
 
-# --- PUT /api/consumables/{id} ---
+# --- PUT /api/homes/{home_id}/consumables/{id} ---
 
-def test_update_consumable(client, tmp_path):
-    save_consumables(make_doc())
-    resp = client.put("/api/consumables/c1", json={"name": "AAA Batteries", "minQuantity": 6.0})
+def test_update_consumable(client, tmp_path, home_id):
+    save_consumables(home_id, make_doc())
+    resp = client.put(f"/api/homes/{home_id}/consumables/c1", json={"name": "AAA Batteries", "minQuantity": 6.0})
     assert resp.status_code == 204
-    data = client.get("/api/consumables").json()
+    data = client.get(f"/api/homes/{home_id}/consumables").json()
     assert data["consumables"][0]["name"] == "AAA Batteries"
     assert data["consumables"][0]["minQuantity"] == 6.0
 
 
-def test_update_consumable_not_found(client):
-    resp = client.put("/api/consumables/nope", json={"name": "X"})
+def test_update_consumable_not_found(client, home_id):
+    resp = client.put(f"/api/homes/{home_id}/consumables/nope", json={"name": "X"})
     assert resp.status_code == 404
 
 
-# --- DELETE /api/consumables/{id} ---
+# --- DELETE /api/homes/{home_id}/consumables/{id} ---
 
-def test_delete_consumable(client, tmp_path):
-    save_consumables(make_doc())
-    resp = client.delete("/api/consumables/c1")
+def test_delete_consumable(client, tmp_path, home_id):
+    save_consumables(home_id, make_doc())
+    resp = client.delete(f"/api/homes/{home_id}/consumables/c1")
     assert resp.status_code == 204
-    data = client.get("/api/consumables").json()
+    data = client.get(f"/api/homes/{home_id}/consumables").json()
     assert data["consumables"] == []
     assert data["transactions"] == []
 
 
-def test_delete_consumable_not_found(client):
-    resp = client.delete("/api/consumables/nope")
+def test_delete_consumable_not_found(client, home_id):
+    resp = client.delete(f"/api/homes/{home_id}/consumables/nope")
     assert resp.status_code == 404
 
 
-# --- PUT /api/consumables/{id}/placement ---
+# --- PUT /api/homes/{home_id}/consumables/{id}/placement ---
 
-def test_set_placement(client, tmp_path):
-    save_consumables(make_doc())
+def test_set_placement(client, tmp_path, home_id):
+    save_consumables(home_id, make_doc())
     payload = {"placement": {"floorId": "f1", "roomId": "r1", "position": {"x": 3.0, "y": 4.0}}}
-    resp = client.put("/api/consumables/c1/placement", json=payload)
+    resp = client.put(f"/api/homes/{home_id}/consumables/c1/placement", json=payload)
     assert resp.status_code == 204
-    data = client.get("/api/consumables").json()
+    data = client.get(f"/api/homes/{home_id}/consumables").json()
     assert data["consumables"][0]["placement"]["floorId"] == "f1"
 
 
-def test_clear_placement(client, tmp_path):
-    save_consumables(make_doc())
+def test_clear_placement(client, tmp_path, home_id):
+    save_consumables(home_id, make_doc())
     client.put(
-        "/api/consumables/c1/placement",
+        f"/api/homes/{home_id}/consumables/c1/placement",
         json={"placement": {"floorId": "f1", "position": {"x": 1.0, "y": 2.0}}},
     )
-    resp = client.put("/api/consumables/c1/placement", json={"placement": None})
+    resp = client.put(f"/api/homes/{home_id}/consumables/c1/placement", json={"placement": None})
     assert resp.status_code == 204
-    data = client.get("/api/consumables").json()
+    data = client.get(f"/api/homes/{home_id}/consumables").json()
     assert data["consumables"][0]["placement"] is None
 
 
-# --- POST /api/consumables/{id}/stock ---
+# --- POST /api/homes/{home_id}/consumables/{id}/stock ---
 
-def test_update_stock_adds_transaction(client, tmp_path):
-    save_consumables(make_doc())
-    resp = client.post("/api/consumables/c1/stock", json={"quantity": 10.0, "note": "restocked"})
+def test_update_stock_adds_transaction(client, tmp_path, home_id):
+    save_consumables(home_id, make_doc())
+    resp = client.post(f"/api/homes/{home_id}/consumables/c1/stock", json={"quantity": 10.0, "note": "restocked"})
     assert resp.status_code == 204
-    data = client.get("/api/consumables").json()
+    data = client.get(f"/api/homes/{home_id}/consumables").json()
     assert data["consumables"][0]["quantity"] == 10.0
     assert len(data["transactions"]) == 2
     new_tx = next(t for t in data["transactions"] if t["id"] != "t1")
@@ -137,29 +137,29 @@ def test_update_stock_adds_transaction(client, tmp_path):
     assert new_tx["note"] == "restocked"
 
 
-def test_update_stock_negative_delta(client, tmp_path):
-    save_consumables(make_doc())
-    client.post("/api/consumables/c1/stock", json={"quantity": 2.0})
-    data = client.get("/api/consumables").json()
+def test_update_stock_negative_delta(client, tmp_path, home_id):
+    save_consumables(home_id, make_doc())
+    client.post(f"/api/homes/{home_id}/consumables/c1/stock", json={"quantity": 2.0})
+    data = client.get(f"/api/homes/{home_id}/consumables").json()
     new_tx = next(t for t in data["transactions"] if t["id"] != "t1")
     assert new_tx["delta"] == -4.0
 
 
-def test_update_stock_not_found(client):
-    resp = client.post("/api/consumables/nope/stock", json={"quantity": 5.0})
+def test_update_stock_not_found(client, home_id):
+    resp = client.post(f"/api/homes/{home_id}/consumables/nope/stock", json={"quantity": 5.0})
     assert resp.status_code == 404
 
 
-# --- DELETE /api/consumable-transactions/{id} ---
+# --- DELETE /api/homes/{home_id}/consumable-transactions/{id} ---
 
-def test_delete_transaction(client, tmp_path):
-    save_consumables(make_doc())
-    resp = client.delete("/api/consumable-transactions/t1")
+def test_delete_transaction(client, tmp_path, home_id):
+    save_consumables(home_id, make_doc())
+    resp = client.delete(f"/api/homes/{home_id}/consumable-transactions/t1")
     assert resp.status_code == 204
-    data = client.get("/api/consumables").json()
+    data = client.get(f"/api/homes/{home_id}/consumables").json()
     assert data["transactions"] == []
 
 
-def test_delete_transaction_not_found(client):
-    resp = client.delete("/api/consumable-transactions/nope")
+def test_delete_transaction_not_found(client, home_id):
+    resp = client.delete(f"/api/homes/{home_id}/consumable-transactions/nope")
     assert resp.status_code == 404

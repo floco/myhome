@@ -39,46 +39,46 @@ def _validate_filename(filename: str) -> None:
         raise HTTPException(status_code=400, detail="Invalid filename")
 
 
-@router.get("/api/costs", response_model=CostsDocument)
-def get_costs() -> CostsDocument:
-    return load_costs()
+@router.get("/api/homes/{home_id}/costs", response_model=CostsDocument)
+def get_costs(home_id: str) -> CostsDocument:
+    return load_costs(home_id)
 
 
-@router.post("/api/costs/entries", response_model=CostEntry, status_code=201)
-def create_entry(body: CostEntryCreate) -> CostEntry:
-    doc = load_costs()
+@router.post("/api/homes/{home_id}/costs/entries", response_model=CostEntry, status_code=201)
+def create_entry(home_id: str, body: CostEntryCreate) -> CostEntry:
+    doc = load_costs(home_id)
     entry = CostEntry(id=str(uuid.uuid4()), **body.model_dump())
     doc.entries.append(entry)
-    save_costs(doc)
+    save_costs(home_id, doc)
     return entry
 
 
-@router.put("/api/costs/entries/{id}", status_code=204)
-def update_entry(id: str, body: CostEntryUpdate) -> None:
-    doc = load_costs()
+@router.put("/api/homes/{home_id}/costs/entries/{id}", status_code=204)
+def update_entry(home_id: str, id: str, body: CostEntryUpdate) -> None:
+    doc = load_costs(home_id)
     entry = next((e for e in doc.entries if e.id == id), None)
     if not entry:
         raise HTTPException(status_code=404)
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(entry, field, value)
-    save_costs(doc)
+    save_costs(home_id, doc)
 
 
-@router.delete("/api/costs/entries/{id}", status_code=204)
-def delete_entry(id: str) -> None:
-    doc = load_costs()
+@router.delete("/api/homes/{home_id}/costs/entries/{id}", status_code=204)
+def delete_entry(home_id: str, id: str) -> None:
+    doc = load_costs(home_id)
     before = len(doc.entries)
     doc.entries = [e for e in doc.entries if e.id != id]
     if len(doc.entries) == before:
         raise HTTPException(status_code=404)
-    save_costs(doc)
-    delete_all_attachments(id)
+    save_costs(home_id, doc)
+    delete_all_attachments(home_id, id)
 
 
-@router.post("/api/costs/entries/{id}/attachments", status_code=201)
-async def upload_cost_attachment(id: str, file: UploadFile) -> dict:
+@router.post("/api/homes/{home_id}/costs/entries/{id}/attachments", status_code=201)
+async def upload_cost_attachment(home_id: str, id: str, file: UploadFile) -> dict:
     _validate_id(id)
-    doc = load_costs()
+    doc = load_costs(home_id)
     entry = next((e for e in doc.entries if e.id == id), None)
     if not entry:
         raise HTTPException(status_code=404)
@@ -88,23 +88,23 @@ async def upload_cost_attachment(id: str, file: UploadFile) -> dict:
         raise HTTPException(status_code=400, detail="File type not supported")
     filename = _sanitise_filename(original)
     data = await file.read()
-    save_attachment(id, filename, data)
+    save_attachment(home_id, id, filename, data)
     if ext == ".pdf":
         generate_pdf_thumbnail(
-            _attachments_dir(id) / filename,
-            _attachments_dir(id) / (filename + ".thumb.jpg"),
+            _attachments_dir(home_id, id) / filename,
+            _attachments_dir(home_id, id) / (filename + ".thumb.jpg"),
         )
     if filename not in entry.attachments:
         entry.attachments.append(filename)
-    save_costs(doc)
+    save_costs(home_id, doc)
     return {"filename": filename}
 
 
-@router.get("/api/costs/entries/{id}/attachments/{filename}")
-def get_cost_attachment(id: str, filename: str) -> FileResponse:
+@router.get("/api/homes/{home_id}/costs/entries/{id}/attachments/{filename}")
+def get_cost_attachment(home_id: str, id: str, filename: str) -> FileResponse:
     _validate_id(id)
     _validate_filename(filename)
-    base = _attachments_dir(id).resolve()
+    base = _attachments_dir(home_id, id).resolve()
     path = (base / filename).resolve()
     if not str(path).startswith(str(base) + "/") or not path.is_file():
         raise HTTPException(status_code=404)
@@ -112,15 +112,15 @@ def get_cost_attachment(id: str, filename: str) -> FileResponse:
     return FileResponse(str(path), media_type=media_type or "application/octet-stream", content_disposition_type="inline")
 
 
-@router.delete("/api/costs/entries/{id}/attachments/{filename}", status_code=204)
-def remove_cost_attachment(id: str, filename: str) -> None:
+@router.delete("/api/homes/{home_id}/costs/entries/{id}/attachments/{filename}", status_code=204)
+def remove_cost_attachment(home_id: str, id: str, filename: str) -> None:
     _validate_id(id)
     _validate_filename(filename)
-    doc = load_costs()
+    doc = load_costs(home_id)
     entry = next((e for e in doc.entries if e.id == id), None)
     if not entry:
         raise HTTPException(status_code=404)
-    if not delete_attachment(id, filename):
+    if not delete_attachment(home_id, id, filename):
         raise HTTPException(status_code=404)
     entry.attachments = [a for a in entry.attachments if a != filename]
-    save_costs(doc)
+    save_costs(home_id, doc)
