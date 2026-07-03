@@ -2,6 +2,13 @@ import pytest
 from myhome.models_chores import ChoreDocument, Chore, Assignment
 from myhome.persistence_chores import load_chores, save_chores
 
+HOME_ID = "test-home"
+
+
+def _setup(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    (tmp_path / "homes" / HOME_ID).mkdir(parents=True)
+
 
 def make_doc() -> ChoreDocument:
     return ChoreDocument(
@@ -22,22 +29,22 @@ def make_doc() -> ChoreDocument:
 
 
 def test_load_returns_empty_when_missing(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    doc = load_chores()
+    _setup(tmp_path, monkeypatch)
+    doc = load_chores(HOME_ID)
     assert doc.chores == []
     assert doc.assignments == []
 
 
 def test_save_creates_file(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    save_chores(make_doc())
-    assert (tmp_path / "chores.json").exists()
+    _setup(tmp_path, monkeypatch)
+    save_chores(HOME_ID, make_doc())
+    assert (tmp_path / "homes" / HOME_ID / "chores.json").exists()
 
 
 def test_round_trip(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    save_chores(make_doc())
-    loaded = load_chores()
+    _setup(tmp_path, monkeypatch)
+    save_chores(HOME_ID, make_doc())
+    loaded = load_chores(HOME_ID)
     assert loaded.chores[0].id == "c1"
     assert loaded.chores[0].emoji == "🧹"
     assert loaded.assignments[0].roomId == "r1"
@@ -47,5 +54,5 @@ def test_round_trip(tmp_path, monkeypatch):
 def test_save_creates_data_dir_if_missing(tmp_path, monkeypatch):
     nested = tmp_path / "nested" / "data"
     monkeypatch.setenv("DATA_DIR", str(nested))
-    save_chores(make_doc())
-    assert (nested / "chores.json").exists()
+    save_chores(HOME_ID, make_doc())
+    assert (nested / "homes" / HOME_ID / "chores.json").exists()

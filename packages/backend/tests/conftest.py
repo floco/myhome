@@ -47,6 +47,13 @@ def client(tmp_path, monkeypatch):
 
 
 @pytest.fixture()
+def home_id(client) -> str:
+    resp = client.post("/api/homes", json={"name": "Test Home", "type": "existing"})
+    assert resp.status_code == 201
+    return resp.json()["id"]
+
+
+@pytest.fixture()
 def ro_client(tmp_path, monkeypatch):
     _make_users(tmp_path, monkeypatch)
     tc = TestClient(app)

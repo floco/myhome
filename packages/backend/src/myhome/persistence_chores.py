@@ -9,17 +9,20 @@ from .models_chores import ChoreDocument
 _log = logging.getLogger(__name__)
 
 
-def _chores_file() -> Path:
-    data_dir = Path(os.environ.get("DATA_DIR", "/data"))
-    return data_dir / "chores.json"
+def _home_dir(home_id: str) -> Path:
+    return Path(os.environ.get("DATA_DIR", "/data")) / "homes" / home_id
 
 
-def _attachments_dir(chore_id: str) -> Path:
-    return Path(os.environ.get("DATA_DIR", "/data")) / "chores-attachments" / chore_id
+def _chores_file(home_id: str) -> Path:
+    return _home_dir(home_id) / "chores.json"
 
 
-def load_chores() -> ChoreDocument:
-    path = _chores_file()
+def _attachments_dir(home_id: str, chore_id: str) -> Path:
+    return _home_dir(home_id) / "chores-attachments" / chore_id
+
+
+def load_chores(home_id: str) -> ChoreDocument:
+    path = _chores_file(home_id)
     if not path.exists():
         return ChoreDocument()
     with path.open() as f:
@@ -38,8 +41,8 @@ def load_chores() -> ChoreDocument:
     return doc
 
 
-def save_chores(doc: ChoreDocument) -> None:
-    path = _chores_file()
+def save_chores(home_id: str, doc: ChoreDocument) -> None:
+    path = _chores_file(home_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     with tmp.open("w") as f:
@@ -47,14 +50,14 @@ def save_chores(doc: ChoreDocument) -> None:
     tmp.replace(path)
 
 
-def save_attachment(chore_id: str, filename: str, data: bytes) -> None:
-    path = _attachments_dir(chore_id)
+def save_attachment(home_id: str, chore_id: str, filename: str, data: bytes) -> None:
+    path = _attachments_dir(home_id, chore_id)
     path.mkdir(parents=True, exist_ok=True)
     (path / filename).write_bytes(data)
 
 
-def delete_attachment(chore_id: str, filename: str) -> bool:
-    path = _attachments_dir(chore_id) / filename
+def delete_attachment(home_id: str, chore_id: str, filename: str) -> bool:
+    path = _attachments_dir(home_id, chore_id) / filename
     if not path.exists():
         return False
     path.unlink()
@@ -64,8 +67,8 @@ def delete_attachment(chore_id: str, filename: str) -> bool:
     return True
 
 
-def delete_all_attachments(chore_id: str) -> None:
-    att_dir = _attachments_dir(chore_id)
+def delete_all_attachments(home_id: str, chore_id: str) -> None:
+    att_dir = _attachments_dir(home_id, chore_id)
     if att_dir.exists():
         shutil.rmtree(att_dir)
 

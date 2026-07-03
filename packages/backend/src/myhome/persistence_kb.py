@@ -10,16 +10,20 @@ from .models_kb import KBEntry
 _log = logging.getLogger(__name__)
 
 
-def _kb_dir() -> Path:
-    return Path(os.environ.get("DATA_DIR", "/data")) / "kb"
+def _home_dir(home_id: str) -> Path:
+    return Path(os.environ.get("DATA_DIR", "/data")) / "homes" / home_id
 
 
-def _entry_path(id: str) -> Path:
-    return _kb_dir() / f"{id}.md"
+def _kb_dir(home_id: str) -> Path:
+    return _home_dir(home_id) / "kb"
 
 
-def _attachments_dir(entry_id: str) -> Path:
-    return Path(os.environ.get("DATA_DIR", "/data")) / "kb-attachments" / entry_id
+def _entry_path(home_id: str, id: str) -> Path:
+    return _kb_dir(home_id) / f"{id}.md"
+
+
+def _attachments_dir(home_id: str, entry_id: str) -> Path:
+    return _home_dir(home_id) / "kb-attachments" / entry_id
 
 
 def _parse_frontmatter(text: str) -> tuple[dict, str]:
@@ -72,8 +76,8 @@ def _read_entry_file(path: Path) -> KBEntry | None:
     )
 
 
-def load_all() -> list[KBEntry]:
-    d = _kb_dir()
+def load_all(home_id: str) -> list[KBEntry]:
+    d = _kb_dir(home_id)
     if not d.exists():
         return []
     entries = [e for path in d.glob("*.md") if (e := _read_entry_file(path))]
@@ -81,38 +85,38 @@ def load_all() -> list[KBEntry]:
     return entries
 
 
-def load_entry(id: str) -> KBEntry | None:
-    return _read_entry_file(_entry_path(id))
+def load_entry(home_id: str, id: str) -> KBEntry | None:
+    return _read_entry_file(_entry_path(home_id, id))
 
 
-def save_entry(entry: KBEntry) -> None:
-    d = _kb_dir()
+def save_entry(home_id: str, entry: KBEntry) -> None:
+    d = _kb_dir(home_id)
     d.mkdir(parents=True, exist_ok=True)
-    path = _entry_path(entry.id)
+    path = _entry_path(home_id, entry.id)
     tmp = path.with_suffix(".tmp")
     tmp.write_text(_build_file(entry), encoding="utf-8")
     tmp.replace(path)
 
 
-def delete_entry(id: str) -> bool:
-    path = _entry_path(id)
+def delete_entry(home_id: str, id: str) -> bool:
+    path = _entry_path(home_id, id)
     if not path.exists():
         return False
     path.unlink()
-    att_dir = _attachments_dir(id)
+    att_dir = _attachments_dir(home_id, id)
     if att_dir.exists():
         shutil.rmtree(att_dir)
     return True
 
 
-def save_attachment(entry_id: str, filename: str, data: bytes) -> None:
-    path = _attachments_dir(entry_id)
+def save_attachment(home_id: str, entry_id: str, filename: str, data: bytes) -> None:
+    path = _attachments_dir(home_id, entry_id)
     path.mkdir(parents=True, exist_ok=True)
     (path / filename).write_bytes(data)
 
 
-def delete_attachment(entry_id: str, filename: str) -> bool:
-    path = _attachments_dir(entry_id) / filename
+def delete_attachment(home_id: str, entry_id: str, filename: str) -> bool:
+    path = _attachments_dir(home_id, entry_id) / filename
     if not path.exists():
         return False
     path.unlink()

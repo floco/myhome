@@ -9,26 +9,28 @@ from .models_works import WorksDocument
 _log = logging.getLogger(__name__)
 
 
-def _works_file() -> Path:
-    data_dir = Path(os.environ.get("DATA_DIR", "/data"))
-    return data_dir / "works.json"
+def _home_dir(home_id: str) -> Path:
+    return Path(os.environ.get("DATA_DIR", "/data")) / "homes" / home_id
 
 
-def _attachments_dir(work_id: str) -> Path:
-    data_dir = Path(os.environ.get("DATA_DIR", "/data"))
-    return data_dir / "works-attachments" / work_id
+def _works_file(home_id: str) -> Path:
+    return _home_dir(home_id) / "works.json"
 
 
-def load_works() -> WorksDocument:
-    path = _works_file()
+def _attachments_dir(home_id: str, work_id: str) -> Path:
+    return _home_dir(home_id) / "works-attachments" / work_id
+
+
+def load_works(home_id: str) -> WorksDocument:
+    path = _works_file(home_id)
     if not path.exists():
         return WorksDocument()
     with path.open() as f:
         return WorksDocument.model_validate(json.load(f))
 
 
-def save_works(doc: WorksDocument) -> None:
-    path = _works_file()
+def save_works(home_id: str, doc: WorksDocument) -> None:
+    path = _works_file(home_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     with tmp.open("w") as f:
@@ -36,18 +38,18 @@ def save_works(doc: WorksDocument) -> None:
     tmp.replace(path)
 
 
-def get_attachment_path(work_id: str, filename: str) -> Path:
-    return _attachments_dir(work_id) / filename
+def get_attachment_path(home_id: str, work_id: str, filename: str) -> Path:
+    return _attachments_dir(home_id, work_id) / filename
 
 
-def save_attachment(work_id: str, filename: str, data: bytes) -> None:
-    path = _attachments_dir(work_id)
+def save_attachment(home_id: str, work_id: str, filename: str, data: bytes) -> None:
+    path = _attachments_dir(home_id, work_id)
     path.mkdir(parents=True, exist_ok=True)
     (path / filename).write_bytes(data)
 
 
-def delete_attachment(work_id: str, filename: str) -> bool:
-    path = _attachments_dir(work_id) / filename
+def delete_attachment(home_id: str, work_id: str, filename: str) -> bool:
+    path = _attachments_dir(home_id, work_id) / filename
     if not path.exists():
         return False
     path.unlink()
@@ -57,8 +59,8 @@ def delete_attachment(work_id: str, filename: str) -> bool:
     return True
 
 
-def delete_all_attachments(work_id: str) -> None:
-    path = _attachments_dir(work_id)
+def delete_all_attachments(home_id: str, work_id: str) -> None:
+    path = _attachments_dir(home_id, work_id)
     if path.exists():
         shutil.rmtree(path)
 

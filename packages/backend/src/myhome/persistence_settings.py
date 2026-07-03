@@ -11,13 +11,16 @@ from .models_settings import (
 )
 
 
-def _settings_file() -> Path:
-    data_dir = Path(os.environ.get("DATA_DIR", "/data"))
-    return data_dir / "settings.json"
+def _home_dir(home_id: str) -> Path:
+    return Path(os.environ.get("DATA_DIR", "/data")) / "homes" / home_id
 
 
-def load_settings() -> SettingsDocument:
-    path = _settings_file()
+def _settings_file(home_id: str) -> Path:
+    return _home_dir(home_id) / "settings.json"
+
+
+def load_settings(home_id: str) -> SettingsDocument:
+    path = _settings_file(home_id)
     if not path.exists():
         return SettingsDocument(
             costCategories=_default_cost_categories(),
@@ -32,8 +35,8 @@ def load_settings() -> SettingsDocument:
     return doc
 
 
-def save_settings(doc: SettingsDocument) -> None:
-    path = _settings_file()
+def save_settings(home_id: str, doc: SettingsDocument) -> None:
+    path = _settings_file(home_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     with tmp.open("w") as f:
