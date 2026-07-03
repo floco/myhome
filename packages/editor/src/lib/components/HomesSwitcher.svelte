@@ -24,6 +24,10 @@
     homesStore.setActiveHomeId(id);
     dropdownOpen = false;
   }
+
+  function typeIcon(type: string): string {
+    return type === "project" ? "🏗" : "🏠";
+  }
 </script>
 
 <div class="switcher" class:expanded>
