@@ -1,18 +1,18 @@
 import pytest
 
 
-def test_ro_user_can_read_settings(ro_client):
-    resp = ro_client.get("/api/settings")
+def test_ro_user_can_read_settings(client, ro_client, home_id):
+    resp = ro_client.get(f"/api/homes/{home_id}/settings")
     assert resp.status_code == 200
 
 
-def test_ro_user_blocked_from_writing_settings(ro_client):
-    resp = ro_client.put("/api/settings/suppliers", json=[{"id": "s1", "name": "Acme"}])
+def test_ro_user_blocked_from_writing_settings(client, ro_client, home_id):
+    resp = ro_client.put(f"/api/homes/{home_id}/settings/suppliers", json=[{"id": "s1", "name": "Acme"}])
     assert resp.status_code == 403
 
 
-def test_ro_user_blocked_from_creating_chore(ro_client):
-    resp = ro_client.post("/api/chores", json={
+def test_ro_user_blocked_from_creating_chore(client, ro_client, home_id):
+    resp = ro_client.post(f"/api/homes/{home_id}/chores", json={
         "name": "Clean", "emoji": "🧹", "frequencyDays": 7,
         "nextDueDate": "2026-07-10", "categoryId": None,
     })
@@ -34,7 +34,9 @@ def test_normal_user_can_write_data(tmp_path, monkeypatch):
     ]))
     tc = TestClient(app)
     tc.post("/api/auth/login", json={"username": "normal", "password": "normal123"})
-    resp = tc.put("/api/settings/suppliers", json=[{"id": "s1", "name": "Plumbers"}])
+    home_resp = tc.post("/api/homes", json={"name": "Test Home", "type": "existing"})
+    hid = home_resp.json()["id"]
+    resp = tc.put(f"/api/homes/{hid}/settings/suppliers", json=[{"id": "s1", "name": "Plumbers"}])
     assert resp.status_code == 204
 
 
@@ -72,10 +74,12 @@ def test_ro_bearer_token_blocked_on_write(tmp_path, monkeypatch):
     ]))
     tc = TestClient(app)
     tc.post("/api/auth/login", json={"username": "admin", "password": "admin123"})
+    home_resp = tc.post("/api/homes", json={"name": "Test Home", "type": "existing"})
+    hid = home_resp.json()["id"]
     create_resp = tc.post("/api/auth/tokens", json={"name": "ReadOnly", "role": "ro"})
     raw_token = create_resp.json()["token"]
     bare = TestClient(app)
-    resp = bare.put("/api/settings/suppliers",
+    resp = bare.put(f"/api/homes/{hid}/settings/suppliers",
                     json=[{"id": "s1", "name": "X"}],
                     headers={"Authorization": f"Bearer {raw_token}"})
     assert resp.status_code == 403

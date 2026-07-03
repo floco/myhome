@@ -160,15 +160,15 @@ def _extract_emoji(name: str) -> str:
 
 
 # GET must come before /import and /{id} routes - FastAPI matches in definition order
-@router.get("/api/chores", response_model=ChoreDocument)
-def get_chores() -> ChoreDocument:
-    return load_chores()
+@router.get("/api/homes/{home_id}/chores", response_model=ChoreDocument)
+def get_chores(home_id: str) -> ChoreDocument:
+    return load_chores(home_id)
 
 
-# CRITICAL: /api/chores/import MUST be defined before /api/chores/{chore_id}
+# CRITICAL: /import MUST be defined before /{chore_id}
 # so FastAPI does not try to match "import" as a chore ID.
-@router.post("/api/chores/import", response_model=ImportResponse)
-async def import_from_donetick(body: ImportRequest) -> ImportResponse:
+@router.post("/api/homes/{home_id}/chores/import", response_model=ImportResponse)
+async def import_from_donetick(home_id: str, body: ImportRequest) -> ImportResponse:
     import httpx
 
     try:
@@ -184,7 +184,7 @@ async def import_from_donetick(body: ImportRequest) -> ImportResponse:
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Donetick error: {exc}") from exc
 
-    doc = load_chores()
+    doc = load_chores(home_id)
     existing_ids = {c.donetickId for c in doc.chores if c.donetickId is not None}
     imported = 0
 
@@ -209,48 +209,48 @@ async def import_from_donetick(body: ImportRequest) -> ImportResponse:
         )
         imported += 1
 
-    save_chores(doc)
+    save_chores(home_id, doc)
     return ImportResponse(imported=imported)
 
 
-@router.post("/api/chores", response_model=Chore, status_code=201)
-def create_chore(body: ChoreCreate) -> Chore:
-    doc = load_chores()
+@router.post("/api/homes/{home_id}/chores", response_model=Chore, status_code=201)
+def create_chore(home_id: str, body: ChoreCreate) -> Chore:
+    doc = load_chores(home_id)
     data = body.model_dump()
     if data["frequency"] == 0:
         data["frequency"] = max(1, round(data["periodDays"]))
         data["frequencyMetadata"] = {"unit": "days"}
     chore = Chore(id=str(uuid.uuid4()), **data)
     doc.chores.append(chore)
-    save_chores(doc)
+    save_chores(home_id, doc)
     return chore
 
 
-@router.put("/api/chores/{chore_id}", status_code=204)
-def update_chore(chore_id: str, body: ChoreUpdate) -> None:
-    doc = load_chores()
+@router.put("/api/homes/{home_id}/chores/{chore_id}", status_code=204)
+def update_chore(home_id: str, chore_id: str, body: ChoreUpdate) -> None:
+    doc = load_chores(home_id)
     chore = next((c for c in doc.chores if c.id == chore_id), None)
     if chore is None:
         raise HTTPException(status_code=404, detail="Chore not found")
     for field, value in body.model_dump(exclude_none=True).items():
         setattr(chore, field, value)
-    save_chores(doc)
+    save_chores(home_id, doc)
 
 
-@router.delete("/api/chores/{chore_id}", status_code=204)
-def delete_chore(chore_id: str) -> None:
-    doc = load_chores()
+@router.delete("/api/homes/{home_id}/chores/{chore_id}", status_code=204)
+def delete_chore(home_id: str, chore_id: str) -> None:
+    doc = load_chores(home_id)
     if not any(c.id == chore_id for c in doc.chores):
         raise HTTPException(status_code=404, detail="Chore not found")
     doc.chores = [c for c in doc.chores if c.id != chore_id]
     doc.assignments = [a for a in doc.assignments if a.choreId != chore_id]
-    save_chores(doc)
-    delete_all_attachments(chore_id)
+    save_chores(home_id, doc)
+    delete_all_attachments(home_id, chore_id)
 
 
-@router.post("/api/chores/{chore_id}/complete", response_model=Chore)
-def complete_chore(chore_id: str, body: CompleteRequest | None = None) -> Chore:
-    doc = load_chores()
+@router.post("/api/homes/{home_id}/chores/{chore_id}/complete", response_model=Chore)
+def complete_chore(home_id: str, chore_id: str, body: CompleteRequest | None = None) -> Chore:
+    doc = load_chores(home_id)
     chore = next((c for c in doc.chores if c.id == chore_id), None)
     if chore is None:
         raise HTTPException(status_code=404, detail="Chore not found")
@@ -276,16 +276,16 @@ def complete_chore(chore_id: str, body: CompleteRequest | None = None) -> Chore:
         if a.choreId == chore_id:
             a.nextDueDate = next_due_str
     chore.nextDueDate = next_due_str
-    save_chores(doc)
+    save_chores(home_id, doc)
     return chore
 
 
 # --- Chore attachment routes ---
 
-@router.post("/api/chores/{chore_id}/attachments", status_code=201)
-async def upload_chore_attachment(chore_id: str, file: UploadFile) -> dict:
+@router.post("/api/homes/{home_id}/chores/{chore_id}/attachments", status_code=201)
+async def upload_chore_attachment(home_id: str, chore_id: str, file: UploadFile) -> dict:
     _validate_id(chore_id)
-    doc = load_chores()
+    doc = load_chores(home_id)
     chore = next((c for c in doc.chores if c.id == chore_id), None)
     if chore is None:
         raise HTTPException(status_code=404, detail="Chore not found")
@@ -295,23 +295,23 @@ async def upload_chore_attachment(chore_id: str, file: UploadFile) -> dict:
         raise HTTPException(status_code=400, detail="File type not supported")
     filename = _sanitise_filename(original)
     data = await file.read()
-    save_attachment(chore_id, filename, data)
+    save_attachment(home_id, chore_id, filename, data)
     if ext == ".pdf":
         generate_pdf_thumbnail(
-            _attachments_dir(chore_id) / filename,
-            _attachments_dir(chore_id) / (filename + ".thumb.jpg"),
+            _attachments_dir(home_id, chore_id) / filename,
+            _attachments_dir(home_id, chore_id) / (filename + ".thumb.jpg"),
         )
     if filename not in chore.attachments:
         chore.attachments.append(filename)
-    save_chores(doc)
+    save_chores(home_id, doc)
     return {"filename": filename}
 
 
-@router.get("/api/chores/{chore_id}/attachments/{filename}")
-def get_chore_attachment(chore_id: str, filename: str) -> FileResponse:
+@router.get("/api/homes/{home_id}/chores/{chore_id}/attachments/{filename}")
+def get_chore_attachment(home_id: str, chore_id: str, filename: str) -> FileResponse:
     _validate_id(chore_id)
     _validate_filename(filename)
-    base = _attachments_dir(chore_id).resolve()
+    base = _attachments_dir(home_id, chore_id).resolve()
     path = (base / filename).resolve()
     if not str(path).startswith(str(base) + "/") or not path.is_file():
         raise HTTPException(status_code=404)
@@ -319,25 +319,25 @@ def get_chore_attachment(chore_id: str, filename: str) -> FileResponse:
     return FileResponse(str(path), media_type=media_type or "application/octet-stream", content_disposition_type="inline")
 
 
-@router.delete("/api/chores/{chore_id}/attachments/{filename}", status_code=204)
-def delete_chore_attachment(chore_id: str, filename: str) -> None:
+@router.delete("/api/homes/{home_id}/chores/{chore_id}/attachments/{filename}", status_code=204)
+def delete_chore_attachment(home_id: str, chore_id: str, filename: str) -> None:
     _validate_id(chore_id)
     _validate_filename(filename)
-    doc = load_chores()
+    doc = load_chores(home_id)
     chore = next((c for c in doc.chores if c.id == chore_id), None)
     if chore is None:
         raise HTTPException(status_code=404, detail="Chore not found")
-    if not delete_attachment(chore_id, filename):
+    if not delete_attachment(home_id, chore_id, filename):
         raise HTTPException(status_code=404)
     chore.attachments = [a for a in chore.attachments if a != filename]
-    save_chores(doc)
+    save_chores(home_id, doc)
 
 
 # --- Assignment routes ---
 
-@router.post("/api/assignments", response_model=Assignment, status_code=201)
-def create_assignment(body: AssignmentCreate) -> Assignment:
-    doc = load_chores()
+@router.post("/api/homes/{home_id}/assignments", response_model=Assignment, status_code=201)
+def create_assignment(home_id: str, body: AssignmentCreate) -> Assignment:
+    doc = load_chores(home_id)
     chore = next((c for c in doc.chores if c.id == body.choreId), None)
     if chore is None:
         raise HTTPException(status_code=404, detail="Chore not found")
@@ -350,13 +350,13 @@ def create_assignment(body: AssignmentCreate) -> Assignment:
         nextDueDate=next_due,
     )
     doc.assignments.append(assignment)
-    save_chores(doc)
+    save_chores(home_id, doc)
     return assignment
 
 
-@router.post("/api/assignments/{assignment_id}/complete", response_model=Assignment)
-def complete_assignment(assignment_id: str, body: CompleteRequest | None = None) -> Assignment:
-    doc = load_chores()
+@router.post("/api/homes/{home_id}/assignments/{assignment_id}/complete", response_model=Assignment)
+def complete_assignment(home_id: str, assignment_id: str, body: CompleteRequest | None = None) -> Assignment:
+    doc = load_chores(home_id)
     assignment = next((a for a in doc.assignments if a.id == assignment_id), None)
     if assignment is None:
         raise HTTPException(status_code=404, detail="Assignment not found")
@@ -382,13 +382,13 @@ def complete_assignment(assignment_id: str, body: CompleteRequest | None = None)
         notes=notes,
     ))
     assignment.nextDueDate = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
-    save_chores(doc)
+    save_chores(home_id, doc)
     return assignment
 
 
-@router.put("/api/assignments/{assignment_id}", status_code=204)
-def update_assignment(assignment_id: str, body: AssignmentUpdate) -> None:
-    doc = load_chores()
+@router.put("/api/homes/{home_id}/assignments/{assignment_id}", status_code=204)
+def update_assignment(home_id: str, assignment_id: str, body: AssignmentUpdate) -> None:
+    doc = load_chores(home_id)
     assignment = next((a for a in doc.assignments if a.id == assignment_id), None)
     if assignment is None:
         raise HTTPException(status_code=404, detail="Assignment not found")
@@ -396,22 +396,22 @@ def update_assignment(assignment_id: str, body: AssignmentUpdate) -> None:
         assignment.position = body.position
     if body.nextDueDate is not None:
         assignment.nextDueDate = body.nextDueDate
-    save_chores(doc)
+    save_chores(home_id, doc)
 
 
-@router.delete("/api/assignments/{assignment_id}", status_code=204)
-def delete_assignment(assignment_id: str) -> None:
-    doc = load_chores()
+@router.delete("/api/homes/{home_id}/assignments/{assignment_id}", status_code=204)
+def delete_assignment(home_id: str, assignment_id: str) -> None:
+    doc = load_chores(home_id)
     if not any(a.id == assignment_id for a in doc.assignments):
         raise HTTPException(status_code=404, detail="Assignment not found")
     doc.assignments = [a for a in doc.assignments if a.id != assignment_id]
-    save_chores(doc)
+    save_chores(home_id, doc)
 
 
-@router.delete("/api/completions/{completion_id}", status_code=204)
-def delete_completion(completion_id: str) -> None:
-    doc = load_chores()
+@router.delete("/api/homes/{home_id}/completions/{completion_id}", status_code=204)
+def delete_completion(home_id: str, completion_id: str) -> None:
+    doc = load_chores(home_id)
     if not any(r.id == completion_id for r in doc.completions):
         raise HTTPException(status_code=404, detail="Completion not found")
     doc.completions = [r for r in doc.completions if r.id != completion_id]
-    save_chores(doc)
+    save_chores(home_id, doc)
