@@ -43,6 +43,9 @@ const sampleDoc = {
   transactions: [],
 };
 
+const HOME = "home-123";
+const getHomeId = () => HOME;
+
 async function makeTick(): Promise<void> {
   await new Promise((r) => setTimeout(r, 0));
 }
@@ -52,7 +55,7 @@ function makeStore() {
     "fetch",
     vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => sampleDoc }),
   );
-  return createConsumableStore();
+  return createConsumableStore(getHomeId);
 }
 
 afterEach(() => vi.unstubAllGlobals());
@@ -119,7 +122,7 @@ describe("ConsumablesPage", () => {
         json: async () => ({ version: 1, consumables: [], transactions: [] }),
       }),
     );
-    const store = createConsumableStore();
+    const store = createConsumableStore(getHomeId);
     await makeTick();
     const target = document.createElement("div");
     document.body.appendChild(target);

@@ -71,7 +71,7 @@ export interface ChoreDocument {
   completions: CompletionRecord[];
 }
 
-export function createChoreStore() {
+export function createChoreStore(getHomeId: () => string | null = () => null) {
   const chores = $state<Chore[]>([]);
   const assignments = $state<Assignment[]>([]);
   const completions = $state<CompletionRecord[]>([]);
@@ -79,8 +79,10 @@ export function createChoreStore() {
   let loadError = $state<string | null>(null);
 
   async function init(): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) { loaded = true; return; }
     try {
-      const resp = await fetch("/api/chores");
+      const resp = await fetch(`/api/homes/${homeId}/chores`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const doc: ChoreDocument = await resp.json();
       chores.length = 0;
@@ -118,9 +120,11 @@ export function createChoreStore() {
   }
 
   async function uploadAttachment(id: string, file: File): Promise<string> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
     const form = new FormData();
     form.append("file", file);
-    const resp = await fetch(`/api/chores/${id}/attachments`, { method: "POST", body: form });
+    const resp = await fetch(`/api/homes/${homeId}/chores/${id}/attachments`, { method: "POST", body: form });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const result = await resp.json();
     await init();
@@ -128,13 +132,17 @@ export function createChoreStore() {
   }
 
   async function deleteAttachment(id: string, filename: string): Promise<void> {
-    const resp = await fetch(`/api/chores/${id}/attachments/${filename}`, { method: "DELETE" });
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/chores/${id}/attachments/${filename}`, { method: "DELETE" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }
 
   async function createChore(data: Omit<Chore, "id">): Promise<void> {
-    const resp = await fetch("/api/chores", {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/chores`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -144,7 +152,9 @@ export function createChoreStore() {
   }
 
   async function updateChore(id: string, patch: Partial<Omit<Chore, "id" | "donetickId">>): Promise<void> {
-    const resp = await fetch(`/api/chores/${id}`, {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/chores/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
@@ -154,13 +164,17 @@ export function createChoreStore() {
   }
 
   async function deleteChore(id: string): Promise<void> {
-    const resp = await fetch(`/api/chores/${id}`, { method: "DELETE" });
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/chores/${id}`, { method: "DELETE" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }
 
   async function completeChore(id: string, notes: string = ""): Promise<void> {
-    const resp = await fetch(`/api/chores/${id}/complete`, {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/chores/${id}/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ notes }),
@@ -170,7 +184,9 @@ export function createChoreStore() {
   }
 
   async function importFromDonetick(token: string): Promise<number> {
-    const resp = await fetch("/api/chores/import", {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/chores/import`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
@@ -182,7 +198,9 @@ export function createChoreStore() {
   }
 
   async function completeAssignment(id: string, notes: string = ""): Promise<void> {
-    const resp = await fetch(`/api/assignments/${id}/complete`, {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/assignments/${id}/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ notes }),
@@ -196,7 +214,9 @@ export function createChoreStore() {
   }
 
   async function createAssignment(data: Omit<Assignment, "id">): Promise<void> {
-    const resp = await fetch("/api/assignments", {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/assignments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -206,7 +226,9 @@ export function createChoreStore() {
   }
 
   async function updateAssignmentPosition(id: string, position: Position): Promise<void> {
-    const resp = await fetch(`/api/assignments/${id}`, {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/assignments/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ position }),
@@ -216,10 +238,12 @@ export function createChoreStore() {
   }
 
   async function _putAssignmentDelay(id: string, days: number): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
     const assignment = assignments.find((a) => a.id === id);
     const base = assignment?.nextDueDate ? new Date(assignment.nextDueDate) : new Date();
     base.setDate(base.getDate() + days);
-    const resp = await fetch(`/api/assignments/${id}`, {
+    const resp = await fetch(`/api/homes/${homeId}/assignments/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nextDueDate: base.toISOString() }),
@@ -239,13 +263,17 @@ export function createChoreStore() {
   }
 
   async function deleteAssignment(id: string): Promise<void> {
-    const resp = await fetch(`/api/assignments/${id}`, { method: "DELETE" });
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/assignments/${id}`, { method: "DELETE" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }
 
   async function deleteCompletion(id: string): Promise<void> {
-    const resp = await fetch(`/api/completions/${id}`, { method: "DELETE" });
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/completions/${id}`, { method: "DELETE" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }
@@ -277,5 +305,6 @@ export function createChoreStore() {
     delayAssignment,
     delayChore,
     deleteCompletion,
+    reload: init,
   };
 }

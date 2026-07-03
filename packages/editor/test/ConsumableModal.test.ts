@@ -35,12 +35,15 @@ async function makeTick(): Promise<void> {
 }
 afterEach(() => vi.unstubAllGlobals());
 
+const HOME = "home-123";
+const getHomeId = () => HOME;
+
 function makeStore(doc = sampleDoc) {
   vi.stubGlobal(
     "fetch",
     vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => doc }),
   );
-  return createConsumableStore();
+  return createConsumableStore(getHomeId);
 }
 
 describe("ConsumableModal — create mode", () => {

@@ -12,15 +12,17 @@ export interface KBDocument {
   entries: KBEntry[];
 }
 
-export function createKBStore() {
+export function createKBStore(getHomeId: () => string | null = () => null) {
   const entries = $state<KBEntry[]>([]);
   let loaded = $state(false);
   let loadError = $state<string | null>(null);
 
   async function init(): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) { loaded = true; return; }
     try {
       loadError = null;
-      const resp = await fetch("/api/kb");
+      const resp = await fetch(`/api/homes/${homeId}/kb`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const doc: KBDocument = await resp.json();
       entries.length = 0;
@@ -33,7 +35,9 @@ export function createKBStore() {
   }
 
   async function createEntry(data: { title: string; content: string }): Promise<KBEntry> {
-    const resp = await fetch("/api/kb", {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/kb`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -48,7 +52,9 @@ export function createKBStore() {
     id: string,
     patch: { title?: string; content?: string },
   ): Promise<void> {
-    const resp = await fetch(`/api/kb/${id}`, {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/kb/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
@@ -58,15 +64,19 @@ export function createKBStore() {
   }
 
   async function deleteEntry(id: string): Promise<void> {
-    const resp = await fetch(`/api/kb/${id}`, { method: "DELETE" });
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/kb/${id}`, { method: "DELETE" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }
 
   async function uploadAttachment(id: string, file: File): Promise<string> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
     const form = new FormData();
     form.append("file", file);
-    const resp = await fetch(`/api/kb/${id}/attachments`, { method: "POST", body: form });
+    const resp = await fetch(`/api/homes/${homeId}/kb/${id}/attachments`, { method: "POST", body: form });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const result = await resp.json();
     await init();
@@ -74,7 +84,9 @@ export function createKBStore() {
   }
 
   async function deleteAttachment(id: string, filename: string): Promise<void> {
-    const resp = await fetch(`/api/kb/${id}/attachments/${filename}`, { method: "DELETE" });
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/kb/${id}/attachments/${filename}`, { method: "DELETE" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }
@@ -90,5 +102,6 @@ export function createKBStore() {
     deleteEntry,
     uploadAttachment,
     deleteAttachment,
+    reload: init,
   };
 }

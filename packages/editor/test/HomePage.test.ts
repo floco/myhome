@@ -9,16 +9,19 @@ import { createCostsStore } from "../src/lib/costsStore.svelte";
 import { createWorksStore } from "../src/lib/worksStore.svelte";
 import { createConsumableStore } from "../src/lib/consumableStore.svelte";
 
+const HOME = "home-123";
+const getHomeId = () => HOME;
+
 function makeStores() {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => undefined }));
   return {
-    floorStore: createHouseStore(),
-    choreStore: createChoreStore(),
-    inventoryStore: createInventoryStore(),
-    settingsStore: createSettingsStore(),
-    costsStore: createCostsStore(),
-    worksStore: createWorksStore(),
-    consumableStore: createConsumableStore(),
+    floorStore: createHouseStore(getHomeId),
+    choreStore: createChoreStore(getHomeId),
+    inventoryStore: createInventoryStore(getHomeId),
+    settingsStore: createSettingsStore(getHomeId),
+    costsStore: createCostsStore(getHomeId),
+    worksStore: createWorksStore(getHomeId),
+    consumableStore: createConsumableStore(getHomeId),
   };
 }
 

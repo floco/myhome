@@ -34,14 +34,16 @@ export interface YearData {
   totalQuantity: number | null;
 }
 
-export function createCostsStore() {
+export function createCostsStore(getHomeId: () => string | null = () => null) {
   const entries = $state<CostEntry[]>([]);
   let loaded = $state(false);
   let loadError = $state<string | null>(null);
 
   async function init(): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) { loaded = true; return; }
     try {
-      const resp = await fetch("/api/costs");
+      const resp = await fetch(`/api/homes/${homeId}/costs`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const doc: CostsDocument = await resp.json();
       entries.length = 0;
@@ -54,7 +56,9 @@ export function createCostsStore() {
   }
 
   async function createEntry(data: Omit<CostEntry, "id" | "attachments">): Promise<void> {
-    const resp = await fetch("/api/costs/entries", {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/costs/entries`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -67,7 +71,9 @@ export function createCostsStore() {
     id: string,
     patch: Partial<Omit<CostEntry, "id">>
   ): Promise<void> {
-    const resp = await fetch(`/api/costs/entries/${id}`, {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/costs/entries/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
@@ -77,15 +83,19 @@ export function createCostsStore() {
   }
 
   async function deleteEntry(id: string): Promise<void> {
-    const resp = await fetch(`/api/costs/entries/${id}`, { method: "DELETE" });
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/costs/entries/${id}`, { method: "DELETE" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }
 
   async function uploadAttachment(id: string, file: File): Promise<string> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
     const form = new FormData();
     form.append("file", file);
-    const resp = await fetch(`/api/costs/entries/${id}/attachments`, { method: "POST", body: form });
+    const resp = await fetch(`/api/homes/${homeId}/costs/entries/${id}/attachments`, { method: "POST", body: form });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const result = await resp.json();
     await init();
@@ -93,7 +103,9 @@ export function createCostsStore() {
   }
 
   async function deleteAttachment(id: string, filename: string): Promise<void> {
-    const resp = await fetch(`/api/costs/entries/${id}/attachments/${filename}`, { method: "DELETE" });
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/costs/entries/${id}/attachments/${filename}`, { method: "DELETE" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }
@@ -172,5 +184,6 @@ export function createCostsStore() {
     breakdownLastCompleteYear,
     entriesByYear,
     lastCompleteYear,
+    reload: init,
   };
 }

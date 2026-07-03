@@ -44,15 +44,17 @@ export function barFill(c: Consumable): number {
   return Math.min(1, c.quantity / (c.minQuantity * 3));
 }
 
-export function createConsumableStore() {
+export function createConsumableStore(getHomeId: () => string | null = () => null) {
   const consumables = $state<Consumable[]>([]);
   const transactions = $state<ConsumableTransaction[]>([]);
   let loaded = $state(false);
   let loadError = $state<string | null>(null);
 
   async function init(): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) { loaded = true; return; }
     try {
-      const resp = await fetch("/api/consumables");
+      const resp = await fetch(`/api/homes/${homeId}/consumables`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const doc: ConsumableDocument = await resp.json();
       consumables.length = 0;
@@ -69,7 +71,9 @@ export function createConsumableStore() {
   async function createConsumable(
     data: Omit<Consumable, "id" | "placement">,
   ): Promise<void> {
-    const resp = await fetch("/api/consumables", {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/consumables`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -82,7 +86,9 @@ export function createConsumableStore() {
     id: string,
     patch: Partial<Omit<Consumable, "id" | "placement">>,
   ): Promise<void> {
-    const resp = await fetch(`/api/consumables/${id}`, {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/consumables/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
@@ -92,7 +98,9 @@ export function createConsumableStore() {
   }
 
   async function deleteConsumable(id: string): Promise<void> {
-    const resp = await fetch(`/api/consumables/${id}`, { method: "DELETE" });
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/consumables/${id}`, { method: "DELETE" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }
@@ -101,7 +109,9 @@ export function createConsumableStore() {
     id: string,
     placement: ConsumablePlacement | null,
   ): Promise<void> {
-    const resp = await fetch(`/api/consumables/${id}/placement`, {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/consumables/${id}/placement`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ placement }),
@@ -115,7 +125,9 @@ export function createConsumableStore() {
     quantity: number,
     note: string = "",
   ): Promise<void> {
-    const resp = await fetch(`/api/consumables/${id}/stock`, {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/consumables/${id}/stock`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ quantity, note }),
@@ -125,7 +137,9 @@ export function createConsumableStore() {
   }
 
   async function deleteTransaction(id: string): Promise<void> {
-    const resp = await fetch(`/api/consumable-transactions/${id}`, {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/consumable-transactions/${id}`, {
       method: "DELETE",
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -163,5 +177,6 @@ export function createConsumableStore() {
     deleteTransaction,
     transactionsFor,
     placedConsumables,
+    reload: init,
   };
 }

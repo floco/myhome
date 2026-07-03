@@ -29,14 +29,16 @@ export interface WorksDocument {
   works: Work[];
 }
 
-export function createWorksStore() {
+export function createWorksStore(getHomeId: () => string | null = () => null) {
   const works = $state<Work[]>([]);
   let loaded = $state(false);
   let loadError = $state<string | null>(null);
 
   async function init(): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) { loaded = true; return; }
     try {
-      const resp = await fetch("/api/works");
+      const resp = await fetch(`/api/homes/${homeId}/works`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const doc: WorksDocument = await resp.json();
       works.length = 0;
@@ -51,7 +53,9 @@ export function createWorksStore() {
   async function createWork(
     data: Omit<Work, "id" | "attachments" | "placement">
   ): Promise<void> {
-    const resp = await fetch("/api/works", {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/works`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -64,7 +68,9 @@ export function createWorksStore() {
     id: string,
     patch: Partial<Omit<Work, "id" | "attachments" | "placement">>
   ): Promise<void> {
-    const resp = await fetch(`/api/works/${id}`, {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/works/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
@@ -74,15 +80,19 @@ export function createWorksStore() {
   }
 
   async function deleteWork(id: string): Promise<void> {
-    const resp = await fetch(`/api/works/${id}`, { method: "DELETE" });
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/works/${id}`, { method: "DELETE" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }
 
   async function uploadAttachment(id: string, file: File): Promise<string> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
     const form = new FormData();
     form.append("file", file);
-    const resp = await fetch(`/api/works/${id}/attachments`, {
+    const resp = await fetch(`/api/homes/${homeId}/works/${id}/attachments`, {
       method: "POST",
       body: form,
     });
@@ -93,7 +103,9 @@ export function createWorksStore() {
   }
 
   async function deleteAttachment(id: string, filename: string): Promise<void> {
-    const resp = await fetch(`/api/works/${id}/attachments/${filename}`, {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/works/${id}/attachments/${filename}`, {
       method: "DELETE",
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -104,11 +116,13 @@ export function createWorksStore() {
     id: string,
     placement: WorkPlacement | null
   ): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
     if (placement === null) {
-      const resp = await fetch(`/api/works/${id}/placement`, { method: "DELETE" });
+      const resp = await fetch(`/api/homes/${homeId}/works/${id}/placement`, { method: "DELETE" });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     } else {
-      const resp = await fetch(`/api/works/${id}/placement`, {
+      const resp = await fetch(`/api/homes/${homeId}/works/${id}/placement`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(placement),
@@ -130,5 +144,6 @@ export function createWorksStore() {
     uploadAttachment,
     deleteAttachment,
     setPlacement,
+    reload: init,
   };
 }

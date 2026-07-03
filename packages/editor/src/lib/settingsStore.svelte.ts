@@ -51,7 +51,7 @@ export interface SettingsDocument {
   consumableCategories: ConsumableCategory[];
 }
 
-export function createSettingsStore() {
+export function createSettingsStore(getHomeId: () => string | null = () => null) {
   const costCategories = $state<CostCategory[]>([]);
   const inventoryCategories = $state<InventoryCategory[]>([]);
   const workCategories = $state<WorkCategory[]>([]);
@@ -62,8 +62,10 @@ export function createSettingsStore() {
   let loadError = $state<string | null>(null);
 
   async function init(): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) { loaded = true; return; }
     try {
-      const resp = await fetch("/api/settings");
+      const resp = await fetch(`/api/homes/${homeId}/settings`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const doc: SettingsDocument = await resp.json();
       costCategories.length = 0;
@@ -86,7 +88,9 @@ export function createSettingsStore() {
   }
 
   async function updateCostCategories(list: CostCategory[]): Promise<void> {
-    const resp = await fetch("/api/settings/cost-categories", {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/settings/cost-categories`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(list),
@@ -96,7 +100,9 @@ export function createSettingsStore() {
   }
 
   async function updateInventoryCategories(list: InventoryCategory[]): Promise<void> {
-    const resp = await fetch("/api/settings/inventory-categories", {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/settings/inventory-categories`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(list),
@@ -106,7 +112,9 @@ export function createSettingsStore() {
   }
 
   async function updateWorkCategories(list: WorkCategory[]): Promise<void> {
-    const resp = await fetch("/api/settings/work-categories", {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/settings/work-categories`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(list),
@@ -116,7 +124,9 @@ export function createSettingsStore() {
   }
 
   async function updateSuppliers(list: Supplier[]): Promise<void> {
-    const resp = await fetch("/api/settings/suppliers", {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/settings/suppliers`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(list),
@@ -126,7 +136,9 @@ export function createSettingsStore() {
   }
 
   async function updateConsumableUnits(list: string[]): Promise<void> {
-    const resp = await fetch("/api/settings/consumable-units", {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/settings/consumable-units`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(list),
@@ -136,7 +148,9 @@ export function createSettingsStore() {
   }
 
   async function updateConsumableCategories(list: ConsumableCategory[]): Promise<void> {
-    const resp = await fetch("/api/settings/consumable-categories", {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/settings/consumable-categories`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(list),
@@ -146,11 +160,13 @@ export function createSettingsStore() {
   }
 
   async function placeCostCategory(id: string, placement: CostCategoryPlacement | null): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
     if (placement === null) {
-      const resp = await fetch(`/api/settings/cost-categories/${id}/placement`, { method: "DELETE" });
+      const resp = await fetch(`/api/homes/${homeId}/settings/cost-categories/${id}/placement`, { method: "DELETE" });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     } else {
-      const resp = await fetch(`/api/settings/cost-categories/${id}/placement`, {
+      const resp = await fetch(`/api/homes/${homeId}/settings/cost-categories/${id}/placement`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(placement),
@@ -178,5 +194,6 @@ export function createSettingsStore() {
     updateConsumableUnits,
     updateConsumableCategories,
     placeCostCategory,
+    reload: init,
   };
 }

@@ -12,13 +12,16 @@ const sampleDoc = {
   ],
 };
 
+const HOME = "home-123";
+const getHomeId = () => HOME;
+
 async function makeTick(): Promise<void> {
   await new Promise((r) => setTimeout(r, 0));
 }
 
 function makeStore() {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => sampleDoc }));
-  return createWorksStore();
+  return createWorksStore(getHomeId);
 }
 
 afterEach(() => vi.unstubAllGlobals());

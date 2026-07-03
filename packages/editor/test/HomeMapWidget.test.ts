@@ -8,6 +8,9 @@ import { createSettingsStore } from "../src/lib/settingsStore.svelte";
 import { createCostsStore } from "../src/lib/costsStore.svelte";
 import { createWorksStore } from "../src/lib/worksStore.svelte";
 
+const HOME = "home-123";
+const getHomeId = () => HOME;
+
 function makeFetch() {
   return vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => undefined });
 }
@@ -15,12 +18,12 @@ function makeFetch() {
 function makeStores() {
   vi.stubGlobal("fetch", makeFetch());
   return {
-    floorStore: createHouseStore(),
-    choreStore: createChoreStore(),
-    inventoryStore: createInventoryStore(),
-    settingsStore: createSettingsStore(),
-    costsStore: createCostsStore(),
-    worksStore: createWorksStore(),
+    floorStore: createHouseStore(getHomeId),
+    choreStore: createChoreStore(getHomeId),
+    inventoryStore: createInventoryStore(getHomeId),
+    settingsStore: createSettingsStore(getHomeId),
+    costsStore: createCostsStore(getHomeId),
+    worksStore: createWorksStore(getHomeId),
   };
 }
 
