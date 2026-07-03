@@ -63,7 +63,7 @@
     {/if}
   </div>
 
-  {#snippet actions()}
+  {#snippet footer()}
     {#if !required}
       <Button variant="ghost" onclick={onclose} disabled={saving}>Cancel</Button>
     {/if}

@@ -4,11 +4,21 @@
 
   interface Props {
     expanded: boolean;
+    onexpand?: () => void;
   }
-  let { expanded }: Props = $props();
+  let { expanded, onexpand }: Props = $props();
 
   let dropdownOpen = $state(false);
   let showNewModal = $state(false);
+
+  $effect(() => {
+    if (!expanded) dropdownOpen = false;
+  });
+
+  function handleClick(): void {
+    if (!expanded) { onexpand?.(); return; }
+    dropdownOpen = !dropdownOpen;
+  }
 
   function selectHome(id: string): void {
     homesStore.setActiveHomeId(id);
@@ -23,17 +33,17 @@
 <div class="switcher" class:expanded>
   <button
     class="current"
-    onclick={() => { dropdownOpen = !dropdownOpen; }}
+    onclick={handleClick}
     title={homesStore.activeHome?.name ?? "Select home"}
   >
-    <span class="icon">{typeIcon(homesStore.activeHome?.type ?? "existing")}</span>
+    <span class="icon">⌂</span>
     {#if expanded}
       <span class="name">{homesStore.activeHome?.name ?? "—"}</span>
       <span class="chevron">{dropdownOpen ? "▲" : "▼"}</span>
     {/if}
   </button>
 
-  {#if dropdownOpen && expanded}
+  {#if dropdownOpen}
     <div class="dropdown">
       {#each homesStore.homes as home (home.id)}
         <button
@@ -74,7 +84,7 @@
   }
   .current:hover { background: var(--surface-hover); }
 
-  .icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+  .icon { font-size: 18px; width: 20px; text-align: center; flex-shrink: 0; line-height: 1; }
   .name { font-size: 12px; font-weight: 600; flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .chevron { font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
 

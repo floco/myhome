@@ -6,8 +6,9 @@
     currentRoute: string;
     expanded: boolean;
     onclose: () => void;
+    onexpand?: () => void;
   }
-  let { currentRoute, expanded, onclose }: Props = $props();
+  let { currentRoute, expanded, onclose, onexpand }: Props = $props();
 
   const ALL_MODULES = [
     { id: "home",        href: "#/",            icon: "🏡", label: "Home"             },
@@ -45,7 +46,7 @@
 
 <nav class="nav" class:expanded>
   <div class="nav-body">
-    <HomesSwitcher {expanded} />
+    <HomesSwitcher {expanded} {onexpand} />
     {#each visibleModules as mod (mod.id)}
       <a
         href={mod.href}
