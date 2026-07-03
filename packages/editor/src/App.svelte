@@ -657,7 +657,7 @@
   </header>
 
   <div class="workspace">
-    <NavMenu {currentRoute} expanded={navExpanded} onclose={() => { navExpanded = false; }} />
+    <NavMenu {currentRoute} expanded={navExpanded} onclose={() => { navExpanded = false; }} onexpand={() => { navExpanded = true; }} />
 
     <div class="content">
       {#if homesStore.loaded && homesStore.homes.length === 0}
