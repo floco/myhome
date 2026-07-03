@@ -303,6 +303,21 @@
     }
   }
 
+  let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+  $effect(() => {
+    const _gen = floorStore.generation;
+    if (!floorStore.loaded || !floorStore.isDirty || !homesStore.activeHomeId) return;
+    if (autosaveTimer) clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => {
+      autosaveTimer = null;
+      handleSave();
+    }, 5000);
+    return () => {
+      if (autosaveTimer) { clearTimeout(autosaveTimer); autosaveTimer = null; }
+    };
+  });
+
   $effect(() => {
     fetch("/api/ha/areas")
       .then((r) => r.json())
@@ -449,6 +464,7 @@
   function handleZoom(screen: Point, factor: number): void { viewportStore.zoomAt(screen, factor); }
 
   function handleKeydown(event: KeyboardEvent): void {
+    if (event.ctrlKey && event.key === "s") { event.preventDefault(); if (isFloorPlan) handleSave(); return; }
     const target = event.target as HTMLElement;
     if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
     if (event.code === "Space") { event.preventDefault(); spacePressed = true; return; }
@@ -621,6 +637,7 @@
         class="icon-btn save-btn"
         class:saved={saveStatus === "saved"}
         class:save-error={saveStatus === "error"}
+        class:dirty={floorStore.isDirty && saveStatus === "idle"}
         disabled={saveStatus === "saving"}
         title={saveTitle}
         onclick={handleSave}
@@ -1126,7 +1143,18 @@
   }
   .icon-btn:hover:not(:disabled) { background: var(--surface-hover); color: var(--text); }
   .icon-btn.active { background: var(--surface-hover); color: var(--accent); }
-  .icon-btn.save-btn { color: var(--success); }
+  .icon-btn.save-btn { color: var(--success); position: relative; }
+  .icon-btn.save-btn.dirty::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    pointer-events: none;
+  }
   .icon-btn.save-btn:hover:not(:disabled) { background: var(--surface-hover); }
   .icon-btn.save-btn.saved { color: var(--success); }
   .icon-btn.save-btn.save-error { color: var(--danger); }
