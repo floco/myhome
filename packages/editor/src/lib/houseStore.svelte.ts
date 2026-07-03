@@ -193,10 +193,22 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
   async function init(): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) { loaded = true; return; }
+    undoStack.length = 0;
+    redoStack.length = 0;
+    undoCount = 0;
+    redoCount = 0;
     try {
       const resp = await fetch(`/api/homes/${homeId}/house`);
       if (resp.status === 404) {
-        // No saved document; keep sample house already in state
+        // No saved document for this home — reset to a fresh sample
+        const fresh = createSampleHouse();
+        house = { ...DEFAULT_HOUSE };
+        applyState({ floors: fresh.floors, currentFloorId: fresh.currentFloorId });
+        for (const f of floors) {
+          const detected = detectRooms(f.walls);
+          const { rooms } = matchRooms(detected, f.rooms);
+          f.rooms = rooms.filter((r) => r.polygon !== null);
+        }
       } else if (!resp.ok) {
         throw new Error(`HTTP ${resp.status}`);
       } else {
