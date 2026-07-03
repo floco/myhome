@@ -26,15 +26,15 @@
     onclick={() => { dropdownOpen = !dropdownOpen; }}
     title={homesStore.activeHome?.name ?? "Select home"}
   >
+    <span class="chevron">{dropdownOpen ? "▲" : "▼"}</span>
     <span class="icon">{typeIcon(homesStore.activeHome?.type ?? "existing")}</span>
     {#if expanded}
       <span class="name">{homesStore.activeHome?.name ?? "—"}</span>
-      <span class="chevron">{dropdownOpen ? "▲" : "▼"}</span>
     {/if}
   </button>
 
-  {#if dropdownOpen && expanded}
-    <div class="dropdown">
+  {#if dropdownOpen}
+    <div class="dropdown" class:dropdown-right={!expanded}>
       {#each homesStore.homes as home (home.id)}
         <button
           class="home-item"
@@ -76,13 +76,14 @@
 
   .icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
   .name { font-size: 12px; font-weight: 600; flex: 1; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .chevron { font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
+  .chevron { font-size: 10px; color: var(--text-muted); flex-shrink: 0; width: 10px; text-align: center; }
 
   .dropdown {
     position: absolute;
     top: calc(100% + 2px);
     left: 6px;
     right: 6px;
+    min-width: 160px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
@@ -110,4 +111,10 @@
   .home-item.add { color: var(--text-muted); }
 
   .separator { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+
+  .dropdown-right {
+    left: calc(100% + 4px);
+    right: auto;
+    top: 0;
+  }
 </style>
