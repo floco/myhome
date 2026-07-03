@@ -491,15 +491,26 @@
     if (!homeNameDraft.trim()) { homeNameError = "Name required"; return; }
     const id = homesStore.activeHomeId;
     if (!id) return;
-    await homesStore.patchHome(id, { name: homeNameDraft.trim() });
-    editingHomeName = false;
+    try {
+      await homesStore.patchHome(id, { name: homeNameDraft.trim() });
+      editingHomeName = false;
+    } catch (e) {
+      homeNameError = e instanceof Error ? e.message : "Failed to save";
+    }
   }
+
+  let homeTypeError = $state<string | null>(null);
 
   async function toggleHomeType(): Promise<void> {
     const home = homesStore.activeHome;
     if (!home) return;
     const next = home.type === "existing" ? "project" : "existing";
-    await homesStore.patchHome(home.id, { type: next });
+    try {
+      homeTypeError = null;
+      await homesStore.patchHome(home.id, { type: next });
+    } catch (e) {
+      homeTypeError = e instanceof Error ? e.message : "Failed to update type";
+    }
   }
 
   let moduleToggleWarning = $state<string | null>(null);
@@ -583,6 +594,7 @@
         </span>
         <Button variant="ghost" onclick={toggleHomeType}>Change</Button>
       </div>
+      {#if homeTypeError}<p class="field-error">{homeTypeError}</p>{/if}
 
       <div class="home-row danger-row">
         <Button
@@ -640,7 +652,7 @@
     <Modal open={showDeleteConfirm} title="Delete home" onclose={() => { showDeleteConfirm = false; }}>
       <p>Delete <strong>{homesStore.activeHome?.name}</strong>? This permanently removes all data for this home and cannot be undone.</p>
       {#if deleteError}<p class="field-error">{deleteError}</p>{/if}
-      {#snippet actions()}
+      {#snippet footer()}
         <Button variant="ghost" onclick={() => { showDeleteConfirm = false; }}>Cancel</Button>
         <Button variant="danger" onclick={confirmDeleteHome}>Delete</Button>
       {/snippet}
@@ -971,7 +983,7 @@
                 <tr>
                   <td>{t.name}</td>
                   <td><span class="role-badge">{t.role}</span></td>
-                  <td>{t.created_at.slice(0, 10)}</td>
+                  <td>{t.created_at?.slice(0, 10) ?? "—"}</td>
                   <td>{t.last_used_at ? t.last_used_at.slice(0, 10) : "—"}</td>
                   <td>
                     {#if confirmRevokeTokenId === t.id}
@@ -1018,7 +1030,7 @@
                       <span class="role-badge">{u.role}</span>
                     {/if}
                   </td>
-                  <td>{u.created_at.slice(0, 10)}</td>
+                  <td>{u.created_at?.slice(0, 10) ?? "—"}</td>
                   <td style="display:flex;gap:4px;flex-wrap:wrap">
                     {#if editingUserId !== u.id}
                       <Button variant="secondary" onclick={() => { editingUserId = u.id; editUserRole = u.role; }}>Edit role</Button>
