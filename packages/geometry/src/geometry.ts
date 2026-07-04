@@ -93,6 +93,53 @@ export function polygonCentroid(points: Point[]): Point {
   return { x: cx, y: cy };
 }
 
+/**
+ * Computes the two miter corner points where two walls share endpoint P.
+ * dirA and dirB are unit vectors along each wall's centerline (start → end).
+ * halfThickA / halfThickB are wall.thickness / 2 for each wall.
+ *
+ * Returns { plus, minus } — intersections of the +perp and -perp edge lines —
+ * or null if walls are parallel, or if the miter would spike further than
+ * 8 × max(halfThickA, halfThickB) from P (very acute angle fallback).
+ */
+export function computeMiterCorners(
+  P: Point,
+  dirA: Point,
+  halfThickA: number,
+  dirB: Point,
+  halfThickB: number,
+): { plus: Point; minus: Point } | null {
+  const pAx = -dirA.y * halfThickA;
+  const pAy = dirA.x * halfThickA;
+  const pBx = -dirB.y * halfThickB;
+  const pBy = dirB.x * halfThickB;
+
+  const plus = _linesIntersect(
+    { x: P.x + pAx, y: P.y + pAy }, dirA,
+    { x: P.x + pBx, y: P.y + pBy }, dirB,
+  );
+  const minus = _linesIntersect(
+    { x: P.x - pAx, y: P.y - pAy }, dirA,
+    { x: P.x - pBx, y: P.y - pBy }, dirB,
+  );
+  if (!plus || !minus) return null;
+
+  const limit = 8 * Math.max(halfThickA, halfThickB);
+  if (Math.hypot(plus.x - P.x, plus.y - P.y) > limit) return null;
+
+  return { plus, minus };
+}
+
+/** Intersection of two infinite lines (point + direction). Internal helper. */
+function _linesIntersect(p1: Point, d1: Point, p2: Point, d2: Point): Point | null {
+  const det = d1.x * (-d2.y) - d1.y * (-d2.x);
+  if (Math.abs(det) < 1e-9) return null;
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+  const t = (dx * (-d2.y) - dy * (-d2.x)) / det;
+  return { x: p1.x + t * d1.x, y: p1.y + t * d1.y };
+}
+
 /** Ray-casting point-in-polygon test. */
 export function pointInPolygon(point: Point, polygon: Point[]): boolean {
   let inside = false;

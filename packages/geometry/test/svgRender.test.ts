@@ -273,3 +273,35 @@ describe("door swing rendering", () => {
     expect(new Set(ends).size).toBe(4);
   });
 });
+
+describe("renderFloorSvg - miter joins", () => {
+  it("two adjacent walls at a 90° corner produce miter-joined path coordinates", () => {
+    // Wall A: horizontal (0,0)→(4,0); Wall B: vertical (4,0)→(4,4) going down (+y)
+    // dirA=(1,0), halfThickA=0.1; dirB=(0,1), halfThickB=0.1
+    // At P=(4,0): miter plus = (3.9, 0.1), miter minus = (4.1, -0.1)
+    const wallA: Wall = { id: "wA", start: { x: 0, y: 0 }, end: { x: 4, y: 0 }, thickness: 0.2, type: "wall" };
+    const wallB: Wall = { id: "wB", start: { x: 4, y: 0 }, end: { x: 4, y: 4 }, thickness: 0.2, type: "wall" };
+    const svg = renderFloorSvg(baseFloor({ walls: [wallA, wallB] }));
+
+    const wallPaths = [...svg.matchAll(/<path class="wall" d="([^"]+)"/g)];
+    expect(wallPaths).toHaveLength(2);
+
+    // Wall A is first in the SVG; its end should be miter-joined with wall B
+    const dA = wallPaths[0][1];
+    expect(dA).toContain("3.9 0.1");   // miter plus end corner
+    expect(dA).toContain("4.1 -0.1");  // miter minus end corner
+
+    // Wall B's start should also use the same miter corners
+    const dB = wallPaths[1][1];
+    expect(dB).toContain("3.9 0.1");
+    expect(dB).toContain("4.1 -0.1");
+  });
+
+  it("isolated wall (no neighbors) retains flat rectangular caps", () => {
+    const wall: Wall = { id: "w1", start: { x: 0, y: 0 }, end: { x: 4, y: 0 }, thickness: 0.2, type: "wall" };
+    const svg = renderFloorSvg(baseFloor({ walls: [wall] }));
+    const wallPaths = [...svg.matchAll(/<path class="wall" d="([^"]+)"/g)];
+    expect(wallPaths[0][1]).toContain("L 4 0.1");
+    expect(wallPaths[0][1]).toContain("L 4 -0.1");
+  });
+});

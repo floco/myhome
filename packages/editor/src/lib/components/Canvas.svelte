@@ -3,7 +3,7 @@
   import type { ViewportState } from "../viewportStore.svelte.ts";
   import type { ToolType } from "../toolStore.svelte";
   import { computeSnap, allEndpoints } from "../drawingTool";
-  import { SNAP_RADIUS_PX, hitTestWall, HIT_RADIUS_PX } from "../geometry-helpers";
+  import { SNAP_RADIUS_PX, hitTestWall, HIT_RADIUS_PX, findAdjacentWall } from "../geometry-helpers";
   import { worldToScreen } from "../viewportStore.svelte.ts";
   import Grid from "./Grid.svelte";
   import WallShape from "./WallShape.svelte";
@@ -215,7 +215,15 @@
   {/each}
   {#each floor.walls as wall (wall.id)}
     {#if wall.type === "wall"}
-      <WallShape {wall} {viewport} {tool} selected={wall.id === selectedId} onselect={(id) => onselect?.(id)} />
+      <WallShape
+          {wall}
+          wallAtStart={findAdjacentWall(floor.walls, wall, false)}
+          wallAtEnd={findAdjacentWall(floor.walls, wall, true)}
+          {viewport}
+          {tool}
+          selected={wall.id === selectedId}
+          onselect={(id) => onselect?.(id)}
+        />
     {:else}
       <DividerShape {wall} {viewport} {tool} selected={wall.id === selectedId} onselect={(id) => onselect?.(id)} />
     {/if}

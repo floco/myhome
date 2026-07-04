@@ -1,4 +1,5 @@
 import type { Floor, Wall, Opening, Room, Point, DoorSwing } from "./types";
+import { computeMiterCorners, pointsEqual } from "./geometry";
 
 export interface SvgRenderOptions {
   /** Padding (in meters) added around the computed bounding box. Default 0.5. */
@@ -27,9 +28,15 @@ export function renderFloorSvg(floor: Floor, options: SvgRenderOptions = {}): st
     .map(renderRoom)
     .join("\n");
 
-  const wallsSvg = floor.walls
-    .filter((w) => w.type === "wall")
-    .map((w) => renderWall(w, floor.openings.filter((o) => o.wallId === w.id)))
+  const wallsOnly = floor.walls.filter((w) => w.type === "wall");
+
+  const wallsSvg = wallsOnly
+    .map((w) => renderWall(
+      w,
+      floor.openings.filter((o) => o.wallId === w.id),
+      _findAdjacentSvg(wallsOnly, w, false),
+      _findAdjacentSvg(wallsOnly, w, true),
+    ))
     .join("\n");
 
   const dividersSvg = floor.walls
@@ -96,17 +103,30 @@ function renderRoom(room: Room & { polygon: Point[] }): string {
   return `<path id="room-${escapeAttr(room.id)}" data-ha-area="${escapeAttr(haArea)}" class="room" d="${d}" />`;
 }
 
+function _findAdjacentSvg(walls: Wall[], target: Wall, atEnd: boolean): Wall | null {
+  const P = atEnd ? target.end : target.start;
+  let found: Wall | null = null;
+  let count = 0;
+  for (const w of walls) {
+    if (w.id === target.id) continue;
+    if (pointsEqual(w.start, P) || pointsEqual(w.end, P)) { found = w; count++; }
+  }
+  return count === 1 ? found : null;
+}
+
 function renderDivider(wall: Wall): string {
   return `<path class="divider" d="${polylineToPath([wall.start, wall.end])}" stroke-dasharray="0.1 0.1" />`;
 }
 
-function renderWall(wall: Wall, openings: Opening[]): string {
+function renderWall(wall: Wall, openings: Opening[], wallAtStart: Wall | null, wallAtEnd: Wall | null): string {
   const thickness = wall.thickness ?? 0.1;
   const { dirX, dirY, length } = wallDirection(wall);
   if (length < 1e-9) return "";
 
-  const perpX = -dirY * (thickness / 2);
-  const perpY = dirX * (thickness / 2);
+  const halfThick = thickness / 2;
+  const perpX = -dirY * halfThick;
+  const perpY = dirX * halfThick;
+  const dir = { x: dirX, y: dirY };
 
   const gaps = openings
     .map((o) => {
@@ -128,13 +148,33 @@ function renderWall(wall: Wall, openings: Opening[]): string {
     .map((seg) => {
       const p1 = pointAlong(wall.start, dirX, dirY, seg.from);
       const p2 = pointAlong(wall.start, dirX, dirY, seg.to);
-      const corners: Point[] = [
-        { x: p1.x + perpX, y: p1.y + perpY },
-        { x: p2.x + perpX, y: p2.y + perpY },
-        { x: p2.x - perpX, y: p2.y - perpY },
-        { x: p1.x - perpX, y: p1.y - perpY },
-      ];
-      return `<path class="wall" d="${polygonToPath(corners)}" />`;
+
+      let c0: Point = { x: p1.x + perpX, y: p1.y + perpY };
+      let c1: Point = { x: p2.x + perpX, y: p2.y + perpY };
+      let c2: Point = { x: p2.x - perpX, y: p2.y - perpY };
+      let c3: Point = { x: p1.x - perpX, y: p1.y - perpY };
+
+      if (seg.from === 0 && wallAtStart) {
+        const ndx = wallAtStart.end.x - wallAtStart.start.x;
+        const ndy = wallAtStart.end.y - wallAtStart.start.y;
+        const nlen = Math.hypot(ndx, ndy);
+        if (nlen > 1e-9) {
+          const m = computeMiterCorners(wall.start, dir, halfThick, { x: ndx / nlen, y: ndy / nlen }, (wallAtStart.thickness ?? 0.1) / 2);
+          if (m) { c0 = m.plus; c3 = m.minus; }
+        }
+      }
+
+      if (seg.to === length && wallAtEnd) {
+        const ndx = wallAtEnd.end.x - wallAtEnd.start.x;
+        const ndy = wallAtEnd.end.y - wallAtEnd.start.y;
+        const nlen = Math.hypot(ndx, ndy);
+        if (nlen > 1e-9) {
+          const m = computeMiterCorners(wall.end, dir, halfThick, { x: ndx / nlen, y: ndy / nlen }, (wallAtEnd.thickness ?? 0.1) / 2);
+          if (m) { c1 = m.plus; c2 = m.minus; }
+        }
+      }
+
+      return `<path class="wall" d="${polygonToPath([c0, c1, c2, c3])}" />`;
     })
     .join("\n");
 }
