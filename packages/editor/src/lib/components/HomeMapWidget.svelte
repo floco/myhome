@@ -160,7 +160,7 @@
   .map-widget-body { display: flex; flex-direction: column; gap: var(--space-2); }
   .map-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; }
   .map-area {
-    position: relative; overflow: hidden; height: 220px;
+    position: relative; overflow: hidden; height: 360px;
     border-radius: var(--radius-md); background: var(--canvas-bg); cursor: pointer;
   }
   .empty {
