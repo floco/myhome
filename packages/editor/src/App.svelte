@@ -55,6 +55,8 @@
   import NewHomeModal from "./lib/components/NewHomeModal.svelte";
   import HomesSwitcher from "./lib/components/HomesSwitcher.svelte";
   import PlaceholderPage from "./lib/components/PlaceholderPage.svelte";
+  import FurnitureLibraryPanel from "./lib/components/FurnitureLibraryPanel.svelte";
+  import { getTemplate } from "./lib/furnitureLibrary";
 
   const getHomeId = () => homesStore.activeHomeId;
 
@@ -303,6 +305,27 @@
   let canvasWidth = $state(1200);
   let canvasHeight = $state(800);
   let saveStatus = $state<"idle" | "saving" | "saved" | "error">("idle");
+
+  // Furniture state
+  let furnitureLibraryOpen = $state(false);
+  let selectedFurnitureId = $state<string | null>(null);
+
+  interface FurnitureDragMove {
+    type: "move"; id: string;
+    startObjX: number; startObjY: number;
+    startCursorX: number; startCursorY: number;
+  }
+  interface FurnitureDragResize {
+    type: "resize"; id: string;
+    fixedX: number; fixedY: number;
+    rotation: number;
+  }
+  interface FurnitureDragRotate {
+    type: "rotate"; id: string;
+    cx: number; cy: number;
+  }
+  type FurnitureDrag = FurnitureDragMove | FurnitureDragResize | FurnitureDragRotate;
+  let furnitureDrag = $state<FurnitureDrag | null>(null);
   let haAreas = $state<Array<{ area_id: string; name: string }>>([]);
 
   const hasSelection = $derived(
@@ -372,17 +395,22 @@
   }
 
   function handleDelete(): void {
+    if (selectedFurnitureId) {
+      floorStore.removeFurniture(selectedFurnitureId);
+      selectedFurnitureId = null;
+      return;
+    }
     const { selectedId, selectedOpeningId } = toolStore.state;
     if (selectedId) { floorStore.removeWall(selectedId); toolStore.select(null); }
     else if (selectedOpeningId) { floorStore.removeOpening(selectedOpeningId); toolStore.selectOpening(null); }
   }
 
   function handleUndo(): void {
-    floorStore.undo(); toolStore.select(null); toolStore.selectRoom(null); toolStore.selectOpening(null);
+    floorStore.undo(); toolStore.select(null); toolStore.selectRoom(null); toolStore.selectOpening(null); selectedFurnitureId = null;
   }
 
   function handleRedo(): void {
-    floorStore.redo(); toolStore.select(null); toolStore.selectRoom(null); toolStore.selectOpening(null);
+    floorStore.redo(); toolStore.select(null); toolStore.selectRoom(null); toolStore.selectOpening(null); selectedFurnitureId = null;
   }
 
   function wouldCollapseAWall(dragging: Point, snapped: Point): boolean {
@@ -409,6 +437,7 @@
     toolStore.setCursor(world);
     if (toolStore.state.draggingPoint) handleDragMove(world);
     if (toolStore.state.draggingOpeningHandle) handleOpeningHandleDrag(world);
+    if (furnitureDrag) handleFurnitureDragMove(world);
   }
 
   function handleOpeningPlace(worldCursor: Point): void {
@@ -448,6 +477,73 @@
 
   function handleDragStart(point: Point): void { floorStore.saveSnapshot(); toolStore.startDrag(point); }
   function handleDragEnd(): void { toolStore.endDrag(); }
+
+  function handleSelectFurniture(id: string | null): void {
+    selectedFurnitureId = id;
+  }
+
+  function handleMoveFurnitureStart(id: string, e: MouseEvent): void {
+    const obj = floorStore.currentFurniture.find((f) => f.id === id);
+    if (!obj) return;
+    floorStore.saveSnapshot();
+    const rect = (e.currentTarget as SVGSVGElement | null)
+      ?? (e.target as SVGElement).closest("svg");
+    if (!rect) return;
+    const svgRect = (rect as Element).getBoundingClientRect?.() ?? { left: 0, top: 0 };
+    const cursorX = (e.clientX - (svgRect as DOMRect).left - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
+    const cursorY = (e.clientY - (svgRect as DOMRect).top - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
+    furnitureDrag = { type: "move", id, startObjX: obj.x, startObjY: obj.y, startCursorX: cursorX, startCursorY: cursorY };
+  }
+
+  function handleResizeFurnitureStart(id: string, corner: string, _e: MouseEvent): void {
+    const obj = floorStore.currentFurniture.find((f) => f.id === id);
+    if (!obj) return;
+    floorStore.saveSnapshot();
+    const rad = (obj.rotation * Math.PI) / 180;
+    const cosR = Math.cos(rad), sinR = Math.sin(rad);
+    const hw = obj.width / 2, hh = obj.height / 2;
+    // Fixed corner offset (opposite of dragged corner)
+    const opp: Record<string, [number, number]> = { nw: [hw, hh], ne: [-hw, hh], se: [-hw, -hh], sw: [hw, -hh] };
+    const [lx, ly] = opp[corner] ?? [hw, hh];
+    const fixedX = obj.x + lx * cosR - ly * sinR;
+    const fixedY = obj.y + lx * sinR + ly * cosR;
+    furnitureDrag = { type: "resize", id, fixedX, fixedY, rotation: obj.rotation };
+  }
+
+  function handleRotateFurnitureStart(id: string, _e: MouseEvent): void {
+    const obj = floorStore.currentFurniture.find((f) => f.id === id);
+    if (!obj) return;
+    floorStore.saveSnapshot();
+    furnitureDrag = { type: "rotate", id, cx: obj.x, cy: obj.y };
+  }
+
+  function handleFurnitureDragMove(world: Point): void {
+    if (!furnitureDrag) return;
+    if (furnitureDrag.type === "move") {
+      const dx = world.x - furnitureDrag.startCursorX;
+      const dy = world.y - furnitureDrag.startCursorY;
+      floorStore.moveFurniture(furnitureDrag.id, furnitureDrag.startObjX + dx, furnitureDrag.startObjY + dy, { skipHistory: true });
+    } else if (furnitureDrag.type === "resize") {
+      const { fixedX, fixedY, rotation } = furnitureDrag;
+      const rad = (rotation * Math.PI) / 180;
+      const cosR = Math.cos(rad), sinR = Math.sin(rad);
+      const diffX = world.x - fixedX, diffY = world.y - fixedY;
+      const newWidth = Math.max(0.1, Math.abs(diffX * cosR + diffY * sinR));
+      const newHeight = Math.max(0.1, Math.abs(diffX * (-sinR) + diffY * cosR));
+      const newCx = (fixedX + world.x) / 2;
+      const newCy = (fixedY + world.y) / 2;
+      floorStore.resizeFurniture(furnitureDrag.id, newCx, newCy, newWidth, newHeight, { skipHistory: true });
+    } else if (furnitureDrag.type === "rotate") {
+      const { cx, cy } = furnitureDrag;
+      const dx = world.x - cx, dy = world.y - cy;
+      const rotation = Math.atan2(dx, -dy) * (180 / Math.PI);
+      floorStore.rotateFurniture(furnitureDrag.id, rotation, { skipHistory: true });
+    }
+  }
+
+  function endFurnitureDrag(): void {
+    furnitureDrag = null;
+  }
 
   const MIN_OPENING_WIDTH = 0.1;
 
@@ -498,7 +594,7 @@
       toolStore.resetDraw(); return;
     }
     if ((event.key === "Delete" || event.key === "Backspace") &&
-        (toolStore.state.selectedId || toolStore.state.selectedOpeningId)) handleDelete();
+        (toolStore.state.selectedId || toolStore.state.selectedOpeningId || selectedFurnitureId)) handleDelete();
   }
 
   function handleKeyup(event: KeyboardEvent): void {
@@ -522,6 +618,19 @@
 
   function handleDrop(e: DragEvent): void {
     e.preventDefault();
+
+    const furnitureTemplateId = e.dataTransfer?.getData("furnitureTemplateId");
+    if (furnitureTemplateId) {
+      const template = getTemplate(furnitureTemplateId);
+      if (template) {
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const worldX = (e.clientX - rect.left - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
+        const worldY = (e.clientY - rect.top - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
+        floorStore.addFurniture(furnitureTemplateId, worldX, worldY, template.defaultWidth, template.defaultHeight);
+      }
+      return;
+    }
+
     const layerId = e.dataTransfer?.getData("pickerLayer") ?? draggingLayerId;
     const itemId = e.dataTransfer?.getData("pickerId") ?? draggingItemId;
     draggingItemId = null;
@@ -589,7 +698,7 @@
   onkeydown={handleKeydown}
   onkeyup={handleKeyup}
   onblur={() => { spacePressed = false; }}
-  onmouseup={handleDragEnd}
+  onmouseup={() => { handleDragEnd(); endFurnitureDrag(); }}
 />
 
 {#if authStore.checking}
@@ -689,9 +798,15 @@
               selectedId={toolStore.state.selectedId}
               selectedOpeningId={toolStore.state.selectedOpeningId}
               selectedRoomId={toolStore.state.selectedRoomId}
+              {selectedFurnitureId}
+              furnitureObjects={floorStore.currentFurniture}
               onselect={handleSelect}
               onselectopening={handleSelectOpening}
               onselectroom={handleSelectRoom}
+              onselectfurniture={handleSelectFurniture}
+              onmovefurniturestart={handleMoveFurnitureStart}
+              onresizefurniturestart={handleResizeFurnitureStart}
+              onrotatefurniturestart={handleRotateFurnitureStart}
               tool={toolStore.state.tool}
               drawPoints={toolStore.state.drawPoints}
               cursorWorld={toolStore.state.cursorWorld}
@@ -919,15 +1034,20 @@
               </div>
             {/if}
           {/if}
-          {#if pickerOpen && pickerLayers.length > 0}
+          {#if pickerOpen && pickerLayers.length > 0 || furnitureLibraryOpen}
             <div class="right-panels">
-              <ItemPickerPanel
-                layers={pickerLayers}
-                draggingId={draggingItemId}
-                highlightId={pickerHighlightId}
-                ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; pickerHighlightId = null; }}
-                ondragend={() => { draggingLayerId = null; draggingItemId = null; }}
-              />
+              {#if pickerOpen && pickerLayers.length > 0}
+                <ItemPickerPanel
+                  layers={pickerLayers}
+                  draggingId={draggingItemId}
+                  highlightId={pickerHighlightId}
+                  ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; pickerHighlightId = null; }}
+                  ondragend={() => { draggingLayerId = null; draggingItemId = null; }}
+                />
+              {/if}
+              {#if furnitureLibraryOpen}
+                <FurnitureLibraryPanel />
+              {/if}
             </div>
           {/if}
           {#if floorStore.loaded && !allFloorsMode}
@@ -963,6 +1083,12 @@
                 title="Toggle item picker"
                 onclick={() => { pickerOpen = !pickerOpen; }}
               >📋 <span class="ft-label">Picker</span></button>
+              <button
+                class="ft-btn"
+                class:active={furnitureLibraryOpen}
+                title="Toggle furniture library"
+                onclick={() => { furnitureLibraryOpen = !furnitureLibraryOpen; }}
+              >🪑 <span class="ft-label">Furniture</span></button>
               <div class="ft-sep"></div>
               <button
                 class="ft-btn save-btn"
