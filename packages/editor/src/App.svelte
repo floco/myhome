@@ -220,6 +220,30 @@
   let pickerOpen = $state(false);
   const ALL_FLOOR_ID = "__all__";
   let allFloorsMode = $state(false);
+  let ftPos = $state<{ x: number; y: number } | null>(null);
+
+  function startFtDrag(e: MouseEvent): void {
+    e.preventDefault();
+    const el = (e.currentTarget as HTMLElement).closest('.floating-toolbar') as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    const canvasRect = (el.parentElement as HTMLElement).getBoundingClientRect();
+    const initX = rect.left - canvasRect.left;
+    const initY = rect.top - canvasRect.top;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    function onMove(me: MouseEvent): void {
+      ftPos = {
+        x: Math.max(0, Math.min(canvasRect.width - rect.width, initX + me.clientX - startX)),
+        y: Math.max(0, Math.min(canvasRect.height - rect.height, initY + me.clientY - startY)),
+      };
+    }
+    function onUp(): void {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    }
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }
   let navExpanded = $state(false);
   let showNewChoreModal = $state(false);
   let userMenuOpen = $state(false);
@@ -907,7 +931,14 @@
             </div>
           {/if}
           {#if floorStore.loaded && !allFloorsMode}
-            <div class="floating-toolbar">
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+              class="floating-toolbar"
+              style={ftPos ? `left:${ftPos.x}px;top:${ftPos.y}px;right:auto;transform:none` : ''}
+            >
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div class="ft-handle" onmousedown={startFtDrag} title="Drag to reposition">⠿</div>
+              <div class="ft-sep"></div>
               <FloorSwitcher
                 floors={floorStore.floors}
                 currentFloorId={floorStore.currentFloorId}
@@ -927,34 +958,34 @@
               <div class="ft-sep"></div>
               <LayersDropdown {activeLayers} ontoggle={toggleLayer} popoverAlign="left" />
               <button
-                class="icon-btn"
+                class="ft-btn"
                 class:active={pickerOpen}
                 title="Toggle item picker"
                 onclick={() => { pickerOpen = !pickerOpen; }}
-              >📋</button>
+              >📋 <span class="ft-label">Picker</span></button>
               <div class="ft-sep"></div>
               <button
-                class="icon-btn save-btn"
+                class="ft-btn save-btn"
                 class:saved={saveStatus === "saved"}
                 class:save-error={saveStatus === "error"}
                 class:dirty={floorStore.isDirty && saveStatus === "idle"}
                 disabled={saveStatus === "saving"}
                 title={saveTitle}
                 onclick={handleSave}
-              >{saveIcon}</button>
-              <button class="icon-btn" title="Reset view" onclick={() => viewportStore.reset()}>↺</button>
+              >{saveIcon} <span class="ft-label">{saveStatus === 'error' ? 'Error!' : saveStatus === 'saving' ? 'Saving' : saveStatus === 'saved' ? 'Saved' : 'Save'}</span></button>
+              <button class="ft-btn" title="Reset view" onclick={() => viewportStore.reset()}>↺ <span class="ft-label">Reset</span></button>
               <div class="ft-sep"></div>
-              <button class="ft-btn" title="Undo (Ctrl+Z)" disabled={!floorStore.hasUndo} onclick={handleUndo}>↩</button>
-              <button class="ft-btn" title="Redo (Ctrl+Y)" disabled={!floorStore.hasRedo} onclick={handleRedo}>↪</button>
+              <button class="ft-btn" title="Undo (Ctrl+Z)" disabled={!floorStore.hasUndo} onclick={handleUndo}>↩ <span class="ft-label">Undo</span></button>
+              <button class="ft-btn" title="Redo (Ctrl+Y)" disabled={!floorStore.hasRedo} onclick={handleRedo}>↪ <span class="ft-label">Redo</span></button>
               {#if !choreLayerActive}
                 <div class="ft-sep"></div>
-                <button class="ft-btn" title="Select" class:active={toolStore.state.tool === "select"} onclick={() => toolStore.setTool("select")}>🖱</button>
-                <button class="ft-btn" title="Wall" class:active={toolStore.state.tool === "wall"} onclick={() => toolStore.setTool("wall")}>🧱</button>
-                <button class="ft-btn" title="Divider" class:active={toolStore.state.tool === "divider"} onclick={() => toolStore.setTool("divider")}>╌</button>
-                <button class="ft-btn" title="Door" class:active={toolStore.state.tool === "door"} onclick={() => toolStore.setTool("door")}>🚪</button>
-                <button class="ft-btn" title="Window" class:active={toolStore.state.tool === "window"} onclick={() => toolStore.setTool("window")}>🪟</button>
+                <button class="ft-btn" title="Select" class:active={toolStore.state.tool === "select"} onclick={() => toolStore.setTool("select")}>🖱 <span class="ft-label">Select</span></button>
+                <button class="ft-btn" title="Wall" class:active={toolStore.state.tool === "wall"} onclick={() => toolStore.setTool("wall")}>🧱 <span class="ft-label">Wall</span></button>
+                <button class="ft-btn" title="Divider" class:active={toolStore.state.tool === "divider"} onclick={() => toolStore.setTool("divider")}>╌ <span class="ft-label">Divider</span></button>
+                <button class="ft-btn" title="Door" class:active={toolStore.state.tool === "door"} onclick={() => toolStore.setTool("door")}>🚪 <span class="ft-label">Door</span></button>
+                <button class="ft-btn" title="Window" class:active={toolStore.state.tool === "window"} onclick={() => toolStore.setTool("window")}>🪟 <span class="ft-label">Window</span></button>
                 <div class="ft-sep"></div>
-                <button class="ft-btn delete" disabled={!hasSelection} onclick={handleDelete} title="Delete selected (Del)">🗑</button>
+                <button class="ft-btn delete" disabled={!hasSelection} onclick={handleDelete} title="Delete selected (Del)">🗑 <span class="ft-label">Delete</span></button>
               {/if}
             </div>
           {/if}
@@ -1179,18 +1210,27 @@
 
   .floating-toolbar {
     position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    display: flex; flex-direction: column; align-items: stretch; gap: 1px;
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius-md); padding: 6px;
     box-shadow: var(--shadow-md); z-index: 25;
+    user-select: none;
   }
 
+  .ft-handle {
+    text-align: center; cursor: grab; padding: 1px 0;
+    color: var(--text-muted); font-size: 14px; letter-spacing: 3px;
+    opacity: 0.5; border-radius: var(--radius-sm);
+  }
+  .ft-handle:hover { opacity: 1; background: var(--surface-hover); }
+  .ft-handle:active { cursor: grabbing; }
+
   .ft-btn {
-    width: 32px; height: 32px;
+    width: 100%; height: 28px;
     border: none; border-radius: var(--radius-sm); background: transparent;
-    color: var(--text-muted); cursor: pointer; font-size: 15px;
-    display: flex; align-items: center; justify-content: center; padding: 0;
-    flex-shrink: 0;
+    color: var(--text-muted); cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; gap: 5px; padding: 0 6px;
+    flex-shrink: 0; white-space: nowrap;
   }
   .ft-btn:hover:not(:disabled) { background: var(--surface-hover); color: var(--text); }
   .ft-btn.active { background: var(--surface-hover); color: var(--accent); }
@@ -1198,8 +1238,20 @@
   .ft-btn.delete:hover:not(:disabled) { background: var(--surface-hover); color: var(--danger); }
   .ft-btn:disabled { opacity: 0.35; cursor: default; }
 
+  .ft-btn.save-btn { color: var(--success); position: relative; }
+  .ft-btn.save-btn.dirty::after {
+    content: ''; position: absolute; top: 4px; right: 4px;
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent); pointer-events: none;
+  }
+  .ft-btn.save-btn:hover:not(:disabled) { background: var(--surface-hover); }
+  .ft-btn.save-btn.saved { color: var(--success); }
+  .ft-btn.save-btn.save-error { color: var(--danger); }
+
+  .ft-label { font-size: 11px; font-weight: 500; }
+
   .ft-sep {
-    width: 24px; height: 1px; background: var(--border); flex-shrink: 0; margin: 2px 0;
+    height: 1px; background: var(--border); flex-shrink: 0; margin: 2px 0;
   }
 
   .loading {
