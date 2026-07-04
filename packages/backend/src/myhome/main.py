@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from .deps import ROLE_ORDER, get_user_from_request
-from .routes import auth, backup, chores, consumables, costs, ha, homes, house, inventory, kb, settings, svg, works
+from .routes import auth, backup, chores, consumables, costs, ha, homes, house, inventory, kb, mcp_config, settings, svg, works
 
 app = FastAPI(title="MyHome Backend", version="0.1.0")
 
@@ -83,6 +83,7 @@ app.include_router(works.router)
 app.include_router(kb.router)
 app.include_router(backup.router)
 app.include_router(consumables.router)
+app.include_router(mcp_config.router)
 
 
 # ── Static files ──────────────────────────────────────────────────────────
