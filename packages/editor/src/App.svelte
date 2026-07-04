@@ -72,7 +72,13 @@
   const consumableStore = createConsumableStore(getHomeId);
   const authStore = createAuthStore();
 
-  homesStore.loadHomes();
+  $effect(() => {
+    if (authStore.user) {
+      homesStore.loadHomes();
+    } else if (!authStore.checking) {
+      homesStore._reset();
+    }
+  });
 
   $effect(() => {
     const _homeId = homesStore.activeHomeId;
@@ -612,8 +618,10 @@
   }
 
   function handleDragOver(e: DragEvent): void {
-    if (!draggingItemId) return;
-    e.preventDefault();
+    const types = e.dataTransfer?.types ?? [];
+    if (draggingItemId || types.some(t => t.includes("furniture")) || types.includes("pickerid") || types.includes("pickerlayer")) {
+      e.preventDefault();
+    }
   }
 
   function handleDrop(e: DragEvent): void {
