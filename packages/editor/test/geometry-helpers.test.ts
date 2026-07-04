@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { GRID_SIZE, snapToGrid, distance, findSnapPoint, hitTestWall } from "../src/lib/geometry-helpers";
+import { GRID_SIZE, snapToGrid, distance, findSnapPoint, hitTestWall, findAdjacentWall } from "../src/lib/geometry-helpers";
 import type { Wall } from "@myhome/geometry";
 
 describe("GRID_SIZE", () => {
@@ -95,5 +95,36 @@ describe("hitTestWall", () => {
     // cursor at x=1.23 → raw offset=1.23 → snap to 1.2
     const result = hitTestWall({ x: 1.23, y: 0 }, walls, 0.5);
     expect(result!.offset).toBeCloseTo(1.2, 5);
+  });
+});
+
+function makeWall2(id: string, x0: number, y0: number, x1: number, y1: number): Wall {
+  return { id, start: { x: x0, y: y0 }, end: { x: x1, y: y1 }, thickness: 0.2, type: "wall" };
+}
+
+describe("findAdjacentWall", () => {
+  const wA = makeWall2("A", 0, 0, 4, 0);   // goes right, ends at (4,0)
+  const wB = makeWall2("B", 4, 0, 4, 4);   // starts at (4,0), goes down
+  const wC = makeWall2("C", 4, 0, 8, 0);   // also starts at (4,0) — creates ambiguity
+
+  it("returns the single adjacent wall at the end", () => {
+    expect(findAdjacentWall([wA, wB], wA, true)).toBe(wB);
+  });
+
+  it("returns the single adjacent wall at the start", () => {
+    expect(findAdjacentWall([wA, wB], wB, false)).toBe(wA);
+  });
+
+  it("returns null when no wall shares the endpoint", () => {
+    expect(findAdjacentWall([wA, wB], wA, false)).toBeNull();
+  });
+
+  it("returns null when more than one wall shares the endpoint (T/multi-junction)", () => {
+    expect(findAdjacentWall([wA, wB, wC], wA, true)).toBeNull();
+  });
+
+  it("ignores dividers", () => {
+    const divider: Wall = { id: "D", start: { x: 4, y: 0 }, end: { x: 4, y: 4 }, type: "divider" };
+    expect(findAdjacentWall([wA, divider], wA, true)).toBeNull();
   });
 });

@@ -1,4 +1,5 @@
 import type { Point, Wall } from "@myhome/geometry";
+import { pointsEqual } from "@myhome/geometry";
 
 /** World-space grid spacing in meters, matching Spec 1's House.gridSnap default. */
 export const GRID_SIZE = 0.1;
@@ -78,4 +79,23 @@ export function hitTestWall(
   }
 
   return bestWall ? { wall: bestWall, offset: bestOffset } : null;
+}
+
+/**
+ * Returns the single other wall-type wall that shares an endpoint with target.
+ * Returns null if zero or more than one wall shares that endpoint
+ * (T-junction / no connection → fall back to a flat cap).
+ */
+export function findAdjacentWall(walls: Wall[], target: Wall, atEnd: boolean): Wall | null {
+  const P = atEnd ? target.end : target.start;
+  let found: Wall | null = null;
+  let count = 0;
+  for (const w of walls) {
+    if (w.id === target.id || w.type !== "wall") continue;
+    if (pointsEqual(w.start, P) || pointsEqual(w.end, P)) {
+      found = w;
+      count++;
+    }
+  }
+  return count === 1 ? found : null;
 }
