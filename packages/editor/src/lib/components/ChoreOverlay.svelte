@@ -18,6 +18,8 @@
   const R = 18;
   const C = 2 * Math.PI * R;
 
+  const badgeScale = $derived(Math.max(0.35, Math.min(1.2, viewport.zoom / 80)));
+
   function findChore(choreId: string): Chore | undefined {
     return chores.find((c) => c.id === choreId);
   }
@@ -103,7 +105,7 @@
         {@const color = getColor(pct)}
         {@const dashFill = pct * C}
         <g
-          transform="translate({sp.x},{sp.y})"
+          transform="translate({sp.x},{sp.y}) scale({badgeScale})"
           style="pointer-events:{choreMode ? 'all' : 'none'};cursor:{choreMode ? (dragId === a.id ? 'grabbing' : 'grab') : 'default'}"
           onpointerdown={(e) => handlePointerDown(e, a)}
           onpointerup={(e) => handlePointerUp(e, a)}

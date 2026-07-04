@@ -69,6 +69,7 @@
   }
 
   const placedWorks = $derived(works.filter(w => w.placement !== null));
+  const badgeScale = $derived(Math.max(0.35, Math.min(1.2, viewport.zoom / 80)));
 
   function groupStyle(work: Work): string {
     const pe = active ? "all" : "none";
@@ -85,7 +86,7 @@
     {@const emoji = work.categoryId ? (categoryMap.get(work.categoryId)?.emoji ?? "🔧") : "🔧"}
     {#if sp}
       <g
-        transform="translate({sp.x},{sp.y})"
+        transform="translate({sp.x},{sp.y}) scale({badgeScale})"
         style={groupStyle(work)}
         onpointerdown={(e) => handlePointerDown(e, work)}
         onpointerup={(e) => handlePointerUp(e, work)}

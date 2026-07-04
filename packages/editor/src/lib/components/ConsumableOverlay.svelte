@@ -74,6 +74,7 @@
   }
 
   const placedConsumables = $derived(consumables.filter((c) => c.placement !== null));
+  const badgeScale = $derived(Math.max(0.35, Math.min(1.2, viewport.zoom / 80)));
 </script>
 
 <svelte:window onpointermove={handlePointerMove} />
@@ -90,7 +91,7 @@
       {@const minY = -(BAR_H / 2) + 2 + Math.round(BAR_INNER_H * (2 / 3))}
       {@const labelQty = c.quantity % 1 === 0 ? String(c.quantity) : c.quantity.toFixed(1)}
       <g
-        transform="translate({sp.x},{sp.y})"
+        transform="translate({sp.x},{sp.y}) scale({badgeScale})"
         style="pointer-events:{active ? 'all' : 'none'};cursor:{active ? (dragId === c.id ? 'grabbing' : 'grab') : 'default'}"
         onpointerdown={(e) => handlePointerDown(e, c)}
         onpointerup={(e) => handlePointerUp(e, c)}
