@@ -314,12 +314,22 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
       house: house as House,
       floors: floors as Floor[],
     };
-    const resp = await fetch(`/api/homes/${homeId}/house`, {
+    const body = JSON.stringify(doc);
+    let resp = await fetch(`/api/homes/${homeId}/house`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(doc),
+      body,
     });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    if (resp.status === 401) {
+      // Access token expired — try refreshing, then retry once
+      await fetch("/api/auth/refresh", { method: "POST" });
+      resp = await fetch(`/api/homes/${homeId}/house`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
+    }
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     savedGeneration = generation;
   }
 

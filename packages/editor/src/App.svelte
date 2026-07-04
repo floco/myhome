@@ -341,16 +341,20 @@
     saveStatus === "saving" ? "⋯" : saveStatus === "saved" ? "✓" : saveStatus === "error" ? "⚠" : "💾"
   );
   const saveTitle = $derived(
-    saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : saveStatus === "error" ? "Save error!" : "Save"
+    saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : saveStatus === "error" ? `Save error${saveError ? ": " + saveError : ""}` : "Save"
   );
+
+  let saveError = $state<string | null>(null);
 
   async function handleSave(): Promise<void> {
     saveStatus = "saving";
+    saveError = null;
     try {
       await floorStore.save();
       saveStatus = "saved";
       setTimeout(() => { saveStatus = "idle"; }, 2000);
-    } catch {
+    } catch (e) {
+      saveError = e instanceof Error ? e.message : String(e);
       saveStatus = "error";
       setTimeout(() => { saveStatus = "idle"; }, 4000);
     }
