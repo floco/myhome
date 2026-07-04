@@ -155,4 +155,52 @@ describe("InventoryOverlay", () => {
     unmount(comp);
     target.remove();
   });
+
+  it("scales badge group smaller at low zoom (home widget zoom)", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const comp = mount(InventoryOverlay, {
+      target,
+      props: {
+        items: [makeItem()],
+        viewport: { panX: 0, panY: 0, zoom: 20 },
+        active: false,
+        width: 400,
+        height: 240,
+        onclick: vi.fn(),
+        ondragend: vi.fn(),
+      },
+    });
+
+    const g = target.querySelector("svg g");
+    expect(g?.getAttribute("transform")).toContain("scale(0.35)");
+
+    unmount(comp);
+    target.remove();
+  });
+
+  it("does not enlarge badge beyond 1.2x at high zoom", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const comp = mount(InventoryOverlay, {
+      target,
+      props: {
+        items: [makeItem()],
+        viewport: { panX: 0, panY: 0, zoom: 200 },
+        active: false,
+        width: 800,
+        height: 600,
+        onclick: vi.fn(),
+        ondragend: vi.fn(),
+      },
+    });
+
+    const g = target.querySelector("svg g");
+    expect(g?.getAttribute("transform")).toContain("scale(1.2)");
+
+    unmount(comp);
+    target.remove();
+  });
 });

@@ -81,6 +81,7 @@
   }
 
   const placedItems = $derived(items.filter((i) => i.placement !== null));
+  const badgeScale = $derived(Math.max(0.35, Math.min(1.2, viewport.zoom / 80)));
 
   function groupStyle(item: InventoryItem): string {
     const pe = active ? "all" : "none";
@@ -100,7 +101,7 @@
     {@const sp = pinScreen(item)}
     {#if sp}
       <g
-        transform="translate({sp.x},{sp.y})"
+        transform="translate({sp.x},{sp.y}) scale({badgeScale})"
         style={groupStyle(item)}
         onpointerdown={(e) => handlePointerDown(e, item)}
         onpointerup={(e) => handlePointerUp(e, item)}

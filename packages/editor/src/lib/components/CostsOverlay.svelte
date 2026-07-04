@@ -58,6 +58,7 @@
   }
 
   const placedCategories = $derived(categories.filter(c => c.placement !== null));
+  const badgeScale = $derived(Math.max(0.35, Math.min(1.2, viewport.zoom / 80)));
 
   function groupStyle(cat: CostCategory): string {
     const pe = active ? "all" : "none";
@@ -72,7 +73,7 @@
   {#each placedCategories as cat (cat.id)}
     {@const sp = pinScreen(cat)}
     {#if sp}
-      <g transform="translate({sp.x},{sp.y})" style={groupStyle(cat)}
+      <g transform="translate({sp.x},{sp.y}) scale({badgeScale})" style={groupStyle(cat)}
          onpointerdown={(e) => handlePointerDown(e, cat)}
          onpointerup={(e) => handlePointerUp(e, cat)}>
         <text text-anchor="middle" dominant-baseline="central" font-size="26"
