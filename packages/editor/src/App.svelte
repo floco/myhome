@@ -1058,7 +1058,7 @@
             </div>
           {/if}
           {#if furnitureLibraryOpen}
-            <div class="left-panel">
+            <div class="furniture-float">
               <FurnitureLibraryPanel />
             </div>
           {/if}
@@ -1346,9 +1346,13 @@
     display: flex; flex-direction: row; z-index: 20;
   }
 
-  .left-panel {
-    position: absolute; top: 0; left: 0; bottom: 0;
-    display: flex; flex-direction: column; z-index: 20;
+  .furniture-float {
+    position: absolute; left: 8px; top: 8px;
+    max-height: calc(100% - 16px);
+    display: flex; flex-direction: column;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md); z-index: 20;
     overflow: hidden;
   }
 

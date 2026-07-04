@@ -73,9 +73,6 @@
     width: 200px;
     display: flex;
     flex-direction: column;
-    height: 100%;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
     overflow: hidden;
   }
 
