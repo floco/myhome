@@ -258,6 +258,8 @@
 
   const startFtDrag = makeDragHandler('.floating-toolbar', ftPos, (p) => { ftPos = p; });
   const startFpDrag = makeDragHandler('.furniture-float', fpPos, (p) => { fpPos = p; });
+  const startIpDrag = makeDragHandler('.picker-float', null, (p) => { ipPos = p; });
+  let ipPos = $state<{ x: number; y: number } | null>(null);
   let navExpanded = $state(false);
   let showNewChoreModal = $state(false);
   let userMenuOpen = $state(false);
@@ -1053,11 +1055,12 @@
             {/if}
           {/if}
           {#if pickerOpen && pickerLayers.length > 0}
-            <div class="right-panels">
+            <div class="picker-float" style={ipPos ? `left:${ipPos.x}px;top:${ipPos.y}px;right:auto;transform:none` : ''}>
               <ItemPickerPanel
                 layers={pickerLayers}
                 draggingId={draggingItemId}
                 highlightId={pickerHighlightId}
+                onstartdrag={startIpDrag}
                 ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; pickerHighlightId = null; }}
                 ondragend={() => { draggingLayerId = null; draggingItemId = null; }}
               />
@@ -1347,9 +1350,14 @@
     flex: 1; overflow: hidden; position: relative;
   }
 
-  .right-panels {
-    position: absolute; top: 0; right: 56px; bottom: 0;
-    display: flex; flex-direction: row; z-index: 20;
+  .picker-float {
+    position: absolute; right: 120px; top: 50%; transform: translateY(-50%);
+    max-height: min(460px, calc(100% - 16px));
+    display: flex; flex-direction: column;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md); z-index: 20;
+    overflow: hidden;
   }
 
   .furniture-float {
