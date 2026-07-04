@@ -52,6 +52,8 @@
   --canvas-label: #44546b;
   --canvas-draw-preview: #d97f1f;
   --canvas-selected-fill: rgba(17, 17, 17, 0.12);
+  --canvas-furniture-fill: #ede9e0;
+  --canvas-furniture-stroke: #8a7f6e;
 }
 
 [data-theme="dark"] {
@@ -88,4 +90,6 @@
   --canvas-label: #ccddee;
   --canvas-draw-preview: #ffb84d;
   --canvas-selected-fill: rgba(85, 170, 255, 0.15);
+  --canvas-furniture-fill: #2a2822;
+  --canvas-furniture-stroke: #6a5f4e;
 }
