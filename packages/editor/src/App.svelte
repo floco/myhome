@@ -1354,7 +1354,7 @@
 
   .furniture-float {
     position: absolute; right: 120px; top: 50%; transform: translateY(-50%);
-    max-height: min(340px, calc(50% - 8px));
+    max-height: calc(100% - 16px);
     display: flex; flex-direction: column;
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius-md); padding: 0;
