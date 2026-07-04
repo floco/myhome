@@ -384,4 +384,57 @@ describe("Canvas", () => {
     const svg = target.querySelector("svg.canvas");
     expect(svg!.querySelectorAll("line.grid-line")).toHaveLength(0);
   });
+
+  it("renders furniture objects when provided", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const floor = createSampleFloor();
+    const furnitureObjects = [
+      { id: "f1", templateId: "sofa", x: 2, y: 1.5, width: 2.2, height: 0.9, rotation: 0 },
+    ];
+
+    app = mount(Canvas, {
+      target,
+      props: {
+        floor,
+        viewport: { ...DEFAULT_VIEWPORT },
+        width: 800,
+        height: 600,
+        furnitureObjects,
+      },
+    });
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas");
+    const furnitureGroups = svg!.querySelectorAll("g.furniture-object");
+    expect(furnitureGroups).toHaveLength(1);
+  });
+
+  it("shows FurnitureHandles when a furniture object is selected", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const floor = createSampleFloor();
+    const furnitureObjects = [
+      { id: "f1", templateId: "sofa", x: 2, y: 1.5, width: 2.2, height: 0.9, rotation: 0 },
+    ];
+
+    app = mount(Canvas, {
+      target,
+      props: {
+        floor,
+        viewport: { ...DEFAULT_VIEWPORT },
+        width: 800,
+        height: 600,
+        furnitureObjects,
+        selectedFurnitureId: "f1",
+      },
+    });
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas");
+    expect(svg!.querySelectorAll("rect.corner-handle")).toHaveLength(4);
+    expect(svg!.querySelectorAll("circle.rotate-handle")).toHaveLength(1);
+  });
 });
