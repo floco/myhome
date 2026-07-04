@@ -238,3 +238,101 @@ describe("houseStore — save", () => {
     expect(fetchFn).not.toHaveBeenCalled();
   });
 });
+
+describe("houseStore — dirty tracking", () => {
+  it("isDirty is false after init (no homeId)", async () => {
+    vi.stubGlobal("fetch", vi.fn());
+    const store = createHouseStore();
+    await tick();
+    expect(store.isDirty).toBe(false);
+  });
+
+  it("isDirty is false after init from 404", async () => {
+    vi.stubGlobal("fetch", makeFetchStub(404));
+    const store = createHouseStore(getHomeId);
+    await tick();
+    expect(store.isDirty).toBe(false);
+  });
+
+  it("isDirty is false after init from API doc", async () => {
+    vi.stubGlobal("fetch", makeFetchStub(200, makeDoc("f1")));
+    const store = createHouseStore(getHomeId);
+    await tick();
+    expect(store.isDirty).toBe(false);
+  });
+
+  it("isDirty becomes true after addWall", async () => {
+    vi.stubGlobal("fetch", makeFetchStub(404));
+    const store = createHouseStore(getHomeId);
+    await tick();
+    store.addWall({ id: "w1", start: { x: 0, y: 0 }, end: { x: 5, y: 0 }, type: "wall" });
+    expect(store.isDirty).toBe(true);
+  });
+
+  it("isDirty becomes true after addFloor", async () => {
+    vi.stubGlobal("fetch", makeFetchStub(404));
+    const store = createHouseStore(getHomeId);
+    await tick();
+    store.addFloor("Upstairs");
+    expect(store.isDirty).toBe(true);
+  });
+
+  it("isDirty becomes true after updateRoom", async () => {
+    vi.stubGlobal("fetch", makeFetchStub(404));
+    const store = createHouseStore(getHomeId);
+    await tick();
+    const roomId = store.floor.rooms[0]?.id;
+    if (roomId) store.updateRoom(roomId, { label: "Kitchen" });
+    expect(store.isDirty).toBe(true);
+  });
+
+  it("isDirty becomes false after save()", async () => {
+    const fetchFn = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 404, statusText: "Not Found", json: async () => undefined })
+      .mockResolvedValueOnce({ ok: true, status: 200, statusText: "OK", json: async () => undefined });
+    vi.stubGlobal("fetch", fetchFn);
+    const store = createHouseStore(getHomeId);
+    await tick();
+    store.addWall({ id: "w1", start: { x: 0, y: 0 }, end: { x: 5, y: 0 }, type: "wall" });
+    expect(store.isDirty).toBe(true);
+    await store.save();
+    expect(store.isDirty).toBe(false);
+  });
+
+  it("isDirty becomes true again after undo", async () => {
+    const fetchFn = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 404, statusText: "Not Found", json: async () => undefined })
+      .mockResolvedValueOnce({ ok: true, status: 200, statusText: "OK", json: async () => undefined });
+    vi.stubGlobal("fetch", fetchFn);
+    const store = createHouseStore(getHomeId);
+    await tick();
+    store.addWall({ id: "w1", start: { x: 0, y: 0 }, end: { x: 5, y: 0 }, type: "wall" });
+    await store.save();
+    expect(store.isDirty).toBe(false);
+    store.undo();
+    expect(store.isDirty).toBe(true);
+  });
+
+  it("generation increments on each distinct mutation", async () => {
+    vi.stubGlobal("fetch", makeFetchStub(404));
+    const store = createHouseStore(getHomeId);
+    await tick();
+    const g0 = store.generation;
+    store.addFloor("F2");
+    expect(store.generation).toBe(g0 + 1);
+    store.addWall({ id: "w1", start: { x: 0, y: 0 }, end: { x: 5, y: 0 }, type: "wall" });
+    expect(store.generation).toBe(g0 + 2);
+    store.undo();
+    expect(store.generation).toBe(g0 + 3);
+  });
+
+  it("moveSharedPoint with skipHistory still increments generation", async () => {
+    vi.stubGlobal("fetch", makeFetchStub(404));
+    const store = createHouseStore(getHomeId);
+    await tick();
+    store.addWall({ id: "w1", start: { x: 0, y: 0 }, end: { x: 5, y: 0 }, type: "wall" });
+    const g1 = store.generation;
+    store.moveSharedPoint({ x: 5, y: 0 }, { x: 6, y: 0 }, { skipHistory: true });
+    expect(store.generation).toBe(g1 + 1);
+  });
+});

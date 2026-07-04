@@ -26,6 +26,8 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
   let house = $state<House>(DEFAULT_HOUSE);
   let loaded = $state(false);
   let loadError = $state<string | null>(null);
+  let generation = $state(0);
+  let savedGeneration = $state(0);
 
   const undoStack: HouseState[] = [];
   const redoStack: HouseState[] = [];
@@ -49,6 +51,7 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
     redoStack.length = 0;
     undoCount = undoStack.length;
     redoCount = 0;
+    generation++;
   }
 
   function undo(): void {
@@ -58,6 +61,7 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
     applyState(prev);
     undoCount = undoStack.length;
     redoCount = redoStack.length;
+    generation++;
   }
 
   function redo(): void {
@@ -67,6 +71,7 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
     applyState(next);
     undoCount = undoStack.length;
     redoCount = redoStack.length;
+    generation++;
   }
 
   function currentFloor(): Floor {
@@ -143,6 +148,7 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
 
   function moveSharedPoint(from: Point, to: Point, opts?: { skipHistory?: boolean }): void {
     if (!opts?.skipHistory) saveSnapshot();
+    else generation++;
     for (const wall of currentFloor().walls) {
       if (pointsEqual(wall.start, from)) wall.start = to;
       if (pointsEqual(wall.end, from)) wall.end = to;
@@ -169,6 +175,7 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
     const opening = currentFloor().openings.find((o) => o.id === id);
     if (!opening) return;
     if (!opts?.skipHistory) saveSnapshot();
+    else generation++;
     if (patch.offset !== undefined) opening.offset = patch.offset;
     if (patch.width !== undefined) opening.width = patch.width;
     if (patch.swing !== undefined) opening.swing = patch.swing;
@@ -226,6 +233,8 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
       loadError = e instanceof Error ? e.message : String(e);
     } finally {
       loaded = true;
+      generation = 0;
+      savedGeneration = 0;
     }
   }
 
@@ -243,6 +252,7 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
       body: JSON.stringify(doc),
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    savedGeneration = generation;
   }
 
   // Seed room detection on startup for sample floors
@@ -263,6 +273,8 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
     get hasRedo() { return redoCount > 0; },
     get loaded() { return loaded; },
     get loadError() { return loadError; },
+    get isDirty() { return generation !== savedGeneration; },
+    get generation() { return generation; },
     saveSnapshot,
     undo,
     redo,

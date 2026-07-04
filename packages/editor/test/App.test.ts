@@ -434,3 +434,74 @@ describe("App — item picker visibility across floor modes", () => {
 // They need an isolated JSDOM environment to avoid a Svelte 5 reactive-context
 // issue that only surfaces when HomePage is first rendered after many prior
 // App mounts within the same test file environment.
+
+describe("App — autosave", () => {
+  let target: HTMLElement;
+  let app: ReturnType<typeof mount> | undefined;
+
+  afterEach(() => {
+    if (app) {
+      unmount(app);
+      app = undefined;
+    }
+    target?.remove();
+    vi.unstubAllGlobals();
+  });
+
+  it("save button gets dirty class after a wall mutation", async () => {
+    stubFetch404();
+    target = document.createElement("div");
+    document.body.appendChild(target);
+    app = await mountAndLoad(target, "#/plan");
+
+    const saveBtn = target.querySelector(".save-btn") as HTMLButtonElement;
+    expect(saveBtn.classList.contains("dirty")).toBe(false);
+
+    const wallBtn = Array.from(target.querySelectorAll(".toolbar button")).find(
+      (b) => (b as HTMLButtonElement).title === "Wall"
+    ) as HTMLButtonElement;
+    wallBtn.click();
+    flushSync();
+
+    // Use the same event pattern as the existing wall-drawing tests.
+    // Screen coords: world * 100 + (400, 300) based on default viewport.
+    const svg = target.querySelector("svg.canvas")!;
+    const p1 = { x: 10 * 100 + 400, y: 10 * 100 + 300 };
+    const p2 = { x: 12 * 100 + 400, y: 10 * 100 + 300 };
+
+    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: p1.x, clientY: p1.y }));
+    flushSync();
+    svg.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: p1.x, clientY: p1.y }));
+    flushSync();
+    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: p2.x, clientY: p2.y }));
+    flushSync();
+    svg.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: p2.x, clientY: p2.y }));
+    flushSync();
+
+    expect(saveBtn.classList.contains("dirty")).toBe(true);
+  });
+
+  it("Ctrl+S triggers save on floor plan page", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      if (url === "/api/auth/me") {
+        return Promise.resolve({ ok: true, status: 200, statusText: "OK", json: async () => ({ id: "u1", username: "admin", role: "admin" }) });
+      }
+      if (opts?.method === "PUT") {
+        return Promise.resolve({ ok: true, status: 200, statusText: "OK", json: async () => undefined });
+      }
+      return Promise.resolve({ ok: false, status: 404, statusText: "Not Found", json: async () => undefined });
+    }));
+
+    target = document.createElement("div");
+    document.body.appendChild(target);
+    app = await mountAndLoad(target, "#/plan");
+
+    const saveBtn = target.querySelector(".save-btn") as HTMLButtonElement;
+    expect(saveBtn.title).toBe("Save");
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "s", ctrlKey: true, bubbles: true }));
+    flushSync();
+
+    expect(saveBtn.title).toBe("Saving…");
+  });
+});
