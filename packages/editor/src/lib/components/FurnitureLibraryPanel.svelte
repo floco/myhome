@@ -45,6 +45,9 @@
           <div class="category-items">
             {#each items as template}
               <!-- svelte-ignore a11y_no_static_element_interactions -->
+              {@const ar = template.defaultWidth / template.defaultHeight}
+              {@const tw = ar >= 1 ? 48 : Math.max(20, 48 * ar)}
+              {@const th = ar <= 1 ? 48 : Math.max(20, 48 / ar)}
               <div
                 class="furniture-item"
                 draggable="true"
@@ -52,7 +55,7 @@
                 ondragstart={(e) => onDragStart(e, template.id)}
                 title={template.label}
               >
-                <svg viewBox="0 0 100 100" width="44" height="44">
+                <svg viewBox="0 0 100 100" width={tw} height={th}>
                   {@html template.svgContent}
                 </svg>
                 <span class="item-label">{template.label}</span>
@@ -67,7 +70,7 @@
 
 <style>
   .furniture-panel {
-    width: 180px;
+    width: 200px;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -113,8 +116,8 @@
   }
 
   .category-items {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 4px;
     padding: 2px var(--space-2);
   }
@@ -123,12 +126,13 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-end;
     gap: 2px;
     padding: 4px;
     border-radius: var(--radius-sm);
     cursor: grab;
     user-select: none;
-    width: 68px;
+    min-height: 64px;
   }
 
   .furniture-item:hover {
@@ -146,7 +150,7 @@
     color: var(--text-muted);
     text-align: center;
     line-height: 1.2;
-    max-width: 60px;
+    width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

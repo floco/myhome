@@ -39,12 +39,13 @@
     { key: "sw" as Corner, ...rot(-hw,  hh) },
   ]);
 
-  // Rotate handle: top-center then move further "up" along object's local -y axis
+  // Rotate handle: top-center then move further "up" along object's local -y axis.
+  // The local "up" unit vector in screen space is (+sin θ, -cos θ) for clockwise rotation.
   const rotHandle = $derived((() => {
     const topCenter = rot(0, -hh);
     const rad = (object.rotation * Math.PI) / 180;
     return {
-      x: topCenter.x - Math.sin(rad) * ROTATE_OFFSET,
+      x: topCenter.x + Math.sin(rad) * ROTATE_OFFSET,
       y: topCenter.y - Math.cos(rad) * ROTATE_OFFSET,
     };
   })());
@@ -77,9 +78,9 @@
   class="rotate-handle"
   cx={rotHandle.x}
   cy={rotHandle.y}
-  r={HANDLE_SIZE / 2}
+  r={HANDLE_SIZE / 2 + 2}
   onmousedown={handleRotateDown}
-/>
+><title>Rotate</title></circle>
 
 <style>
   .corner-handle {
@@ -91,9 +92,9 @@
   }
 
   .rotate-handle {
-    fill: white;
-    stroke: #1a73e8;
+    fill: #1a73e8;
+    stroke: white;
     stroke-width: 1.5;
-    cursor: crosshair;
+    cursor: alias;
   }
 </style>
