@@ -229,29 +229,35 @@
   const ALL_FLOOR_ID = "__all__";
   let allFloorsMode = $state(false);
   let ftPos = $state<{ x: number; y: number } | null>(null);
+  let fpPos = $state<{ x: number; y: number } | null>(null);
 
-  function startFtDrag(e: MouseEvent): void {
-    e.preventDefault();
-    const el = (e.currentTarget as HTMLElement).closest('.floating-toolbar') as HTMLElement;
-    const rect = el.getBoundingClientRect();
-    const canvasRect = (el.parentElement as HTMLElement).getBoundingClientRect();
-    const initX = rect.left - canvasRect.left;
-    const initY = rect.top - canvasRect.top;
-    const startX = e.clientX;
-    const startY = e.clientY;
-    function onMove(me: MouseEvent): void {
-      ftPos = {
-        x: Math.max(0, Math.min(canvasRect.width - rect.width, initX + me.clientX - startX)),
-        y: Math.max(0, Math.min(canvasRect.height - rect.height, initY + me.clientY - startY)),
-      };
-    }
-    function onUp(): void {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    }
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+  function makeDragHandler(selector: string, pos: { x: number; y: number } | null, setPos: (p: { x: number; y: number }) => void) {
+    return function startDrag(e: MouseEvent): void {
+      e.preventDefault();
+      const el = (e.currentTarget as HTMLElement).closest(selector) as HTMLElement;
+      const rect = el.getBoundingClientRect();
+      const canvasRect = (el.parentElement as HTMLElement).getBoundingClientRect();
+      const initX = rect.left - canvasRect.left;
+      const initY = rect.top - canvasRect.top;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      function onMove(me: MouseEvent): void {
+        setPos({
+          x: Math.max(0, Math.min(canvasRect.width - rect.width, initX + me.clientX - startX)),
+          y: Math.max(0, Math.min(canvasRect.height - rect.height, initY + me.clientY - startY)),
+        });
+      }
+      function onUp(): void {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      }
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    };
   }
+
+  const startFtDrag = makeDragHandler('.floating-toolbar', ftPos, (p) => { ftPos = p; });
+  const startFpDrag = makeDragHandler('.furniture-float', fpPos, (p) => { fpPos = p; });
   let navExpanded = $state(false);
   let showNewChoreModal = $state(false);
   let userMenuOpen = $state(false);
@@ -1058,8 +1064,8 @@
             </div>
           {/if}
           {#if furnitureLibraryOpen}
-            <div class="furniture-float">
-              <FurnitureLibraryPanel />
+            <div class="furniture-float" style={fpPos ? `left:${fpPos.x}px;top:${fpPos.y}px;right:auto;transform:none` : ''}>
+              <FurnitureLibraryPanel onstartdrag={startFpDrag} />
             </div>
           {/if}
           {#if floorStore.loaded && !allFloorsMode}
@@ -1347,11 +1353,11 @@
   }
 
   .furniture-float {
-    position: absolute; left: 8px; top: 8px;
-    max-height: calc(100% - 16px);
+    position: absolute; right: 120px; top: 50%; transform: translateY(-50%);
+    max-height: min(340px, calc(50% - 8px));
     display: flex; flex-direction: column;
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-md); padding: 0;
     box-shadow: var(--shadow-md); z-index: 20;
     overflow: hidden;
   }

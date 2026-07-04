@@ -7,6 +7,8 @@
     type FurnitureTemplate,
   } from "../furnitureLibrary";
 
+  let { onstartdrag }: { onstartdrag?: (e: MouseEvent) => void } = $props();
+
   let search = $state("");
 
   const filtered = $derived(
@@ -27,7 +29,12 @@
 </script>
 
 <div class="furniture-panel">
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="panel-header">
+    {#if onstartdrag}
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="drag-handle" onmousedown={onstartdrag} title="Drag to reposition">⠿</div>
+    {/if}
     <input
       type="search"
       placeholder="Search objects..."
@@ -77,13 +84,31 @@
   }
 
   .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     padding: var(--space-2);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
   }
 
+  .drag-handle {
+    cursor: grab;
+    color: var(--text-muted);
+    font-size: 14px;
+    letter-spacing: 3px;
+    opacity: 0.5;
+    padding: 2px 0;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    user-select: none;
+  }
+  .drag-handle:hover { opacity: 1; background: var(--surface-hover); }
+  .drag-handle:active { cursor: grabbing; }
+
   .panel-header input {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     box-sizing: border-box;
     padding: 4px 8px;
     border: 1px solid var(--border);
