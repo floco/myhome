@@ -13,6 +13,7 @@ export const SAMPLE_FLOOR: Floor = {
   ],
   openings: [],
   rooms: [],
+  furnitureObjects: [],
 };
 
 export function createSampleFloor(): Floor {

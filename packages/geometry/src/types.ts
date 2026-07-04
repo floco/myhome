@@ -45,6 +45,16 @@ export interface Room {
   areaM2: number;
 }
 
+export interface FurnitureObject {
+  id: string;
+  templateId: string;
+  x: number;       // world coords, meters, center of object
+  y: number;
+  width: number;   // meters
+  height: number;  // meters
+  rotation: number; // degrees, clockwise
+}
+
 export interface Floor {
   id: string;
   name: string;
@@ -52,6 +62,7 @@ export interface Floor {
   walls: Wall[];
   openings: Opening[];
   rooms: Room[];
+  furnitureObjects?: FurnitureObject[];
 }
 
 export interface House {
