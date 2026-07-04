@@ -75,7 +75,7 @@
     flex-direction: column;
     height: 100%;
     background: var(--surface);
-    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
     overflow: hidden;
   }
 

@@ -102,7 +102,8 @@
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <div class="map-area" bind:clientWidth={mapWidth} bind:clientHeight={mapHeight} onclick={onnavigate}>
       {#if currentFloor}
-        <Canvas floor={currentFloor} {viewport} width={mapWidth} height={mapHeight} showGrid={false} />
+        <Canvas floor={currentFloor} {viewport} width={mapWidth} height={mapHeight} showGrid={false}
+          furnitureObjects={currentFloor.furnitureObjects ?? []} />
         {#if activeLayers.has("chores")}
           <ChoreOverlay
             chores={choreStore.chores}

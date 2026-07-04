@@ -1046,20 +1046,20 @@
               </div>
             {/if}
           {/if}
-          {#if pickerOpen && pickerLayers.length > 0 || furnitureLibraryOpen}
+          {#if pickerOpen && pickerLayers.length > 0}
             <div class="right-panels">
-              {#if pickerOpen && pickerLayers.length > 0}
-                <ItemPickerPanel
-                  layers={pickerLayers}
-                  draggingId={draggingItemId}
-                  highlightId={pickerHighlightId}
-                  ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; pickerHighlightId = null; }}
-                  ondragend={() => { draggingLayerId = null; draggingItemId = null; }}
-                />
-              {/if}
-              {#if furnitureLibraryOpen}
-                <FurnitureLibraryPanel />
-              {/if}
+              <ItemPickerPanel
+                layers={pickerLayers}
+                draggingId={draggingItemId}
+                highlightId={pickerHighlightId}
+                ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; pickerHighlightId = null; }}
+                ondragend={() => { draggingLayerId = null; draggingItemId = null; }}
+              />
+            </div>
+          {/if}
+          {#if furnitureLibraryOpen}
+            <div class="left-panel">
+              <FurnitureLibraryPanel />
             </div>
           {/if}
           {#if floorStore.loaded && !allFloorsMode}
@@ -1344,6 +1344,12 @@
   .right-panels {
     position: absolute; top: 0; right: 56px; bottom: 0;
     display: flex; flex-direction: row; z-index: 20;
+  }
+
+  .left-panel {
+    position: absolute; top: 0; left: 0; bottom: 0;
+    display: flex; flex-direction: column; z-index: 20;
+    overflow: hidden;
   }
 
   .floating-toolbar {
