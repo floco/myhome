@@ -40,4 +40,19 @@ describe("NavMenu", () => {
     unmount(comp);
     target.remove();
   });
+
+  it("does not render a HomesSwitcher inside the nav", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(NavMenu, {
+      target,
+      props: { currentRoute: "#/", expanded: true, onclose: vi.fn() },
+    });
+
+    expect(target.querySelector(".switcher")).toBeNull();
+    expect(target.querySelector(".topbar-current")).toBeNull();
+
+    unmount(comp);
+    target.remove();
+  });
 });
