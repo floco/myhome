@@ -1,10 +1,11 @@
 <script lang="ts">
-  import type { Floor, Point } from "@myhome/geometry";
+  import type { Floor, Point, FurnitureObject } from "@myhome/geometry";
   import type { ViewportState } from "../viewportStore.svelte.ts";
   import type { ToolType } from "../toolStore.svelte";
   import { computeSnap, allEndpoints } from "../drawingTool";
   import { SNAP_RADIUS_PX, hitTestWall, HIT_RADIUS_PX, findAdjacentWall } from "../geometry-helpers";
   import { worldToScreen } from "../viewportStore.svelte.ts";
+  import { getTemplate } from "../furnitureLibrary";
   import Grid from "./Grid.svelte";
   import WallShape from "./WallShape.svelte";
   import DividerShape from "./DividerShape.svelte";
@@ -12,6 +13,8 @@
   import DrawPreview from "./DrawPreview.svelte";
   import SelectionHandles from "./SelectionHandles.svelte";
   import OpeningShape from "./OpeningShape.svelte";
+  import FurnitureShape from "./FurnitureShape.svelte";
+  import FurnitureHandles from "./FurnitureHandles.svelte";
 
   let {
     floor,
@@ -21,10 +24,16 @@
     selectedId = null,
     selectedRoomId = null,
     selectedOpeningId = null,
+    selectedFurnitureId = null,
+    furnitureObjects = [],
     onselect,
     onselectroom,
     onselectopening,
     ondragopeninghandlestart,
+    onselectfurniture,
+    onmovefurniturestart,
+    onresizefurniturestart,
+    onrotatefurniturestart,
     tool = "select",
     showGrid = true,
     drawPoints = [],
@@ -45,10 +54,16 @@
     selectedId?: string | null;
     selectedRoomId?: string | null;
     selectedOpeningId?: string | null;
+    selectedFurnitureId?: string | null;
+    furnitureObjects?: FurnitureObject[];
     onselect?: (id: string | null) => void;
     onselectroom?: (id: string | null) => void;
     onselectopening?: (id: string | null) => void;
     ondragopeninghandlestart?: (openingId: string, side: "start" | "end") => void;
+    onselectfurniture?: (id: string | null) => void;
+    onmovefurniturestart?: (id: string, e: MouseEvent) => void;
+    onresizefurniturestart?: (id: string, corner: string, e: MouseEvent) => void;
+    onrotatefurniturestart?: (id: string, e: MouseEvent) => void;
     tool?: ToolType;
     showGrid?: boolean;
     drawPoints?: Point[];
@@ -175,6 +190,7 @@
       onselect?.(null);
       onselectopening?.(null);
       onselectroom?.(null);
+      onselectfurniture?.(null);
       return;
     }
     if (tool === "door" || tool === "window") {
@@ -213,6 +229,31 @@
       onselectroom={(id) => onselectroom?.(id)}
     />
   {/each}
+  {#each furnitureObjects as object (object.id)}
+    {@const template = getTemplate(object.templateId)}
+    {#if template}
+      <FurnitureShape
+        {object}
+        {template}
+        {viewport}
+        {tool}
+        selected={object.id === selectedFurnitureId}
+        onselect={(id) => onselectfurniture?.(id)}
+        onbodymousedown={(id, e) => { e.stopPropagation(); onmovefurniturestart?.(id, e); }}
+      />
+    {/if}
+  {/each}
+  {#if selectedFurnitureId}
+    {@const selObj = furnitureObjects.find((f) => f.id === selectedFurnitureId)}
+    {#if selObj}
+      <FurnitureHandles
+        object={selObj}
+        {viewport}
+        onresizestart={(id, corner, e) => onresizefurniturestart?.(id, corner, e)}
+        onrotatestart={(id, e) => onrotatefurniturestart?.(id, e)}
+      />
+    {/if}
+  {/if}
   {#each floor.walls as wall (wall.id)}
     {#if wall.type === "wall"}
       <WallShape
