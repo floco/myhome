@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { segmentsIntersection, pointOnSegmentInterior } from "../src/geometry";
+import { segmentsIntersection, pointOnSegmentInterior, computeMiterCorners } from "../src/geometry";
 import {
   polygonSignedArea,
   polygonArea,
@@ -140,5 +140,55 @@ describe("pointInPolygon", () => {
 
   it("returns false for a point outside the polygon", () => {
     expect(pointInPolygon({ x: 5, y: 5 }, square)).toBe(false);
+  });
+});
+
+describe("computeMiterCorners", () => {
+  const P = { x: 0, y: 0 };
+
+  it("90° corner: wall going right meeting wall going up (decreasing y)", () => {
+    const result = computeMiterCorners(P, { x: 1, y: 0 }, 0.1, { x: 0, y: -1 }, 0.1);
+    expect(result).not.toBeNull();
+    expect(result!.plus.x).toBeCloseTo(0.1);
+    expect(result!.plus.y).toBeCloseTo(0.1);
+    expect(result!.minus.x).toBeCloseTo(-0.1);
+    expect(result!.minus.y).toBeCloseTo(-0.1);
+  });
+
+  it("90° corner: different thicknesses", () => {
+    const result = computeMiterCorners(P, { x: 1, y: 0 }, 0.1, { x: 0, y: -1 }, 0.15);
+    expect(result).not.toBeNull();
+    expect(result!.plus.x).toBeCloseTo(0.15);
+    expect(result!.plus.y).toBeCloseTo(0.1);
+    expect(result!.minus.x).toBeCloseTo(-0.15);
+    expect(result!.minus.y).toBeCloseTo(-0.1);
+  });
+
+  it("parallel walls return null", () => {
+    const result = computeMiterCorners(P, { x: 1, y: 0 }, 0.1, { x: 1, y: 0 }, 0.1);
+    expect(result).toBeNull();
+  });
+
+  it("anti-parallel walls (180°) return null", () => {
+    const result = computeMiterCorners(P, { x: 1, y: 0 }, 0.1, { x: -1, y: 0 }, 0.1);
+    expect(result).toBeNull();
+  });
+
+  it("45° corner returns a miter further from P than 90°", () => {
+    const s = Math.SQRT2 / 2;
+    const result = computeMiterCorners(P, { x: 1, y: 0 }, 0.1, { x: s, y: -s }, 0.1);
+    expect(result).not.toBeNull();
+    expect(Math.hypot(result!.plus.x - P.x, result!.plus.y - P.y)).toBeGreaterThan(0.1);
+  });
+
+  it("nearly straight wall deflection (170°) returns null due to spike limit", () => {
+    // Two walls forming a ~170° angle (almost straight through) would produce a
+    // miter spike far from P — fall back to flat cap.
+    const angle = (170 * Math.PI) / 180;
+    const result = computeMiterCorners(
+      P, { x: 1, y: 0 }, 0.1,
+      { x: Math.cos(angle), y: Math.sin(angle) }, 0.1,
+    );
+    expect(result).toBeNull();
   });
 });
