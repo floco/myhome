@@ -492,12 +492,12 @@
     const obj = floorStore.currentFurniture.find((f) => f.id === id);
     if (!obj) return;
     floorStore.saveSnapshot();
-    const rect = (e.currentTarget as SVGSVGElement | null)
-      ?? (e.target as SVGElement).closest("svg");
-    if (!rect) return;
-    const svgRect = (rect as Element).getBoundingClientRect?.() ?? { left: 0, top: 0 };
-    const cursorX = (e.clientX - (svgRect as DOMRect).left - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
-    const cursorY = (e.clientY - (svgRect as DOMRect).top - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
+    // e.target is an SVG child element; ownerSVGElement gives the root <svg>
+    const svgEl = (e.target as SVGElement).ownerSVGElement;
+    if (!svgEl) return;
+    const svgRect = svgEl.getBoundingClientRect();
+    const cursorX = (e.clientX - svgRect.left - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
+    const cursorY = (e.clientY - svgRect.top - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
     furnitureDrag = { type: "move", id, startObjX: obj.x, startObjY: obj.y, startCursorX: cursorX, startCursorY: cursorY };
   }
 
