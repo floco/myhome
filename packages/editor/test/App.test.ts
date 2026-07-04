@@ -32,7 +32,7 @@ function stubFetch404() {
 
 /** Find a toolbar button by its title attribute */
 function toolbarBtn(target: HTMLElement, title: string): HTMLButtonElement {
-  return Array.from(target.querySelectorAll(".toolbar button")).find(
+  return Array.from(target.querySelectorAll(".floating-toolbar button")).find(
     (b) => (b as HTMLButtonElement).title === title,
   ) as HTMLButtonElement;
 }
@@ -74,7 +74,7 @@ describe("App", () => {
 
     expect(target.querySelector(".app-title")?.textContent).toBe("My Home");
 
-    const buttons = Array.from(target.querySelectorAll(".toolbar button"));
+    const buttons = Array.from(target.querySelectorAll(".floating-toolbar .ft-btn"));
     const titles = buttons.map((b) => (b as HTMLButtonElement).title);
     expect(titles).toEqual(["Undo (Ctrl+Z)", "Redo (Ctrl+Y)", "Select", "Wall", "Divider", "Door", "Window", "Delete selected (Del)"]);
 
@@ -417,8 +417,10 @@ describe("App — item picker visibility across floor modes", () => {
     flushSync();
     expect(target.querySelector(".right-panels")).not.toBeNull();
 
-    // Switch to the "All" floor — the picker must stay visible so chores can
-    // still be dragged onto the house-wide assignment area.
+    // Switch to the "All" floor via the compact FloorSwitcher in the floating toolbar.
+    (target.querySelector('.compact-btn') as HTMLButtonElement).click();
+    await tick();
+    flushSync();
     (target.querySelector('button[title="House-wide assignments — drag chores here"]') as HTMLButtonElement).click();
     await tick();
     flushSync();
@@ -457,7 +459,7 @@ describe("App — autosave", () => {
     const saveBtn = target.querySelector(".save-btn") as HTMLButtonElement;
     expect(saveBtn.classList.contains("dirty")).toBe(false);
 
-    const wallBtn = Array.from(target.querySelectorAll(".toolbar button")).find(
+    const wallBtn = Array.from(target.querySelectorAll(".floating-toolbar .ft-btn")).find(
       (b) => (b as HTMLButtonElement).title === "Wall"
     ) as HTMLButtonElement;
     wallBtn.click();

@@ -584,67 +584,14 @@
 
     <span class="app-title">My Home</span>
 
+    <span class="spacer"></span>
+    <HomesSwitcher topbar={true} />
     <button
       class="icon-btn theme-toggle"
       title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
       onclick={handleToggleTheme}
     >{theme === "light" ? "🌙" : "☀️"}</button>
-
-    {#if isFloorPlan}
-      <FloorSwitcher
-        floors={floorStore.floors}
-        currentFloorId={allFloorsMode ? ALL_FLOOR_ID : floorStore.currentFloorId}
-        onswitchfloor={(id) => {
-          if (id === ALL_FLOOR_ID) { allFloorsMode = true; return; }
-          allFloorsMode = false;
-          floorStore.switchFloor(id);
-          toolStore.select(null);
-          toolStore.selectRoom(null);
-          toolStore.selectOpening(null);
-        }}
-        onaddfloor={(name) => floorStore.addFloor(name)}
-        onrenamefloor={(id, name) => floorStore.renameFloor(id, name)}
-        onremovefloor={(id) => floorStore.removeFloor(id)}
-      />
-
-      <span class="spacer"></span>
-
-      {#if !choreLayerActive}
-        <div class="toolbar">
-          <button title="Undo (Ctrl+Z)" disabled={!floorStore.hasUndo} onclick={handleUndo}>↩</button>
-          <button title="Redo (Ctrl+Y)" disabled={!floorStore.hasRedo} onclick={handleRedo}>↪</button>
-          <span class="sep"></span>
-          <button title="Select" class:active={toolStore.state.tool === "select"} onclick={() => toolStore.setTool("select")}>🖱</button>
-          <button title="Wall" class:active={toolStore.state.tool === "wall"} onclick={() => toolStore.setTool("wall")}>🧱</button>
-          <button title="Divider" class:active={toolStore.state.tool === "divider"} onclick={() => toolStore.setTool("divider")}>╌</button>
-          <button title="Door" class:active={toolStore.state.tool === "door"} onclick={() => toolStore.setTool("door")}>🚪</button>
-          <button title="Window" class:active={toolStore.state.tool === "window"} onclick={() => toolStore.setTool("window")}>🪟</button>
-          <span class="sep"></span>
-          <button title="Delete selected (Del)" class="delete" disabled={!hasSelection} onclick={handleDelete}>🗑</button>
-        </div>
-      {/if}
-
-      <span class="topbar-sep"></span>
-
-      <LayersDropdown {activeLayers} ontoggle={toggleLayer} />
-      <button
-        class="icon-btn"
-        class:active={pickerOpen}
-        title="Toggle item picker"
-        onclick={() => { pickerOpen = !pickerOpen; }}
-      >📋</button>
-      <button
-        class="icon-btn save-btn"
-        class:saved={saveStatus === "saved"}
-        class:save-error={saveStatus === "error"}
-        class:dirty={floorStore.isDirty && saveStatus === "idle"}
-        disabled={saveStatus === "saving"}
-        title={saveTitle}
-        onclick={handleSave}
-      >{saveIcon}</button>
-      <button class="icon-btn" title="Reset view" onclick={() => viewportStore.reset()}>↺</button>
-      <span class="topbar-sep"></span>
-    {/if}
+    <span class="topbar-sep"></span>
 
     <div class="user-menu-wrap">
       <button
@@ -674,7 +621,7 @@
   </header>
 
   <div class="workspace">
-    <NavMenu {currentRoute} expanded={navExpanded} onclose={() => { navExpanded = false; }} onexpand={() => { navExpanded = true; }} />
+    <NavMenu {currentRoute} expanded={navExpanded} onclose={() => { navExpanded = false; }} />
 
     <div class="content">
       {#if homesStore.loaded && homesStore.homes.length === 0}
@@ -959,6 +906,58 @@
               />
             </div>
           {/if}
+          {#if floorStore.loaded && !allFloorsMode}
+            <div class="floating-toolbar">
+              <FloorSwitcher
+                floors={floorStore.floors}
+                currentFloorId={floorStore.currentFloorId}
+                onswitchfloor={(id) => {
+                  if (id === ALL_FLOOR_ID) { allFloorsMode = true; return; }
+                  allFloorsMode = false;
+                  floorStore.switchFloor(id);
+                  toolStore.select(null);
+                  toolStore.selectRoom(null);
+                  toolStore.selectOpening(null);
+                }}
+                onaddfloor={(name) => floorStore.addFloor(name)}
+                onrenamefloor={(id, name) => floorStore.renameFloor(id, name)}
+                onremovefloor={(id) => floorStore.removeFloor(id)}
+                compact={true}
+              />
+              <div class="ft-sep"></div>
+              <LayersDropdown {activeLayers} ontoggle={toggleLayer} popoverAlign="left" />
+              <button
+                class="icon-btn"
+                class:active={pickerOpen}
+                title="Toggle item picker"
+                onclick={() => { pickerOpen = !pickerOpen; }}
+              >📋</button>
+              <div class="ft-sep"></div>
+              <button
+                class="icon-btn save-btn"
+                class:saved={saveStatus === "saved"}
+                class:save-error={saveStatus === "error"}
+                class:dirty={floorStore.isDirty && saveStatus === "idle"}
+                disabled={saveStatus === "saving"}
+                title={saveTitle}
+                onclick={handleSave}
+              >{saveIcon}</button>
+              <button class="icon-btn" title="Reset view" onclick={() => viewportStore.reset()}>↺</button>
+              <div class="ft-sep"></div>
+              <button class="ft-btn" title="Undo (Ctrl+Z)" disabled={!floorStore.hasUndo} onclick={handleUndo}>↩</button>
+              <button class="ft-btn" title="Redo (Ctrl+Y)" disabled={!floorStore.hasRedo} onclick={handleRedo}>↪</button>
+              {#if !choreLayerActive}
+                <div class="ft-sep"></div>
+                <button class="ft-btn" title="Select" class:active={toolStore.state.tool === "select"} onclick={() => toolStore.setTool("select")}>🖱</button>
+                <button class="ft-btn" title="Wall" class:active={toolStore.state.tool === "wall"} onclick={() => toolStore.setTool("wall")}>🧱</button>
+                <button class="ft-btn" title="Divider" class:active={toolStore.state.tool === "divider"} onclick={() => toolStore.setTool("divider")}>╌</button>
+                <button class="ft-btn" title="Door" class:active={toolStore.state.tool === "door"} onclick={() => toolStore.setTool("door")}>🚪</button>
+                <button class="ft-btn" title="Window" class:active={toolStore.state.tool === "window"} onclick={() => toolStore.setTool("window")}>🪟</button>
+                <div class="ft-sep"></div>
+                <button class="ft-btn delete" disabled={!hasSelection} onclick={handleDelete} title="Delete selected (Del)">🗑</button>
+              {/if}
+            </div>
+          {/if}
         </div>
 
       {:else if isHome}
@@ -1174,8 +1173,33 @@
   }
 
   .right-panels {
-    position: absolute; top: 0; right: 0; bottom: 0;
+    position: absolute; top: 0; right: 56px; bottom: 0;
     display: flex; flex-direction: row; z-index: 20;
+  }
+
+  .floating-toolbar {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 6px;
+    box-shadow: var(--shadow-md); z-index: 25;
+  }
+
+  .ft-btn {
+    width: 32px; height: 32px;
+    border: none; border-radius: var(--radius-sm); background: transparent;
+    color: var(--text-muted); cursor: pointer; font-size: 15px;
+    display: flex; align-items: center; justify-content: center; padding: 0;
+    flex-shrink: 0;
+  }
+  .ft-btn:hover:not(:disabled) { background: var(--surface-hover); color: var(--text); }
+  .ft-btn.active { background: var(--surface-hover); color: var(--accent); }
+  .ft-btn.delete { color: var(--danger); }
+  .ft-btn.delete:hover:not(:disabled) { background: var(--surface-hover); color: var(--danger); }
+  .ft-btn:disabled { opacity: 0.35; cursor: default; }
+
+  .ft-sep {
+    width: 24px; height: 1px; background: var(--border); flex-shrink: 0; margin: 2px 0;
   }
 
   .loading {

@@ -2,8 +2,9 @@
   interface Props {
     activeLayers: Set<string>;
     ontoggle: (layer: string) => void;
+    popoverAlign?: 'left' | 'right';
   }
-  let { activeLayers, ontoggle }: Props = $props();
+  let { activeLayers, ontoggle, popoverAlign = 'left' }: Props = $props();
 
   let open = $state(false);
 
@@ -33,7 +34,7 @@
   </button>
 
   {#if open}
-    <div class="dropdown">
+    <div class="dropdown" class:align-right={popoverAlign === 'right'}>
       {#each layers as layer}
         <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
         <label class="layer-row" class:checked={activeLayers.has(layer.id)}>
@@ -69,6 +70,7 @@
     border-radius: var(--radius-md); padding: 6px; min-width: 160px;
     z-index: 100; box-shadow: var(--shadow-md);
   }
+  .dropdown.align-right { left: 0; right: auto; }
 
   .layer-row {
     display: flex; align-items: center; gap: 8px;

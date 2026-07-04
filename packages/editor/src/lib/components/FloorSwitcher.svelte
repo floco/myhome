@@ -83,6 +83,7 @@
         <button
           class="compact-floor-item"
           class:active={currentFloorId === ALL_FLOOR_ID}
+          title="House-wide assignments — drag chores here"
           onclick={() => selectCompact(ALL_FLOOR_ID)}
         >🏠 All</button>
         {#each floors as floor (floor.id)}
