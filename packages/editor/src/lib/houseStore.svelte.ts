@@ -1,5 +1,5 @@
 import { detectRooms, matchRooms, pointsEqual } from "@myhome/geometry";
-import type { Floor, Wall, Opening, Room, Point, House, HouseDocument } from "@myhome/geometry";
+import type { Floor, Wall, Opening, Room, Point, House, HouseDocument, FurnitureObject } from "@myhome/geometry";
 import { createSampleHouse } from "./sampleFloor";
 
 const MAX_HISTORY = 50;
@@ -195,6 +195,72 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
     );
   }
 
+  // Furniture helpers
+
+  function ensureFurniture(floor: Floor): FurnitureObject[] {
+    if (!floor.furnitureObjects) floor.furnitureObjects = [];
+    return floor.furnitureObjects;
+  }
+
+  function currentFurniture(): FurnitureObject[] {
+    return ensureFurniture(currentFloor());
+  }
+
+  function addFurniture(
+    templateId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ): void {
+    saveSnapshot();
+    const obj: FurnitureObject = { id: genId(), templateId, x, y, width, height, rotation: 0 };
+    ensureFurniture(currentFloor()).push(obj);
+  }
+
+  function removeFurniture(id: string): void {
+    const floor = currentFloor();
+    const list = ensureFurniture(floor);
+    if (!list.some((f) => f.id === id)) return;
+    saveSnapshot();
+    floor.furnitureObjects = list.filter((f) => f.id !== id);
+  }
+
+  function moveFurniture(id: string, x: number, y: number, opts?: { skipHistory?: boolean }): void {
+    const obj = ensureFurniture(currentFloor()).find((f) => f.id === id);
+    if (!obj) return;
+    if (!opts?.skipHistory) saveSnapshot();
+    else generation++;
+    obj.x = x;
+    obj.y = y;
+  }
+
+  function resizeFurniture(
+    id: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    opts?: { skipHistory?: boolean }
+  ): void {
+    const obj = ensureFurniture(currentFloor()).find((f) => f.id === id);
+    if (!obj) return;
+    if (!opts?.skipHistory) saveSnapshot();
+    else generation++;
+    obj.x = x;
+    obj.y = y;
+    obj.width = width;
+    obj.height = height;
+  }
+
+  function rotateFurniture(id: string, rotation: number, opts?: { skipHistory?: boolean }): void {
+    const obj = ensureFurniture(currentFloor()).find((f) => f.id === id);
+    if (!obj) return;
+    if (!opts?.skipHistory) saveSnapshot();
+    else generation++;
+    obj.rotation = rotation;
+  }
+
   // API load/save
 
   async function init(): Promise<void> {
@@ -215,6 +281,7 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
           const detected = detectRooms(f.walls);
           const { rooms } = matchRooms(detected, f.rooms);
           f.rooms = rooms.filter((r) => r.polygon !== null);
+          if (!f.furnitureObjects) f.furnitureObjects = [];
         }
       } else if (!resp.ok) {
         throw new Error(`HTTP ${resp.status}`);
@@ -227,6 +294,7 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
           const detected = detectRooms(f.walls);
           const { rooms } = matchRooms(detected, f.rooms);
           f.rooms = rooms.filter((r) => r.polygon !== null);
+          if (!f.furnitureObjects) f.furnitureObjects = [];
         }
       }
     } catch (e) {
@@ -275,6 +343,7 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
     get loadError() { return loadError; },
     get isDirty() { return generation !== savedGeneration; },
     get generation() { return generation; },
+    get currentFurniture() { return currentFurniture(); },
     saveSnapshot,
     undo,
     redo,
@@ -290,6 +359,11 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
     updateOpening,
     updateRoom,
     openingOverlaps,
+    addFurniture,
+    removeFurniture,
+    moveFurniture,
+    resizeFurniture,
+    rotateFurniture,
     reload: init,
     save,
   };
