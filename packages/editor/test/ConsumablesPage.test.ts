@@ -140,4 +140,24 @@ describe("ConsumablesPage", () => {
     unmount(comp);
     target.remove();
   });
+
+  it("opens the edit modal for the consumable matching selectedItemId and clears selection", async () => {
+    const store = makeStore();
+    await makeTick();
+    const onclearselection = vi.fn();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ConsumablesPage, {
+      target,
+      props: { store, settingsStore: { consumableCategories: [], consumableUnits: [] }, selectedItemId: "c2", onclearselection },
+    });
+    await tick();
+    flushSync();
+
+    expect(target.querySelector(".ui-modal-title")?.textContent).toBe("Dish Soap");
+    expect(onclearselection).toHaveBeenCalledOnce();
+
+    unmount(comp);
+    target.remove();
+  });
 });
