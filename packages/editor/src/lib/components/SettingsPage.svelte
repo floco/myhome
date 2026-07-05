@@ -395,6 +395,37 @@
 
   loadUsers();
 
+  // --- MCP Server (admin only) ---
+  let mcpEnabled = $state(false);
+  let mcpConfigLoaded = $state(false);
+  let mcpError = $state<string | null>(null);
+
+  async function loadMcpConfig(): Promise<void> {
+    if (authStore.user?.role !== "admin") return;
+    try {
+      const resp = await fetch("/api/mcp/config");
+      if (!resp.ok) return;
+      const data = await resp.json();
+      mcpEnabled = data.enabled;
+    } finally {
+      mcpConfigLoaded = true;
+    }
+  }
+
+  async function toggleMcpEnabled(): Promise<void> {
+    const next = !mcpEnabled;
+    mcpError = null;
+    const resp = await fetch("/api/mcp/config", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: next }),
+    });
+    if (!resp.ok) { mcpError = `Error ${resp.status}`; return; }
+    mcpEnabled = next;
+  }
+
+  loadMcpConfig();
+
   // --- Backup & Restore ---
   let downloadingBackup = $state(false);
   let backupError = $state<string | null>(null);
@@ -1061,6 +1092,31 @@
             </tbody>
           </table>
         {/if}
+      </Card>
+    {/if}
+
+    <!-- MCP Server (admin only) -->
+    {#if authStore.user?.role === "admin"}
+      <Card>
+        <div class="section-header">
+          <h2>MCP Server</h2>
+        </div>
+        <p class="section-desc">
+          Lets an MCP client (Claude Desktop, claude.ai, Claude Code, or Home Assistant's
+          Assist) query and act on this home's data. Create an API token above with the
+          access level you want the assistant to have, then use it as the Bearer token
+          when connecting.
+        </p>
+        {#if mcpConfigLoaded}
+          <label class="module-row">
+            <input type="checkbox" checked={mcpEnabled} onchange={toggleMcpEnabled} />
+            <span class="mod-label">Enable MCP Server</span>
+          </label>
+          {#if mcpEnabled}
+            <p class="empty-hint">Connection URL: <code>{window.location.origin}/mcp</code></p>
+          {/if}
+        {/if}
+        {#if mcpError}<div class="error">{mcpError}</div>{/if}
       </Card>
     {/if}
 
