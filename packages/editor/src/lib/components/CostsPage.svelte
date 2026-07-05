@@ -19,11 +19,24 @@
     settingsStore: SettingsStore;
     floorStore: HouseStore;
     onplaceonmap?: (catId: string) => void;
+    selectedItemId?: string | null;
+    onclearselection?: () => void;
   }
 
-  let { costsStore, settingsStore, floorStore, onplaceonmap }: Props = $props();
+  let { costsStore, settingsStore, floorStore, onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
 
   let modalEntry = $state<CostEntry | "create" | null>(null);
+
+  $effect(() => {
+    if (selectedItemId) {
+      const found = costsStore.entries.find((e) => e.id === selectedItemId);
+      if (found) {
+        modalEntry = found;
+        onclearselection?.();
+      }
+    }
+  });
+
   let chartModalCategoryId = $state<string | null>(null);
   let searchQuery = $state("");
   let categoryFilter = $state("");
