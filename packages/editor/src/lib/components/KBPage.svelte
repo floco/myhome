@@ -8,8 +8,12 @@
   import Lightbox from "./ui/Lightbox.svelte";
 
   type KBStore = ReturnType<typeof createKBStore>;
-  interface Props { store: KBStore; }
-  let { store }: Props = $props();
+  interface Props {
+    store: KBStore;
+    selectedItemId?: string | null;
+    onclearselection?: () => void;
+  }
+  let { store, selectedItemId = null, onclearselection }: Props = $props();
 
   let selectedId = $state<string | null>(null);
   let contentTab = $state<"content" | "media">("content");
@@ -52,6 +56,16 @@
     contentTab = "content";
     error = null;
   }
+
+  $effect(() => {
+    if (selectedItemId) {
+      const found = store.entries.find((e) => e.id === selectedItemId);
+      if (found) {
+        selectEntry(found);
+        onclearselection?.();
+      }
+    }
+  });
 
   async function handleNew(): Promise<void> {
     try {
