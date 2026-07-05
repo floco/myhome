@@ -12,11 +12,24 @@
     store: WorksStore;
     settingsStore: SettingsStore;
     onplaceonmap?: (workId: string) => void;
+    selectedItemId?: string | null;
+    onclearselection?: () => void;
   }
 
-  let { store, settingsStore, onplaceonmap }: Props = $props();
+  let { store, settingsStore, onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
 
   let modalWork = $state<Work | "create" | null>(null);
+
+  $effect(() => {
+    if (selectedItemId) {
+      const found = store.works.find((w) => w.id === selectedItemId);
+      if (found) {
+        modalWork = found;
+        onclearselection?.();
+      }
+    }
+  });
+
   let searchQuery = $state("");
   let statusFilter = $state("");
   let categoryFilter = $state("");
