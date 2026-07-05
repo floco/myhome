@@ -13,15 +13,27 @@
     store: ConsumableStore;
     settingsStore: SettingsStore;
     onplaceonmap?: (id: string) => void;
+    selectedItemId?: string | null;
+    onclearselection?: () => void;
   }
 
-  let { store, settingsStore, onplaceonmap }: Props = $props();
+  let { store, settingsStore, onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
 
   let searchQuery = $state("");
   let categoryFilter = $state("");
   let attentionFilter = $state(false);
   let editConsumable = $state<Consumable | null>(null);
   let showCreate = $state(false);
+
+  $effect(() => {
+    if (selectedItemId) {
+      const found = store.consumables.find((c) => c.id === selectedItemId);
+      if (found) {
+        editConsumable = found;
+        onclearselection?.();
+      }
+    }
+  });
 
   const STATUS_COLOR: Record<string, string> = {
     ok: "var(--success)",

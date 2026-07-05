@@ -14,11 +14,23 @@
     floorStore: { floors: Array<{ id: string; name: string; rooms: Array<{ id: string; label: string }> }> };
     onnewchore?: () => void;
     onplaceonmap?: (choreId: string) => void;
+    selectedItemId?: string | null;
+    onclearselection?: () => void;
   }
 
-  let { store, floorStore, onnewchore, onplaceonmap }: Props = $props();
+  let { store, floorStore, onnewchore, onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
 
   let editChore = $state<Chore | null>(null);
+
+  $effect(() => {
+    if (selectedItemId) {
+      const found = store.chores.find((c) => c.id === selectedItemId);
+      if (found) {
+        editChore = found;
+        onclearselection?.();
+      }
+    }
+  });
   let searchQuery = $state("");
   let roomFilter = $state("");
   let scheduleFilter = $state("");

@@ -410,3 +410,39 @@ describe("KBPage — media insert button", () => {
     target.remove();
   });
 });
+
+describe("KBPage — external selection", () => {
+  it("selects the entry matching selectedItemId and clears selection", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore([makeEntry()]);
+    const onclearselection = vi.fn();
+    const app = mount(KBPage, {
+      target,
+      props: { store, selectedItemId: "e1", onclearselection },
+    });
+    flushSync();
+
+    expect(target.querySelector(".content-title")?.textContent?.trim()).toBe("How to paint");
+    expect(onclearselection).toHaveBeenCalledOnce();
+
+    unmount(app);
+    target.remove();
+  });
+
+  it("does nothing when selectedItemId doesn't match any entry", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore([makeEntry()]);
+    const app = mount(KBPage, {
+      target,
+      props: { store, selectedItemId: "missing" },
+    });
+    flushSync();
+
+    expect(target.querySelector(".content-empty")).not.toBeNull();
+
+    unmount(app);
+    target.remove();
+  });
+});
