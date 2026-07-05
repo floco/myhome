@@ -57,6 +57,8 @@
   import PlaceholderPage from "./lib/components/PlaceholderPage.svelte";
   import FurnitureLibraryPanel from "./lib/components/FurnitureLibraryPanel.svelte";
   import { getTemplate } from "./lib/furnitureLibrary";
+  import CommandPalette from "./lib/components/CommandPalette.svelte";
+  import { buildSearchIndex, type SearchResult } from "./lib/searchIndex";
 
   const getHomeId = () => homesStore.activeHomeId;
 
@@ -106,6 +108,27 @@
   let draggingItemId = $state<string | null>(null);
   let draggingLayerId = $state<string | null>(null);
   let pickerHighlightId = $state<string | null>(null);
+
+  let commandPaletteOpen = $state(false);
+  let selectedChoreId = $state<string | null>(null);
+  let selectedConsumableId = $state<string | null>(null);
+  let selectedWorkId = $state<string | null>(null);
+  let selectedCostEntryId = $state<string | null>(null);
+  let selectedKBEntryId = $state<string | null>(null);
+
+  const globalSearchIndex = $derived(buildSearchIndex({
+    choreStore, inventoryStore, consumableStore, worksStore, costsStore, kbStore, settingsStore,
+  }));
+
+  function handleSearchSelect(result: SearchResult): void {
+    commandPaletteOpen = false;
+    if (result.module === "chores") { selectedChoreId = result.id; window.location.hash = "#/chores"; }
+    else if (result.module === "inventory") { selectedInventoryItemId = result.id; window.location.hash = "#/inventory"; }
+    else if (result.module === "consumables") { selectedConsumableId = result.id; window.location.hash = "#/consumables"; }
+    else if (result.module === "works") { selectedWorkId = result.id; window.location.hash = "#/works"; }
+    else if (result.module === "costs") { selectedCostEntryId = result.id; window.location.hash = "#/costs"; }
+    else if (result.module === "kb") { selectedKBEntryId = result.id; window.location.hash = "#/kb"; }
+  }
 
   let selectedCostCategoryPin = $state<{
     category: CostCategory;
@@ -602,6 +625,11 @@
   function handleZoom(screen: Point, factor: number): void { viewportStore.zoomAt(screen, factor); }
 
   function handleKeydown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      commandPaletteOpen = true;
+      return;
+    }
     if (event.ctrlKey && event.key === "s") { event.preventDefault(); if (isFloorPlan) handleSave(); return; }
     const target = event.target as HTMLElement;
     if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
@@ -721,6 +749,13 @@
   onmouseup={() => { handleDragEnd(); endFurnitureDrag(); }}
 />
 
+<CommandPalette
+  open={commandPaletteOpen}
+  index={globalSearchIndex}
+  onclose={() => { commandPaletteOpen = false; }}
+  onselect={handleSearchSelect}
+/>
+
 {#if authStore.checking}
   <div class="auth-loading">Loading…</div>
 {:else if !authStore.user}
@@ -738,6 +773,7 @@
     <span class="app-title">My Home</span>
 
     <span class="spacer"></span>
+    <button class="icon-btn search-btn" title="Search (Ctrl+K)" onclick={() => { commandPaletteOpen = true; }}>🔍</button>
     <HomesSwitcher topbar={true} />
     <button
       class="icon-btn theme-toggle"
@@ -1150,7 +1186,7 @@
         />
 
       {:else if currentRoute === "#/chores" || currentRoute === "#/chores/manage"}
-        <ChoresPage store={choreStore} {floorStore} onnewchore={() => { showNewChoreModal = true; }} onplaceonmap={(choreId) => { const next = new Set(activeLayers); next.add("chores"); activeLayers = next; pickerHighlightId = choreId; pickerOpen = true; window.location.hash = "#/plan"; }} />
+        <ChoresPage store={choreStore} {floorStore} selectedItemId={selectedChoreId} onclearselection={() => { selectedChoreId = null; }} onnewchore={() => { showNewChoreModal = true; }} onplaceonmap={(choreId) => { const next = new Set(activeLayers); next.add("chores"); activeLayers = next; pickerHighlightId = choreId; pickerOpen = true; window.location.hash = "#/plan"; }} />
 
       {:else if currentRoute === "#/inventory"}
         <InventoryPage
@@ -1173,6 +1209,8 @@
         <ConsumablesPage
           store={consumableStore}
           {settingsStore}
+          selectedItemId={selectedConsumableId}
+          onclearselection={() => { selectedConsumableId = null; }}
           onplaceonmap={(id) => {
             const next = new Set(activeLayers);
             next.add("consumables");
@@ -1187,6 +1225,8 @@
         <WorksPage
           store={worksStore}
           {settingsStore}
+          selectedItemId={selectedWorkId}
+          onclearselection={() => { selectedWorkId = null; }}
           onplaceonmap={(workId) => {
             const next = new Set(activeLayers);
             next.add("works");
@@ -1198,13 +1238,15 @@
         />
 
       {:else if currentRoute === "#/kb"}
-        <KBPage store={kbStore} />
+        <KBPage store={kbStore} selectedItemId={selectedKBEntryId} onclearselection={() => { selectedKBEntryId = null; }} />
 
       {:else if currentRoute === "#/costs"}
         <CostsPage
           {costsStore}
           {settingsStore}
           {floorStore}
+          selectedItemId={selectedCostEntryId}
+          onclearselection={() => { selectedCostEntryId = null; }}
           onplaceonmap={(catId) => {
             const next = new Set(activeLayers);
             next.add("costs");
