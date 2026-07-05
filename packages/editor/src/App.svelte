@@ -72,7 +72,13 @@
   const consumableStore = createConsumableStore(getHomeId);
   const authStore = createAuthStore();
 
-  homesStore.loadHomes();
+  $effect(() => {
+    if (authStore.user) {
+      homesStore.loadHomes();
+    } else if (!authStore.checking) {
+      homesStore._reset();
+    }
+  });
 
   $effect(() => {
     const _homeId = homesStore.activeHomeId;
@@ -223,29 +229,37 @@
   const ALL_FLOOR_ID = "__all__";
   let allFloorsMode = $state(false);
   let ftPos = $state<{ x: number; y: number } | null>(null);
+  let fpPos = $state<{ x: number; y: number } | null>(null);
 
-  function startFtDrag(e: MouseEvent): void {
-    e.preventDefault();
-    const el = (e.currentTarget as HTMLElement).closest('.floating-toolbar') as HTMLElement;
-    const rect = el.getBoundingClientRect();
-    const canvasRect = (el.parentElement as HTMLElement).getBoundingClientRect();
-    const initX = rect.left - canvasRect.left;
-    const initY = rect.top - canvasRect.top;
-    const startX = e.clientX;
-    const startY = e.clientY;
-    function onMove(me: MouseEvent): void {
-      ftPos = {
-        x: Math.max(0, Math.min(canvasRect.width - rect.width, initX + me.clientX - startX)),
-        y: Math.max(0, Math.min(canvasRect.height - rect.height, initY + me.clientY - startY)),
-      };
-    }
-    function onUp(): void {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    }
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+  function makeDragHandler(selector: string, pos: { x: number; y: number } | null, setPos: (p: { x: number; y: number }) => void) {
+    return function startDrag(e: MouseEvent): void {
+      e.preventDefault();
+      const el = (e.currentTarget as HTMLElement).closest(selector) as HTMLElement;
+      const rect = el.getBoundingClientRect();
+      const canvasRect = (el.parentElement as HTMLElement).getBoundingClientRect();
+      const initX = rect.left - canvasRect.left;
+      const initY = rect.top - canvasRect.top;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      function onMove(me: MouseEvent): void {
+        setPos({
+          x: Math.max(0, Math.min(canvasRect.width - rect.width, initX + me.clientX - startX)),
+          y: Math.max(0, Math.min(canvasRect.height - rect.height, initY + me.clientY - startY)),
+        });
+      }
+      function onUp(): void {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      }
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    };
   }
+
+  const startFtDrag = makeDragHandler('.floating-toolbar', ftPos, (p) => { ftPos = p; });
+  const startFpDrag = makeDragHandler('.furniture-float', fpPos, (p) => { fpPos = p; });
+  const startIpDrag = makeDragHandler('.picker-float', null, (p) => { ipPos = p; });
+  let ipPos = $state<{ x: number; y: number } | null>(null);
   let navExpanded = $state(false);
   let showNewChoreModal = $state(false);
   let userMenuOpen = $state(false);
@@ -335,16 +349,20 @@
     saveStatus === "saving" ? "⋯" : saveStatus === "saved" ? "✓" : saveStatus === "error" ? "⚠" : "💾"
   );
   const saveTitle = $derived(
-    saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : saveStatus === "error" ? "Save error!" : "Save"
+    saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : saveStatus === "error" ? `Save error${saveError ? ": " + saveError : ""}` : "Save"
   );
+
+  let saveError = $state<string | null>(null);
 
   async function handleSave(): Promise<void> {
     saveStatus = "saving";
+    saveError = null;
     try {
       await floorStore.save();
       saveStatus = "saved";
       setTimeout(() => { saveStatus = "idle"; }, 2000);
-    } catch {
+    } catch (e) {
+      saveError = e instanceof Error ? e.message : String(e);
       saveStatus = "error";
       setTimeout(() => { saveStatus = "idle"; }, 4000);
     }
@@ -486,12 +504,12 @@
     const obj = floorStore.currentFurniture.find((f) => f.id === id);
     if (!obj) return;
     floorStore.saveSnapshot();
-    const rect = (e.currentTarget as SVGSVGElement | null)
-      ?? (e.target as SVGElement).closest("svg");
-    if (!rect) return;
-    const svgRect = (rect as Element).getBoundingClientRect?.() ?? { left: 0, top: 0 };
-    const cursorX = (e.clientX - (svgRect as DOMRect).left - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
-    const cursorY = (e.clientY - (svgRect as DOMRect).top - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
+    // e.target is an SVG child element; ownerSVGElement gives the root <svg>
+    const svgEl = (e.target as SVGElement).ownerSVGElement;
+    if (!svgEl) return;
+    const svgRect = svgEl.getBoundingClientRect();
+    const cursorX = (e.clientX - svgRect.left - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
+    const cursorY = (e.clientY - svgRect.top - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
     furnitureDrag = { type: "move", id, startObjX: obj.x, startObjY: obj.y, startCursorX: cursorX, startCursorY: cursorY };
   }
 
@@ -612,8 +630,10 @@
   }
 
   function handleDragOver(e: DragEvent): void {
-    if (!draggingItemId) return;
-    e.preventDefault();
+    const types = e.dataTransfer?.types ?? [];
+    if (draggingItemId || types.some(t => t.includes("furniture")) || types.includes("pickerid") || types.includes("pickerlayer")) {
+      e.preventDefault();
+    }
   }
 
   function handleDrop(e: DragEvent): void {
@@ -1034,20 +1054,21 @@
               </div>
             {/if}
           {/if}
-          {#if pickerOpen && pickerLayers.length > 0 || furnitureLibraryOpen}
-            <div class="right-panels">
-              {#if pickerOpen && pickerLayers.length > 0}
-                <ItemPickerPanel
-                  layers={pickerLayers}
-                  draggingId={draggingItemId}
-                  highlightId={pickerHighlightId}
-                  ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; pickerHighlightId = null; }}
-                  ondragend={() => { draggingLayerId = null; draggingItemId = null; }}
-                />
-              {/if}
-              {#if furnitureLibraryOpen}
-                <FurnitureLibraryPanel />
-              {/if}
+          {#if pickerOpen && pickerLayers.length > 0}
+            <div class="picker-float" style={ipPos ? `left:${ipPos.x}px;top:${ipPos.y}px;right:auto;transform:none` : ''}>
+              <ItemPickerPanel
+                layers={pickerLayers}
+                draggingId={draggingItemId}
+                highlightId={pickerHighlightId}
+                onstartdrag={startIpDrag}
+                ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; pickerHighlightId = null; }}
+                ondragend={() => { draggingLayerId = null; draggingItemId = null; }}
+              />
+            </div>
+          {/if}
+          {#if furnitureLibraryOpen}
+            <div class="furniture-float" style={fpPos ? `left:${fpPos.x}px;top:${fpPos.y}px;right:auto;transform:none` : ''}>
+              <FurnitureLibraryPanel onstartdrag={startFpDrag} />
             </div>
           {/if}
           {#if floorStore.loaded && !allFloorsMode}
@@ -1329,9 +1350,24 @@
     flex: 1; overflow: hidden; position: relative;
   }
 
-  .right-panels {
-    position: absolute; top: 0; right: 56px; bottom: 0;
-    display: flex; flex-direction: row; z-index: 20;
+  .picker-float {
+    position: absolute; right: 120px; top: 50%; transform: translateY(-50%);
+    max-height: min(460px, calc(100% - 16px));
+    display: flex; flex-direction: column;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md); z-index: 20;
+    overflow: hidden;
+  }
+
+  .furniture-float {
+    position: absolute; right: 120px; top: 50%; transform: translateY(-50%);
+    max-height: min(460px, calc(100% - 16px));
+    display: flex; flex-direction: column;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 0;
+    box-shadow: var(--shadow-md); z-index: 20;
+    overflow: hidden;
   }
 
   .floating-toolbar {

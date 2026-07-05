@@ -33,6 +33,16 @@ class Room(BaseModel):
     areaM2: float
 
 
+class FurnitureObject(BaseModel):
+    id: str
+    templateId: str
+    x: float
+    y: float
+    width: float
+    height: float
+    rotation: float = 0.0
+
+
 class Floor(BaseModel):
     id: str
     name: str
@@ -40,6 +50,7 @@ class Floor(BaseModel):
     walls: list[Wall]
     openings: list[Opening]
     rooms: list[Room]
+    furnitureObjects: list[FurnitureObject] = []
 
 
 class House(BaseModel):

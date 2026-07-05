@@ -17,11 +17,12 @@
     layers: PickerLayer[];
     draggingId: string | null;
     highlightId?: string | null;
+    onstartdrag?: (e: MouseEvent) => void;
     ondragstart: (layerId: string, itemId: string, event: DragEvent) => void;
     ondragend: () => void;
   }
 
-  let { layers, draggingId, highlightId = null, ondragstart, ondragend }: Props = $props();
+  let { layers, draggingId, highlightId = null, onstartdrag, ondragstart, ondragend }: Props = $props();
 
   let query = $state("");
   let openSections = $state<Set<string>>(new Set());
@@ -70,7 +71,13 @@
 </script>
 
 <div class="panel">
-  <input class="search" placeholder="Search…" bind:value={query} />
+  <div class="panel-header">
+    {#if onstartdrag}
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="drag-handle" onmousedown={onstartdrag} title="Drag to reposition">⠿</div>
+    {/if}
+    <input class="search" placeholder="Search…" bind:value={query} />
+  </div>
   {#each layers as layer (layer.id)}
     {@const filtered = filteredItems(layer.items)}
     {@const unplaced = filtered.filter(i => !i.placed)}
@@ -134,16 +141,44 @@
 
 <style>
   .panel {
-    width: 220px; height: 100%; background: var(--surface); border-left: 1px solid var(--border);
-    display: flex; flex-direction: column; font-size: 12px; color: var(--text-muted);
-    flex-shrink: 0; overflow: hidden;
+    width: 220px;
+    display: flex; flex-direction: column;
+    font-size: 12px; color: var(--text-muted);
+    overflow: hidden;
   }
+
+  .panel-header {
+    display: flex; align-items: center; gap: 4px;
+    padding: var(--space-2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .drag-handle {
+    cursor: grab;
+    color: var(--text-muted);
+    font-size: 14px;
+    letter-spacing: 3px;
+    opacity: 0.5;
+    padding: 2px 0;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    user-select: none;
+  }
+  .drag-handle:hover { opacity: 1; background: var(--surface-hover); }
+  .drag-handle:active { cursor: grabbing; }
+
   .search {
-    margin: var(--space-2) var(--space-2); padding: var(--space-1) var(--space-2);
-    background: var(--surface-alt); border: 1px solid var(--border); color: var(--text-muted);
-    border-radius: var(--radius-sm); font-size: 11px; flex-shrink: 0;
+    flex: 1; min-width: 0;
+    padding: 4px 8px;
+    background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
+    border-radius: var(--radius-sm); font-size: 12px;
   }
-  .section { border-bottom: 1px solid var(--border); flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+
+  .section {
+    border-bottom: 1px solid var(--border);
+    flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+  }
   .section-header {
     width: 100%; display: flex; align-items: center; gap: 6px;
     padding: var(--space-2) var(--space-3); background: var(--surface-alt); border: none; color: var(--text);

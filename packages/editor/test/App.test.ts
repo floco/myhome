@@ -415,7 +415,7 @@ describe("App — item picker visibility across floor modes", () => {
     (target.querySelector('button[title="Toggle item picker"]') as HTMLButtonElement).click();
     await tick();
     flushSync();
-    expect(target.querySelector(".right-panels")).not.toBeNull();
+    expect(target.querySelector(".picker-float")).not.toBeNull();
 
     // Switch to the "All" floor via the compact FloorSwitcher in the floating toolbar.
     (target.querySelector('.compact-btn') as HTMLButtonElement).click();
@@ -425,7 +425,7 @@ describe("App — item picker visibility across floor modes", () => {
     await tick();
     flushSync();
     expect(target.querySelector(".all-floor-canvas")).not.toBeNull();
-    expect(target.querySelector(".right-panels")).not.toBeNull();
+    expect(target.querySelector(".picker-float")).not.toBeNull();
 
     unmount(app);
     target.remove();

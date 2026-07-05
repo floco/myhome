@@ -1,6 +1,7 @@
 # packages/backend/src/myhome/main.py
 import os
 import secrets
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -8,9 +9,22 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from .deps import ROLE_ORDER, get_user_from_request
-from .routes import auth, backup, chores, consumables, costs, ha, homes, house, inventory, kb, settings, svg, works
+from .mcp_app import mcp_asgi_app
+from .mcp_server import mcp
+from .persistence_mcp import load_mcp_config
+from .routes import auth, backup, chores, consumables, costs, ha, homes, house, inventory, kb, mcp_config, settings, svg, works
 
-app = FastAPI(title="MyHome Backend", version="0.1.0")
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    # The MCP session manager's background task group is NOT started just by
+    # mounting mcp_asgi_app -- Starlette never forwards ASGI lifespan events into
+    # mounted sub-apps, so it must be entered here explicitly.
+    async with mcp.session_manager.run():
+        yield
+
+
+app = FastAPI(title="MyHome Backend", version="0.1.0", lifespan=_lifespan)
 
 
 # ── First boot ────────────────────────────────────────────────────────────
@@ -61,11 +75,26 @@ async def auth_middleware(request: Request, call_next):
     if (
         request.method in ("POST", "PUT", "DELETE", "PATCH")
         and not request.url.path.startswith("/api/auth/")
+        and not request.url.path.startswith("/mcp")
         and ROLE_ORDER.get(role, -1) < ROLE_ORDER["normal"]
     ):
         return JSONResponse({"detail": "Insufficient permissions"}, status_code=403)
     request.state.user = user
     return await call_next(request)
+
+
+# ── MCP gate ──────────────────────────────────────────────────────────────
+# The MCP tool surface is always mounted, but only reachable while enabled in
+# Settings. Authentication still applies either way (auth_middleware above runs
+# first) -- this only controls whether an *authenticated* request gets a real
+# response or a 404.
+
+async def _gated_mcp_app(scope, receive, send):
+    if scope["type"] == "http" and not load_mcp_config().enabled:
+        response = JSONResponse({"detail": "MCP server is disabled"}, status_code=404)
+        await response(scope, receive, send)
+        return
+    await mcp_asgi_app(scope, receive, send)
 
 
 # ── Routers ───────────────────────────────────────────────────────────────
@@ -83,6 +112,9 @@ app.include_router(works.router)
 app.include_router(kb.router)
 app.include_router(backup.router)
 app.include_router(consumables.router)
+app.include_router(mcp_config.router)
+
+app.mount("/mcp", _gated_mcp_app)
 
 
 # ── Static files ──────────────────────────────────────────────────────────

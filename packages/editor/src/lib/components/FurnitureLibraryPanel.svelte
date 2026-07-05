@@ -7,6 +7,8 @@
     type FurnitureTemplate,
   } from "../furnitureLibrary";
 
+  let { onstartdrag }: { onstartdrag?: (e: MouseEvent) => void } = $props();
+
   let search = $state("");
 
   const filtered = $derived(
@@ -27,7 +29,12 @@
 </script>
 
 <div class="furniture-panel">
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="panel-header">
+    {#if onstartdrag}
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="drag-handle" onmousedown={onstartdrag} title="Drag to reposition">⠿</div>
+    {/if}
     <input
       type="search"
       placeholder="Search objects..."
@@ -45,6 +52,9 @@
           <div class="category-items">
             {#each items as template}
               <!-- svelte-ignore a11y_no_static_element_interactions -->
+              {@const ar = template.defaultWidth / template.defaultHeight}
+              {@const tw = ar >= 1 ? 48 : Math.max(20, 48 * ar)}
+              {@const th = ar <= 1 ? 48 : Math.max(20, 48 / ar)}
               <div
                 class="furniture-item"
                 draggable="true"
@@ -52,7 +62,7 @@
                 ondragstart={(e) => onDragStart(e, template.id)}
                 title={template.label}
               >
-                <svg viewBox="0 0 100 100" width="44" height="44">
+                <svg viewBox="0 0 100 100" width={tw} height={th}>
                   {@html template.svgContent}
                 </svg>
                 <span class="item-label">{template.label}</span>
@@ -67,23 +77,38 @@
 
 <style>
   .furniture-panel {
-    width: 180px;
+    width: 200px;
     display: flex;
     flex-direction: column;
-    height: 100%;
-    background: var(--surface);
-    border-left: 1px solid var(--border);
     overflow: hidden;
   }
 
   .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     padding: var(--space-2);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
   }
 
+  .drag-handle {
+    cursor: grab;
+    color: var(--text-muted);
+    font-size: 14px;
+    letter-spacing: 3px;
+    opacity: 0.5;
+    padding: 2px 0;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    user-select: none;
+  }
+  .drag-handle:hover { opacity: 1; background: var(--surface-hover); }
+  .drag-handle:active { cursor: grabbing; }
+
   .panel-header input {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     box-sizing: border-box;
     padding: 4px 8px;
     border: 1px solid var(--border);
@@ -113,8 +138,8 @@
   }
 
   .category-items {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 4px;
     padding: 2px var(--space-2);
   }
@@ -123,12 +148,13 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-end;
     gap: 2px;
     padding: 4px;
     border-radius: var(--radius-sm);
     cursor: grab;
     user-select: none;
-    width: 68px;
+    min-height: 64px;
   }
 
   .furniture-item:hover {
@@ -146,7 +172,7 @@
     color: var(--text-muted);
     text-align: center;
     line-height: 1.2;
-    max-width: 60px;
+    width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

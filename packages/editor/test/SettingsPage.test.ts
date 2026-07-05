@@ -43,6 +43,7 @@ describe("SettingsPage — Backup & Restore", () => {
     fetchMock = vi.fn().mockImplementation((url: string) => {
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
       return Promise.resolve(new Response(null, { status: 200 }));
     });
     globalThis.fetch = fetchMock;
@@ -77,6 +78,7 @@ describe("SettingsPage — Backup & Restore", () => {
     fetchMock = vi.fn().mockImplementation((url: string) => {
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
       return Promise.resolve(new Response("fake-zip-content", {
         status: 200,
         headers: { "Content-Disposition": 'attachment; filename="myhome-backup-2026-06-29.zip"' },
@@ -115,6 +117,7 @@ describe("SettingsPage — Backup & Restore", () => {
     fetchMock = vi.fn().mockImplementation((url: string) => {
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
       return Promise.resolve(new Response(null, { status: 204 }));
     });
     globalThis.fetch = fetchMock;
@@ -181,6 +184,7 @@ describe("SettingsPage — API Tokens", () => {
         });
       }
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
       return Promise.resolve({ ok: true, json: async () => ({}) });
     });
     globalThis.fetch = fetchMock;
@@ -236,6 +240,7 @@ describe("SettingsPage — API Tokens", () => {
       if (url === "/api/auth/users") {
         return Promise.resolve({ ok: true, json: async () => [] });
       }
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
       return Promise.resolve(new Response(null, { status: 200 }));
     });
     globalThis.fetch = fetchMock;
@@ -283,6 +288,7 @@ describe("SettingsPage — Users tab (admin only)", () => {
           ],
         });
       }
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
       return Promise.resolve(new Response(null, { status: 200 }));
     });
     globalThis.fetch = fetchMock;
@@ -375,6 +381,83 @@ describe("SettingsPage — Users tab (admin only)", () => {
       ([url, opts]: [string, RequestInit | undefined]) => url === "/api/auth/users" && opts?.method === "POST"
     );
     expect(postCalls.length).toBe(1);
+    unmount(app);
+  });
+});
+
+describe("SettingsPage — MCP Server (admin only)", () => {
+  let target: HTMLDivElement;
+  let fetchMock: ReturnType<typeof vi.fn>;
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+    fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      return Promise.resolve(new Response(null, { status: 200 }));
+    });
+    globalThis.fetch = fetchMock;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    target.remove();
+  });
+
+  it("shows the MCP Server card for admin", async () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin") } });
+    flushSync();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(target.textContent).toContain("MCP Server");
+    unmount(app);
+  });
+
+  it("hides the MCP Server card for non-admin", () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("normal") } });
+    flushSync();
+    const cards = [...target.querySelectorAll(".ui-card")].map((c) => c.textContent);
+    expect(cards.some((t) => t?.includes("MCP Server"))).toBe(false);
+    unmount(app);
+  });
+
+  it("does not show the connection URL while disabled", async () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin") } });
+    flushSync();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(target.textContent).not.toContain("Connection URL");
+    unmount(app);
+  });
+
+  it("shows the connection URL once enabled", async () => {
+    fetchMock = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/mcp/config" && opts?.method === "PUT") {
+        return Promise.resolve({ ok: true, json: async () => ({ enabled: true }) });
+      }
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      return Promise.resolve(new Response(null, { status: 200 }));
+    });
+    globalThis.fetch = fetchMock;
+
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin") } });
+    flushSync();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    const checkbox = [...target.querySelectorAll('input[type="checkbox"]')].find(
+      (el) => el.closest(".ui-card")?.textContent?.includes("MCP Server"),
+    ) as HTMLInputElement;
+    checkbox.click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    expect(target.textContent).toContain("Connection URL");
     unmount(app);
   });
 });
