@@ -1,4 +1,5 @@
 # packages/backend/src/myhome/main.py
+import asyncio
 import os
 import secrets
 from contextlib import asynccontextmanager
@@ -11,6 +12,7 @@ from fastapi.responses import JSONResponse
 from .deps import ROLE_ORDER, get_user_from_request
 from .mcp_app import mcp_asgi_app
 from .mcp_server import mcp
+from .notification_scheduler import notification_digest_loop
 from .persistence_mcp import load_mcp_config
 from .routes import auth, backup, chores, consumables, costs, ha, homes, house, inventory, kb, mcp_config, notifications, settings, svg, works
 
@@ -21,7 +23,11 @@ async def _lifespan(app: FastAPI):
     # mounting mcp_asgi_app -- Starlette never forwards ASGI lifespan events into
     # mounted sub-apps, so it must be entered here explicitly.
     async with mcp.session_manager.run():
-        yield
+        digest_task = asyncio.create_task(notification_digest_loop())
+        try:
+            yield
+        finally:
+            digest_task.cancel()
 
 
 app = FastAPI(title="MyHome Backend", version="0.1.0", lifespan=_lifespan)
