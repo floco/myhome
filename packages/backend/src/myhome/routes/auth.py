@@ -113,7 +113,7 @@ class OidcConfigUpdateRequest(BaseModel):
 def login(body: LoginRequest, response: Response) -> UserInfo:
     doc = load_users()
     user = next((u for u in doc.users if u.username.lower() == body.username.lower()), None)
-    if user is None or not pwd_ctx.verify(body.password, user.password_hash):
+    if user is None or user.password_hash is None or not pwd_ctx.verify(body.password, user.password_hash):
         raise HTTPException(401, "Invalid username or password")
     _set_auth_cookies(response, user.id, user.role)
     return UserInfo(id=user.id, username=user.username, role=user.role)
@@ -159,7 +159,7 @@ def change_password(
     user = next((u for u in doc.users if u.id == user_id), None)
     if user is None:
         raise HTTPException(404)
-    if not pwd_ctx.verify(body.current_password, user.password_hash):
+    if user.password_hash is not None and not pwd_ctx.verify(body.current_password, user.password_hash):
         raise HTTPException(400, "Current password incorrect")
     if len(body.new_password) < 8:
         raise HTTPException(422, "Password must be at least 8 characters")
