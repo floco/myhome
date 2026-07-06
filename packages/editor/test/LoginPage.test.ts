@@ -137,4 +137,17 @@ describe("LoginPage — OIDC", () => {
     expect(target.textContent).toContain("Sign-in failed");
     unmount(app);
   });
+
+  it("shows an account-conflict message for ?error=oidc_account_conflict", async () => {
+    window.history.replaceState({}, "", "/?error=oidc_account_conflict");
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ enabled: false, provider_name: "" }),
+    });
+    const app = mount(LoginPage, { target, props: { onlogin: vi.fn(), login: vi.fn() } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(target.textContent).toContain("already exists");
+    expect(window.location.search).toBe("");
+    unmount(app);
+  });
 });
