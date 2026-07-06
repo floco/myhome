@@ -31,6 +31,12 @@ async def test_fetch_discovery_caches_result():
     assert route.call_count == 1
 
 
+async def test_fetch_discovery_rejects_non_https_issuer():
+    with pytest.raises(HTTPException) as exc_info:
+        await oidc.fetch_discovery("http://idp.example.test")
+    assert exc_info.value.status_code == 422
+
+
 async def test_validate_issuer_reachable_raises_on_failure():
     with respx.mock:
         respx.get("https://idp.example.test/.well-known/openid-configuration").mock(

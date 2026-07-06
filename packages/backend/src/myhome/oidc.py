@@ -15,10 +15,12 @@ _discovery_cache: dict[str, dict] = {}
 
 async def fetch_discovery(issuer: str) -> dict:
     """Fetch and cache the issuer's OpenID discovery document."""
+    if not issuer.startswith("https://"):
+        raise HTTPException(422, "Issuer must be an https:// URL")
     if issuer in _discovery_cache:
         return _discovery_cache[issuer]
     url = issuer.rstrip("/") + "/.well-known/openid-configuration"
-    async with httpx.AsyncClient(timeout=10.0) as client:
+    async with httpx.AsyncClient(timeout=10.0, follow_redirects=False) as client:
         resp = await client.get(url)
         resp.raise_for_status()
     doc = resp.json()
@@ -71,7 +73,7 @@ async def exchange_code_for_claims(
     if not id_token:
         raise HTTPException(400, "IdP response did not include an id_token")
 
-    async with httpx.AsyncClient(timeout=10.0) as http_client:
+    async with httpx.AsyncClient(timeout=10.0, follow_redirects=False) as http_client:
         jwks_resp = await http_client.get(discovery["jwks_uri"])
         jwks_resp.raise_for_status()
     jwks = jwks_resp.json()

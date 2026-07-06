@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Cookie, HTTPException, Response
 from pydantic import BaseModel
 
+from .. import oidc
 from ..deps import (
     ROLE_ORDER,
     _decode_refresh,
@@ -16,8 +17,15 @@ from ..deps import (
     pwd_ctx,
     require_auth,
 )
-from ..models_auth import ApiToken, TokenDocument, User, UserDocument
-from ..persistence_auth import load_tokens, load_users, save_tokens, save_users
+from ..models_auth import ApiToken, OidcConfig, TokenDocument, User, UserDocument
+from ..persistence_auth import (
+    load_oidc_config,
+    load_tokens,
+    load_users,
+    save_oidc_config,
+    save_tokens,
+    save_users,
+)
 
 router = APIRouter()
 
@@ -68,6 +76,31 @@ class TokenInfo(BaseModel):
 class CreatedTokenResponse(BaseModel):
     token: str
     info: TokenInfo
+
+
+class OidcStatusResponse(BaseModel):
+    enabled: bool
+    provider_name: str
+
+
+class OidcConfigResponse(BaseModel):
+    enabled: bool
+    provider_name: str
+    issuer: str
+    client_id: str
+    client_secret: str  # masked
+    default_role: str
+    scopes: list[str]
+
+
+class OidcConfigUpdateRequest(BaseModel):
+    enabled: bool
+    provider_name: str
+    issuer: str
+    client_id: str
+    client_secret: str | None = None  # omit/None keeps the existing secret
+    default_role: str
+    scopes: list[str] = ["openid", "profile", "email"]
 
 
 # ── Core auth ─────────────────────────────────────────────────────────────
@@ -262,6 +295,49 @@ def delete_token(
         raise HTTPException(403, "Cannot delete another user's token")
     doc.tokens = [t for t in doc.tokens if t.id != tid]
     save_tokens(doc)
+
+
+# ── OIDC ────────────────────────────────────────────────────────────────────
+
+def _oidc_config_response(config: OidcConfig) -> OidcConfigResponse:
+    return OidcConfigResponse(
+        enabled=config.enabled, provider_name=config.provider_name, issuer=config.issuer,
+        client_id=config.client_id,
+        client_secret="••••••••" if config.client_secret else "",
+        default_role=config.default_role, scopes=config.scopes,
+    )
+
+
+@router.get("/api/auth/oidc/status")
+def oidc_status() -> OidcStatusResponse:
+    config = load_oidc_config()
+    return OidcStatusResponse(enabled=config.enabled, provider_name=config.provider_name)
+
+
+@router.get("/api/auth/oidc/config")
+def get_oidc_config(current_user: tuple[str, str] = require_auth("admin")) -> OidcConfigResponse:
+    return _oidc_config_response(load_oidc_config())
+
+
+@router.put("/api/auth/oidc/config")
+async def put_oidc_config(
+    body: OidcConfigUpdateRequest,
+    current_user: tuple[str, str] = require_auth("admin"),
+) -> OidcConfigResponse:
+    if body.default_role not in ROLE_ORDER:
+        raise HTTPException(422, "Invalid role")
+    existing = load_oidc_config()
+    secret = body.client_secret if body.client_secret else existing.client_secret
+    if body.enabled:
+        await oidc.validate_issuer_reachable(body.issuer)
+    config = OidcConfig(
+        enabled=body.enabled, provider_name=body.provider_name, issuer=body.issuer,
+        client_id=body.client_id, client_secret=secret,
+        default_role=body.default_role, scopes=body.scopes,
+    )
+    save_oidc_config(config)
+    oidc.clear_discovery_cache()
+    return _oidc_config_response(config)
 
 
 # ── Helper ─────────────────────────────────────────────────────────────────
