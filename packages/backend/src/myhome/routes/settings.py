@@ -4,6 +4,7 @@ from ..models_settings import (
     CostCategory,
     CostCategoryPlacement,
     InventoryCategory,
+    NotificationSettings,
     WorkCategory,
     Supplier,
     SettingsDocument,
@@ -77,4 +78,11 @@ def put_consumable_units(home_id: str, body: list[str]) -> None:
 def put_consumable_categories(home_id: str, body: list[ConsumableCategory]) -> None:
     doc = load_settings(home_id)
     doc.consumableCategories = body
+    save_settings(home_id, doc)
+
+
+@router.put("/api/homes/{home_id}/settings/notifications", status_code=204)
+def put_notification_settings(home_id: str, body: NotificationSettings) -> None:
+    doc = load_settings(home_id)
+    doc.notifications = body
     save_settings(home_id, doc)
