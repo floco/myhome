@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, timezone
 
 from myhome.models_chores import Assignment, Chore, ChoreDocument
-from myhome.notifications import _chore_notifications
+from myhome.models_consumables import Consumable, ConsumableDocument
+from myhome.notifications import _chore_notifications, _low_stock_notifications
 
 
 def _iso(dt: datetime) -> str:
@@ -55,3 +56,18 @@ def test_chore_notifications_dedupes_by_chore_keeping_most_urgent():
     results = _chore_notifications(doc, threshold=0.25)
     assert len(results) == 1
     assert results[0].severity == "critical"
+
+
+def test_low_stock_notifications_flags_low_and_empty_but_not_ok():
+    doc = ConsumableDocument(consumables=[
+        Consumable(id="co1", name="Soap", quantity=5, minQuantity=1),
+        Consumable(id="co2", name="Salt", quantity=1, minQuantity=2),
+        Consumable(id="co3", name="Sugar", quantity=0, minQuantity=1),
+    ])
+    results = _low_stock_notifications(doc)
+    ids = {n.refId for n in results}
+    assert ids == {"co2", "co3"}
+    empty = next(n for n in results if n.refId == "co3")
+    assert empty.severity == "critical"
+    low = next(n for n in results if n.refId == "co2")
+    assert low.severity == "warning"

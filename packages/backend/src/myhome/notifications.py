@@ -56,3 +56,19 @@ def _chore_notifications(doc: ChoreDocument, threshold: float) -> list[Notificat
             severity="critical" if overdue else "warning",
         ))
     return results
+
+
+def _low_stock_notifications(doc: ConsumableDocument) -> list[Notification]:
+    results: list[Notification] = []
+    for c in doc.consumables:
+        if c.quantity <= 0:
+            results.append(Notification(
+                type="low_stock", refId=c.id, title=c.name,
+                detail="Out of stock", severity="critical",
+            ))
+        elif c.quantity <= c.minQuantity:
+            results.append(Notification(
+                type="low_stock", refId=c.id, title=c.name,
+                detail=f"Low stock: {c.quantity} {c.unit} left", severity="warning",
+            ))
+    return results
