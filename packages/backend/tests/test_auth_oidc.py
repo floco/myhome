@@ -239,13 +239,14 @@ def test_oidc_callback_creates_new_user_and_sets_session(fresh):
     assert created.role == "normal"
     assert created.auth_provider == "oidc"
     assert created.password_hash is None
+    assert created.oidc_sub == "sub-123"
 
 
-def test_oidc_callback_links_existing_username(fresh):
+def test_oidc_callback_rejects_conflicting_local_username(fresh):
     from datetime import datetime, timezone
     from myhome.models_auth import User, UserDocument
     save_users(UserDocument(users=[
-        User(id="existing-1", username="alice", role="admin",
+        User(id="existing-1", username="alice", password_hash="somehash", role="admin",
              created_at=datetime.now(timezone.utc).isoformat(), auth_provider="local"),
     ]))
     private_pem, public_pem = _generate_rsa_keypair()
@@ -280,11 +281,102 @@ def test_oidc_callback_links_existing_username(fresh):
             "/api/auth/oidc/callback", params={"code": "authcode123", "state": state},
             follow_redirects=False,
         )
+    assert callback_resp.status_code == 307
+    assert callback_resp.headers["location"] == "/?error=oidc_account_conflict"
+    assert "myhome_access" not in callback_resp.cookies
+    users = load_users().users
+    assert len(users) == 1
+    assert users[0].auth_provider == "local"  # untouched
+
+
+def test_oidc_callback_relogin_matches_by_sub_even_if_username_changed(fresh):
+    private_pem, public_pem = _generate_rsa_keypair()
+    kid = "test-key-1"
+    save_oidc_config(OidcConfig(
+        enabled=True, provider_name="TestIdP", issuer="https://idp.example.test",
+        client_id="cid", client_secret="csecret", default_role="normal",
+        scopes=["openid", "profile", "email"],
+    ))
+
+    def _do_login(username: str, sub: str):
+        with respx.mock:
+            respx.get("https://idp.example.test/.well-known/openid-configuration").mock(
+                return_value=httpx.Response(200, json=DISCOVERY)
+            )
+            login_resp = fresh.get("/api/auth/oidc/login", follow_redirects=False)
+            qs = parse_qs(urlparse(login_resp.headers["location"]).query)
+            state, nonce = qs["state"][0], qs["nonce"][0]
+            claims_in = {
+                "iss": "https://idp.example.test", "aud": "cid", "sub": sub,
+                "exp": int(time.time()) + 3600, "nonce": nonce, "preferred_username": username,
+            }
+            id_token = _make_id_token(private_pem, kid, claims_in)
+            respx.get("https://idp.example.test/jwks").mock(
+                return_value=httpx.Response(200, json=_make_jwks(public_pem, kid))
+            )
+            respx.post("https://idp.example.test/token").mock(
+                return_value=httpx.Response(200, json={
+                    "access_token": "at-1", "id_token": id_token, "token_type": "Bearer",
+                })
+            )
+            return fresh.get(
+                "/api/auth/oidc/callback", params={"code": "authcode123", "state": state},
+                follow_redirects=False,
+            )
+
+    first = _do_login("dave", "sub-abc")
+    assert "myhome_access" in first.cookies
+    second = _do_login("dave-renamed", "sub-abc")  # same sub, IdP-side username changed
+    assert "myhome_access" in second.cookies
+
+    users = load_users().users
+    assert len(users) == 1  # re-login matched by sub, no duplicate created
+    assert users[0].oidc_sub == "sub-abc"
+
+
+def test_oidc_callback_backfills_legacy_oidc_user_missing_sub(fresh):
+    from datetime import datetime, timezone
+    from myhome.models_auth import User, UserDocument
+    save_users(UserDocument(users=[
+        User(id="legacy-1", username="erin", password_hash=None, role="normal",
+             created_at=datetime.now(timezone.utc).isoformat(), auth_provider="oidc", oidc_sub=None),
+    ]))
+    private_pem, public_pem = _generate_rsa_keypair()
+    kid = "test-key-1"
+    save_oidc_config(OidcConfig(
+        enabled=True, provider_name="TestIdP", issuer="https://idp.example.test",
+        client_id="cid", client_secret="csecret", default_role="ro",
+        scopes=["openid", "profile", "email"],
+    ))
+    with respx.mock:
+        respx.get("https://idp.example.test/.well-known/openid-configuration").mock(
+            return_value=httpx.Response(200, json=DISCOVERY)
+        )
+        login_resp = fresh.get("/api/auth/oidc/login", follow_redirects=False)
+        qs = parse_qs(urlparse(login_resp.headers["location"]).query)
+        state, nonce = qs["state"][0], qs["nonce"][0]
+        claims_in = {
+            "iss": "https://idp.example.test", "aud": "cid", "sub": "sub-erin-1",
+            "exp": int(time.time()) + 3600, "nonce": nonce, "preferred_username": "erin",
+        }
+        id_token = _make_id_token(private_pem, kid, claims_in)
+        respx.get("https://idp.example.test/jwks").mock(
+            return_value=httpx.Response(200, json=_make_jwks(public_pem, kid))
+        )
+        respx.post("https://idp.example.test/token").mock(
+            return_value=httpx.Response(200, json={
+                "access_token": "at-1", "id_token": id_token, "token_type": "Bearer",
+            })
+        )
+        callback_resp = fresh.get(
+            "/api/auth/oidc/callback", params={"code": "authcode123", "state": state},
+            follow_redirects=False,
+        )
     assert "myhome_access" in callback_resp.cookies
     users = load_users().users
-    assert len(users) == 1  # linked, not duplicated
-    assert users[0].id == "existing-1"
-    assert users[0].role == "admin"  # kept existing role, not overwritten by default_role
+    assert len(users) == 1
+    assert users[0].id == "legacy-1"
+    assert users[0].oidc_sub == "sub-erin-1"  # backfilled
 
 
 def test_oidc_callback_rejects_mismatched_state(fresh):
