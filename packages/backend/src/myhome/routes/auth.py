@@ -2,10 +2,14 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import secrets
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Cookie, HTTPException, Response
+import httpx
+from authlib.jose.errors import JoseError
+from fastapi import APIRouter, Cookie, HTTPException, Request, Response
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
 from .. import oidc
@@ -338,6 +342,78 @@ async def put_oidc_config(
     save_oidc_config(config)
     oidc.clear_discovery_cache()
     return _oidc_config_response(config)
+
+
+_OIDC_FLOW_COOKIE = "oidc_flow"
+_OIDC_FLOW_MAX_AGE = 600
+
+
+def _redirect_uri(request: Request) -> str:
+    return str(request.base_url).rstrip("/") + "/api/auth/oidc/callback"
+
+
+@router.get("/api/auth/oidc/login")
+async def oidc_login(request: Request) -> RedirectResponse:
+    config = load_oidc_config()
+    if not config.enabled:
+        raise HTTPException(404, "OIDC is not enabled")
+    url, state, code_verifier, nonce = await oidc.build_authorization_url(
+        config, _redirect_uri(request),
+    )
+    response = RedirectResponse(url)
+    flow_payload = json.dumps({"state": state, "code_verifier": code_verifier, "nonce": nonce})
+    response.set_cookie(
+        _OIDC_FLOW_COOKIE, flow_payload, httponly=True, samesite="lax",
+        max_age=_OIDC_FLOW_MAX_AGE,
+    )
+    return response
+
+
+@router.get("/api/auth/oidc/callback")
+async def oidc_callback(
+    request: Request,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+    oidc_flow: str | None = Cookie(default=None),
+) -> RedirectResponse:
+    if error or not code or not state or not oidc_flow:
+        return RedirectResponse("/?error=oidc_failed")
+    try:
+        flow = json.loads(oidc_flow)
+        expected_state, code_verifier, nonce = flow["state"], flow["code_verifier"], flow["nonce"]
+    except (json.JSONDecodeError, KeyError):
+        return RedirectResponse("/?error=oidc_failed")
+    if state != expected_state:
+        return RedirectResponse("/?error=oidc_failed")
+
+    config = load_oidc_config()
+    if not config.enabled:
+        return RedirectResponse("/?error=oidc_failed")
+
+    try:
+        claims = await oidc.exchange_code_for_claims(
+            config, _redirect_uri(request), code, code_verifier, nonce,
+        )
+        username = oidc.extract_username(claims)
+    except (HTTPException, httpx.HTTPError, JoseError):
+        return RedirectResponse("/?error=oidc_failed")
+
+    doc = load_users()
+    user = next((u for u in doc.users if u.username.lower() == username.lower()), None)
+    if user is None:
+        user = User(
+            id=secrets.token_hex(8), username=username, password_hash=None,
+            role=config.default_role, created_at=datetime.now(timezone.utc).isoformat(),
+            auth_provider="oidc",
+        )
+        doc.users.append(user)
+        save_users(doc)
+
+    response = RedirectResponse("/")
+    _set_auth_cookies(response, user.id, user.role)
+    response.delete_cookie(_OIDC_FLOW_COOKIE)
+    return response
 
 
 # ── Helper ─────────────────────────────────────────────────────────────────

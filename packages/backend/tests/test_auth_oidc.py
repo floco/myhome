@@ -1,11 +1,18 @@
+import time
+from urllib.parse import parse_qs, urlparse
+
 import httpx
 import pytest
 import respx
+from authlib.jose import JsonWebKey
+from authlib.jose import jwt as authlib_jwt
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 from myhome import oidc as oidc_module
 from myhome.main import app
 from myhome.models_auth import OidcConfig
-from myhome.persistence_auth import load_oidc_config, save_oidc_config
+from myhome.persistence_auth import load_oidc_config, load_users, save_oidc_config, save_users
 
 
 @pytest.fixture()
@@ -133,3 +140,184 @@ def test_put_oidc_config_clears_discovery_cache(client):
             "client_id": "cid", "default_role": "normal", "scopes": ["openid", "profile", "email"],
         })
     assert route.call_count == 2  # second PUT re-fetches instead of using the cached doc
+
+
+DISCOVERY = {
+    "authorization_endpoint": "https://idp.example.test/authorize",
+    "token_endpoint": "https://idp.example.test/token",
+    "jwks_uri": "https://idp.example.test/jwks",
+}
+
+
+def _generate_rsa_keypair() -> tuple[bytes, bytes]:
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    private_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+    public_pem = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    return private_pem, public_pem
+
+
+def _make_jwks(public_pem: bytes, kid: str) -> dict:
+    jwk = JsonWebKey.import_key(public_pem, {"kid": kid})
+    return {"keys": [jwk.as_dict()]}
+
+
+def _make_id_token(private_pem: bytes, kid: str, claims: dict) -> str:
+    header = {"alg": "RS256", "kid": kid}
+    return authlib_jwt.encode(header, claims, private_pem).decode("utf-8")
+
+
+def test_oidc_login_redirects_to_authorization_endpoint(fresh):
+    save_oidc_config(OidcConfig(
+        enabled=True, provider_name="TestIdP", issuer="https://idp.example.test",
+        client_id="cid", client_secret="csecret", default_role="normal",
+        scopes=["openid", "profile", "email"],
+    ))
+    with respx.mock:
+        respx.get("https://idp.example.test/.well-known/openid-configuration").mock(
+            return_value=httpx.Response(200, json=DISCOVERY)
+        )
+        resp = fresh.get("/api/auth/oidc/login", follow_redirects=False)
+    assert resp.status_code == 307
+    location = resp.headers["location"]
+    assert location.startswith("https://idp.example.test/authorize")
+    assert "code_challenge=" in location
+    assert "oidc_flow" in resp.cookies
+
+
+def test_oidc_login_404s_when_disabled(fresh):
+    resp = fresh.get("/api/auth/oidc/login", follow_redirects=False)
+    assert resp.status_code == 404
+
+
+def test_oidc_callback_creates_new_user_and_sets_session(fresh):
+    private_pem, public_pem = _generate_rsa_keypair()
+    kid = "test-key-1"
+    save_oidc_config(OidcConfig(
+        enabled=True, provider_name="TestIdP", issuer="https://idp.example.test",
+        client_id="cid", client_secret="csecret", default_role="normal",
+        scopes=["openid", "profile", "email"],
+    ))
+    with respx.mock:
+        respx.get("https://idp.example.test/.well-known/openid-configuration").mock(
+            return_value=httpx.Response(200, json=DISCOVERY)
+        )
+        login_resp = fresh.get("/api/auth/oidc/login", follow_redirects=False)
+        qs = parse_qs(urlparse(login_resp.headers["location"]).query)
+        state, nonce = qs["state"][0], qs["nonce"][0]
+
+        claims_in = {
+            "iss": "https://idp.example.test", "aud": "cid", "sub": "sub-123",
+            "exp": int(time.time()) + 3600, "nonce": nonce,
+            "preferred_username": "newoidcuser", "email": "newoidcuser@example.test",
+        }
+        id_token = _make_id_token(private_pem, kid, claims_in)
+        respx.get("https://idp.example.test/jwks").mock(
+            return_value=httpx.Response(200, json=_make_jwks(public_pem, kid))
+        )
+        respx.post("https://idp.example.test/token").mock(
+            return_value=httpx.Response(200, json={
+                "access_token": "at-1", "id_token": id_token, "token_type": "Bearer",
+            })
+        )
+        callback_resp = fresh.get(
+            "/api/auth/oidc/callback", params={"code": "authcode123", "state": state},
+            follow_redirects=False,
+        )
+    assert callback_resp.status_code == 307
+    assert callback_resp.headers["location"] == "/"
+    assert "myhome_access" in callback_resp.cookies
+
+    users = load_users().users
+    created = next(u for u in users if u.username == "newoidcuser")
+    assert created.role == "normal"
+    assert created.auth_provider == "oidc"
+    assert created.password_hash is None
+
+
+def test_oidc_callback_links_existing_username(fresh):
+    from datetime import datetime, timezone
+    from myhome.models_auth import User, UserDocument
+    save_users(UserDocument(users=[
+        User(id="existing-1", username="alice", role="admin",
+             created_at=datetime.now(timezone.utc).isoformat(), auth_provider="local"),
+    ]))
+    private_pem, public_pem = _generate_rsa_keypair()
+    kid = "test-key-1"
+    save_oidc_config(OidcConfig(
+        enabled=True, provider_name="TestIdP", issuer="https://idp.example.test",
+        client_id="cid", client_secret="csecret", default_role="ro",
+        scopes=["openid", "profile", "email"],
+    ))
+    with respx.mock:
+        respx.get("https://idp.example.test/.well-known/openid-configuration").mock(
+            return_value=httpx.Response(200, json=DISCOVERY)
+        )
+        login_resp = fresh.get("/api/auth/oidc/login", follow_redirects=False)
+        qs = parse_qs(urlparse(login_resp.headers["location"]).query)
+        state, nonce = qs["state"][0], qs["nonce"][0]
+
+        claims_in = {
+            "iss": "https://idp.example.test", "aud": "cid", "sub": "sub-999",
+            "exp": int(time.time()) + 3600, "nonce": nonce, "preferred_username": "Alice",
+        }
+        id_token = _make_id_token(private_pem, kid, claims_in)
+        respx.get("https://idp.example.test/jwks").mock(
+            return_value=httpx.Response(200, json=_make_jwks(public_pem, kid))
+        )
+        respx.post("https://idp.example.test/token").mock(
+            return_value=httpx.Response(200, json={
+                "access_token": "at-1", "id_token": id_token, "token_type": "Bearer",
+            })
+        )
+        callback_resp = fresh.get(
+            "/api/auth/oidc/callback", params={"code": "authcode123", "state": state},
+            follow_redirects=False,
+        )
+    assert "myhome_access" in callback_resp.cookies
+    users = load_users().users
+    assert len(users) == 1  # linked, not duplicated
+    assert users[0].id == "existing-1"
+    assert users[0].role == "admin"  # kept existing role, not overwritten by default_role
+
+
+def test_oidc_callback_rejects_mismatched_state(fresh):
+    save_oidc_config(OidcConfig(
+        enabled=True, provider_name="TestIdP", issuer="https://idp.example.test",
+        client_id="cid", client_secret="csecret", default_role="normal",
+    ))
+    with respx.mock:
+        respx.get("https://idp.example.test/.well-known/openid-configuration").mock(
+            return_value=httpx.Response(200, json=DISCOVERY)
+        )
+        fresh.get("/api/auth/oidc/login", follow_redirects=False)
+        resp = fresh.get(
+            "/api/auth/oidc/callback", params={"code": "x", "state": "wrong-state"},
+            follow_redirects=False,
+        )
+    assert resp.status_code == 307
+    assert resp.headers["location"] == "/?error=oidc_failed"
+
+
+def test_oidc_callback_rejects_missing_flow_cookie(fresh):
+    resp = fresh.get(
+        "/api/auth/oidc/callback", params={"code": "x", "state": "some-state"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 307
+    assert resp.headers["location"] == "/?error=oidc_failed"
+
+
+def test_oidc_callback_passes_through_idp_error_param(fresh):
+    resp = fresh.get(
+        "/api/auth/oidc/callback", params={"error": "access_denied"},
+        follow_redirects=False,
+    )
+    assert resp.status_code == 307
+    assert resp.headers["location"] == "/?error=oidc_failed"
