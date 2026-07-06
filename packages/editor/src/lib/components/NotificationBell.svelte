@@ -32,7 +32,6 @@
 
   function handleClick(): void {
     dropdownOpen = !dropdownOpen;
-    if (dropdownOpen) store.refresh();
   }
 
   function handleClickOutside(e: MouseEvent): void {
