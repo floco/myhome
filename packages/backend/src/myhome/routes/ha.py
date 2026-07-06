@@ -51,3 +51,17 @@ async def get_ha_areas() -> list[dict]:
     except Exception:
         pass
     return []
+
+
+async def call_ha_service(domain: str, service: str, data: dict) -> None:
+    token = os.environ.get("SUPERVISOR_TOKEN")
+    if not token:
+        raise RuntimeError("SUPERVISOR_TOKEN not set")
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{_HA_BASE}/services/{domain}/{service}",
+            headers=_auth_headers(token),
+            json=data,
+            timeout=5.0,
+        )
+        resp.raise_for_status()
