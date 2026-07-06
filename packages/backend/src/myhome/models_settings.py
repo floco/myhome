@@ -43,6 +43,15 @@ class ConsumableCategory(BaseModel):
     emoji: str
 
 
+class NotificationSettings(BaseModel):
+    enabled: bool = True
+    choresDueSoonThreshold: float = 0.25
+    warrantyDaysThreshold: int = 30
+    haPushEnabled: bool = False
+    haNotifyService: str | None = None
+    haPushTime: str = "08:00"
+
+
 def _default_consumable_units() -> list[str]:
     return ["count", "L", "mL", "kg", "g", "packs", "rolls", "pairs"]
 
@@ -86,3 +95,4 @@ class SettingsDocument(BaseModel):
     suppliers: list[Supplier] = []
     consumableUnits: list[str] = []
     consumableCategories: list[ConsumableCategory] = []
+    notifications: NotificationSettings = NotificationSettings()
