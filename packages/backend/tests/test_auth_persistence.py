@@ -26,6 +26,21 @@ def test_save_and_load_users_roundtrip(data_dir):
     assert loaded.users[0].role == "admin"
 
 
+def test_save_and_load_users_roundtrip_preserves_oidc_sub(data_dir):
+    doc = UserDocument(users=[
+        User(id="u1", username="alice", password_hash=None, role="admin",
+             created_at="2026-01-01T00:00:00+00:00", auth_provider="oidc", oidc_sub="idp-sub-123")
+    ])
+    save_users(doc)
+    loaded = load_users()
+    assert loaded.users[0].oidc_sub == "idp-sub-123"
+
+
+def test_user_oidc_sub_defaults_to_none():
+    user = User(id="u1", username="alice", role="normal", created_at="2026-01-01T00:00:00+00:00")
+    assert user.oidc_sub is None
+
+
 def test_save_users_atomic_write(data_dir):
     doc = UserDocument(users=[
         User(id="u1", username="bob", password_hash="h", role="normal", created_at="2026-01-01T00:00:00+00:00")
