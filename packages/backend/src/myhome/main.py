@@ -61,7 +61,10 @@ migrate_legacy_if_needed()
 
 # ── Auth middleware ────────────────────────────────────────────────────────
 
-_EXEMPT_PATHS = {"/api/auth/login", "/api/auth/refresh"}
+_EXEMPT_PATHS = {
+    "/api/auth/login", "/api/auth/refresh",
+    "/api/auth/oidc/status", "/api/auth/oidc/login", "/api/auth/oidc/callback",
+}
 
 
 @app.middleware("http")
