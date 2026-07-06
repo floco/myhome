@@ -27,12 +27,17 @@
 
   function checkOidcError(): void {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("error") === "oidc_failed") {
+    const errParam = params.get("error");
+    if (errParam === "oidc_failed") {
       error = "Sign-in failed, please try again";
-      params.delete("error");
-      const query = params.toString();
-      window.history.replaceState({}, "", window.location.pathname + (query ? `?${query}` : ""));
+    } else if (errParam === "oidc_account_conflict") {
+      error = "An account with this username already exists. Contact your administrator to link accounts.";
+    } else {
+      return;
     }
+    params.delete("error");
+    const query = params.toString();
+    window.history.replaceState({}, "", window.location.pathname + (query ? `?${query}` : ""));
   }
 
   loadOidcStatus();

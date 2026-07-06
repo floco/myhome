@@ -399,15 +399,25 @@ async def oidc_callback(
     except (HTTPException, httpx.HTTPError, JoseError):
         return RedirectResponse("/?error=oidc_failed")
 
+    sub = claims["sub"]
     doc = load_users()
-    user = next((u for u in doc.users if u.username.lower() == username.lower()), None)
+    user = next((u for u in doc.users if u.auth_provider == "oidc" and u.oidc_sub == sub), None)
     if user is None:
-        user = User(
-            id=secrets.token_hex(8), username=username, password_hash=None,
-            role=config.default_role, created_at=datetime.now(timezone.utc).isoformat(),
-            auth_provider="oidc",
-        )
-        doc.users.append(user)
+        existing = next((u for u in doc.users if u.username.lower() == username.lower()), None)
+        if existing is not None:
+            if existing.auth_provider != "oidc" or existing.oidc_sub is not None:
+                # Never silently take over a local account or one already bound to a
+                # different subject; require explicit admin intervention to resolve.
+                return RedirectResponse("/?error=oidc_account_conflict")
+            existing.oidc_sub = sub  # legacy OIDC account predating oidc_sub tracking
+            user = existing
+        else:
+            user = User(
+                id=secrets.token_hex(8), username=username, password_hash=None,
+                role=config.default_role, created_at=datetime.now(timezone.utc).isoformat(),
+                auth_provider="oidc", oidc_sub=sub,
+            )
+            doc.users.append(user)
         save_users(doc)
 
     response = RedirectResponse("/")

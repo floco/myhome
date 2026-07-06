@@ -10,6 +10,7 @@ class User(BaseModel):
     role: str  # "admin" | "normal" | "ro"
     created_at: str  # ISO-8601
     auth_provider: str = "local"  # "local" | "oidc"
+    oidc_sub: str | None = None  # IdP's stable subject identifier, set only for auth_provider="oidc"
 
 
 class UserDocument(BaseModel):

@@ -174,10 +174,57 @@ def test_extract_username_prefers_preferred_username():
     assert oidc.extract_username({"preferred_username": "bob", "email": "b@x.test"}) == "bob"
 
 
-def test_extract_username_falls_back_to_email_local_part():
-    assert oidc.extract_username({"email": "carol@example.test"}) == "carol"
+def test_extract_username_falls_back_to_verified_email_local_part():
+    claims = {"email": "carol@example.test", "email_verified": True}
+    assert oidc.extract_username(claims) == "carol"
+
+
+def test_extract_username_rejects_unverified_email():
+    claims = {"email": "carol@example.test", "email_verified": False}
+    with pytest.raises(HTTPException):
+        oidc.extract_username(claims)
+
+
+def test_extract_username_rejects_email_without_verified_flag():
+    claims = {"email": "carol@example.test"}
+    with pytest.raises(HTTPException):
+        oidc.extract_username(claims)
 
 
 def test_extract_username_raises_when_neither_present():
     with pytest.raises(HTTPException):
         oidc.extract_username({"sub": "no-username-or-email"})
+
+
+async def test_exchange_code_for_claims_rejects_missing_sub():
+    private_pem, public_pem = _generate_rsa_keypair()
+    kid = "test-key-1"
+    config = OidcConfig(
+        enabled=True, provider_name="TestIdP", issuer="https://idp.example.test",
+        client_id="cid", client_secret="csecret", default_role="normal",
+        scopes=["openid", "profile", "email"],
+    )
+    claims_in = {
+        "iss": "https://idp.example.test", "aud": "cid",
+        "exp": int(time.time()) + 3600, "nonce": "test-nonce-abc",
+        "preferred_username": "alice",
+    }  # no "sub" claim
+    id_token = _make_id_token(private_pem, kid, claims_in)
+
+    with respx.mock:
+        respx.get("https://idp.example.test/.well-known/openid-configuration").mock(
+            return_value=httpx.Response(200, json=DISCOVERY)
+        )
+        respx.get("https://idp.example.test/jwks").mock(
+            return_value=httpx.Response(200, json=_make_jwks(public_pem, kid))
+        )
+        respx.post("https://idp.example.test/token").mock(
+            return_value=httpx.Response(200, json={
+                "access_token": "at-123", "id_token": id_token, "token_type": "Bearer",
+            })
+        )
+        with pytest.raises(HTTPException):
+            await oidc.exchange_code_for_claims(
+                config, "https://myhome.example/api/auth/oidc/callback",
+                code="authcode123", code_verifier="verifier123", nonce="test-nonce-abc",
+            )
