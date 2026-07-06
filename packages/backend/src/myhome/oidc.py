@@ -85,6 +85,7 @@ async def exchange_code_for_claims(
                 "iss": {"essential": True, "value": config.issuer},
                 "aud": {"essential": True, "value": config.client_id},
                 "exp": {"essential": True},
+                "sub": {"essential": True},
             },
         )
         claims.validate()
@@ -101,7 +102,6 @@ def extract_username(claims: dict) -> str:
     username = claims.get("preferred_username")
     if username:
         return username
-    email = claims.get("email")
-    if email:
-        return email.split("@")[0]
-    raise HTTPException(400, "ID token has neither preferred_username nor email claim")
+    if claims.get("email") and claims.get("email_verified"):
+        return claims["email"].split("@")[0]
+    raise HTTPException(400, "ID token has neither preferred_username nor a verified email claim")
