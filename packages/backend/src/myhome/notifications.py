@@ -6,6 +6,11 @@ from .models_chores import ChoreDocument
 from .models_consumables import ConsumableDocument
 from .models_inventory import InventoryDocument
 from .models_notifications import Notification, NotificationState
+from .persistence_chores import load_chores
+from .persistence_consumables import load_consumables
+from .persistence_inventory import load_inventory
+from .persistence_notifications import load_notification_state, save_notification_state
+from .persistence_settings import load_settings
 
 
 def _parse_iso(value: str) -> datetime:
@@ -100,3 +105,25 @@ def _warranty_notifications(
 
     new_state = state.model_copy(update={"warrantyNotified": notified}) if changed else state
     return fired, new_state
+
+
+def compute_notifications(home_id: str) -> list[Notification]:
+    settings = load_settings(home_id).notifications
+    if not settings.enabled:
+        return []
+
+    state = load_notification_state(home_id)
+    chores_doc = load_chores(home_id)
+    consumables_doc = load_consumables(home_id)
+    inventory_doc = load_inventory(home_id)
+
+    results: list[Notification] = []
+    results += _chore_notifications(chores_doc, settings.choresDueSoonThreshold)
+    results += _low_stock_notifications(consumables_doc)
+    fired, updated_state = _warranty_notifications(
+        inventory_doc, settings.warrantyDaysThreshold, state,
+    )
+    results += fired
+    if updated_state != state:
+        save_notification_state(home_id, updated_state)
+    return results

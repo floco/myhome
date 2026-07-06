@@ -119,3 +119,36 @@ def test_warranty_notifications_ignores_items_with_no_expiry_date():
     doc = InventoryDocument(items=[InventoryItem(id="i1", name="Ladder")])
     fired, new_state = _warranty_notifications(doc, days_threshold=30, state=NotificationState())
     assert fired == []
+
+
+def test_get_notifications_route_combines_all_three_categories(client, home_id):
+    chore = client.post(f"/api/homes/{home_id}/chores", json={
+        "name": "Sweep", "emoji": "🧹", "periodDays": 10,
+        "nextDueDate": (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }).json()
+    client.post(f"/api/homes/{home_id}/assignments", json={
+        "choreId": chore["id"],
+        "nextDueDate": (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    })
+    client.post(f"/api/homes/{home_id}/consumables", json={
+        "name": "Salt", "quantity": 0, "minQuantity": 1,
+    })
+    client.post(f"/api/homes/{home_id}/inventory/items", json={
+        "name": "TV", "warrantyExpiryDate": (datetime.now(timezone.utc) + timedelta(days=5)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    })
+
+    resp = client.get(f"/api/homes/{home_id}/notifications")
+    assert resp.status_code == 200
+    types = {n["type"] for n in resp.json()}
+    assert types == {"chore", "low_stock", "warranty"}
+
+
+def test_get_notifications_route_returns_empty_when_disabled(client, home_id):
+    from myhome.persistence_settings import load_settings, save_settings
+    doc = load_settings(home_id)
+    doc.notifications.enabled = False
+    save_settings(home_id, doc)
+
+    client.post(f"/api/homes/{home_id}/consumables", json={"name": "Salt", "quantity": 0, "minQuantity": 1})
+    resp = client.get(f"/api/homes/{home_id}/notifications")
+    assert resp.json() == []

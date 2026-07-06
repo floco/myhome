@@ -12,7 +12,7 @@ from .deps import ROLE_ORDER, get_user_from_request
 from .mcp_app import mcp_asgi_app
 from .mcp_server import mcp
 from .persistence_mcp import load_mcp_config
-from .routes import auth, backup, chores, consumables, costs, ha, homes, house, inventory, kb, mcp_config, settings, svg, works
+from .routes import auth, backup, chores, consumables, costs, ha, homes, house, inventory, kb, mcp_config, notifications, settings, svg, works
 
 
 @asynccontextmanager
@@ -115,6 +115,7 @@ app.include_router(works.router)
 app.include_router(kb.router)
 app.include_router(backup.router)
 app.include_router(consumables.router)
+app.include_router(notifications.router)
 app.include_router(mcp_config.router)
 
 app.mount("/mcp", _gated_mcp_app)
