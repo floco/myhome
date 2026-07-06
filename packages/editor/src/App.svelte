@@ -773,8 +773,8 @@
     <span class="app-title">My Home</span>
 
     <span class="spacer"></span>
-    <button class="icon-btn search-btn" title="Search (Ctrl+K)" onclick={() => { commandPaletteOpen = true; }}>🔍</button>
     <HomesSwitcher topbar={true} />
+    <button class="icon-btn search-btn" title="Search (Ctrl+K)" onclick={() => { commandPaletteOpen = true; }}>🔍</button>
     <button
       class="icon-btn theme-toggle"
       title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}

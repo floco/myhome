@@ -22,6 +22,10 @@
     dropdownOpen = !dropdownOpen;
   }
 
+  function handleClickOutside(e: MouseEvent): void {
+    if (!(e.target as HTMLElement).closest(".switcher-topbar, .switcher")) dropdownOpen = false;
+  }
+
   function selectHome(id: string): void {
     homesStore.setActiveHomeId(id);
     dropdownOpen = false;
@@ -31,6 +35,8 @@
     return type === "project" ? "🏗" : "🏠";
   }
 </script>
+
+<svelte:window onclick={handleClickOutside} />
 
 {#if topbar}
   <div class="switcher-topbar">
@@ -174,7 +180,7 @@
   .topbar-chevron { font-size: 9px; color: var(--text-muted); }
 
   .topbar-dropdown {
-    position: absolute; top: calc(100% + 4px); right: 0;
+    position: absolute; top: calc(100% + 4px); left: 0;
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     z-index: 200; padding: 4px; min-width: 160px;
