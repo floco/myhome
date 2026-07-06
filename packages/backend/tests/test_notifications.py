@@ -2,7 +2,13 @@ from datetime import datetime, timedelta, timezone
 
 from myhome.models_chores import Assignment, Chore, ChoreDocument
 from myhome.models_consumables import Consumable, ConsumableDocument
-from myhome.notifications import _chore_notifications, _low_stock_notifications
+from myhome.models_inventory import InventoryDocument, InventoryItem
+from myhome.models_notifications import NotificationState
+from myhome.notifications import _chore_notifications, _low_stock_notifications, _warranty_notifications
+
+
+def _iso_days_from_now(days: int) -> str:
+    return (datetime.now(timezone.utc) + timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _iso(dt: datetime) -> str:
@@ -71,3 +77,45 @@ def test_low_stock_notifications_flags_low_and_empty_but_not_ok():
     assert empty.severity == "critical"
     low = next(n for n in results if n.refId == "co2")
     assert low.severity == "warning"
+
+
+def test_warranty_notifications_fires_once_then_suppresses():
+    expiry = _iso_days_from_now(10)
+    doc = InventoryDocument(items=[
+        InventoryItem(id="i1", name="TV", warrantyExpiryDate=expiry),
+    ])
+    state = NotificationState()
+
+    fired, new_state = _warranty_notifications(doc, days_threshold=30, state=state)
+    assert len(fired) == 1
+    assert fired[0].refId == "i1"
+    assert new_state.warrantyNotified["i1"] == expiry
+
+    fired_again, unchanged_state = _warranty_notifications(doc, days_threshold=30, state=new_state)
+    assert fired_again == []
+    assert unchanged_state == new_state
+
+
+def test_warranty_notifications_refires_when_expiry_date_changes():
+    doc = InventoryDocument(items=[
+        InventoryItem(id="i1", name="TV", warrantyExpiryDate=_iso_days_from_now(10)),
+    ])
+    state = NotificationState(warrantyNotified={"i1": "2020-01-01T00:00:00Z"})
+    fired, new_state = _warranty_notifications(doc, days_threshold=30, state=state)
+    assert len(fired) == 1
+    assert new_state.warrantyNotified["i1"] != "2020-01-01T00:00:00Z"
+
+
+def test_warranty_notifications_ignores_items_outside_threshold():
+    doc = InventoryDocument(items=[
+        InventoryItem(id="i1", name="TV", warrantyExpiryDate=_iso_days_from_now(90)),
+    ])
+    fired, new_state = _warranty_notifications(doc, days_threshold=30, state=NotificationState())
+    assert fired == []
+    assert new_state == NotificationState()
+
+
+def test_warranty_notifications_ignores_items_with_no_expiry_date():
+    doc = InventoryDocument(items=[InventoryItem(id="i1", name="Ladder")])
+    fired, new_state = _warranty_notifications(doc, days_threshold=30, state=NotificationState())
+    assert fired == []

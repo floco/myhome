@@ -72,3 +72,31 @@ def _low_stock_notifications(doc: ConsumableDocument) -> list[Notification]:
                 detail=f"Low stock: {c.quantity} {c.unit} left", severity="warning",
             ))
     return results
+
+
+def _warranty_notifications(
+    doc: InventoryDocument, days_threshold: int, state: NotificationState,
+) -> tuple[list[Notification], NotificationState]:
+    now = datetime.now(timezone.utc)
+    notified = dict(state.warrantyNotified)
+    fired: list[Notification] = []
+    changed = False
+
+    for item in doc.items:
+        if not item.warrantyExpiryDate:
+            continue
+        if notified.get(item.id) == item.warrantyExpiryDate:
+            continue
+        expiry = _parse_iso(item.warrantyExpiryDate)
+        days_left = (expiry.date() - now.date()).days
+        if days_left > days_threshold:
+            continue
+        detail = "Warranty expired" if days_left < 0 else f"Warranty expires in {days_left}d"
+        fired.append(Notification(
+            type="warranty", refId=item.id, title=item.name, detail=detail, severity="info",
+        ))
+        notified[item.id] = item.warrantyExpiryDate
+        changed = True
+
+    new_state = state.model_copy(update={"warrantyNotified": notified}) if changed else state
+    return fired, new_state
