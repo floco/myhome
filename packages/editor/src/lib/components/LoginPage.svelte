@@ -10,6 +10,38 @@
   let error = $state<string | null>(null);
   let loading = $state(false);
 
+  let oidcEnabled = $state(false);
+  let oidcProviderName = $state("");
+
+  async function loadOidcStatus(): Promise<void> {
+    try {
+      const resp = await fetch("/api/auth/oidc/status");
+      if (!resp.ok) return;
+      const data = await resp.json();
+      oidcEnabled = data.enabled;
+      oidcProviderName = data.provider_name;
+    } catch {
+      oidcEnabled = false;
+    }
+  }
+
+  function checkOidcError(): void {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("error") === "oidc_failed") {
+      error = "Sign-in failed, please try again";
+      params.delete("error");
+      const query = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (query ? `?${query}` : ""));
+    }
+  }
+
+  loadOidcStatus();
+  checkOidcError();
+
+  function signInWithOidc(): void {
+    window.location.href = "/api/auth/oidc/login";
+  }
+
   async function handleSubmit(e: SubmitEvent): Promise<void> {
     e.preventDefault();
     error = null;
@@ -33,6 +65,17 @@
       <p class="login-subtitle">Sign in to continue</p>
     </div>
 
+    {#if error}
+      <div class="login-error">{error}</div>
+    {/if}
+
+    {#if oidcEnabled}
+      <button type="button" class="oidc-btn" onclick={signInWithOidc}>
+        Sign in with {oidcProviderName}
+      </button>
+      <div class="oidc-divider"><span>or</span></div>
+    {/if}
+
     <form class="login-form" onsubmit={handleSubmit}>
       <div class="form-field">
         <label for="login-username">Username</label>
@@ -54,10 +97,6 @@
           required
         />
       </div>
-
-      {#if error}
-        <div class="login-error">{error}</div>
-      {/if}
 
       <button type="submit" class="login-btn" disabled={loading}>
         {loading ? "Signing in…" : "Sign in"}
@@ -110,6 +149,39 @@
     font-size: 0.875rem;
     color: var(--text-muted);
   }
+
+  .oidc-btn {
+    background: var(--surface-alt);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font-sans);
+  }
+
+  .oidc-btn:hover { background: var(--surface-hover); }
+
+  .oidc-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .oidc-divider::before,
+  .oidc-divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .oidc-divider span { padding: 0 12px; }
 
   .login-form { display: flex; flex-direction: column; gap: 16px; }
 
