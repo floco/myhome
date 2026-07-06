@@ -11,7 +11,9 @@ dependencies = [
     "pymupdf>=1.24",
     "python-jose[cryptography]>=3.3",
     "passlib[bcrypt]>=1.7",
-    "bcrypt>=4.0,<5",
+    # passlib 1.7.4 (latest, unmaintained) probes bcrypt.__about__.__version__,
+    # which bcrypt removed in 4.1 -- pin below that to avoid a warning on every hash/verify.
+    "bcrypt>=4.0,<4.1",
     "mcp>=1.28",
 ]
 
