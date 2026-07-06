@@ -1,5 +1,5 @@
 import pytest
-from myhome.models_auth import ApiToken, TokenDocument, User, UserDocument
+from myhome.models_auth import ApiToken, OidcConfig, OidcConfigDocument, TokenDocument, User, UserDocument
 from myhome.persistence_auth import load_tokens, load_users, save_tokens, save_users
 
 
@@ -50,3 +50,22 @@ def test_save_and_load_tokens_roundtrip(data_dir):
     assert len(loaded.tokens) == 1
     assert loaded.tokens[0].name == "MCP"
     assert loaded.tokens[0].last_used_at is None
+
+
+def test_user_password_hash_defaults_to_none():
+    user = User(id="u1", username="alice", role="admin", created_at="2026-01-01T00:00:00+00:00")
+    assert user.password_hash is None
+    assert user.auth_provider == "local"
+
+
+def test_oidc_config_defaults():
+    config = OidcConfig()
+    assert config.enabled is False
+    assert config.scopes == ["openid", "profile", "email"]
+    assert config.default_role == "normal"
+
+
+def test_oidc_config_document_defaults():
+    doc = OidcConfigDocument()
+    assert doc.version == 1
+    assert doc.config.enabled is False
