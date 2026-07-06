@@ -426,6 +426,69 @@
 
   loadMcpConfig();
 
+  // --- Single Sign-On / OIDC (admin only) ---
+  interface OidcConfigInfo {
+    enabled: boolean;
+    provider_name: string;
+    issuer: string;
+    client_id: string;
+    client_secret: string;
+    default_role: string;
+    scopes: string[];
+  }
+
+  let oidcConfig = $state<OidcConfigInfo>({
+    enabled: false, provider_name: "", issuer: "", client_id: "",
+    client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"],
+  });
+  let oidcConfigLoaded = $state(false);
+  let oidcClientSecretDraft = $state("");
+  let oidcError = $state<string | null>(null);
+  let oidcSaving = $state(false);
+
+  async function loadOidcConfig(): Promise<void> {
+    if (authStore.user?.role !== "admin") return;
+    try {
+      const resp = await fetch("/api/auth/oidc/config");
+      if (!resp.ok) return;
+      oidcConfig = await resp.json();
+    } finally {
+      oidcConfigLoaded = true;
+    }
+  }
+
+  async function saveOidcConfig(): Promise<void> {
+    oidcError = null;
+    oidcSaving = true;
+    try {
+      const body: Record<string, unknown> = {
+        enabled: oidcConfig.enabled,
+        provider_name: oidcConfig.provider_name,
+        issuer: oidcConfig.issuer,
+        client_id: oidcConfig.client_id,
+        default_role: oidcConfig.default_role,
+        scopes: oidcConfig.scopes,
+      };
+      if (oidcClientSecretDraft.trim()) body.client_secret = oidcClientSecretDraft.trim();
+      const resp = await fetch("/api/auth/oidc/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!resp.ok) {
+        const d = await resp.json().catch(() => ({}));
+        oidcError = (d as { detail?: string }).detail ?? `Error ${resp.status}`;
+        return;
+      }
+      oidcConfig = await resp.json();
+      oidcClientSecretDraft = "";
+    } finally {
+      oidcSaving = false;
+    }
+  }
+
+  loadOidcConfig();
+
   // --- Backup & Restore ---
   let downloadingBackup = $state(false);
   let backupError = $state<string | null>(null);
@@ -1117,6 +1180,59 @@
           {/if}
         {/if}
         {#if mcpError}<div class="error">{mcpError}</div>{/if}
+      </Card>
+    {/if}
+
+    <!-- Single Sign-On (admin only) -->
+    {#if authStore.user?.role === "admin"}
+      <Card>
+        <div class="section-header">
+          <h2>Single Sign-On</h2>
+        </div>
+        <p class="section-desc">
+          Let users sign in via an external OIDC provider (Keycloak, Authentik, Google
+          Workspace, etc.) alongside local username/password login.
+        </p>
+        {#if oidcConfigLoaded}
+          <label class="module-row">
+            <input type="checkbox" bind:checked={oidcConfig.enabled} />
+            <span class="mod-label">Enable Single Sign-On</span>
+          </label>
+          <div class="modal-form" style="margin-top: var(--space-3)">
+            <div class="modal-field">
+              <span class="modal-label">Provider name</span>
+              <Input bind:value={oidcConfig.provider_name} placeholder="e.g. Keycloak" />
+            </div>
+            <div class="modal-field">
+              <span class="modal-label">Issuer URL</span>
+              <Input bind:value={oidcConfig.issuer} placeholder="https://auth.example.com/realms/home" />
+            </div>
+            <div class="modal-field">
+              <span class="modal-label">Client ID</span>
+              <Input bind:value={oidcConfig.client_id} />
+            </div>
+            <div class="modal-field">
+              <span class="modal-label">Client secret</span>
+              <Input type="password" bind:value={oidcClientSecretDraft} placeholder={oidcConfig.client_secret || "Not set"} />
+            </div>
+            <div class="modal-field">
+              <span class="modal-label">Default role for new sign-ins</span>
+              <select bind:value={oidcConfig.default_role} class="modal-select">
+                {#each ["ro", "normal", "admin"] as r}
+                  <option value={r}>{r}</option>
+                {/each}
+              </select>
+            </div>
+            <div class="modal-field">
+              <span class="modal-label">Redirect URI</span>
+              <p class="empty-hint">{window.location.origin}/api/auth/oidc/callback</p>
+            </div>
+            {#if oidcError}<div class="error">{oidcError}</div>{/if}
+            <div class="modal-actions">
+              <Button onclick={saveOidcConfig} disabled={oidcSaving}>{oidcSaving ? "Saving…" : "Save"}</Button>
+            </div>
+          </div>
+        {/if}
       </Card>
     {/if}
 

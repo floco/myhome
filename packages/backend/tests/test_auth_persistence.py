@@ -1,6 +1,6 @@
 import pytest
-from myhome.models_auth import ApiToken, TokenDocument, User, UserDocument
-from myhome.persistence_auth import load_tokens, load_users, save_tokens, save_users
+from myhome.models_auth import ApiToken, OidcConfig, OidcConfigDocument, TokenDocument, User, UserDocument
+from myhome.persistence_auth import load_oidc_config, load_tokens, load_users, save_oidc_config, save_tokens, save_users
 
 
 @pytest.fixture()
@@ -50,3 +50,48 @@ def test_save_and_load_tokens_roundtrip(data_dir):
     assert len(loaded.tokens) == 1
     assert loaded.tokens[0].name == "MCP"
     assert loaded.tokens[0].last_used_at is None
+
+
+def test_user_password_hash_defaults_to_none():
+    user = User(id="u1", username="alice", role="admin", created_at="2026-01-01T00:00:00+00:00")
+    assert user.password_hash is None
+    assert user.auth_provider == "local"
+
+
+def test_oidc_config_defaults():
+    config = OidcConfig()
+    assert config.enabled is False
+    assert config.scopes == ["openid", "profile", "email"]
+    assert config.default_role == "normal"
+
+
+def test_oidc_config_document_defaults():
+    doc = OidcConfigDocument()
+    assert doc.version == 1
+    assert doc.config.enabled is False
+
+
+def test_load_oidc_config_returns_default_when_no_file(data_dir):
+    config = load_oidc_config()
+    assert config.enabled is False
+    assert config.issuer == ""
+
+
+def test_save_and_load_oidc_config_roundtrip(data_dir):
+    save_oidc_config(OidcConfig(
+        enabled=True, provider_name="Keycloak", issuer="https://auth.example.com/realms/home",
+        client_id="myhome", client_secret="s3cret", default_role="ro",
+        scopes=["openid", "profile", "email"],
+    ))
+    loaded = load_oidc_config()
+    assert loaded.enabled is True
+    assert loaded.provider_name == "Keycloak"
+    assert loaded.issuer == "https://auth.example.com/realms/home"
+    assert loaded.client_secret == "s3cret"
+    assert loaded.default_role == "ro"
+
+
+def test_save_oidc_config_atomic_write(data_dir):
+    save_oidc_config(OidcConfig(enabled=True, provider_name="Test", issuer="https://x.test"))
+    assert (data_dir / "oidc_config.json").exists()
+    assert not (data_dir / "oidc_config.tmp").exists()

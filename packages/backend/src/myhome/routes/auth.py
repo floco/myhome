@@ -2,12 +2,17 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import secrets
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Cookie, HTTPException, Response
+import httpx
+from authlib.jose.errors import JoseError
+from fastapi import APIRouter, Cookie, HTTPException, Request, Response
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
+from .. import oidc
 from ..deps import (
     ROLE_ORDER,
     _decode_refresh,
@@ -16,8 +21,15 @@ from ..deps import (
     pwd_ctx,
     require_auth,
 )
-from ..models_auth import ApiToken, TokenDocument, User, UserDocument
-from ..persistence_auth import load_tokens, load_users, save_tokens, save_users
+from ..models_auth import ApiToken, OidcConfig, TokenDocument, User, UserDocument
+from ..persistence_auth import (
+    load_oidc_config,
+    load_tokens,
+    load_users,
+    save_oidc_config,
+    save_tokens,
+    save_users,
+)
 
 router = APIRouter()
 
@@ -70,13 +82,38 @@ class CreatedTokenResponse(BaseModel):
     info: TokenInfo
 
 
+class OidcStatusResponse(BaseModel):
+    enabled: bool
+    provider_name: str
+
+
+class OidcConfigResponse(BaseModel):
+    enabled: bool
+    provider_name: str
+    issuer: str
+    client_id: str
+    client_secret: str  # masked
+    default_role: str
+    scopes: list[str]
+
+
+class OidcConfigUpdateRequest(BaseModel):
+    enabled: bool
+    provider_name: str
+    issuer: str
+    client_id: str
+    client_secret: str | None = None  # omit/None keeps the existing secret
+    default_role: str
+    scopes: list[str] = ["openid", "profile", "email"]
+
+
 # ── Core auth ─────────────────────────────────────────────────────────────
 
 @router.post("/api/auth/login")
 def login(body: LoginRequest, response: Response) -> UserInfo:
     doc = load_users()
     user = next((u for u in doc.users if u.username.lower() == body.username.lower()), None)
-    if user is None or not pwd_ctx.verify(body.password, user.password_hash):
+    if user is None or user.password_hash is None or not pwd_ctx.verify(body.password, user.password_hash):
         raise HTTPException(401, "Invalid username or password")
     _set_auth_cookies(response, user.id, user.role)
     return UserInfo(id=user.id, username=user.username, role=user.role)
@@ -122,7 +159,7 @@ def change_password(
     user = next((u for u in doc.users if u.id == user_id), None)
     if user is None:
         raise HTTPException(404)
-    if not pwd_ctx.verify(body.current_password, user.password_hash):
+    if user.password_hash is not None and not pwd_ctx.verify(body.current_password, user.password_hash):
         raise HTTPException(400, "Current password incorrect")
     if len(body.new_password) < 8:
         raise HTTPException(422, "Password must be at least 8 characters")
@@ -262,6 +299,121 @@ def delete_token(
         raise HTTPException(403, "Cannot delete another user's token")
     doc.tokens = [t for t in doc.tokens if t.id != tid]
     save_tokens(doc)
+
+
+# ── OIDC ────────────────────────────────────────────────────────────────────
+
+def _oidc_config_response(config: OidcConfig) -> OidcConfigResponse:
+    return OidcConfigResponse(
+        enabled=config.enabled, provider_name=config.provider_name, issuer=config.issuer,
+        client_id=config.client_id,
+        client_secret="••••••••" if config.client_secret else "",
+        default_role=config.default_role, scopes=config.scopes,
+    )
+
+
+@router.get("/api/auth/oidc/status")
+def oidc_status() -> OidcStatusResponse:
+    config = load_oidc_config()
+    return OidcStatusResponse(enabled=config.enabled, provider_name=config.provider_name)
+
+
+@router.get("/api/auth/oidc/config")
+def get_oidc_config(current_user: tuple[str, str] = require_auth("admin")) -> OidcConfigResponse:
+    return _oidc_config_response(load_oidc_config())
+
+
+@router.put("/api/auth/oidc/config")
+async def put_oidc_config(
+    body: OidcConfigUpdateRequest,
+    current_user: tuple[str, str] = require_auth("admin"),
+) -> OidcConfigResponse:
+    if body.default_role not in ROLE_ORDER:
+        raise HTTPException(422, "Invalid role")
+    existing = load_oidc_config()
+    secret = body.client_secret if body.client_secret else existing.client_secret
+    if body.enabled:
+        await oidc.validate_issuer_reachable(body.issuer)
+    config = OidcConfig(
+        enabled=body.enabled, provider_name=body.provider_name, issuer=body.issuer,
+        client_id=body.client_id, client_secret=secret,
+        default_role=body.default_role, scopes=body.scopes,
+    )
+    save_oidc_config(config)
+    oidc.clear_discovery_cache()
+    return _oidc_config_response(config)
+
+
+_OIDC_FLOW_COOKIE = "oidc_flow"
+_OIDC_FLOW_MAX_AGE = 600
+
+
+def _redirect_uri(request: Request) -> str:
+    return str(request.base_url).rstrip("/") + "/api/auth/oidc/callback"
+
+
+@router.get("/api/auth/oidc/login")
+async def oidc_login(request: Request) -> RedirectResponse:
+    config = load_oidc_config()
+    if not config.enabled:
+        raise HTTPException(404, "OIDC is not enabled")
+    url, state, code_verifier, nonce = await oidc.build_authorization_url(
+        config, _redirect_uri(request),
+    )
+    response = RedirectResponse(url)
+    flow_payload = json.dumps({"state": state, "code_verifier": code_verifier, "nonce": nonce})
+    response.set_cookie(
+        _OIDC_FLOW_COOKIE, flow_payload, httponly=True, samesite="lax",
+        max_age=_OIDC_FLOW_MAX_AGE,
+    )
+    return response
+
+
+@router.get("/api/auth/oidc/callback")
+async def oidc_callback(
+    request: Request,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+    oidc_flow: str | None = Cookie(default=None),
+) -> RedirectResponse:
+    if error or not code or not state or not oidc_flow:
+        return RedirectResponse("/?error=oidc_failed")
+    try:
+        flow = json.loads(oidc_flow)
+        expected_state, code_verifier, nonce = flow["state"], flow["code_verifier"], flow["nonce"]
+    except (json.JSONDecodeError, KeyError):
+        return RedirectResponse("/?error=oidc_failed")
+    if state != expected_state:
+        return RedirectResponse("/?error=oidc_failed")
+
+    config = load_oidc_config()
+    if not config.enabled:
+        return RedirectResponse("/?error=oidc_failed")
+
+    try:
+        claims = await oidc.exchange_code_for_claims(
+            config, _redirect_uri(request), code, code_verifier, nonce,
+        )
+        username = oidc.extract_username(claims)
+    except (HTTPException, httpx.HTTPError, JoseError):
+        return RedirectResponse("/?error=oidc_failed")
+
+    doc = load_users()
+    user = next((u for u in doc.users if u.username.lower() == username.lower()), None)
+    if user is None:
+        user = User(
+            id=secrets.token_hex(8), username=username, password_hash=None,
+            role=config.default_role, created_at=datetime.now(timezone.utc).isoformat(),
+            auth_provider="oidc",
+        )
+        doc.users.append(user)
+        save_users(doc)
+
+    response = RedirectResponse("/")
+    _set_auth_cookies(response, user.id, user.role)
+    response.delete_cookie(_OIDC_FLOW_COOKIE)
+    return response
 
 
 # ── Helper ─────────────────────────────────────────────────────────────────

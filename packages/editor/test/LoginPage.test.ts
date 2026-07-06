@@ -88,3 +88,53 @@ describe("LoginPage", () => {
     unmount(app);
   });
 });
+
+describe("LoginPage — OIDC", () => {
+  let target: HTMLDivElement;
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    target.remove();
+    window.history.replaceState({}, "", "/");
+  });
+
+  it("shows SSO button when OIDC is enabled", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ enabled: true, provider_name: "Keycloak" }),
+    });
+    const app = mount(LoginPage, { target, props: { onlogin: vi.fn(), login: vi.fn() } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(target.textContent).toContain("Sign in with Keycloak");
+    unmount(app);
+  });
+
+  it("does not show SSO button when OIDC is disabled", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ enabled: false, provider_name: "" }),
+    });
+    const app = mount(LoginPage, { target, props: { onlogin: vi.fn(), login: vi.fn() } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(target.textContent).not.toContain("Sign in with");
+    unmount(app);
+  });
+
+  it("shows a sign-in-failed banner when the URL has ?error=oidc_failed", async () => {
+    window.history.replaceState({}, "", "/?error=oidc_failed");
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ enabled: false, provider_name: "" }),
+    });
+    const app = mount(LoginPage, { target, props: { onlogin: vi.fn(), login: vi.fn() } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(target.textContent).toContain("Sign-in failed");
+    unmount(app);
+  });
+});
