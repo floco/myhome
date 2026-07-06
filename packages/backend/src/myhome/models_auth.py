@@ -6,9 +6,10 @@ from pydantic import BaseModel
 class User(BaseModel):
     id: str
     username: str
-    password_hash: str
+    password_hash: str | None = None
     role: str  # "admin" | "normal" | "ro"
     created_at: str  # ISO-8601
+    auth_provider: str = "local"  # "local" | "oidc"
 
 
 class UserDocument(BaseModel):
@@ -29,3 +30,18 @@ class ApiToken(BaseModel):
 class TokenDocument(BaseModel):
     version: int = 1
     tokens: list[ApiToken] = []
+
+
+class OidcConfig(BaseModel):
+    enabled: bool = False
+    provider_name: str = ""
+    issuer: str = ""
+    client_id: str = ""
+    client_secret: str = ""
+    default_role: str = "normal"  # "admin" | "normal" | "ro"
+    scopes: list[str] = ["openid", "profile", "email"]
+
+
+class OidcConfigDocument(BaseModel):
+    version: int = 1
+    config: OidcConfig = OidcConfig()

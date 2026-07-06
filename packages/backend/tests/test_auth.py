@@ -1,8 +1,10 @@
+from datetime import datetime, timezone
+
 import pytest
 from fastapi.testclient import TestClient
 from myhome.main import app
 from myhome.models_auth import User, UserDocument
-from myhome.persistence_auth import save_users
+from myhome.persistence_auth import load_users, save_users
 
 
 @pytest.fixture()
@@ -99,3 +101,33 @@ def test_change_password_too_short_returns_422(client):
         "new_password": "short",
     })
     assert resp.status_code == 422
+
+
+def test_login_against_oidc_only_user_returns_401(fresh):
+    doc = load_users()
+    doc.users.append(User(
+        id="u-oidc", username="oidcuser", password_hash=None, role="normal",
+        created_at=datetime.now(timezone.utc).isoformat(), auth_provider="oidc",
+    ))
+    save_users(doc)
+    resp = fresh.post("/api/auth/login", json={"username": "oidcuser", "password": "anything"})
+    assert resp.status_code == 401
+
+
+def test_change_password_sets_password_when_none_exists(fresh):
+    doc = load_users()
+    doc.users.append(User(
+        id="u-oidc2", username="oidcuser2", password_hash=None, role="normal",
+        created_at=datetime.now(timezone.utc).isoformat(), auth_provider="oidc",
+    ))
+    save_users(doc)
+    from myhome.deps import create_access_token
+    fresh.cookies.set("myhome_access", create_access_token("u-oidc2", "normal"))
+    resp = fresh.put("/api/auth/me/password", json={
+        "current_password": "",
+        "new_password": "newpassword99",
+    })
+    assert resp.status_code == 204
+    reloaded = next(u for u in load_users().users if u.id == "u-oidc2")
+    from myhome.deps import pwd_ctx
+    assert pwd_ctx.verify("newpassword99", reloaded.password_hash)

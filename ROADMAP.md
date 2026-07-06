@@ -16,21 +16,21 @@ Extend authentication to support an external OIDC provider (e.g. Keycloak,
 Authentik, Google Workspace) as an alternative to local username/password
 login.
 
-This builds directly on the `feat/auth-api-tokens` branch (currently in
-progress in `.worktrees/feat-auth-api-tokens`, not yet merged to `main`).
-That spec ([`docs/superpowers/specs/2026-07-02-auth-api-tokens-design.md`](docs/superpowers/specs/2026-07-02-auth-api-tokens-design.md))
-was explicitly written to be "OIDC-ready": the JWT validation middleware
-accepts tokens from multiple issuers so a provider can be bolted on without
-reworking the protected-route layer.
+This builds directly on the `feat/auth-api-tokens` branch, merged to `main`
+via PR #34 (2026-07-02). That spec
+([`docs/superpowers/specs/2026-07-02-auth-api-tokens-design.md`](docs/superpowers/specs/2026-07-02-auth-api-tokens-design.md))
+was explicitly written to be "OIDC-ready", with the intent that the JWT
+validation layer could accept a second issuer without reworking the
+protected-route layer.
 
-Rough scope once auth-api-tokens lands on `main`:
+Rough scope:
 - Add an OIDC client (authorization code flow) alongside local login
 - Map external claims to MyHome's existing role model (Admin / Normal / RO)
 - Settings UI to configure issuer, client ID/secret, and enable/disable OIDC login
 - Keep local username/password login available as a fallback (at least for the initial admin account)
 
-**Next step:** merge `feat/auth-api-tokens`, then write a design spec for OIDC
-following the same process as prior features.
+**Next step:** write a design spec for OIDC following the same process as
+prior features (in progress).
 
 ---
 

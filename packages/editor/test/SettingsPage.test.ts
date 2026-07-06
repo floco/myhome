@@ -44,6 +44,7 @@ describe("SettingsPage — Backup & Restore", () => {
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false, provider_name: "", issuer: "", client_id: "", client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"] }) });
       return Promise.resolve(new Response(null, { status: 200 }));
     });
     globalThis.fetch = fetchMock;
@@ -79,6 +80,7 @@ describe("SettingsPage — Backup & Restore", () => {
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false, provider_name: "", issuer: "", client_id: "", client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"] }) });
       return Promise.resolve(new Response("fake-zip-content", {
         status: 200,
         headers: { "Content-Disposition": 'attachment; filename="myhome-backup-2026-06-29.zip"' },
@@ -118,6 +120,7 @@ describe("SettingsPage — Backup & Restore", () => {
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false, provider_name: "", issuer: "", client_id: "", client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"] }) });
       return Promise.resolve(new Response(null, { status: 204 }));
     });
     globalThis.fetch = fetchMock;
@@ -185,6 +188,7 @@ describe("SettingsPage — API Tokens", () => {
       }
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false, provider_name: "", issuer: "", client_id: "", client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"] }) });
       return Promise.resolve({ ok: true, json: async () => ({}) });
     });
     globalThis.fetch = fetchMock;
@@ -241,6 +245,7 @@ describe("SettingsPage — API Tokens", () => {
         return Promise.resolve({ ok: true, json: async () => [] });
       }
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false, provider_name: "", issuer: "", client_id: "", client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"] }) });
       return Promise.resolve(new Response(null, { status: 200 }));
     });
     globalThis.fetch = fetchMock;
@@ -289,6 +294,7 @@ describe("SettingsPage — Users tab (admin only)", () => {
         });
       }
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false, provider_name: "", issuer: "", client_id: "", client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"] }) });
       return Promise.resolve(new Response(null, { status: 200 }));
     });
     globalThis.fetch = fetchMock;
@@ -349,6 +355,7 @@ describe("SettingsPage — Users tab (admin only)", () => {
         });
       }
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false, provider_name: "", issuer: "", client_id: "", client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"] }) });
       return Promise.resolve({ ok: true, json: async () => ({}) });
     });
     globalThis.fetch = fetchMock;
@@ -397,6 +404,7 @@ describe("SettingsPage — MCP Server (admin only)", () => {
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false, provider_name: "", issuer: "", client_id: "", client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"] }) });
       return Promise.resolve(new Response(null, { status: 200 }));
     });
     globalThis.fetch = fetchMock;
@@ -441,6 +449,7 @@ describe("SettingsPage — MCP Server (admin only)", () => {
         return Promise.resolve({ ok: true, json: async () => ({ enabled: true }) });
       }
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false, provider_name: "", issuer: "", client_id: "", client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"] }) });
       return Promise.resolve(new Response(null, { status: 200 }));
     });
     globalThis.fetch = fetchMock;
@@ -458,6 +467,107 @@ describe("SettingsPage — MCP Server (admin only)", () => {
     flushSync();
 
     expect(target.textContent).toContain("Connection URL");
+    unmount(app);
+  });
+});
+
+describe("SettingsPage — Single Sign-On", () => {
+  let target: HTMLDivElement;
+  let fetchMock: ReturnType<typeof vi.fn>;
+  const originalFetch = globalThis.fetch;
+
+  function defaultOidcConfig() {
+    return {
+      enabled: false, provider_name: "", issuer: "", client_id: "",
+      client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"],
+    };
+  }
+
+  beforeEach(() => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+    fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => defaultOidcConfig() });
+      return Promise.resolve(new Response(null, { status: 200 }));
+    });
+    globalThis.fetch = fetchMock;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    target.remove();
+  });
+
+  it("renders the Single Sign-On card for an admin", async () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin") } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(target.textContent).toContain("Single Sign-On");
+    unmount(app);
+  });
+
+  it("does not render the Single Sign-On card for a non-admin", async () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("normal") } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(target.textContent).not.toContain("Single Sign-On");
+    unmount(app);
+  });
+
+  it("saves config via PUT /api/auth/oidc/config", async () => {
+    fetchMock.mockImplementation((url: string, opts?: RequestInit) => {
+      if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config" && (!opts || opts.method === undefined)) {
+        return Promise.resolve({ ok: true, json: async () => defaultOidcConfig() });
+      }
+      if (url === "/api/auth/oidc/config" && opts?.method === "PUT") {
+        return Promise.resolve({ ok: true, json: async () => ({ ...defaultOidcConfig(), enabled: true, provider_name: "Keycloak" }) });
+      }
+      return Promise.resolve(new Response(null, { status: 200 }));
+    });
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin") } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    const saveButtons = Array.from(target.querySelectorAll("button")).filter(b => b.textContent?.trim() === "Save");
+    expect(saveButtons.length).toBeGreaterThan(0);
+    saveButtons[saveButtons.length - 1].click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    const putCall = fetchMock.mock.calls.find(
+      (c: unknown[]) => c[0] === "/api/auth/oidc/config" && (c[1] as RequestInit)?.method === "PUT",
+    );
+    expect(putCall).toBeTruthy();
+    unmount(app);
+  });
+
+  it("shows an error message when save fails", async () => {
+    fetchMock.mockImplementation((url: string, opts?: RequestInit) => {
+      if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config" && opts?.method === "PUT") {
+        return Promise.resolve({ ok: false, status: 422, json: async () => ({ detail: "Could not reach issuer" }) });
+      }
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => defaultOidcConfig() });
+      return Promise.resolve(new Response(null, { status: 200 }));
+    });
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin") } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    const saveButtons = Array.from(target.querySelectorAll("button")).filter(b => b.textContent?.trim() === "Save");
+    saveButtons[saveButtons.length - 1].click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    expect(target.textContent).toContain("Could not reach issuer");
     unmount(app);
   });
 });
