@@ -121,3 +121,20 @@ def create_backup() -> BackupEntry:
     config = load_backup_config()
     _prune_backups(config.retentionCount)
     return entry
+
+
+def get_backup_path(filename: str) -> Path | None:
+    if _parse_backup_filename(filename) is None:
+        return None
+    path = _backups_dir() / filename
+    if not path.exists():
+        return None
+    return path
+
+
+def delete_backup(filename: str) -> bool:
+    path = get_backup_path(filename)
+    if path is None:
+        return False
+    path.unlink()
+    return True

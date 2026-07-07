@@ -3,6 +3,8 @@ import zipfile
 from myhome.models_backup import BackupConfig, BackupEntry, BackupState
 from myhome.persistence_backup import (
     create_backup,
+    delete_backup,
+    get_backup_path,
     list_backups,
     load_backup_config,
     load_backup_state,
@@ -113,3 +115,36 @@ def test_list_backups_sorted_newest_first(tmp_path, monkeypatch):
 def test_list_backups_empty_when_no_backups_dir(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     assert list_backups() == []
+
+
+def test_get_backup_path_rejects_invalid_filename(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    assert get_backup_path("../etc/passwd") is None
+    assert get_backup_path("not-a-backup.zip") is None
+
+
+def test_get_backup_path_returns_none_for_missing_file(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    assert get_backup_path("myhome-backup-20260101-000000.zip") is None
+
+
+def test_get_backup_path_returns_path_for_existing_file(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    (tmp_path / "house.json").write_text("{}")
+    entry = create_backup()
+    path = get_backup_path(entry.filename)
+    assert path is not None
+    assert path.exists()
+
+
+def test_delete_backup_removes_file(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    (tmp_path / "house.json").write_text("{}")
+    entry = create_backup()
+    assert delete_backup(entry.filename) is True
+    assert not (tmp_path / "backups" / entry.filename).exists()
+
+
+def test_delete_backup_returns_false_for_missing_file(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    assert delete_backup("myhome-backup-20260101-000000.zip") is False
