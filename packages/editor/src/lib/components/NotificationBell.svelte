@@ -74,12 +74,21 @@
 
 <style>
   .notif-bell-wrap { position: relative; }
-  .notif-bell { position: relative; }
+  .notif-bell {
+    position: relative;
+    width: 30px; height: 30px;
+    border: none; border-radius: var(--radius-sm); background: transparent;
+    color: var(--text-muted); cursor: pointer; font-size: 15px;
+    display: flex; align-items: center; justify-content: center; padding: 0;
+    flex-shrink: 0;
+  }
+  .notif-bell:hover { background: var(--surface-hover); color: var(--text); }
   .notif-badge {
-    position: absolute; top: 2px; right: 2px;
+    position: absolute; top: -2px; right: -2px;
     background: #f44336; color: white;
     font-size: 10px; line-height: 1; font-weight: 600;
     border-radius: 999px; padding: 2px 5px; min-width: 14px; text-align: center;
+    box-sizing: border-box;
   }
   .notif-dropdown {
     position: absolute; top: calc(100% + 4px); right: 0;
