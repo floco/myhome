@@ -8,6 +8,8 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
+from ..persistence_backup import iter_backup_files
+
 router = APIRouter()
 
 _MAX_RESTORE_BYTES = 500 * 1024 * 1024  # 500 MB total uncompressed
@@ -43,16 +45,10 @@ def _validate_zip_entries(zf: zipfile.ZipFile, data_dir: Path) -> None:
 @router.get("/api/backup/download")
 def download_backup() -> StreamingResponse:
     data_dir = _data_dir()
-    resolved_root = data_dir.resolve()
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        if data_dir.exists():
-            for path in data_dir.rglob("*"):
-                if path.is_symlink() or not path.is_file():
-                    continue
-                if not path.resolve().is_relative_to(resolved_root):
-                    continue
-                zf.write(path, path.relative_to(data_dir))
+        for path, rel in iter_backup_files(data_dir, exclude_dirs=frozenset({"backups"})):
+            zf.write(path, rel)
     buf.seek(0)
     filename = f"myhome-backup-{date.today().isoformat()}.zip"
     return StreamingResponse(

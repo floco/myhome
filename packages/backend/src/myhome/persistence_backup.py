@@ -1,5 +1,6 @@
 import json
 import os
+from collections.abc import Iterator
 from pathlib import Path
 
 from .models_backup import BackupConfig, BackupState
@@ -11,6 +12,21 @@ def _data_dir() -> Path:
 
 def _backups_dir() -> Path:
     return _data_dir() / "backups"
+
+
+def iter_backup_files(data_dir: Path, exclude_dirs: frozenset[str] = frozenset()) -> Iterator[tuple[Path, Path]]:
+    if not data_dir.exists():
+        return
+    resolved_root = data_dir.resolve()
+    for path in data_dir.rglob("*"):
+        if path.is_symlink() or not path.is_file():
+            continue
+        if not path.resolve().is_relative_to(resolved_root):
+            continue
+        rel = path.relative_to(data_dir)
+        if rel.parts and rel.parts[0] in exclude_dirs:
+            continue
+        yield path, rel
 
 
 def _config_file() -> Path:

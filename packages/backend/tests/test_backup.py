@@ -103,3 +103,16 @@ def test_download_skips_symlinks(client, tmp_path):
     names = zipfile.ZipFile(io.BytesIO(resp.content)).namelist()
     assert "real.json" in names
     assert "link.json" not in names
+
+
+def test_download_backup_excludes_scheduled_backups_directory(client, tmp_path):
+    (tmp_path / "house.json").write_text('{"floors": []}')
+    backups_dir = tmp_path / "backups"
+    backups_dir.mkdir()
+    (backups_dir / "myhome-backup-20260101-000000.zip").write_bytes(b"old-backup-content")
+
+    resp = client.get("/api/backup/download")
+
+    names = zipfile.ZipFile(io.BytesIO(resp.content)).namelist()
+    assert "house.json" in names
+    assert not any(n.startswith("backups/") for n in names)
