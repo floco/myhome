@@ -37,6 +37,22 @@ function makeAuthStore(role: "admin" | "normal" | "ro" = "admin") {
   };
 }
 
+function mockBoilerplateEndpoints(url: string): { ok: boolean; json: () => Promise<unknown> } | null {
+  if (url === "/api/backup/config") {
+    return {
+      ok: true,
+      json: async () => ({
+        enabled: false, frequency: "daily", time: "03:00",
+        dayOfWeek: 7, dayOfMonth: 1, retentionCount: 7,
+      }),
+    };
+  }
+  if (url === "/api/backup/scheduled") {
+    return { ok: true, json: async () => [] };
+  }
+  return null;
+}
+
 describe("SettingsPage — Backup & Restore", () => {
   let target: HTMLDivElement;
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -46,6 +62,8 @@ describe("SettingsPage — Backup & Restore", () => {
     target = document.createElement("div");
     document.body.appendChild(target);
     fetchMock = vi.fn().mockImplementation((url: string) => {
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
@@ -82,6 +100,8 @@ describe("SettingsPage — Backup & Restore", () => {
 
   it("calls GET /api/backup/download when Download Backup is clicked", async () => {
     fetchMock = vi.fn().mockImplementation((url: string) => {
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
@@ -122,6 +142,8 @@ describe("SettingsPage — Backup & Restore", () => {
 
   it("calls POST /api/backup/restore with FormData when Restore is confirmed", async () => {
     fetchMock = vi.fn().mockImplementation((url: string) => {
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
@@ -171,6 +193,84 @@ describe("SettingsPage — Backup & Restore", () => {
     expect(fetchMock).not.toHaveBeenCalledWith("/api/backup/restore", expect.anything());
     unmount(app);
   });
+
+  it("renders the Scheduled Backups section with defaults", async () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore() } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    expect(target.textContent).toContain("Scheduled Backups");
+    expect((target.querySelector(".backup-enable-toggle") as HTMLInputElement).checked).toBe(false);
+    unmount(app);
+  });
+
+  it("shows day-of-week only for weekly and day-of-month only for monthly", async () => {
+    fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/backup/config") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            enabled: true, frequency: "weekly", time: "03:00",
+            dayOfWeek: 3, dayOfMonth: 1, retentionCount: 7,
+          }),
+        });
+      }
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
+      if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false, provider_name: "", issuer: "", client_id: "", client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"] }) });
+      return Promise.resolve(new Response(null, { status: 200 }));
+    });
+    globalThis.fetch = fetchMock;
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore() } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    const labels = Array.from(target.querySelectorAll(".modal-label")).map((el) => el.textContent);
+    expect(labels).toContain("Day of week");
+    expect(labels).not.toContain("Day of month");
+
+    unmount(app);
+  });
+
+  it("saves scheduled backup config via PUT /api/backup/config", async () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore() } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    const enableToggle = target.querySelector(".backup-enable-toggle") as HTMLInputElement;
+    enableToggle.click();
+    flushSync();
+
+    const backupCard = enableToggle.closest(".ui-card") as HTMLElement;
+    const saveBtn = Array.from(backupCard.querySelectorAll("button")).find((b) => b.textContent?.trim() === "Save")!;
+    (saveBtn as HTMLButtonElement).click();
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/backup/config",
+      expect.objectContaining({ method: "PUT" }),
+    );
+    unmount(app);
+  });
+
+  it("Run backup now calls POST /api/backup/scheduled/run", async () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore() } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    const runBtn = Array.from(target.querySelectorAll("button")).find((b) => b.textContent?.includes("Run backup now"))!;
+    (runBtn as HTMLButtonElement).click();
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/backup/scheduled/run",
+      expect.objectContaining({ method: "POST" }),
+    );
+    unmount(app);
+  });
 });
 
 describe("SettingsPage — API Tokens", () => {
@@ -182,6 +282,8 @@ describe("SettingsPage — API Tokens", () => {
     target = document.createElement("div");
     document.body.appendChild(target);
     fetchMock = vi.fn().mockImplementation((url: string) => {
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
       if (url === "/api/auth/tokens") {
         return Promise.resolve({
           ok: true,
@@ -233,6 +335,8 @@ describe("SettingsPage — API Tokens", () => {
 
   it("calls POST /api/auth/tokens when Create is clicked", async () => {
     fetchMock = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
       if (url === "/api/auth/tokens" && opts?.method === "POST") {
         return Promise.resolve({
           ok: true,
@@ -288,6 +392,8 @@ describe("SettingsPage — Users tab (admin only)", () => {
     target = document.createElement("div");
     document.body.appendChild(target);
     fetchMock = vi.fn().mockImplementation((url: string) => {
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") {
         return Promise.resolve({
@@ -352,6 +458,8 @@ describe("SettingsPage — Users tab (admin only)", () => {
 
   it("calls POST /api/auth/users when Create user is clicked", async () => {
     fetchMock = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users" && opts?.method === "POST") {
         return Promise.resolve({
@@ -406,6 +514,8 @@ describe("SettingsPage — MCP Server (admin only)", () => {
     target = document.createElement("div");
     document.body.appendChild(target);
     fetchMock = vi.fn().mockImplementation((url: string) => {
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
@@ -448,6 +558,8 @@ describe("SettingsPage — MCP Server (admin only)", () => {
 
   it("shows the connection URL once enabled", async () => {
     fetchMock = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/mcp/config" && opts?.method === "PUT") {
@@ -492,6 +604,8 @@ describe("SettingsPage — Single Sign-On", () => {
     target = document.createElement("div");
     document.body.appendChild(target);
     fetchMock = vi.fn().mockImplementation((url: string) => {
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
@@ -524,6 +638,8 @@ describe("SettingsPage — Single Sign-On", () => {
 
   it("saves config via PUT /api/auth/oidc/config", async () => {
     fetchMock.mockImplementation((url: string, opts?: RequestInit) => {
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
@@ -539,7 +655,9 @@ describe("SettingsPage — Single Sign-On", () => {
     await new Promise((r) => setTimeout(r, 0));
     flushSync();
 
-    const saveButtons = Array.from(target.querySelectorAll("button")).filter(b => b.textContent?.trim() === "Save");
+    const ssoHeading = Array.from(target.querySelectorAll("h2")).find((h) => h.textContent === "Single Sign-On")!;
+    const ssoCard = ssoHeading.closest(".ui-card") as HTMLElement;
+    const saveButtons = Array.from(ssoCard.querySelectorAll("button")).filter(b => b.textContent?.trim() === "Save");
     expect(saveButtons.length).toBeGreaterThan(0);
     saveButtons[saveButtons.length - 1].click();
     await new Promise((r) => setTimeout(r, 0));
@@ -554,6 +672,8 @@ describe("SettingsPage — Single Sign-On", () => {
 
   it("shows an error message when save fails", async () => {
     fetchMock.mockImplementation((url: string, opts?: RequestInit) => {
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
@@ -567,7 +687,9 @@ describe("SettingsPage — Single Sign-On", () => {
     await new Promise((r) => setTimeout(r, 0));
     flushSync();
 
-    const saveButtons = Array.from(target.querySelectorAll("button")).filter(b => b.textContent?.trim() === "Save");
+    const ssoHeading = Array.from(target.querySelectorAll("h2")).find((h) => h.textContent === "Single Sign-On")!;
+    const ssoCard = ssoHeading.closest(".ui-card") as HTMLElement;
+    const saveButtons = Array.from(ssoCard.querySelectorAll("button")).filter(b => b.textContent?.trim() === "Save");
     saveButtons[saveButtons.length - 1].click();
     await new Promise((r) => setTimeout(r, 0));
     flushSync();
@@ -585,6 +707,8 @@ describe("SettingsPage — Notifications", () => {
     target = document.createElement("div");
     document.body.appendChild(target);
     globalThis.fetch = vi.fn().mockImplementation((url: string) => {
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
       if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
