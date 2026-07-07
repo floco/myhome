@@ -116,3 +116,71 @@ def test_download_backup_excludes_scheduled_backups_directory(client, tmp_path):
     names = zipfile.ZipFile(io.BytesIO(resp.content)).namelist()
     assert "house.json" in names
     assert not any(n.startswith("backups/") for n in names)
+
+
+def test_get_backup_config_returns_defaults(client):
+    resp = client.get("/api/backup/config")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["enabled"] is False
+    assert data["frequency"] == "daily"
+
+
+def test_put_backup_config_round_trips(client):
+    resp = client.put("/api/backup/config", json={
+        "enabled": True, "frequency": "monthly", "time": "04:30",
+        "dayOfWeek": 7, "dayOfMonth": 15, "retentionCount": 10,
+    })
+    assert resp.status_code == 200
+    data = client.get("/api/backup/config").json()
+    assert data["frequency"] == "monthly"
+    assert data["dayOfMonth"] == 15
+    assert data["retentionCount"] == 10
+
+
+def test_run_backup_now_creates_entry_and_appears_in_list(client, tmp_path):
+    (tmp_path / "house.json").write_text("{}")
+    resp = client.post("/api/backup/scheduled/run")
+    assert resp.status_code == 200
+    entry = resp.json()
+    assert entry["filename"].startswith("myhome-backup-")
+
+    list_resp = client.get("/api/backup/scheduled")
+    filenames = [e["filename"] for e in list_resp.json()]
+    assert entry["filename"] in filenames
+
+
+def test_download_scheduled_backup_returns_the_file(client, tmp_path):
+    (tmp_path / "house.json").write_text('{"marker": true}')
+    entry = client.post("/api/backup/scheduled/run").json()
+
+    resp = client.get(f"/api/backup/scheduled/{entry['filename']}/download")
+    assert resp.status_code == 200
+    names = zipfile.ZipFile(io.BytesIO(resp.content)).namelist()
+    assert "house.json" in names
+
+
+def test_download_scheduled_backup_404_for_unknown_filename(client):
+    resp = client.get("/api/backup/scheduled/myhome-backup-20260101-000000.zip/download")
+    assert resp.status_code == 404
+
+
+def test_download_scheduled_backup_404_for_invalid_filename(client):
+    resp = client.get("/api/backup/scheduled/not-a-backup.zip/download")
+    assert resp.status_code == 404
+
+
+def test_delete_scheduled_backup(client, tmp_path):
+    (tmp_path / "house.json").write_text("{}")
+    entry = client.post("/api/backup/scheduled/run").json()
+
+    resp = client.delete(f"/api/backup/scheduled/{entry['filename']}")
+    assert resp.status_code == 204
+
+    filenames = [e["filename"] for e in client.get("/api/backup/scheduled").json()]
+    assert entry["filename"] not in filenames
+
+
+def test_delete_scheduled_backup_404_for_unknown_filename(client):
+    resp = client.delete("/api/backup/scheduled/myhome-backup-20260101-000000.zip")
+    assert resp.status_code == 404
