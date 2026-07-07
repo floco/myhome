@@ -1,9 +1,22 @@
 import json
 import os
+import re
+import zipfile
 from collections.abc import Iterator
+from datetime import datetime, timezone
 from pathlib import Path
 
-from .models_backup import BackupConfig, BackupState
+from .models_backup import BackupConfig, BackupEntry, BackupState
+
+_FILENAME_RE = re.compile(r"^myhome-backup-(\d{8})-(\d{6})\.zip$")
+
+
+def _parse_backup_filename(filename: str) -> datetime | None:
+    m = _FILENAME_RE.match(filename)
+    if not m:
+        return None
+    date_part, time_part = m.groups()
+    return datetime.strptime(date_part + time_part, "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
 
 
 def _data_dir() -> Path:
@@ -69,3 +82,42 @@ def save_backup_state(state: BackupState) -> None:
     with tmp.open("w") as f:
         json.dump(state.model_dump(), f, indent=2)
     tmp.replace(path)
+
+
+def list_backups() -> list[BackupEntry]:
+    backups_dir = _backups_dir()
+    if not backups_dir.exists():
+        return []
+    entries: list[BackupEntry] = []
+    for path in backups_dir.glob("myhome-backup-*.zip"):
+        dt = _parse_backup_filename(path.name)
+        if dt is None:
+            continue
+        entries.append(BackupEntry(filename=path.name, createdAt=dt.isoformat(), sizeBytes=path.stat().st_size))
+    entries.sort(key=lambda e: e.filename, reverse=True)
+    return entries
+
+
+def _prune_backups(retention_count: int) -> None:
+    for entry in list_backups()[retention_count:]:
+        (_backups_dir() / entry.filename).unlink(missing_ok=True)
+
+
+def create_backup() -> BackupEntry:
+    data_dir = _data_dir()
+    backups_dir = _backups_dir()
+    backups_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    filename = f"myhome-backup-{timestamp}.zip"
+    path = backups_dir / filename
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for file_path, rel in iter_backup_files(data_dir, exclude_dirs=frozenset({"backups"})):
+            zf.write(file_path, rel)
+    entry = BackupEntry(
+        filename=filename,
+        createdAt=datetime.now(timezone.utc).isoformat(),
+        sizeBytes=path.stat().st_size,
+    )
+    config = load_backup_config()
+    _prune_backups(config.retentionCount)
+    return entry

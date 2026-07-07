@@ -1,5 +1,9 @@
+import zipfile
+
 from myhome.models_backup import BackupConfig, BackupEntry, BackupState
 from myhome.persistence_backup import (
+    create_backup,
+    list_backups,
     load_backup_config,
     load_backup_state,
     save_backup_config,
@@ -52,3 +56,60 @@ def test_save_and_load_backup_state_round_trips(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     save_backup_state(BackupState(lastRunDate="2026-07-07"))
     assert load_backup_state().lastRunDate == "2026-07-07"
+
+
+def test_create_backup_writes_zip_and_excludes_backups_dir(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    (tmp_path / "house.json").write_text('{"floors": []}')
+
+    entry = create_backup()
+
+    assert entry.filename.startswith("myhome-backup-")
+    assert entry.filename.endswith(".zip")
+    assert entry.sizeBytes > 0
+
+    backup_path = tmp_path / "backups" / entry.filename
+    assert backup_path.exists()
+    names = zipfile.ZipFile(backup_path).namelist()
+    assert "house.json" in names
+    assert not any(n.startswith("backups/") for n in names)
+
+
+def test_create_backup_prunes_to_retention_count(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    save_backup_config(BackupConfig(retentionCount=2))
+    backups_dir = tmp_path / "backups"
+    backups_dir.mkdir()
+    (backups_dir / "myhome-backup-20260101-000000.zip").write_bytes(b"a")
+    (backups_dir / "myhome-backup-20260102-000000.zip").write_bytes(b"b")
+    (backups_dir / "myhome-backup-20260103-000000.zip").write_bytes(b"c")
+
+    create_backup()  # 4th backup, timestamped "now" -- definitely the newest
+
+    entries = list_backups()
+    assert len(entries) == 2
+    filenames = {e.filename for e in entries}
+    assert "myhome-backup-20260101-000000.zip" not in filenames
+    assert "myhome-backup-20260102-000000.zip" not in filenames
+    assert "myhome-backup-20260103-000000.zip" in filenames  # 2nd-newest survives
+
+
+def test_list_backups_sorted_newest_first(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    backups_dir = tmp_path / "backups"
+    backups_dir.mkdir()
+    (backups_dir / "myhome-backup-20260101-000000.zip").write_bytes(b"a")
+    (backups_dir / "myhome-backup-20260301-000000.zip").write_bytes(b"b")
+    (backups_dir / "myhome-backup-20260201-000000.zip").write_bytes(b"c")
+
+    entries = list_backups()
+    assert [e.filename for e in entries] == [
+        "myhome-backup-20260301-000000.zip",
+        "myhome-backup-20260201-000000.zip",
+        "myhome-backup-20260101-000000.zip",
+    ]
+
+
+def test_list_backups_empty_when_no_backups_dir(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    assert list_backups() == []
