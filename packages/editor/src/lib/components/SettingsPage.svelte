@@ -697,6 +697,26 @@
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
+  async function downloadScheduledBackup(filename: string): Promise<void> {
+    const resp = await fetch(`/api/backup/scheduled/${filename}/download`);
+    if (!resp.ok) return;
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  async function deleteScheduledBackup(filename: string): Promise<void> {
+    await fetch(`/api/backup/scheduled/${filename}`, { method: "DELETE" });
+    confirmDeleteBackupFilename = null;
+    await loadScheduledBackups();
+  }
+
   import { homesStore } from "../homesStore.svelte";
 
   // --- Home metadata ---
@@ -1490,6 +1510,34 @@
           <Button variant="secondary" onclick={runBackupNow} disabled={runningBackupNow}>
             {runningBackupNow ? "Running…" : "Run backup now"}
           </Button>
+        </div>
+      {/if}
+
+      {#if scheduledBackups.length > 0}
+        <div class="table-wrapper" style="margin-top: var(--space-3)">
+          <table>
+            <thead>
+              <tr><th>Created</th><th>Size</th><th></th></tr>
+            </thead>
+            <tbody>
+              {#each scheduledBackups as backup (backup.filename)}
+                <tr class="backup-row">
+                  <td>{new Date(backup.createdAt).toLocaleString()}</td>
+                  <td>{formatBackupSize(backup.sizeBytes)}</td>
+                  <td class="actions">
+                    {#if confirmDeleteBackupFilename === backup.filename}
+                      <span class="confirm-text">Delete?</span>
+                      <button class="icon-action danger" onclick={() => deleteScheduledBackup(backup.filename)}>✓</button>
+                      <button class="icon-action" onclick={() => { confirmDeleteBackupFilename = null; }}>✕</button>
+                    {:else}
+                      <button class="icon-action" onclick={() => downloadScheduledBackup(backup.filename)} title="Download">⬇</button>
+                      <button class="icon-action danger" onclick={() => { confirmDeleteBackupFilename = backup.filename; }} title="Delete">🗑</button>
+                    {/if}
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
         </div>
       {/if}
     </Card>

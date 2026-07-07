@@ -271,6 +271,47 @@ describe("SettingsPage — Backup & Restore", () => {
     );
     unmount(app);
   });
+
+  it("renders the scheduled backups list and deletes an entry after confirmation", async () => {
+    fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/backup/scheduled") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [
+            { filename: "myhome-backup-20260701-030000.zip", createdAt: "2026-07-01T03:00:00Z", sizeBytes: 2048 },
+          ],
+        });
+      }
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
+      if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false, provider_name: "", issuer: "", client_id: "", client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"] }) });
+      return Promise.resolve(new Response(null, { status: 200 }));
+    });
+    globalThis.fetch = fetchMock;
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore() } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    expect(target.textContent).toContain("2.0 KB");
+
+    const deleteBtn = target.querySelector(".backup-row .icon-action.danger") as HTMLButtonElement;
+    deleteBtn.click();
+    flushSync();
+    expect(target.textContent).toContain("Delete?");
+
+    const confirmBtn = Array.from(target.querySelectorAll(".backup-row .icon-action.danger")).find((b) => b.textContent === "✓")!;
+    (confirmBtn as HTMLButtonElement).click();
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/backup/scheduled/myhome-backup-20260701-030000.zip",
+      expect.objectContaining({ method: "DELETE" }),
+    );
+    unmount(app);
+  });
 });
 
 describe("SettingsPage — API Tokens", () => {
