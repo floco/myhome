@@ -41,6 +41,15 @@ export interface ConsumableCategory {
   emoji: string;
 }
 
+export interface NotificationSettings {
+  enabled: boolean;
+  choresDueSoonThreshold: number;
+  warrantyDaysThreshold: number;
+  haPushEnabled: boolean;
+  haNotifyService: string | null;
+  haPushTime: string;
+}
+
 export interface SettingsDocument {
   version: number;
   costCategories: CostCategory[];
@@ -49,6 +58,7 @@ export interface SettingsDocument {
   suppliers: Supplier[];
   consumableUnits: string[];
   consumableCategories: ConsumableCategory[];
+  notifications: NotificationSettings;
 }
 
 export function createSettingsStore(getHomeId: () => string | null = () => null) {
@@ -58,6 +68,10 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
   const suppliers = $state<Supplier[]>([]);
   const consumableUnits = $state<string[]>([]);
   const consumableCategories = $state<ConsumableCategory[]>([]);
+  const notificationSettings = $state<NotificationSettings>({
+    enabled: true, choresDueSoonThreshold: 0.25, warrantyDaysThreshold: 30,
+    haPushEnabled: false, haNotifyService: null, haPushTime: "08:00",
+  });
   let loaded = $state(false);
   let loadError = $state<string | null>(null);
 
@@ -80,6 +94,7 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
       for (const u of (doc.consumableUnits ?? [])) consumableUnits.push(u);
       consumableCategories.length = 0;
       for (const c of (doc.consumableCategories ?? [])) consumableCategories.push(c);
+      if (doc.notifications) Object.assign(notificationSettings, doc.notifications);
     } catch (e) {
       loadError = e instanceof Error ? e.message : String(e);
     } finally {
@@ -159,6 +174,18 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
     await init();
   }
 
+  async function updateNotificationSettings(settings: NotificationSettings): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/settings/notifications`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
   async function placeCostCategory(id: string, placement: CostCategoryPlacement | null): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
@@ -185,6 +212,7 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
     get suppliers() { return suppliers as Supplier[]; },
     get consumableUnits() { return consumableUnits as string[]; },
     get consumableCategories() { return consumableCategories as ConsumableCategory[]; },
+    get notificationSettings() { return notificationSettings as NotificationSettings; },
     get loaded() { return loaded; },
     get loadError() { return loadError; },
     updateCostCategories,
@@ -193,6 +221,7 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
     updateSuppliers,
     updateConsumableUnits,
     updateConsumableCategories,
+    updateNotificationSettings,
     placeCostCategory,
     reload: init,
   };
