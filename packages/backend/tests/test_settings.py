@@ -151,3 +151,32 @@ def test_put_consumable_categories(client, home_id):
     assert resp.status_code == 204
     data = client.get(f"/api/homes/{home_id}/settings").json()
     assert data["consumableCategories"][0]["name"] == "Cleaning"
+
+
+def test_get_settings_returns_default_notification_settings(client, home_id):
+    resp = client.get(f"/api/homes/{home_id}/settings")
+    assert resp.status_code == 200
+    notif = resp.json()["notifications"]
+    assert notif["enabled"] is True
+    assert notif["choresDueSoonThreshold"] == 0.25
+    assert notif["warrantyDaysThreshold"] == 30
+    assert notif["haPushEnabled"] is False
+    assert notif["haNotifyService"] is None
+    assert notif["haPushTime"] == "08:00"
+
+
+def test_put_notification_settings(client, home_id):
+    body = {
+        "enabled": True,
+        "choresDueSoonThreshold": 0.4,
+        "warrantyDaysThreshold": 45,
+        "haPushEnabled": True,
+        "haNotifyService": "notify.mobile_app_pixel",
+        "haPushTime": "09:30",
+    }
+    resp = client.put(f"/api/homes/{home_id}/settings/notifications", json=body)
+    assert resp.status_code == 204
+    data = client.get(f"/api/homes/{home_id}/settings").json()["notifications"]
+    assert data["choresDueSoonThreshold"] == 0.4
+    assert data["haNotifyService"] == "notify.mobile_app_pixel"
+    assert data["haPushTime"] == "09:30"

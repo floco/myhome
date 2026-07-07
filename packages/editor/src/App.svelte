@@ -25,6 +25,9 @@
   import ConsumablesPage from "./lib/components/ConsumablesPage.svelte";
   import { createConsumableStore } from "./lib/consumableStore.svelte";
   import type { Consumable } from "./lib/consumableStore.svelte";
+  import { createNotificationStore } from "./lib/notificationStore.svelte";
+  import type { Notification } from "./lib/notificationStore.svelte";
+  import NotificationBell from "./lib/components/NotificationBell.svelte";
   import ConsumableOverlay from "./lib/components/ConsumableOverlay.svelte";
   import ConsumablePinPopup from "./lib/components/ConsumablePinPopup.svelte";
   import WorksPage from "./lib/components/WorksPage.svelte";
@@ -72,6 +75,7 @@
   const worksStore = createWorksStore(getHomeId);
   const kbStore = createKBStore(getHomeId);
   const consumableStore = createConsumableStore(getHomeId);
+  const notificationStore = createNotificationStore(getHomeId);
   const authStore = createAuthStore();
 
   $effect(() => {
@@ -92,6 +96,7 @@
     worksStore.reload();
     kbStore.reload();
     consumableStore.reload();
+    notificationStore.reload();
   });
 
   let theme = $state<Theme>(getStoredTheme());
@@ -128,6 +133,12 @@
     else if (result.module === "works") { selectedWorkId = result.id; window.location.hash = "#/works"; }
     else if (result.module === "costs") { selectedCostEntryId = result.id; window.location.hash = "#/costs"; }
     else if (result.module === "kb") { selectedKBEntryId = result.id; window.location.hash = "#/kb"; }
+  }
+
+  function handleNotificationSelect(n: Notification): void {
+    if (n.type === "chore") { selectedChoreId = n.refId; window.location.hash = "#/chores"; }
+    else if (n.type === "low_stock") { selectedConsumableId = n.refId; window.location.hash = "#/consumables"; }
+    else if (n.type === "warranty") { selectedInventoryItemId = n.refId; window.location.hash = "#/inventory"; }
   }
 
   let selectedCostCategoryPin = $state<{
@@ -775,6 +786,7 @@
     <span class="spacer"></span>
     <HomesSwitcher topbar={true} />
     <button class="icon-btn search-btn" title="Search (Ctrl+K)" onclick={() => { commandPaletteOpen = true; }}>🔍</button>
+    <NotificationBell store={notificationStore} onnavigate={handleNotificationSelect} />
     <button
       class="icon-btn theme-toggle"
       title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}

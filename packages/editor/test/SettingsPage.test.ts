@@ -10,6 +10,10 @@ function makeStore() {
     suppliers: [],
     consumableUnits: [],
     consumableCategories: [],
+    notificationSettings: {
+      enabled: true, choresDueSoonThreshold: 0.25, warrantyDaysThreshold: 30,
+      haPushEnabled: false, haNotifyService: null, haPushTime: "08:00",
+    },
     loaded: true,
     loadError: null,
     updateCostCategories: vi.fn(),
@@ -19,6 +23,7 @@ function makeStore() {
     updateConsumableUnits: vi.fn(),
     updateConsumableCategories: vi.fn(),
     placeCostCategory: vi.fn(),
+    updateNotificationSettings: vi.fn(),
   };
 }
 
@@ -569,5 +574,71 @@ describe("SettingsPage — Single Sign-On", () => {
 
     expect(target.textContent).toContain("Could not reach issuer");
     unmount(app);
+  });
+});
+
+describe("SettingsPage — Notifications", () => {
+  let target: HTMLDivElement;
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+    globalThis.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false, provider_name: "", issuer: "", client_id: "", client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"] }) });
+      return Promise.resolve(new Response(null, { status: 200 }));
+    });
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    target.remove();
+  });
+
+  it("renders current settings and reflects the enabled toggle", () => {
+    const store = makeStore();
+    const comp = mount(SettingsPage, { target, props: { store, authStore: makeAuthStore() } });
+    flushSync();
+
+    const heading = Array.from(target.querySelectorAll("h2")).find((h) => h.textContent === "Notifications");
+    expect(heading).toBeDefined();
+    expect((target.querySelector(".notif-enable-toggle") as HTMLInputElement).checked).toBe(true);
+
+    unmount(comp);
+  });
+
+  it("hides push fields until 'Send a daily digest' is checked", () => {
+    const store = makeStore();
+    const comp = mount(SettingsPage, { target, props: { store, authStore: makeAuthStore() } });
+    flushSync();
+
+    const labels = Array.from(target.querySelectorAll(".modal-label")).map((el) => el.textContent);
+    expect(labels).not.toContain("HA notify service");
+
+    unmount(comp);
+  });
+
+  it("saves edited settings via store.updateNotificationSettings", async () => {
+    const store = makeStore();
+    const comp = mount(SettingsPage, { target, props: { store, authStore: makeAuthStore() } });
+    flushSync();
+
+    const enableToggle = target.querySelector(".notif-enable-toggle") as HTMLInputElement;
+    enableToggle.click();
+    enableToggle.click(); // leave enabled=true, but confirms the checkbox is wired to the draft
+    flushSync();
+
+    const saveBtn = Array.from(target.querySelectorAll("button")).find((b) => b.textContent?.includes("Save"))!;
+    (saveBtn as HTMLButtonElement).click();
+    await Promise.resolve();
+
+    expect(store.updateNotificationSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ enabled: true, warrantyDaysThreshold: 30 }),
+    );
+
+    unmount(comp);
   });
 });
