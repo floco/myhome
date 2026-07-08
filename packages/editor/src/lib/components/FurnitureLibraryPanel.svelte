@@ -52,9 +52,6 @@
           <div class="category-items">
             {#each items as template}
               <!-- svelte-ignore a11y_no_static_element_interactions -->
-              {@const ar = template.defaultWidth / template.defaultHeight}
-              {@const tw = ar >= 1 ? 48 : Math.max(20, 48 * ar)}
-              {@const th = ar <= 1 ? 48 : Math.max(20, 48 / ar)}
               <div
                 class="furniture-item"
                 draggable="true"
@@ -62,7 +59,7 @@
                 ondragstart={(e) => onDragStart(e, template.id)}
                 title={template.label}
               >
-                <svg viewBox="0 0 100 100" width={tw} height={th}>
+                <svg viewBox="0 0 100 100" width="48" height="48">
                   {@html template.svgContent}
                 </svg>
                 <span class="item-label">{template.label}</span>

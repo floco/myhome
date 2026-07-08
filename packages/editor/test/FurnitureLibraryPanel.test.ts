@@ -68,4 +68,15 @@ describe("FurnitureLibraryPanel", () => {
     const items = target.querySelectorAll("[draggable='true']");
     expect(items.length).toBe(FURNITURE_TEMPLATES.length);
   });
+
+  it("renders every thumbnail SVG at the same uniform size regardless of the template's real-world aspect ratio", () => {
+    setup();
+    const svgs = Array.from(target.querySelectorAll(".furniture-item svg"));
+    expect(svgs.length).toBe(FURNITURE_TEMPLATES.length);
+    const widths = new Set(svgs.map((el) => el.getAttribute("width")));
+    const heights = new Set(svgs.map((el) => el.getAttribute("height")));
+    expect(widths.size).toBe(1);
+    expect(heights.size).toBe(1);
+    expect([...widths][0]).toBe([...heights][0]);
+  });
 });
