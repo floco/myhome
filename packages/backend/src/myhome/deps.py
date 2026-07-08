@@ -116,3 +116,9 @@ def require_auth(min_role: str = "ro"):
         return user
 
     return Depends(_dep)
+
+
+def get_current_user_id(request: Request) -> str:
+    """Read the (user_id, role) already resolved by auth_middleware -- no re-authentication."""
+    user_id, _role = request.state.user
+    return user_id
