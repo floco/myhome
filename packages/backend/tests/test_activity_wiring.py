@@ -71,3 +71,37 @@ def test_deleting_work_logs_activity(client, home_id):
     client.delete(f"/api/homes/{home_id}/works/{work['id']}")
     entries = load_activity_log(home_id).entries
     assert any(e.module == "works" and e.action == "delete" and e.entityLabel == "Fix boiler" for e in entries)
+
+
+def test_creating_cost_entry_logs_activity(client, home_id):
+    client.post(f"/api/homes/{home_id}/costs/entries", json={
+        "categoryId": "cat-1", "date": "2026-01-01", "totalAmount": 45.0, "notes": "Electricity",
+    })
+    entries = load_activity_log(home_id).entries
+    assert any(e.module == "costs" and e.action == "create" and e.entityLabel == "Electricity" for e in entries)
+
+
+def test_creating_cost_entry_without_notes_uses_amount_as_label(client, home_id):
+    client.post(f"/api/homes/{home_id}/costs/entries", json={
+        "categoryId": "cat-1", "date": "2026-01-01", "totalAmount": 45.5,
+    })
+    entries = load_activity_log(home_id).entries
+    assert any(e.module == "costs" and e.action == "create" and e.entityLabel == "45.5" for e in entries)
+
+
+def test_updating_cost_entry_logs_activity(client, home_id):
+    entry = client.post(f"/api/homes/{home_id}/costs/entries", json={
+        "categoryId": "cat-1", "date": "2026-01-01", "totalAmount": 45.0, "notes": "Electricity",
+    }).json()
+    client.put(f"/api/homes/{home_id}/costs/entries/{entry['id']}", json={"totalAmount": 50.0})
+    entries = load_activity_log(home_id).entries
+    assert any(e.module == "costs" and e.action == "update" and e.entityLabel == "Electricity" for e in entries)
+
+
+def test_deleting_cost_entry_logs_activity(client, home_id):
+    entry = client.post(f"/api/homes/{home_id}/costs/entries", json={
+        "categoryId": "cat-1", "date": "2026-01-01", "totalAmount": 45.0, "notes": "Electricity",
+    }).json()
+    client.delete(f"/api/homes/{home_id}/costs/entries/{entry['id']}")
+    entries = load_activity_log(home_id).entries
+    assert any(e.module == "costs" and e.action == "delete" and e.entityLabel == "Electricity" for e in entries)
