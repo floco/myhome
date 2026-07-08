@@ -105,3 +105,23 @@ def test_deleting_cost_entry_logs_activity(client, home_id):
     client.delete(f"/api/homes/{home_id}/costs/entries/{entry['id']}")
     entries = load_activity_log(home_id).entries
     assert any(e.module == "costs" and e.action == "delete" and e.entityLabel == "Electricity" for e in entries)
+
+
+def test_creating_inventory_item_logs_activity(client, home_id):
+    client.post(f"/api/homes/{home_id}/inventory/items", json={"name": "TV"})
+    entries = load_activity_log(home_id).entries
+    assert any(e.module == "inventory" and e.action == "create" and e.entityLabel == "TV" for e in entries)
+
+
+def test_updating_inventory_item_logs_activity(client, home_id):
+    item = client.post(f"/api/homes/{home_id}/inventory/items", json={"name": "TV"}).json()
+    client.put(f"/api/homes/{home_id}/inventory/items/{item['id']}", json={"brand": "Samsung"})
+    entries = load_activity_log(home_id).entries
+    assert any(e.module == "inventory" and e.action == "update" and e.entityLabel == "TV" for e in entries)
+
+
+def test_deleting_inventory_item_logs_activity(client, home_id):
+    item = client.post(f"/api/homes/{home_id}/inventory/items", json={"name": "TV"}).json()
+    client.delete(f"/api/homes/{home_id}/inventory/items/{item['id']}")
+    entries = load_activity_log(home_id).entries
+    assert any(e.module == "inventory" and e.action == "delete" and e.entityLabel == "TV" for e in entries)
