@@ -4,7 +4,7 @@ import re
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 from ..models_chores import (
@@ -21,6 +21,8 @@ from ..models_chores import (
     ImportResponse,
 )
 from ..chore_scheduling import next_due_from_schedule
+from ..deps import get_current_user_id
+from ..persistence_activity import log_activity
 from ..persistence_chores import (
     _attachments_dir,
     delete_all_attachments,
@@ -142,7 +144,10 @@ async def import_from_donetick(home_id: str, body: ImportRequest) -> ImportRespo
 
 
 @router.post("/api/homes/{home_id}/chores", response_model=Chore, status_code=201)
-def create_chore(home_id: str, body: ChoreCreate) -> Chore:
+def create_chore(
+    home_id: str, body: ChoreCreate,
+    current_user_id: str = Depends(get_current_user_id),
+) -> Chore:
     doc = load_chores(home_id)
     data = body.model_dump()
     if data["frequency"] == 0:
@@ -151,11 +156,15 @@ def create_chore(home_id: str, body: ChoreCreate) -> Chore:
     chore = Chore(id=str(uuid.uuid4()), **data)
     doc.chores.append(chore)
     save_chores(home_id, doc)
+    log_activity(home_id, current_user_id, "chores", "create", chore.name, chore.id)
     return chore
 
 
 @router.put("/api/homes/{home_id}/chores/{chore_id}", status_code=204)
-def update_chore(home_id: str, chore_id: str, body: ChoreUpdate) -> None:
+def update_chore(
+    home_id: str, chore_id: str, body: ChoreUpdate,
+    current_user_id: str = Depends(get_current_user_id),
+) -> None:
     doc = load_chores(home_id)
     chore = next((c for c in doc.chores if c.id == chore_id), None)
     if chore is None:
@@ -163,21 +172,30 @@ def update_chore(home_id: str, chore_id: str, body: ChoreUpdate) -> None:
     for field, value in body.model_dump(exclude_none=True).items():
         setattr(chore, field, value)
     save_chores(home_id, doc)
+    log_activity(home_id, current_user_id, "chores", "update", chore.name, chore.id)
 
 
 @router.delete("/api/homes/{home_id}/chores/{chore_id}", status_code=204)
-def delete_chore(home_id: str, chore_id: str) -> None:
+def delete_chore(
+    home_id: str, chore_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+) -> None:
     doc = load_chores(home_id)
-    if not any(c.id == chore_id for c in doc.chores):
+    chore = next((c for c in doc.chores if c.id == chore_id), None)
+    if chore is None:
         raise HTTPException(status_code=404, detail="Chore not found")
     doc.chores = [c for c in doc.chores if c.id != chore_id]
     doc.assignments = [a for a in doc.assignments if a.choreId != chore_id]
     save_chores(home_id, doc)
     delete_all_attachments(home_id, chore_id)
+    log_activity(home_id, current_user_id, "chores", "delete", chore.name, chore_id)
 
 
 @router.post("/api/homes/{home_id}/chores/{chore_id}/complete", response_model=Chore)
-def complete_chore(home_id: str, chore_id: str, body: CompleteRequest | None = None) -> Chore:
+def complete_chore(
+    home_id: str, chore_id: str, body: CompleteRequest | None = None,
+    current_user_id: str = Depends(get_current_user_id),
+) -> Chore:
     doc = load_chores(home_id)
     chore = next((c for c in doc.chores if c.id == chore_id), None)
     if chore is None:
@@ -205,6 +223,7 @@ def complete_chore(home_id: str, chore_id: str, body: CompleteRequest | None = N
             a.nextDueDate = next_due_str
     chore.nextDueDate = next_due_str
     save_chores(home_id, doc)
+    log_activity(home_id, current_user_id, "chores", "complete", chore.name, chore_id)
     return chore
 
 
@@ -283,7 +302,10 @@ def create_assignment(home_id: str, body: AssignmentCreate) -> Assignment:
 
 
 @router.post("/api/homes/{home_id}/assignments/{assignment_id}/complete", response_model=Assignment)
-def complete_assignment(home_id: str, assignment_id: str, body: CompleteRequest | None = None) -> Assignment:
+def complete_assignment(
+    home_id: str, assignment_id: str, body: CompleteRequest | None = None,
+    current_user_id: str = Depends(get_current_user_id),
+) -> Assignment:
     doc = load_chores(home_id)
     assignment = next((a for a in doc.assignments if a.id == assignment_id), None)
     if assignment is None:
@@ -311,6 +333,7 @@ def complete_assignment(home_id: str, assignment_id: str, body: CompleteRequest 
     ))
     assignment.nextDueDate = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
     save_chores(home_id, doc)
+    log_activity(home_id, current_user_id, "chores", "complete", chore.name, chore.id)
     return assignment
 
 
