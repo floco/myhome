@@ -83,7 +83,7 @@ describe("SettingsNav", () => {
     flushSync();
     const select = target.querySelector(".nav-select") as HTMLSelectElement;
     select.value = "categories";
-    select.dispatchEvent(new Event("change"));
+    select.dispatchEvent(new Event("change", { bubbles: true }));
     expect(onchange).toHaveBeenCalledWith("categories");
     unmount(app);
   });
@@ -212,7 +212,7 @@ This panel takes **no props** — the Home/Modules logic only reads/writes `home
 
 ```typescript
 // packages/editor/test/SettingsGeneral.test.ts
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import SettingsGeneral from "../src/lib/components/settings/SettingsGeneral.svelte";
 import { homesStore } from "../src/lib/homesStore.svelte";
@@ -237,14 +237,21 @@ function seedHome(overrides: Partial<{ id: string; name: string; type: "existing
 }
 
 describe("SettingsGeneral", () => {
+  let target: HTMLDivElement;
+
+  beforeEach(() => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
     homesStore._reset();
+    target.remove();
   });
 
   it("renders the home name and type", () => {
     seedHome();
-    const target = document.createElement("div");
     const app = mount(SettingsGeneral, { target, props: {} });
     flushSync();
     expect(target.textContent).toContain("Rue des Lilas");
@@ -254,7 +261,6 @@ describe("SettingsGeneral", () => {
 
   it("renders core module checkboxes reflecting enabledModules", () => {
     seedHome({ enabledModules: ["home", "plan", "chores"] });
-    const target = document.createElement("div");
     const app = mount(SettingsGeneral, { target, props: {} });
     flushSync();
     const choresRow = [...target.querySelectorAll(".module-row")].find((r) => r.textContent?.includes("Chores"))!;
@@ -267,7 +273,6 @@ describe("SettingsGeneral", () => {
   it("toggling a module checkbox calls patchHome with a PATCH request", async () => {
     seedHome({ enabledModules: ["home"] });
     vi.stubGlobal("fetch", makeFetch(200, { id: "h1", name: "Rue des Lilas", type: "existing", enabledModules: ["home", "chores"], createdAt: "2026-01-01T00:00:00Z" }));
-    const target = document.createElement("div");
     const app = mount(SettingsGeneral, { target, props: {} });
     flushSync();
     const choresRow = [...target.querySelectorAll(".module-row")].find((r) => r.textContent?.includes("Chores"))!;
@@ -280,7 +285,6 @@ describe("SettingsGeneral", () => {
   it("editing the home name saves via patchHome", async () => {
     seedHome();
     vi.stubGlobal("fetch", makeFetch(200, { id: "h1", name: "New Name", type: "existing", enabledModules: ["home", "plan"], createdAt: "2026-01-01T00:00:00Z" }));
-    const target = document.createElement("div");
     const app = mount(SettingsGeneral, { target, props: {} });
     flushSync();
     const editBtn = [...target.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Edit")!;
@@ -288,7 +292,7 @@ describe("SettingsGeneral", () => {
     flushSync();
     const input = target.querySelector("input.ui-input") as HTMLInputElement;
     input.value = "New Name";
-    input.dispatchEvent(new Event("input"));
+    input.dispatchEvent(new Event("input", { bubbles: true }));
     flushSync();
     const saveBtn = [...target.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Save")!;
     saveBtn.click();
@@ -301,7 +305,6 @@ describe("SettingsGeneral", () => {
     seedHome();
     homesStore.homes.push({ id: "h2", name: "Second", type: "existing", enabledModules: [], createdAt: "" });
     vi.stubGlobal("fetch", makeFetch(204));
-    const target = document.createElement("div");
     const app = mount(SettingsGeneral, { target, props: {} });
     flushSync();
     const deleteBtn = [...target.querySelectorAll("button")].find((b) => b.textContent?.includes("Delete this home"))!;
