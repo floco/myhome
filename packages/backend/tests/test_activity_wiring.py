@@ -125,3 +125,23 @@ def test_deleting_inventory_item_logs_activity(client, home_id):
     client.delete(f"/api/homes/{home_id}/inventory/items/{item['id']}")
     entries = load_activity_log(home_id).entries
     assert any(e.module == "inventory" and e.action == "delete" and e.entityLabel == "TV" for e in entries)
+
+
+def test_creating_consumable_logs_activity(client, home_id):
+    client.post(f"/api/homes/{home_id}/consumables", json={"name": "Salt", "quantity": 5, "minQuantity": 1})
+    entries = load_activity_log(home_id).entries
+    assert any(e.module == "consumables" and e.action == "create" and e.entityLabel == "Salt" for e in entries)
+
+
+def test_adjusting_consumable_stock_logs_activity(client, home_id):
+    item = client.post(f"/api/homes/{home_id}/consumables", json={"name": "Salt", "quantity": 5, "minQuantity": 1}).json()
+    client.post(f"/api/homes/{home_id}/consumables/{item['id']}/stock", json={"quantity": 2, "note": ""})
+    entries = load_activity_log(home_id).entries
+    assert any(e.module == "consumables" and e.action == "update" and e.entityLabel == "Salt" for e in entries)
+
+
+def test_deleting_consumable_logs_activity(client, home_id):
+    item = client.post(f"/api/homes/{home_id}/consumables", json={"name": "Salt", "quantity": 5, "minQuantity": 1}).json()
+    client.delete(f"/api/homes/{home_id}/consumables/{item['id']}")
+    entries = load_activity_log(home_id).entries
+    assert any(e.module == "consumables" and e.action == "delete" and e.entityLabel == "Salt" for e in entries)
