@@ -16,6 +16,13 @@ _(none currently — see To Be Confirmed below)_
 
 ## Recently Completed
 
+- **Unified activity timeline / audit log** — an admin-only Activity Log
+  section in Settings showing "who did what" across Chores, Works, Costs,
+  Inventory, Consumables, and Knowledge Base (create/update/delete, plus
+  chore completion), with module/user/date filters and 90-day retention.
+  See [`docs/superpowers/specs/2026-07-08-activity-log-design.md`](docs/superpowers/specs/2026-07-08-activity-log-design.md)
+  and [`docs/superpowers/plans/2026-07-08-activity-log.md`](docs/superpowers/plans/2026-07-08-activity-log.md).
+
 - **Automated scheduled backups** — daily/weekly/monthly scheduled backups
   with configurable retention (keep last N), a "Run backup now" manual
   trigger, and a browsable list in Settings with per-entry download/delete.
@@ -66,15 +73,10 @@ a design spec for any of them.
    consumables into a shopping list that can be exported or pushed to a
    Home Assistant to-do list.
 
-5. **Unified activity timeline / audit log** — a chronological feed of
-   changes across modules (chore completions, works logged, costs added,
-   inventory edits), plus a "who changed what" view once multi-user auth
-   is in place.
-
-6. **User-uploadable furniture templates** — let users add their own SVG
+5. **User-uploadable furniture templates** — let users add their own SVG
    icons/templates to the floor plan furniture library instead of being
    limited to the built-in 39 templates.
 
-7. **PWA / offline support** — make the app installable to a phone home
+6. **PWA / offline support** — make the app installable to a phone home
    screen with an app icon and basic offline caching, useful now that API
    tokens exist for future mobile/automation use cases.

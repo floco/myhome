@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import SettingsPage from "../src/lib/components/SettingsPage.svelte";
+import { homesStore } from "../src/lib/homesStore.svelte";
 
 function makeStore() {
   return {
@@ -805,5 +806,100 @@ describe("SettingsPage — Notifications", () => {
     );
 
     unmount(comp);
+  });
+});
+
+describe("SettingsPage — Activity Log", () => {
+  let target: HTMLDivElement;
+  let fetchMock: ReturnType<typeof vi.fn>;
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+    homesStore.setActiveHomeId("home-1");
+    fetchMock = vi.fn().mockImplementation((url: string) => {
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
+      if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false, provider_name: "", issuer: "", client_id: "", client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"] }) });
+      if (url.startsWith("/api/homes/home-1/activity")) {
+        return Promise.resolve({ ok: true, json: async () => ({ entries: [], total: 0 }) });
+      }
+      return Promise.resolve(new Response(null, { status: 200 }));
+    });
+    globalThis.fetch = fetchMock;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    homesStore._reset();
+    target.remove();
+  });
+
+  it("renders the Activity Log section for admin", async () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin") } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    expect(target.textContent).toContain("Activity Log");
+    unmount(app);
+  });
+
+  it("does not render for non-admin", async () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("normal") } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    expect(target.textContent).not.toContain("Activity Log");
+    unmount(app);
+  });
+
+  it("renders returned entries with description", async () => {
+    fetchMock.mockImplementation((url: string) => {
+      const boiler = mockBoilerplateEndpoints(url);
+      if (boiler) return Promise.resolve(boiler);
+      if (url === "/api/auth/tokens") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/auth/users") return Promise.resolve({ ok: true, json: async () => [] });
+      if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
+      if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false, provider_name: "", issuer: "", client_id: "", client_secret: "", default_role: "normal", scopes: ["openid", "profile", "email"] }) });
+      if (url.startsWith("/api/homes/home-1/activity")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            entries: [{
+              id: "e1", timestamp: "2026-07-08T12:00:00+00:00", userId: "u1", username: "alice",
+              module: "works", action: "create", entityLabel: "Fix boiler", refId: null,
+              description: "added work 'Fix boiler'",
+            }],
+            total: 1,
+          }),
+        });
+      }
+      return Promise.resolve(new Response(null, { status: 200 }));
+    });
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin") } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    expect(target.textContent).toContain("added work 'Fix boiler'");
+    unmount(app);
+  });
+
+  it("applying a module filter re-fetches with the module query param", async () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin") } });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    const moduleSelect = target.querySelector(".activity-module-filter") as HTMLSelectElement;
+    moduleSelect.value = "kb";
+    moduleSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 0));
+
+    const lastCall = fetchMock.mock.calls[fetchMock.mock.calls.length - 1];
+    expect(lastCall[0]).toContain("module=kb");
+    unmount(app);
   });
 });
