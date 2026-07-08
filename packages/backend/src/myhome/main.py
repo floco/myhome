@@ -9,6 +9,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from .backup_scheduler import scheduled_backup_loop
 from .deps import ROLE_ORDER, get_user_from_request
 from .mcp_app import mcp_asgi_app
 from .mcp_server import mcp
@@ -24,10 +25,12 @@ async def _lifespan(app: FastAPI):
     # mounted sub-apps, so it must be entered here explicitly.
     async with mcp.session_manager.run():
         digest_task = asyncio.create_task(notification_digest_loop())
+        backup_task = asyncio.create_task(scheduled_backup_loop())
         try:
             yield
         finally:
             digest_task.cancel()
+            backup_task.cancel()
 
 
 app = FastAPI(title="MyHome Backend", version="0.1.0", lifespan=_lifespan)

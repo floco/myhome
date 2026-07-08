@@ -600,6 +600,123 @@
     if (fileInputEl) fileInputEl.value = "";
   }
 
+  // --- Scheduled backups ---
+  interface ScheduledBackupConfig {
+    enabled: boolean;
+    frequency: "daily" | "weekly" | "monthly";
+    time: string;
+    dayOfWeek: number;
+    dayOfMonth: number;
+    retentionCount: number;
+  }
+  interface ScheduledBackupEntry {
+    filename: string;
+    createdAt: string;
+    sizeBytes: number;
+  }
+
+  function defaultBackupConfig(): ScheduledBackupConfig {
+    return { enabled: false, frequency: "daily", time: "03:00", dayOfWeek: 7, dayOfMonth: 1, retentionCount: 7 };
+  }
+
+  const WEEKDAY_OPTIONS = [
+    { value: 1, label: "Monday" }, { value: 2, label: "Tuesday" }, { value: 3, label: "Wednesday" },
+    { value: 4, label: "Thursday" }, { value: 5, label: "Friday" }, { value: 6, label: "Saturday" },
+    { value: 7, label: "Sunday" },
+  ];
+
+  let scheduledConfig = $state<ScheduledBackupConfig>(defaultBackupConfig());
+  let scheduledConfigLoaded = $state(false);
+  let scheduledConfigError = $state<string | null>(null);
+  let scheduledConfigSaving = $state(false);
+  let scheduledDayOfMonthStr = $state(String(defaultBackupConfig().dayOfMonth));
+  let scheduledRetentionCountStr = $state(String(defaultBackupConfig().retentionCount));
+  let scheduledBackups = $state<ScheduledBackupEntry[]>([]);
+  let runningBackupNow = $state(false);
+  let confirmDeleteBackupFilename = $state<string | null>(null);
+
+  async function loadScheduledBackupConfig(): Promise<void> {
+    const resp = await fetch("/api/backup/config");
+    if (resp.ok) {
+      scheduledConfig = await resp.json();
+      scheduledDayOfMonthStr = String(scheduledConfig.dayOfMonth);
+      scheduledRetentionCountStr = String(scheduledConfig.retentionCount);
+    }
+    scheduledConfigLoaded = true;
+  }
+
+  async function loadScheduledBackups(): Promise<void> {
+    const resp = await fetch("/api/backup/scheduled");
+    if (resp.ok) scheduledBackups = await resp.json();
+  }
+
+  loadScheduledBackupConfig();
+  loadScheduledBackups();
+
+  async function saveScheduledBackupConfig(): Promise<void> {
+    scheduledConfigError = null;
+    scheduledConfigSaving = true;
+    try {
+      const resp = await fetch("/api/backup/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...scheduledConfig,
+          dayOfMonth: parseInt(scheduledDayOfMonthStr, 10) || 1,
+          retentionCount: parseInt(scheduledRetentionCountStr, 10) || 1,
+        }),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      scheduledConfig = await resp.json();
+      scheduledDayOfMonthStr = String(scheduledConfig.dayOfMonth);
+      scheduledRetentionCountStr = String(scheduledConfig.retentionCount);
+    } catch (e) {
+      scheduledConfigError = e instanceof Error ? e.message : String(e);
+    } finally {
+      scheduledConfigSaving = false;
+    }
+  }
+
+  async function runBackupNow(): Promise<void> {
+    runningBackupNow = true;
+    scheduledConfigError = null;
+    try {
+      const resp = await fetch("/api/backup/scheduled/run", { method: "POST" });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      await loadScheduledBackups();
+    } catch (e) {
+      scheduledConfigError = e instanceof Error ? e.message : String(e);
+    } finally {
+      runningBackupNow = false;
+    }
+  }
+
+  function formatBackupSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  async function downloadScheduledBackup(filename: string): Promise<void> {
+    const resp = await fetch(`/api/backup/scheduled/${filename}/download`);
+    if (!resp.ok) return;
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  async function deleteScheduledBackup(filename: string): Promise<void> {
+    await fetch(`/api/backup/scheduled/${filename}`, { method: "DELETE" });
+    confirmDeleteBackupFilename = null;
+    await loadScheduledBackups();
+  }
+
   import { homesStore } from "../homesStore.svelte";
 
   // --- Home metadata ---
@@ -1342,6 +1459,87 @@
       {#if backupError}<div class="error">{backupError}</div>{/if}
       {#if restoreError}<div class="error">{restoreError}</div>{/if}
       {#if restoreSuccess}<div class="success-msg">Restore complete. Reload the page to see updated data.</div>{/if}
+
+      <h3 class="subsection-title" style="margin-top: var(--space-4)">Scheduled Backups</h3>
+      {#if scheduledConfigLoaded}
+        <label class="module-row">
+          <input class="backup-enable-toggle" type="checkbox" bind:checked={scheduledConfig.enabled} />
+          <span class="mod-label">Enable scheduled backups</span>
+        </label>
+        {#if scheduledConfig.enabled}
+          <div class="modal-form" style="margin-top: var(--space-3)">
+            <div class="modal-field">
+              <span class="modal-label">Frequency</span>
+              <select bind:value={scheduledConfig.frequency} class="modal-select">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+            {#if scheduledConfig.frequency === "weekly"}
+              <div class="modal-field">
+                <span class="modal-label">Day of week</span>
+                <select bind:value={scheduledConfig.dayOfWeek} class="modal-select">
+                  {#each WEEKDAY_OPTIONS as opt (opt.value)}
+                    <option value={opt.value}>{opt.label}</option>
+                  {/each}
+                </select>
+              </div>
+            {/if}
+            {#if scheduledConfig.frequency === "monthly"}
+              <div class="modal-field">
+                <span class="modal-label">Day of month</span>
+                <Input type="number" bind:value={scheduledDayOfMonthStr} />
+              </div>
+            {/if}
+            <div class="modal-field">
+              <span class="modal-label">Time (UTC, HH:MM)</span>
+              <Input bind:value={scheduledConfig.time} placeholder="03:00" />
+            </div>
+            <div class="modal-field">
+              <span class="modal-label">Keep last N backups</span>
+              <Input type="number" bind:value={scheduledRetentionCountStr} />
+            </div>
+          </div>
+        {/if}
+        {#if scheduledConfigError}<div class="error">{scheduledConfigError}</div>{/if}
+        <div class="modal-actions">
+          <Button onclick={saveScheduledBackupConfig} disabled={scheduledConfigSaving}>
+            {scheduledConfigSaving ? "Saving…" : "Save"}
+          </Button>
+          <Button variant="secondary" onclick={runBackupNow} disabled={runningBackupNow}>
+            {runningBackupNow ? "Running…" : "Run backup now"}
+          </Button>
+        </div>
+      {/if}
+
+      {#if scheduledBackups.length > 0}
+        <div class="table-wrapper" style="margin-top: var(--space-3)">
+          <table>
+            <thead>
+              <tr><th>Created</th><th>Size</th><th></th></tr>
+            </thead>
+            <tbody>
+              {#each scheduledBackups as backup (backup.filename)}
+                <tr class="backup-row">
+                  <td>{new Date(backup.createdAt).toLocaleString()}</td>
+                  <td>{formatBackupSize(backup.sizeBytes)}</td>
+                  <td class="actions">
+                    {#if confirmDeleteBackupFilename === backup.filename}
+                      <span class="confirm-text">Delete?</span>
+                      <button class="icon-action danger" onclick={() => deleteScheduledBackup(backup.filename)}>✓</button>
+                      <button class="icon-action" onclick={() => { confirmDeleteBackupFilename = null; }}>✕</button>
+                    {:else}
+                      <button class="icon-action" onclick={() => downloadScheduledBackup(backup.filename)} title="Download">⬇</button>
+                      <button class="icon-action danger" onclick={() => { confirmDeleteBackupFilename = backup.filename; }} title="Delete">🗑</button>
+                    {/if}
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      {/if}
     </Card>
 
   </div>

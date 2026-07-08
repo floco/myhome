@@ -6,7 +6,20 @@ from datetime import date
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
+
+from ..models_backup import BackupConfig, BackupEntry
+from ..persistence_backup import (
+    create_backup,
+    delete_backup,
+    get_backup_path,
+    iter_backup_files,
+    list_backups,
+    load_backup_config,
+    load_backup_state,
+    save_backup_config,
+    save_backup_state,
+)
 
 router = APIRouter()
 
@@ -43,16 +56,10 @@ def _validate_zip_entries(zf: zipfile.ZipFile, data_dir: Path) -> None:
 @router.get("/api/backup/download")
 def download_backup() -> StreamingResponse:
     data_dir = _data_dir()
-    resolved_root = data_dir.resolve()
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        if data_dir.exists():
-            for path in data_dir.rglob("*"):
-                if path.is_symlink() or not path.is_file():
-                    continue
-                if not path.resolve().is_relative_to(resolved_root):
-                    continue
-                zf.write(path, path.relative_to(data_dir))
+        for path, rel in iter_backup_files(data_dir, exclude_dirs=frozenset({"backups"})):
+            zf.write(path, rel)
     buf.seek(0)
     filename = f"myhome-backup-{date.today().isoformat()}.zip"
     return StreamingResponse(
@@ -78,3 +85,42 @@ async def restore_backup(file: UploadFile) -> None:
             else:
                 child.unlink()
         zf.extractall(data_dir)
+
+
+@router.get("/api/backup/config", response_model=BackupConfig)
+def get_backup_config() -> BackupConfig:
+    return load_backup_config()
+
+
+@router.put("/api/backup/config", response_model=BackupConfig)
+def put_backup_config(body: BackupConfig) -> BackupConfig:
+    save_backup_config(body)
+    return body
+
+
+@router.get("/api/backup/scheduled", response_model=list[BackupEntry])
+def get_scheduled_backups() -> list[BackupEntry]:
+    return list_backups()
+
+
+@router.post("/api/backup/scheduled/run", response_model=BackupEntry)
+def run_backup_now() -> BackupEntry:
+    entry = create_backup()
+    state = load_backup_state()
+    state.lastRunDate = date.today().isoformat()
+    save_backup_state(state)
+    return entry
+
+
+@router.get("/api/backup/scheduled/{filename}/download")
+def download_scheduled_backup(filename: str):
+    path = get_backup_path(filename)
+    if path is None:
+        raise HTTPException(status_code=404)
+    return FileResponse(path, media_type="application/zip", filename=filename)
+
+
+@router.delete("/api/backup/scheduled/{filename}", status_code=204)
+def delete_scheduled_backup(filename: str) -> None:
+    if not delete_backup(filename):
+        raise HTTPException(status_code=404)
