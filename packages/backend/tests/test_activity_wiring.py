@@ -145,3 +145,23 @@ def test_deleting_consumable_logs_activity(client, home_id):
     client.delete(f"/api/homes/{home_id}/consumables/{item['id']}")
     entries = load_activity_log(home_id).entries
     assert any(e.module == "consumables" and e.action == "delete" and e.entityLabel == "Salt" for e in entries)
+
+
+def test_creating_kb_entry_logs_activity(client, home_id):
+    client.post(f"/api/homes/{home_id}/kb", json={"title": "How to reset router", "content": "..."})
+    entries = load_activity_log(home_id).entries
+    assert any(e.module == "kb" and e.action == "create" and e.entityLabel == "How to reset router" for e in entries)
+
+
+def test_updating_kb_entry_logs_activity(client, home_id):
+    entry = client.post(f"/api/homes/{home_id}/kb", json={"title": "How to reset router", "content": "..."}).json()
+    client.put(f"/api/homes/{home_id}/kb/{entry['id']}", json={"content": "Updated steps"})
+    entries = load_activity_log(home_id).entries
+    assert any(e.module == "kb" and e.action == "update" and e.entityLabel == "How to reset router" for e in entries)
+
+
+def test_deleting_kb_entry_logs_activity(client, home_id):
+    entry = client.post(f"/api/homes/{home_id}/kb", json={"title": "How to reset router", "content": "..."}).json()
+    client.delete(f"/api/homes/{home_id}/kb/{entry['id']}")
+    entries = load_activity_log(home_id).entries
+    assert any(e.module == "kb" and e.action == "delete" and e.entityLabel == "How to reset router" for e in entries)

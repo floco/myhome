@@ -4,10 +4,12 @@ import re
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
+from ..deps import get_current_user_id
 from ..models_kb import KBCreate, KBDocument, KBEntry, KBUpdate
+from ..persistence_activity import log_activity
 from ..persistence_kb import (
     _attachments_dir,
     delete_attachment,
@@ -51,7 +53,10 @@ def get_kb(home_id: str) -> KBDocument:
 
 
 @router.post("/api/homes/{home_id}/kb", response_model=KBEntry, status_code=201)
-def create_entry(home_id: str, body: KBCreate) -> KBEntry:
+def create_entry(
+    home_id: str, body: KBCreate,
+    current_user_id: str = Depends(get_current_user_id),
+) -> KBEntry:
     now = _now()
     entry = KBEntry(
         id=str(uuid.uuid4()),
@@ -61,11 +66,15 @@ def create_entry(home_id: str, body: KBCreate) -> KBEntry:
         updatedAt=now,
     )
     save_entry(home_id, entry)
+    log_activity(home_id, current_user_id, "kb", "create", entry.title, entry.id)
     return entry
 
 
 @router.put("/api/homes/{home_id}/kb/{id}", status_code=204)
-def update_entry(home_id: str, id: str, body: KBUpdate) -> None:
+def update_entry(
+    home_id: str, id: str, body: KBUpdate,
+    current_user_id: str = Depends(get_current_user_id),
+) -> None:
     entry = load_entry(home_id, id)
     if not entry:
         raise HTTPException(status_code=404)
@@ -75,12 +84,20 @@ def update_entry(home_id: str, id: str, body: KBUpdate) -> None:
         entry.content = body.content
     entry.updatedAt = _now()
     save_entry(home_id, entry)
+    log_activity(home_id, current_user_id, "kb", "update", entry.title, id)
 
 
 @router.delete("/api/homes/{home_id}/kb/{id}", status_code=204)
-def delete_kb_entry(home_id: str, id: str) -> None:
+def delete_kb_entry(
+    home_id: str, id: str,
+    current_user_id: str = Depends(get_current_user_id),
+) -> None:
+    entry = load_entry(home_id, id)
+    if not entry:
+        raise HTTPException(status_code=404)
     if not delete_entry(home_id, id):
         raise HTTPException(status_code=404)
+    log_activity(home_id, current_user_id, "kb", "delete", entry.title, id)
 
 
 @router.post("/api/homes/{home_id}/kb/{id}/attachments", status_code=201)
