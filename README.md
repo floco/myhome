@@ -1,23 +1,42 @@
 # My Home
 
-A modular home management app for Home Assistant. Each aspect of your home — its layout, chores, inventory, supplies, and renovation history — lives in its own module behind a unified sidebar.
+A modular home management app for Home Assistant. Each aspect of your home — its layout, chores, inventory, supplies, costs, and renovation history — lives in its own module behind a unified sidebar.
+
+## A note from the author
+
+This app is **vibe coded**. I couldn't find anything out there that would properly manage a house — despite a house being, for most of us, the single most valuable asset we own — so I started building one myself. I code this in my spare time, and spare time is in short supply, so development happens in bursts and support is best-effort.
+
+Take it or leave it. No guarantee, use at your own risk. I'm sharing it in case it's useful to someone else too.
 
 ## Modules
 
-| Module | Status | Description |
-|--------|--------|-------------|
-| 🏠 **Floor Plan** | Live | Draw rooms, place doors/windows, overlay chore badges, label HA areas |
-| ✅ **Chores** | Live | Track recurring chores with flexible schedules, completion history, and notes |
-| 📦 **Inventory** | Planned | Catalog items stored in your home — furniture, appliances, tools, valuables |
-| 🛒 **Consumables** | Planned | Monitor stock levels for everyday supplies and household essentials |
-| 🔧 **Works** | Planned | Log renovations and repairs — contractors, costs, warranties, photos |
-| 💶 **Finance** | Planned | Track house costs — property taxes, fuel/mazout orders, electricity bills, and other expenses |
+| Module | Description |
+|--------|--------------|
+| 🏡 **Home** | Dashboard with at-a-glance widgets for chores, costs, inventory, works, and consumables |
+| 📐 **Floor Plan** | Draw rooms, walls, doors, and windows; place furniture from a built-in library; overlay chore/cost/inventory/works pins; label Home Assistant areas |
+| ✅ **Chores** | Recurring chores with flexible schedules (daily/weekly/monthly/yearly, day-of-month, days-of-week), completion history with notes, and import from [Donetick](https://donetick.com) |
+| 📦 **Inventory** | Catalog what you own — categories, floor plan pins, photos and documents attached to each item |
+| 🛒 **Consumables** | Track stock levels for everyday supplies, with custom units and categories |
+| 🔧 **Works** | Log renovations and repairs — costs, dates, photos and documents |
+| 📖 **Knowledge Base** | Freeform notes with a markdown editor, for anything that doesn't fit elsewhere (manuals, warranties, contacts, procedures) |
+| 💶 **Costs** | Track house expenses by category (property tax, fuel/mazout, electricity, water, ...), with suppliers and floor-plan pins |
 
-## Chores
+Multiple homes are supported — switch between them from the top bar, each with its own floor plan, data, and enabled-modules configuration.
 
-Chores supports flexible recurrence (daily, weekly, monthly, yearly, day-of-month, days-of-week), completion history with notes, and two scheduling modes — advance from the planned date or from the actual completion date. Chores can be imported from [Donetick](https://donetick.com).
+## Other features
 
-From the **Chores** module, use the ⚙ button (left of `+`) to open chore settings for creating, editing, deleting, and importing chores.
+- **Global search** — jump to anything across every module from one command palette (`Ctrl/Cmd+K`)
+- **Media galleries** — attach photos and PDFs to inventory items, works, cost entries, chores, and KB pages, with a lightbox viewer
+- **Notifications** — a notification center surfaces chores due soon, low-stock consumables, and expiring warranties, with an optional daily digest pushed to Home Assistant
+- **Activity log** — an audit trail of who changed what, across every module
+- **Backup & restore** — one-click manual backup/restore, plus scheduled automatic backups with retention
+- **Users, roles & API tokens** — read-only/normal/admin roles, per-user accounts, and scoped API tokens for automation
+- **Single Sign-On** — optional OIDC login (Keycloak, Authentik, Google Workspace, etc.) alongside local accounts
+- **MCP server** — expose your home's data to AI assistants (Claude Desktop, Claude Code, claude.ai, Home Assistant's Assist) over the Model Context Protocol
+- **Home Assistant integration** — runs as an ingress-enabled addon with a sidebar panel, and can label floor plan rooms with your existing HA areas
+- **Light/dark theme**
+
+All of the above is configurable from **Settings**, organized into General, Categories, Notifications, Security & Access, Integrations, Backup & Restore, and Activity Log.
 
 ## Installing as a Home Assistant Addon
 
@@ -116,3 +135,7 @@ addon/
   run.sh       # Container entrypoint
 Dockerfile     # Multi-stage build (frontend → backend)
 ```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
