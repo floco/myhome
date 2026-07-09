@@ -24,7 +24,7 @@ from ..chore_scheduling import next_due_from_schedule
 from ..deps import get_current_user_id
 from ..persistence_activity import log_activity
 from ..persistence_chores import (
-    _attachments_dir,
+    get_attachment_path,
     delete_all_attachments,
     delete_attachment,
     generate_pdf_thumbnail,
@@ -244,10 +244,9 @@ async def upload_chore_attachment(home_id: str, chore_id: str, file: UploadFile)
     data = await file.read()
     save_attachment(home_id, chore_id, filename, data)
     if ext == ".pdf":
-        generate_pdf_thumbnail(
-            _attachments_dir(home_id, chore_id) / filename,
-            _attachments_dir(home_id, chore_id) / (filename + ".thumb.jpg"),
-        )
+        pdf_path = get_attachment_path(home_id, chore_id, filename)
+        thumb_path = pdf_path.with_name(pdf_path.name + ".thumb.jpg")
+        generate_pdf_thumbnail(pdf_path, thumb_path)
     if filename not in chore.attachments:
         chore.attachments.append(filename)
     save_chores(home_id, doc)
@@ -258,9 +257,8 @@ async def upload_chore_attachment(home_id: str, chore_id: str, file: UploadFile)
 def get_chore_attachment(home_id: str, chore_id: str, filename: str) -> FileResponse:
     _validate_id(chore_id)
     _validate_filename(filename)
-    base = _attachments_dir(home_id, chore_id).resolve()
-    path = (base / filename).resolve()
-    if not str(path).startswith(str(base) + "/") or not path.is_file():
+    path = get_attachment_path(home_id, chore_id, filename)
+    if not path.is_file():
         raise HTTPException(status_code=404)
     media_type, _ = mimetypes.guess_type(filename)
     return FileResponse(str(path), media_type=media_type or "application/octet-stream", content_disposition_type="inline")

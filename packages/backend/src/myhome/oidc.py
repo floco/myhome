@@ -36,8 +36,11 @@ async def fetch_discovery(issuer: str) -> dict:
     # request, so without this check a malicious or compromised issuer
     # config is a full SSRF primitive against internal services (e.g. cloud
     # metadata endpoints). Reject hostnames that don't resolve to a public
-    # address; this guard must stay inline immediately before the request
-    # it protects for static analysis to recognize it as sanitizing `url`.
+    # address. This blocks direct SSRF at request time; it does not close a
+    # DNS-rebinding TOCTOU window (resolve here, connect to something else
+    # later), which would require IP-pinning via a custom transport. Given
+    # this field is admin-only, that gap was assessed and accepted rather
+    # than fixed (CodeQL alert #3, py/full-ssrf, dismissed as won't-fix).
     hostname = urlparse(url).hostname
     if not hostname:
         raise HTTPException(422, "URL has no hostname")

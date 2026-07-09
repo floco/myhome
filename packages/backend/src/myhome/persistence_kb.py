@@ -29,11 +29,23 @@ def _kb_dir(home_id: str) -> Path:
 
 
 def _entry_path(home_id: str, id: str) -> Path:
-    return _kb_dir(home_id) / f"{id}.md"
+    base = os.path.normpath(str(_kb_dir(home_id)))
+    candidate = os.path.normpath(os.path.join(base, f"{id}.md"))
+    if not candidate.startswith(base + os.sep):
+        raise InvalidIdError(f"Invalid id: {id!r}")
+    return Path(candidate)
 
 
 def _attachments_dir(home_id: str, entry_id: str) -> Path:
-    return _home_dir(home_id) / "kb-attachments" / entry_id
+    # Same inline lexical-normalize-then-verify-containment shape as
+    # _home_dir() above -- entry_id is validated at the route layer too, but
+    # CodeQL's taint tracker doesn't credit a separate validator function as
+    # sanitizing the value used here.
+    base = os.path.normpath(str(_home_dir(home_id) / "kb-attachments"))
+    candidate = os.path.normpath(os.path.join(base, entry_id))
+    if not candidate.startswith(base + os.sep):
+        raise InvalidIdError(f"Invalid entry_id: {entry_id!r}")
+    return Path(candidate)
 
 
 def _parse_frontmatter(text: str) -> tuple[dict, str]:
@@ -119,18 +131,34 @@ def delete_entry(home_id: str, id: str) -> bool:
     return True
 
 
+def get_attachment_path(home_id: str, entry_id: str, filename: str) -> Path:
+    base = os.path.normpath(str(_attachments_dir(home_id, entry_id)))
+    candidate = os.path.normpath(os.path.join(base, filename))
+    if not candidate.startswith(base + os.sep):
+        raise InvalidIdError(f"Invalid filename: {filename!r}")
+    return Path(candidate)
+
+
 def save_attachment(home_id: str, entry_id: str, filename: str, data: bytes) -> None:
     path = _attachments_dir(home_id, entry_id)
+    base = os.path.normpath(str(path))
+    candidate = os.path.normpath(os.path.join(base, filename))
+    if not candidate.startswith(base + os.sep):
+        raise InvalidIdError(f"Invalid filename: {filename!r}")
     path.mkdir(parents=True, exist_ok=True)
-    (path / filename).write_bytes(data)
+    Path(candidate).write_bytes(data)
 
 
 def delete_attachment(home_id: str, entry_id: str, filename: str) -> bool:
-    path = _attachments_dir(home_id, entry_id) / filename
+    base = os.path.normpath(str(_attachments_dir(home_id, entry_id)))
+    candidate = os.path.normpath(os.path.join(base, filename))
+    if not candidate.startswith(base + os.sep):
+        raise InvalidIdError(f"Invalid filename: {filename!r}")
+    path = Path(candidate)
     if not path.exists():
         return False
     path.unlink()
-    thumb = path.parent / (filename + ".thumb.jpg")
+    thumb = path.with_name(path.name + ".thumb.jpg")
     if thumb.exists():
         thumb.unlink()
     return True

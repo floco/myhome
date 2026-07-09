@@ -28,7 +28,15 @@ def _chores_file(home_id: str) -> Path:
 
 
 def _attachments_dir(home_id: str, chore_id: str) -> Path:
-    return _home_dir(home_id) / "chores-attachments" / chore_id
+    # Same inline lexical-normalize-then-verify-containment shape as
+    # _home_dir() above -- chore_id is validated at the route layer too, but
+    # CodeQL's taint tracker doesn't credit a separate validator function as
+    # sanitizing the value used here.
+    base = os.path.normpath(str(_home_dir(home_id) / "chores-attachments"))
+    candidate = os.path.normpath(os.path.join(base, chore_id))
+    if not candidate.startswith(base + os.sep):
+        raise InvalidIdError(f"Invalid chore_id: {chore_id!r}")
+    return Path(candidate)
 
 
 def load_chores(home_id: str) -> ChoreDocument:
@@ -60,18 +68,34 @@ def save_chores(home_id: str, doc: ChoreDocument) -> None:
     tmp.replace(path)
 
 
+def get_attachment_path(home_id: str, chore_id: str, filename: str) -> Path:
+    base = os.path.normpath(str(_attachments_dir(home_id, chore_id)))
+    candidate = os.path.normpath(os.path.join(base, filename))
+    if not candidate.startswith(base + os.sep):
+        raise InvalidIdError(f"Invalid filename: {filename!r}")
+    return Path(candidate)
+
+
 def save_attachment(home_id: str, chore_id: str, filename: str, data: bytes) -> None:
     path = _attachments_dir(home_id, chore_id)
+    base = os.path.normpath(str(path))
+    candidate = os.path.normpath(os.path.join(base, filename))
+    if not candidate.startswith(base + os.sep):
+        raise InvalidIdError(f"Invalid filename: {filename!r}")
     path.mkdir(parents=True, exist_ok=True)
-    (path / filename).write_bytes(data)
+    Path(candidate).write_bytes(data)
 
 
 def delete_attachment(home_id: str, chore_id: str, filename: str) -> bool:
-    path = _attachments_dir(home_id, chore_id) / filename
+    base = os.path.normpath(str(_attachments_dir(home_id, chore_id)))
+    candidate = os.path.normpath(os.path.join(base, filename))
+    if not candidate.startswith(base + os.sep):
+        raise InvalidIdError(f"Invalid filename: {filename!r}")
+    path = Path(candidate)
     if not path.exists():
         return False
     path.unlink()
-    thumb = path.parent / (filename + ".thumb.jpg")
+    thumb = path.with_name(path.name + ".thumb.jpg")
     if thumb.exists():
         thumb.unlink()
     return True

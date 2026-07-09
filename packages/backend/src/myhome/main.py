@@ -75,9 +75,10 @@ def _first_boot() -> None:
     # one-time credential handoff to a human operator is unavoidable for
     # auto-generated first-boot credentials (see e.g. kubeadm join tokens,
     # Vaultwarden's admin token); this is that handoff, deliberately scoped
-    # as tightly as the UX allows.
+    # as tightly as the UX allows. (CodeQL alert #124, py/clear-text-storage-
+    # sensitive-data, dismissed as won't-fix for this reason.)
     password_file = initial_admin_password_file()
-    password_file.write_text(password + "\n")  # codeql[py/clear-text-storage-sensitive-data]
+    password_file.write_text(password + "\n")
     os.chmod(password_file, 0o600)
     print(f"[myhome] First boot — admin password written to {password_file}", flush=True)
 
