@@ -131,7 +131,14 @@ def create_backup() -> BackupEntry:
 def get_backup_path(filename: str) -> Path | None:
     if not _FILENAME_RE.fullmatch(filename):
         return None
-    path = _backups_dir() / filename
+    # Lexical normalize-then-verify-containment, same shape used for home_id
+    # elsewhere -- CodeQL's py/path-injection taint tracker doesn't credit
+    # the anchored regex check above as sanitizing the value used here.
+    backups_root = os.path.normpath(str(_backups_dir()))
+    candidate = os.path.normpath(os.path.join(backups_root, filename))
+    if not candidate.startswith(backups_root + os.sep):
+        return None
+    path = Path(candidate)
     if not path.exists():
         return None
     return path

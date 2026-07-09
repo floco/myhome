@@ -80,3 +80,40 @@ a design spec for any of them.
 6. **PWA / offline support** — make the app installable to a phone home
    screen with an app icon and basic offline caching, useful now that API
    tokens exist for future mobile/automation use cases.
+
+7. **Insurance/asset-value report** — a one-click exportable PDF/CSV "home
+   insurance inventory" built from data Inventory and Costs already track
+   (purchase price, date, photos per item).
+
+8. **Energy/utility usage tracking** — a module for meter readings/usage
+   trends over time, complementing Costs (which tracks bills) with actual
+   consumption data, to help catch anomalies like a leak or failing HVAC
+   before the bill shows it.
+
+9. **In-app AI chat** — surface the existing MCP server's 32 tools directly
+   in the app via a chat panel ("when does my furnace warranty expire?",
+   "log that I fixed the garbage disposal"), instead of only through
+   external MCP clients.
+
+10. **Document auto-extraction** — when a receipt or manual is uploaded to
+    Inventory or Knowledge Base, use the same LLM/MCP plumbing to auto-fill
+    warranty expiry, model number, and purchase price instead of manual
+    entry.
+
+11. **Scoped, time-boxed share links** — a read-only link to a single Work
+    item or KB manual for a contractor/guest, without issuing a full
+    account. Distinct from per-home permissions (idea 1): this is
+    per-item, not per-home.
+
+12. **ICS calendar export** — a subscribable feed of chore due-dates and
+    scheduled works, for household members who'd rather check their
+    phone's calendar than open the app.
+
+13. **Outbound HA automation triggers** — the current Home Assistant
+    integration is inbound-only (area labels, notify service); firing HA
+    automations/webhooks *from* MyHome events (chore completed, consumable
+    low) would close the loop.
+
+14. **Mobile quick-capture flow** — point the phone camera at a receipt to
+    auto-file it as a Costs entry or Inventory attachment. Pairs with the
+    PWA idea (6) rather than replacing it.
