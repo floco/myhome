@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from .backup_scheduler import scheduled_backup_loop
 from .deps import ROLE_ORDER, get_user_from_request
+from .ids import InvalidIdError
 from .mcp_app import mcp_asgi_app
 from .mcp_server import mcp
 from .notification_scheduler import notification_digest_loop
@@ -36,6 +37,11 @@ async def _lifespan(app: FastAPI):
 app = FastAPI(title="MyHome Backend", version="0.1.0", lifespan=_lifespan)
 
 
+@app.exception_handler(InvalidIdError)
+async def _invalid_id_handler(request: Request, exc: InvalidIdError) -> JSONResponse:
+    return JSONResponse({"detail": str(exc)}, status_code=400)
+
+
 # ── First boot ────────────────────────────────────────────────────────────
 
 def _first_boot() -> None:
@@ -59,7 +65,15 @@ def _first_boot() -> None:
         created_at=datetime.now(timezone.utc).isoformat(),
     )
     save_users(UserDocument(users=[admin]))
-    print(f"[myhome] First boot — admin password: {password}", flush=True)
+
+    # Write the generated password to a file instead of stdout: container
+    # logs are often shipped to centralized aggregators and retained
+    # indefinitely, which would leak the credential far beyond the operator
+    # who needs it for the one-time first login.
+    password_file = data_dir / ".initial-admin-password"
+    password_file.write_text(password + "\n")
+    os.chmod(password_file, 0o600)
+    print(f"[myhome] First boot — admin password written to {password_file}", flush=True)
 
 
 _first_boot()

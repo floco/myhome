@@ -77,6 +77,18 @@ def test_create_backup_writes_zip_and_excludes_backups_dir(tmp_path, monkeypatch
     assert not any(n.startswith("backups/") for n in names)
 
 
+def test_create_backup_excludes_initial_admin_password(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    (tmp_path / "house.json").write_text('{"floors": []}')
+    (tmp_path / ".initial-admin-password").write_text("super-secret-password\n")
+
+    entry = create_backup()
+
+    backup_path = tmp_path / "backups" / entry.filename
+    names = zipfile.ZipFile(backup_path).namelist()
+    assert ".initial-admin-password" not in names
+
+
 def test_create_backup_prunes_to_retention_count(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     save_backup_config(BackupConfig(retentionCount=2))

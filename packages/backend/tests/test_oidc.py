@@ -19,6 +19,14 @@ def _clear_discovery_cache():
     oidc.clear_discovery_cache()
 
 
+@pytest.fixture(autouse=True)
+def _resolve_test_hostnames_to_public_ip(monkeypatch):
+    """Test hostnames like idp.example.test don't resolve via real DNS.
+    Pin every hostname to a public IP so SSRF host-validation doesn't reject
+    the mocked requests these tests rely on."""
+    monkeypatch.setattr(oidc, "_resolve_hostname", lambda hostname: ["1.1.1.1"])
+
+
 async def test_fetch_discovery_caches_result():
     with respx.mock:
         route = respx.get("https://idp.example.test/.well-known/openid-configuration").mock(
@@ -34,6 +42,61 @@ async def test_fetch_discovery_caches_result():
 async def test_fetch_discovery_rejects_non_https_issuer():
     with pytest.raises(HTTPException) as exc_info:
         await oidc.fetch_discovery("http://idp.example.test")
+    assert exc_info.value.status_code == 422
+
+
+async def test_fetch_discovery_rejects_private_ip_issuer(monkeypatch):
+    monkeypatch.setattr(oidc, "_resolve_hostname", lambda hostname: ["10.0.0.5"])
+    with pytest.raises(HTTPException) as exc_info:
+        await oidc.fetch_discovery("https://idp.example.test")
+    assert exc_info.value.status_code == 422
+
+
+async def test_fetch_discovery_rejects_metadata_ip_issuer(monkeypatch):
+    monkeypatch.setattr(oidc, "_resolve_hostname", lambda hostname: ["169.254.169.254"])
+    with pytest.raises(HTTPException) as exc_info:
+        await oidc.fetch_discovery("https://idp.example.test")
+    assert exc_info.value.status_code == 422
+
+
+async def test_fetch_discovery_rejects_unresolvable_issuer(monkeypatch):
+    import socket
+
+    def _raise(hostname):
+        raise socket.gaierror("nope")
+
+    monkeypatch.setattr(oidc, "_resolve_hostname", _raise)
+    with pytest.raises(HTTPException) as exc_info:
+        await oidc.fetch_discovery("https://idp.example.test")
+    assert exc_info.value.status_code == 422
+
+
+async def test_exchange_code_for_claims_rejects_private_jwks_uri(monkeypatch):
+    private_discovery = dict(DISCOVERY, jwks_uri="https://internal.example.test/jwks")
+    config = OidcConfig(
+        enabled=True, provider_name="TestIdP", issuer="https://idp.example.test",
+        client_id="cid", client_secret="csecret", default_role="normal",
+        scopes=["openid", "profile", "email"],
+    )
+
+    def _resolve(hostname):
+        return ["10.0.0.5"] if hostname == "internal.example.test" else ["1.1.1.1"]
+
+    monkeypatch.setattr(oidc, "_resolve_hostname", _resolve)
+    with respx.mock:
+        respx.get("https://idp.example.test/.well-known/openid-configuration").mock(
+            return_value=httpx.Response(200, json=private_discovery)
+        )
+        respx.post("https://idp.example.test/token").mock(
+            return_value=httpx.Response(200, json={
+                "access_token": "at-123", "id_token": "unused", "token_type": "Bearer",
+            })
+        )
+        with pytest.raises(HTTPException) as exc_info:
+            await oidc.exchange_code_for_claims(
+                config, "https://myhome.example/api/auth/oidc/callback",
+                code="authcode123", code_verifier="verifier123", nonce="test-nonce-abc",
+            )
     assert exc_info.value.status_code == 422
 
 

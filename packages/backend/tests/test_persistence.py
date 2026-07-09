@@ -1,9 +1,18 @@
 import json
 import pytest
+from myhome.ids import InvalidIdError
 from myhome.models import HouseDocument, House, Floor
 from myhome.persistence import load_house, save_house
 
 HOME_ID = "test-home"
+
+
+def test_save_house_rejects_path_traversal_home_id(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    outside = tmp_path.parent / "escaped-house.json"
+    with pytest.raises(InvalidIdError):
+        save_house("../" + outside.name.removesuffix(".json"), make_doc())
+    assert not outside.exists()
 
 
 def _setup(tmp_path, monkeypatch):

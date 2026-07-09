@@ -8,6 +8,7 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .ids import validate_safe_id
 from .models_homes import (
     Home,
     HomesDocument,
@@ -34,6 +35,7 @@ def _homes_file() -> Path:
 
 
 def _home_dir(home_id: str) -> Path:
+    validate_safe_id(home_id, label="home_id")
     return _data_dir() / "homes" / home_id
 
 
