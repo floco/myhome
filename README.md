@@ -1,12 +1,12 @@
 # My Home
 
-A modular home management app for Home Assistant. Each aspect of your home — its layout, chores, inventory, supplies, costs, and renovation history — lives in its own module behind a unified sidebar.
+A modular home management app for Home Assistant. Each aspect of your home (its layout, chores, inventory, supplies, costs, and renovation history) lives in its own module behind a unified sidebar.
 
 ## A note from the author
 
-This app is **vibe coded**. I couldn't find anything out there that would properly manage a house — despite a house being, for most of us, the single most valuable asset we own — so I started building one myself. I code this in my spare time, and spare time is in short supply, so development happens in bursts and support is best-effort.
+This app is mostly **vibe coded**. I couldn't find anything out there that would properly manage a house (despite a house being, for most of us, the single most valuable asset we own) so I started building one myself. While I can code, spare time is in short supply, so creating this assisted by AI is the only way this could have happened. Development happens in bursts and support is best-effort.
 
-Take it or leave it. No guarantee, use at your own risk. I'm sharing it in case it's useful to someone else too.
+Take it or leave it. No guarantee, use at your own risk. I'm sharing it in case it's useful to someone else too in an internal network.
 
 ## Modules
 
