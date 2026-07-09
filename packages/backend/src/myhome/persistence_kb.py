@@ -12,15 +12,16 @@ _log = logging.getLogger(__name__)
 
 
 def _home_dir(home_id: str) -> Path:
-    # Resolve then verify containment within homes_root -- this is CodeQL's
-    # own recommended py/path-injection sanitizer shape (normalize, then
-    # check startswith against the safe root) rather than a bare regex
-    # check, which its taint tracker does not recognize as a barrier.
-    homes_root = (Path(os.environ.get("DATA_DIR", "/data")) / "homes").resolve()
-    candidate = (homes_root / home_id).resolve()
-    if not str(candidate).startswith(str(homes_root) + os.sep):
+    # Normalize lexically (no filesystem access -- Path.resolve() follows
+    # symlinks and touches disk, which CodeQL's own path-injection sink set
+    # flags even before any check runs) then verify containment within
+    # homes_root. This is CodeQL's own recommended py/path-injection
+    # sanitizer shape: os.path.normpath + startswith against a safe root.
+    homes_root = os.path.normpath(os.path.join(os.environ.get("DATA_DIR", "/data"), "homes"))
+    candidate = os.path.normpath(os.path.join(homes_root, home_id))
+    if not candidate.startswith(homes_root + os.sep):
         raise InvalidIdError(f"Invalid home_id: {home_id!r}")
-    return candidate
+    return Path(candidate)
 
 
 def _kb_dir(home_id: str) -> Path:
