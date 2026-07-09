@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from .ids import validate_safe_id
+from .ids import InvalidIdError
 from .models_activity import ActivityEntry, ActivityLogDocument
 
 RETENTION_DAYS = 90
@@ -21,8 +21,15 @@ def _data_dir() -> Path:
 
 
 def _home_dir(home_id: str) -> Path:
-    validate_safe_id(home_id, label="home_id")
-    return _data_dir() / "homes" / home_id
+    # Resolve then verify containment within homes_root -- this is CodeQL's
+    # own recommended py/path-injection sanitizer shape (normalize, then
+    # check startswith against the safe root) rather than a bare regex
+    # check, which its taint tracker does not recognize as a barrier.
+    homes_root = (_data_dir() / "homes").resolve()
+    candidate = (homes_root / home_id).resolve()
+    if not str(candidate).startswith(str(homes_root) + os.sep):
+        raise InvalidIdError(f"Invalid home_id: {home_id!r}")
+    return candidate
 
 
 def _activity_file(home_id: str) -> Path:
