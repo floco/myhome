@@ -10,7 +10,7 @@ from ..deps import get_current_user_id
 from ..models_costs import CostEntry, CostEntryCreate, CostEntryUpdate, CostsDocument
 from ..persistence_activity import log_activity
 from ..persistence_costs import (
-    _attachments_dir,
+    get_attachment_path,
     delete_all_attachments,
     delete_attachment,
     generate_pdf_thumbnail,
@@ -108,10 +108,9 @@ async def upload_cost_attachment(home_id: str, id: str, file: UploadFile) -> dic
     data = await file.read()
     save_attachment(home_id, id, filename, data)
     if ext == ".pdf":
-        generate_pdf_thumbnail(
-            _attachments_dir(home_id, id) / filename,
-            _attachments_dir(home_id, id) / (filename + ".thumb.jpg"),
-        )
+        pdf_path = get_attachment_path(home_id, id, filename)
+        thumb_path = pdf_path.with_name(pdf_path.name + ".thumb.jpg")
+        generate_pdf_thumbnail(pdf_path, thumb_path)
     if filename not in entry.attachments:
         entry.attachments.append(filename)
     save_costs(home_id, doc)
@@ -122,9 +121,8 @@ async def upload_cost_attachment(home_id: str, id: str, file: UploadFile) -> dic
 def get_cost_attachment(home_id: str, id: str, filename: str) -> FileResponse:
     _validate_id(id)
     _validate_filename(filename)
-    base = _attachments_dir(home_id, id).resolve()
-    path = (base / filename).resolve()
-    if not str(path).startswith(str(base) + "/") or not path.is_file():
+    path = get_attachment_path(home_id, id, filename)
+    if not path.is_file():
         raise HTTPException(status_code=404)
     media_type, _ = mimetypes.guess_type(filename)
     return FileResponse(str(path), media_type=media_type or "application/octet-stream", content_disposition_type="inline")
