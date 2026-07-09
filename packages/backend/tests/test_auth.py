@@ -36,6 +36,27 @@ def test_login_happy_path(fresh):
     assert "myhome_refresh" in resp.cookies
 
 
+def test_login_clears_initial_admin_password_file(fresh, tmp_path):
+    from myhome.persistence_auth import initial_admin_password_file
+    password_file = initial_admin_password_file()
+    password_file.write_text("some-generated-password\n")
+    assert password_file.exists()
+
+    resp = fresh.post("/api/auth/login", json={"username": "admin", "password": "admin123"})
+    assert resp.status_code == 200
+    assert not password_file.exists()
+
+
+def test_login_failure_does_not_clear_initial_admin_password_file(fresh, tmp_path):
+    from myhome.persistence_auth import initial_admin_password_file
+    password_file = initial_admin_password_file()
+    password_file.write_text("some-generated-password\n")
+
+    resp = fresh.post("/api/auth/login", json={"username": "admin", "password": "wrongpass"})
+    assert resp.status_code == 401
+    assert password_file.exists()
+
+
 def test_login_wrong_password_returns_401(fresh):
     resp = fresh.post("/api/auth/login", json={"username": "admin", "password": "wrongpass"})
     assert resp.status_code == 401
