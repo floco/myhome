@@ -1,7 +1,8 @@
-def test_get_activity_requires_admin(client, home_id, ro_client):
+def test_get_activity_accessible_to_ro_users(client, home_id, ro_client):
     client.post(f"/api/homes/{home_id}/works", json={"title": "Fix boiler", "date": "2026-01-01"})
     resp = ro_client.get(f"/api/homes/{home_id}/activity")
-    assert resp.status_code == 403
+    assert resp.status_code == 200
+    assert resp.json()["total"] == 1
 
 
 def test_get_activity_returns_entries_newest_first(client, home_id):

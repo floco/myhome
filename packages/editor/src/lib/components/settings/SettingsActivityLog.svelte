@@ -1,17 +1,9 @@
 <!-- packages/editor/src/lib/components/settings/SettingsActivityLog.svelte -->
 <script lang="ts">
-  import type { createAuthStore } from "../../authStore.svelte";
   import Input from "../ui/Input.svelte";
   import Button from "../ui/Button.svelte";
   import Card from "../ui/Card.svelte";
   import { homesStore } from "../../homesStore.svelte";
-
-  type AuthStore = ReturnType<typeof createAuthStore>;
-
-  interface Props {
-    authStore: AuthStore;
-  }
-  let { authStore }: Props = $props();
 
   interface ActivityEntry {
     id: string;
@@ -47,7 +39,7 @@
   }
 
   async function loadActivity(reset: boolean): Promise<void> {
-    if (authStore.user?.role !== "admin" || !homesStore.activeHomeId) { activityLoaded = true; return; }
+    if (!homesStore.activeHomeId) { activityLoaded = true; return; }
     const offset = reset ? 0 : activityOffset;
     try {
       const resp = await fetch(`/api/homes/${homesStore.activeHomeId}/activity?${buildActivityQuery(offset)}`);
@@ -72,8 +64,7 @@
   loadActivity(true);
 </script>
 
-{#if authStore.user?.role === "admin"}
-  <Card>
+<Card>
     <div class="section-header">
       <h2>Activity Log</h2>
     </div>
@@ -126,7 +117,6 @@
       {/if}
     {/if}
   </Card>
-{/if}
 
 <style>
   .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-2); }

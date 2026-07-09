@@ -3,16 +3,6 @@ import { mount, unmount, flushSync } from "svelte";
 import SettingsActivityLog from "../src/lib/components/settings/SettingsActivityLog.svelte";
 import { homesStore } from "../src/lib/homesStore.svelte";
 
-function makeAuthStore(role: "admin" | "normal" | "ro" = "admin") {
-  return {
-    user: { id: "u1", username: "admin", role },
-    checking: false,
-    login: vi.fn(),
-    logout: vi.fn(),
-    changePassword: vi.fn(),
-  };
-}
-
 describe("SettingsActivityLog", () => {
   let target: HTMLDivElement;
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -37,19 +27,19 @@ describe("SettingsActivityLog", () => {
     target.remove();
   });
 
-  it("renders the Activity Log section for admin", async () => {
-    const app = mount(SettingsActivityLog, { target, props: { authStore: makeAuthStore("admin") } });
+  it("renders the Activity Log section", async () => {
+    const app = mount(SettingsActivityLog, { target });
     await new Promise((r) => setTimeout(r, 0));
     flushSync();
     expect(target.textContent).toContain("Activity Log");
     unmount(app);
   });
 
-  it("does not render for non-admin", async () => {
-    const app = mount(SettingsActivityLog, { target, props: { authStore: makeAuthStore("normal") } });
+  it("fetches recent activity on mount", async () => {
+    const app = mount(SettingsActivityLog, { target });
     await new Promise((r) => setTimeout(r, 0));
     flushSync();
-    expect(target.textContent).not.toContain("Activity Log");
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/api/homes/home-1/activity"));
     unmount(app);
   });
 
@@ -70,7 +60,7 @@ describe("SettingsActivityLog", () => {
       }
       return Promise.resolve(new Response(null, { status: 200 }));
     });
-    const app = mount(SettingsActivityLog, { target, props: { authStore: makeAuthStore("admin") } });
+    const app = mount(SettingsActivityLog, { target });
     await new Promise((r) => setTimeout(r, 0));
     flushSync();
     expect(target.textContent).toContain("added work 'Fix boiler'");
@@ -78,7 +68,7 @@ describe("SettingsActivityLog", () => {
   });
 
   it("applying a module filter re-fetches with the module query param", async () => {
-    const app = mount(SettingsActivityLog, { target, props: { authStore: makeAuthStore("admin") } });
+    const app = mount(SettingsActivityLog, { target });
     await new Promise((r) => setTimeout(r, 0));
     flushSync();
     const moduleSelect = target.querySelector(".activity-module-filter") as HTMLSelectElement;

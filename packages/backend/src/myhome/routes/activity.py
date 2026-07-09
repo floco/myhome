@@ -15,7 +15,7 @@ def get_activity(
     until: str | None = Query(default=None),
     limit: int = Query(default=50, le=200),
     offset: int = Query(default=0, ge=0),
-    current_user: tuple[str, str] = require_auth("admin"),
+    current_user: tuple[str, str] = require_auth(),
 ) -> dict:
     entries = load_activity_log(home_id).entries
     if module:

@@ -34,7 +34,7 @@
     { id: "security", icon: "🔐", label: "Security & Access" },
     { id: "integrations", icon: "🔌", label: "Integrations", adminOnly: true },
     { id: "backup", icon: "💾", label: "Backup & Restore" },
-    { id: "activity", icon: "📜", label: "Activity Log", adminOnly: true },
+    { id: "activity", icon: "📜", label: "Activity Log" },
   ];
 
   const visibleGroups = $derived(
@@ -70,7 +70,7 @@
       {:else if activeGroup === "backup"}
         <SettingsBackup />
       {:else if activeGroup === "activity"}
-        <SettingsActivityLog {authStore} />
+        <SettingsActivityLog />
       {/if}
     </div>
   </div>
