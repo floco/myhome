@@ -72,12 +72,12 @@ describe("SettingsPage — nav shell", () => {
     unmount(app);
   });
 
-  it("hides Integrations and Activity Log for a non-admin, but keeps Security & Access", () => {
+  it("hides Integrations for a non-admin, but keeps Security & Access and Activity Log", () => {
     const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("normal") } });
     flushSync();
     const labels = [...target.querySelectorAll(".nav-item")].map((b) => b.textContent);
     expect(labels.some((l) => l?.includes("Integrations"))).toBe(false);
-    expect(labels.some((l) => l?.includes("Activity Log"))).toBe(false);
+    expect(labels.some((l) => l?.includes("Activity Log"))).toBe(true);
     expect(labels.some((l) => l?.includes("Security & Access"))).toBe(true);
     unmount(app);
   });
