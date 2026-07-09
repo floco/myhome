@@ -2,7 +2,7 @@ import json
 import os
 from pathlib import Path
 
-from .ids import validate_safe_id
+from .ids import InvalidIdError
 from .models_settings import (
     SettingsDocument,
     _default_cost_categories,
@@ -13,8 +13,16 @@ from .models_settings import (
 
 
 def _home_dir(home_id: str) -> Path:
-    validate_safe_id(home_id, label="home_id")
-    return Path(os.environ.get("DATA_DIR", "/data")) / "homes" / home_id
+    # Normalize lexically (no filesystem access -- Path.resolve() follows
+    # symlinks and touches disk, which CodeQL's own path-injection sink set
+    # flags even before any check runs) then verify containment within
+    # homes_root. This is CodeQL's own recommended py/path-injection
+    # sanitizer shape: os.path.normpath + startswith against a safe root.
+    homes_root = os.path.normpath(os.path.join(os.environ.get("DATA_DIR", "/data"), "homes"))
+    candidate = os.path.normpath(os.path.join(homes_root, home_id))
+    if not candidate.startswith(homes_root + os.sep):
+        raise InvalidIdError(f"Invalid home_id: {home_id!r}")
+    return Path(candidate)
 
 
 def _settings_file(home_id: str) -> Path:

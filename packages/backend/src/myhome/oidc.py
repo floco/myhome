@@ -24,25 +24,6 @@ def _resolve_hostname(hostname: str) -> list[str]:
     return [info[4][0] for info in socket.getaddrinfo(hostname, None)]
 
 
-async def _assert_public_host(url: str) -> None:
-    """Reject URLs whose hostname resolves to a private, loopback, link-local
-    (e.g. cloud metadata endpoints), or otherwise non-public address. The
-    issuer and its discovery document (jwks_uri, token_endpoint, ...) are
-    admin-supplied but still used to make server-side requests, so without
-    this check a malicious or compromised issuer config is a full SSRF
-    primitive against internal services."""
-    hostname = urlparse(url).hostname
-    if not hostname:
-        raise HTTPException(422, "URL has no hostname")
-    try:
-        addresses = await asyncio.to_thread(_resolve_hostname, hostname)
-    except socket.gaierror as e:
-        raise HTTPException(422, f"Could not resolve host {hostname!r}: {e}") from e
-    for addr in addresses:
-        if not ipaddress.ip_address(addr).is_global:
-            raise HTTPException(422, f"Host {hostname!r} resolves to a non-public address")
-
-
 async def fetch_discovery(issuer: str) -> dict:
     """Fetch and cache the issuer's OpenID discovery document."""
     if not issuer.startswith("https://"):
@@ -50,7 +31,23 @@ async def fetch_discovery(issuer: str) -> dict:
     if issuer in _discovery_cache:
         return _discovery_cache[issuer]
     url = issuer.rstrip("/") + "/.well-known/openid-configuration"
-    await _assert_public_host(url)
+
+    # The issuer is admin-supplied but still used to make a server-side
+    # request, so without this check a malicious or compromised issuer
+    # config is a full SSRF primitive against internal services (e.g. cloud
+    # metadata endpoints). Reject hostnames that don't resolve to a public
+    # address; this guard must stay inline immediately before the request
+    # it protects for static analysis to recognize it as sanitizing `url`.
+    hostname = urlparse(url).hostname
+    if not hostname:
+        raise HTTPException(422, "URL has no hostname")
+    try:
+        addresses = await asyncio.to_thread(_resolve_hostname, hostname)
+    except socket.gaierror as e:
+        raise HTTPException(422, f"Could not resolve host {hostname!r}: {e}") from e
+    if not all(ipaddress.ip_address(addr).is_global for addr in addresses):
+        raise HTTPException(422, f"Host {hostname!r} resolves to a non-public address")
+
     async with httpx.AsyncClient(timeout=10.0, follow_redirects=False) as client:
         resp = await client.get(url)
         resp.raise_for_status()
@@ -104,9 +101,19 @@ async def exchange_code_for_claims(
     if not id_token:
         raise HTTPException(400, "IdP response did not include an id_token")
 
-    await _assert_public_host(discovery["jwks_uri"])
+    jwks_uri = discovery["jwks_uri"]
+    jwks_hostname = urlparse(jwks_uri).hostname
+    if not jwks_hostname:
+        raise HTTPException(422, "jwks_uri has no hostname")
+    try:
+        jwks_addresses = await asyncio.to_thread(_resolve_hostname, jwks_hostname)
+    except socket.gaierror as e:
+        raise HTTPException(422, f"Could not resolve host {jwks_hostname!r}: {e}") from e
+    if not all(ipaddress.ip_address(addr).is_global for addr in jwks_addresses):
+        raise HTTPException(422, f"Host {jwks_hostname!r} resolves to a non-public address")
+
     async with httpx.AsyncClient(timeout=10.0, follow_redirects=False) as http_client:
-        jwks_resp = await http_client.get(discovery["jwks_uri"])
+        jwks_resp = await http_client.get(jwks_uri)
         jwks_resp.raise_for_status()
     jwks = jwks_resp.json()
 
