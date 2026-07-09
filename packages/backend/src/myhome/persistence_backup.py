@@ -27,6 +27,9 @@ def _backups_dir() -> Path:
     return _data_dir() / "backups"
 
 
+_BACKUP_EXCLUDED_FILES = frozenset({".initial-admin-password"})
+
+
 def iter_backup_files(data_dir: Path, exclude_dirs: frozenset[str] = frozenset()) -> Iterator[tuple[Path, Path]]:
     if not data_dir.exists():
         return
@@ -38,6 +41,8 @@ def iter_backup_files(data_dir: Path, exclude_dirs: frozenset[str] = frozenset()
             continue
         rel = path.relative_to(data_dir)
         if rel.parts and rel.parts[0] in exclude_dirs:
+            continue
+        if len(rel.parts) == 1 and rel.parts[0] in _BACKUP_EXCLUDED_FILES:
             continue
         yield path, rel
 
@@ -124,7 +129,7 @@ def create_backup() -> BackupEntry:
 
 
 def get_backup_path(filename: str) -> Path | None:
-    if _parse_backup_filename(filename) is None:
+    if not _FILENAME_RE.fullmatch(filename):
         return None
     path = _backups_dir() / filename
     if not path.exists():

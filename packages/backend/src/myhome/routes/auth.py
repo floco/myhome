@@ -23,6 +23,7 @@ from ..deps import (
 )
 from ..models_auth import ApiToken, OidcConfig, TokenDocument, User, UserDocument
 from ..persistence_auth import (
+    clear_initial_admin_password,
     load_oidc_config,
     load_tokens,
     load_users,
@@ -115,6 +116,7 @@ def login(body: LoginRequest, response: Response) -> UserInfo:
     user = next((u for u in doc.users if u.username.lower() == body.username.lower()), None)
     if user is None or user.password_hash is None or not pwd_ctx.verify(body.password, user.password_hash):
         raise HTTPException(401, "Invalid username or password")
+    clear_initial_admin_password()
     _set_auth_cookies(response, user.id, user.role)
     return UserInfo(id=user.id, username=user.username, role=user.role)
 

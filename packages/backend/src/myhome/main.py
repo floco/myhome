@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 from .backup_scheduler import scheduled_backup_loop
 from .deps import ROLE_ORDER, get_user_from_request
+from .ids import InvalidIdError
 from .mcp_app import mcp_asgi_app
 from .mcp_server import mcp
 from .notification_scheduler import notification_digest_loop
@@ -36,6 +37,11 @@ async def _lifespan(app: FastAPI):
 app = FastAPI(title="MyHome Backend", version="0.1.0", lifespan=_lifespan)
 
 
+@app.exception_handler(InvalidIdError)
+async def _invalid_id_handler(request: Request, exc: InvalidIdError) -> JSONResponse:
+    return JSONResponse({"detail": str(exc)}, status_code=400)
+
+
 # ── First boot ────────────────────────────────────────────────────────────
 
 def _first_boot() -> None:
@@ -47,7 +53,7 @@ def _first_boot() -> None:
     from passlib.context import CryptContext
 
     from .models_auth import User, UserDocument
-    from .persistence_auth import save_users
+    from .persistence_auth import initial_admin_password_file, save_users
 
     pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
     password = secrets.token_urlsafe(12)
@@ -59,7 +65,21 @@ def _first_boot() -> None:
         created_at=datetime.now(timezone.utc).isoformat(),
     )
     save_users(UserDocument(users=[admin]))
-    print(f"[myhome] First boot — admin password: {password}", flush=True)
+
+    # Hand the generated password to the operator via a 0600 file rather than
+    # stdout, since container logs are routinely shipped to log aggregators
+    # and retained indefinitely -- a much larger and longer-lived exposure
+    # than a single file on the data volume. clear_initial_admin_password()
+    # deletes this file as soon as any login succeeds, so the plaintext-at-
+    # rest window is bounded to "until first use", not permanent. Some
+    # one-time credential handoff to a human operator is unavoidable for
+    # auto-generated first-boot credentials (see e.g. kubeadm join tokens,
+    # Vaultwarden's admin token); this is that handoff, deliberately scoped
+    # as tightly as the UX allows.
+    password_file = initial_admin_password_file()
+    password_file.write_text(password + "\n")  # codeql[py/clear-text-storage-sensitive-data]
+    os.chmod(password_file, 0o600)
+    print(f"[myhome] First boot — admin password written to {password_file}", flush=True)
 
 
 _first_boot()

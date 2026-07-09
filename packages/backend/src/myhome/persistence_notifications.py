@@ -2,10 +2,12 @@ import json
 import os
 from pathlib import Path
 
+from .ids import validate_safe_id
 from .models_notifications import NotificationState
 
 
 def _home_dir(home_id: str) -> Path:
+    validate_safe_id(home_id, label="home_id")
     return Path(os.environ.get("DATA_DIR", "/data")) / "homes" / home_id
 
 

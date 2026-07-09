@@ -18,6 +18,22 @@ def _oidc_config_file() -> Path:
     return Path(os.environ.get("DATA_DIR", "/data")) / "oidc_config.json"
 
 
+def initial_admin_password_file() -> Path:
+    return Path(os.environ.get("DATA_DIR", "/data")) / ".initial-admin-password"
+
+
+def clear_initial_admin_password() -> None:
+    """Delete the one-time first-boot password file, if present.
+
+    Called on every successful login: the file only exists to hand the
+    generated admin password to the operator once, so as soon as *any*
+    login succeeds it has served its purpose and should stop existing on
+    disk (bounds the plaintext-at-rest window instead of leaving it there
+    indefinitely).
+    """
+    initial_admin_password_file().unlink(missing_ok=True)
+
+
 def load_users() -> UserDocument:
     path = _users_file()
     if not path.exists():

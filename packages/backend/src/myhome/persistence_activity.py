@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from .ids import validate_safe_id
 from .models_activity import ActivityEntry, ActivityLogDocument
 
 RETENTION_DAYS = 90
@@ -20,6 +21,7 @@ def _data_dir() -> Path:
 
 
 def _home_dir(home_id: str) -> Path:
+    validate_safe_id(home_id, label="home_id")
     return _data_dir() / "homes" / home_id
 
 

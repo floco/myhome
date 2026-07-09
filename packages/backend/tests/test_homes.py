@@ -1,6 +1,14 @@
 # packages/backend/tests/test_homes.py
 
 
+def test_get_house_rejects_path_traversal_home_id(client):
+    # A bare ".." is a single path segment (no "/"), so it matches the
+    # {home_id} route param and reaches _home_dir() -- this is exactly the
+    # payload the shared validate_safe_id() check exists to reject.
+    resp = client.get("/api/homes/%2e%2e/house")
+    assert resp.status_code == 400
+
+
 def test_get_homes_returns_empty_list(client):
     resp = client.get("/api/homes")
     assert resp.status_code == 200

@@ -30,6 +30,13 @@ def _clear_discovery_cache():
     oidc_module.clear_discovery_cache()
 
 
+@pytest.fixture(autouse=True)
+def _resolve_test_hostnames_to_public_ip(monkeypatch):
+    """Test hostnames (*.test) don't resolve via real DNS. Pin every hostname
+    to a public IP so SSRF host-validation doesn't reject mocked requests."""
+    monkeypatch.setattr(oidc_module, "_resolve_hostname", lambda hostname: ["1.1.1.1"])
+
+
 def test_oidc_status_reachable_without_auth(fresh):
     resp = fresh.get("/api/auth/oidc/status")
     assert resp.status_code == 200
