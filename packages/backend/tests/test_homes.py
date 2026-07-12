@@ -1,4 +1,5 @@
 # packages/backend/tests/test_homes.py
+import pytest
 
 
 def test_get_house_rejects_path_traversal_home_id(client):
@@ -84,3 +85,37 @@ def test_create_home_demo_enables_all_modules(client):
     assert data["type"] == "demo"
     from myhome.models_homes import ALL_MODULE_IDS
     assert set(data["enabledModules"]) == set(ALL_MODULE_IDS)
+
+
+def test_create_home_demo_seeds_every_module(client):
+    resp = client.post("/api/homes", json={"name": "Demo House", "type": "demo"})
+    assert resp.status_code == 201
+    home_id = resp.json()["id"]
+
+    for path, key in [
+        ("/chores", "chores"), ("/inventory", "items"), ("/costs", "entries"),
+        ("/works", "works"), ("/kb", "entries"), ("/consumables", "consumables"),
+    ]:
+        r = client.get(f"/api/homes/{home_id}{path}")
+        assert r.status_code == 200
+        items = r.json()[key]
+        assert len(items) >= 32, f"{path} returned only {len(items)} records"
+
+    house_resp = client.get(f"/api/homes/{home_id}/house")
+    assert house_resp.status_code == 200
+    assert len(house_resp.json()["floors"]) == 2
+
+
+def test_create_home_demo_cleans_up_on_seeding_failure(client, monkeypatch):
+    import myhome.persistence_homes as ph
+
+    def boom(home_id: str) -> None:
+        raise RuntimeError("seeding exploded")
+
+    monkeypatch.setattr(ph, "seed_demo_home", boom)
+
+    before = client.get("/api/homes").json()
+    with pytest.raises(RuntimeError):
+        client.post("/api/homes", json={"name": "Broken Demo", "type": "demo"})
+    after = client.get("/api/homes").json()
+    assert len(after) == len(before)
