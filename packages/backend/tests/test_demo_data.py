@@ -170,3 +170,44 @@ def test_generate_demo_kb_entries_have_content_and_valid_dates():
         assert entry.title
         assert entry.content
         assert entry.updatedAt >= entry.createdAt
+
+
+from myhome.demo_data import generate_demo_consumables
+
+
+def test_generate_demo_consumables_has_at_least_32_items():
+    house = generate_demo_house()
+    settings = generate_demo_settings()
+    doc = generate_demo_consumables(house, settings, random.Random(42))
+    assert len(doc.consumables) >= 32
+
+
+def test_generate_demo_consumables_some_are_below_min_quantity():
+    house = generate_demo_house()
+    settings = generate_demo_settings()
+    doc = generate_demo_consumables(house, settings, random.Random(42))
+    below = [c for c in doc.consumables if c.quantity < c.minQuantity]
+    assert len(below) > 0
+    assert len(below) < len(doc.consumables)
+
+
+def test_generate_demo_consumables_transactions_end_at_final_quantity():
+    house = generate_demo_house()
+    settings = generate_demo_settings()
+    doc = generate_demo_consumables(house, settings, random.Random(42))
+    assert len(doc.transactions) == 2 * len(doc.consumables)
+    for consumable in doc.consumables:
+        txns = sorted(
+            (t for t in doc.transactions if t.consumableId == consumable.id),
+            key=lambda t: t.timestamp,
+        )
+        assert txns[-1].quantityAfter == consumable.quantity
+
+
+def test_generate_demo_consumables_reference_valid_categories():
+    house = generate_demo_house()
+    settings = generate_demo_settings()
+    doc = generate_demo_consumables(house, settings, random.Random(42))
+    category_ids = {c.id for c in settings.consumableCategories}
+    for c in doc.consumables:
+        assert c.categoryId in category_ids

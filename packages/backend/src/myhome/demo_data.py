@@ -6,6 +6,8 @@ from datetime import date, datetime, timedelta, timezone
 
 from .demo_content import (
     CHORES,
+    CONSUMABLE_CATEGORY_ROOM_HINTS,
+    CONSUMABLES,
     INVENTORY_CATEGORY_ROOM_HINTS,
     INVENTORY_ITEMS,
     KB_CLOSERS,
@@ -18,6 +20,13 @@ from .models import HouseDocument, Room
 from .models_chores import Assignment, ChoreDocument, Chore, CompletionRecord, Position
 from .models_costs import CostEntry, CostsDocument
 from .models_inventory import InventoryDocument, InventoryItem, InventoryPlacement, InventoryPosition
+from .models_consumables import (
+    Consumable,
+    ConsumableDocument,
+    ConsumablePlacement,
+    ConsumablePosition,
+    ConsumableTransaction,
+)
 from .models_kb import KBDocument, KBEntry
 from .models_settings import SettingsDocument
 from .models_works import Work, WorksDocument, WorkPlacement, WorkPosition
@@ -245,3 +254,59 @@ def generate_demo_kb(rng: random.Random) -> KBDocument:
         ))
 
     return KBDocument(entries=entries)
+
+
+_CONSUMABLE_UNIT_BASELINE = {"L": 2.0, "kg": 2.0, "count": 8.0, "rolls": 6.0, "packs": 5.0}
+
+
+def _consumable_quantities(unit: str, rng: random.Random) -> tuple[float, float]:
+    baseline = _CONSUMABLE_UNIT_BASELINE.get(unit, 8.0)
+    min_quantity = round(baseline * rng.uniform(0.2, 0.4), 1)
+    quantity = round(min_quantity * rng.uniform(0.3, 3.0), 1)
+    return quantity, min_quantity
+
+
+def _build_consumable_transactions(consumable_id: str, final_quantity: float, rng: random.Random, now: datetime) -> list[ConsumableTransaction]:
+    extra = round(rng.uniform(2, 8), 1)
+    restocked_qty = round(final_quantity + extra, 1)
+    restock_ts = now - timedelta(days=rng.randint(20, 60))
+    use_ts = now - timedelta(days=rng.randint(1, 19))
+    return [
+        ConsumableTransaction(
+            id=str(uuid.uuid4()), consumableId=consumable_id,
+            delta=restocked_qty, quantityAfter=restocked_qty,
+            note="Restocked", timestamp=restock_ts.isoformat(),
+        ),
+        ConsumableTransaction(
+            id=str(uuid.uuid4()), consumableId=consumable_id,
+            delta=round(final_quantity - restocked_qty, 1), quantityAfter=final_quantity,
+            note="Used", timestamp=use_ts.isoformat(),
+        ),
+    ]
+
+
+def generate_demo_consumables(house: HouseDocument, settings: SettingsDocument, rng: random.Random) -> ConsumableDocument:
+    now = datetime.now(timezone.utc)
+    consumables: list[Consumable] = []
+    transactions: list[ConsumableTransaction] = []
+
+    for name, emoji, category_id, unit in CONSUMABLES:
+        hints = CONSUMABLE_CATEGORY_ROOM_HINTS.get(category_id, [])
+        room_label = rng.choice(hints) if hints else house.floors[0].rooms[0].label
+        room = _find_room(house, room_label)
+        floor_id = _floor_id_for_room(house, room.id)
+        quantity, min_quantity = _consumable_quantities(unit, rng)
+        cx, cy = room_centroid(room)
+
+        consumable = Consumable(
+            id=str(uuid.uuid4()), name=name, emoji=emoji, unit=unit,
+            quantity=quantity, minQuantity=min_quantity, categoryId=category_id,
+            placement=ConsumablePlacement(
+                floorId=floor_id, roomId=room.id,
+                position=ConsumablePosition(x=cx + rng.uniform(-0.8, 0.8), y=cy + rng.uniform(-0.8, 0.8)),
+            ),
+        )
+        consumables.append(consumable)
+        transactions.extend(_build_consumable_transactions(consumable.id, quantity, rng, now))
+
+    return ConsumableDocument(consumables=consumables, transactions=transactions)
