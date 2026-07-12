@@ -4,6 +4,8 @@
   import WorkModal from "./WorkModal.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
+  import SortableTable from "./ui/SortableTable.svelte";
+  import type { Column } from "./ui/SortableTable.types";
 
   type WorksStore = ReturnType<typeof createWorksStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -90,51 +92,48 @@
   </div>
 
   <div class="table-wrapper">
-    <table>
-      <thead>
-        <tr>
-          <th></th>
-          <th>Title</th>
-          <th>Category</th>
-          <th>Date</th>
-          <th>Supplier</th>
-          <th>Cost</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each filteredWorks as work (work.id)}
-          {@const cat = work.categoryId ? categoryMap.get(work.categoryId) : null}
-          {@const supplier = work.supplierId ? supplierMap.get(work.supplierId) : null}
-          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
-          <tr onclick={() => { modalWork = work; }}>
-            <td class="emoji-cell">{cat?.emoji ?? "🔧"}</td>
-            <td class="name-cell">
-              {work.title}
-              {#if work.description}<span class="desc">{work.description}</span>{/if}
-            </td>
-            <td>{cat?.name ?? "—"}</td>
-            <td>{work.date}</td>
-            <td>{supplier?.name ?? "—"}</td>
-            <td>{work.totalCost != null ? fmt(work.totalCost) + " €" : "—"}</td>
-            <td>
-              <span
-                class="status-chip"
-                style="background:{statusColor(work.status)}22;color:{statusColor(work.status)};border:1px solid {statusColor(work.status)}44"
-              >{statusLabel(work.status)}</span>
-              {#if work.placement}<span class="pin-indicator" title="Pinned">📍</span>{/if}
-            </td>
-          </tr>
-        {/each}
-        {#if filteredWorks.length === 0}
-          <tr>
-            <td colspan="7" class="empty">
-              {store.works.length === 0 ? "No works yet — click ＋ Add work to get started." : "No works match your filters."}
-            </td>
-          </tr>
-        {/if}
-      </tbody>
-    </table>
+    {#snippet emojiCell(work: Work)}
+      {categoryMap.get(work.categoryId ?? "")?.emoji ?? "🔧"}
+    {/snippet}
+    {#snippet titleCell(work: Work)}
+      {work.title}
+      {#if work.description}<span class="desc">{work.description}</span>{/if}
+    {/snippet}
+    {#snippet categoryCell(work: Work)}
+      {categoryMap.get(work.categoryId ?? "")?.name ?? "—"}
+    {/snippet}
+    {#snippet dateCell(work: Work)}
+      {work.date}
+    {/snippet}
+    {#snippet supplierCell(work: Work)}
+      {supplierMap.get(work.supplierId ?? "")?.name ?? "—"}
+    {/snippet}
+    {#snippet costCell(work: Work)}
+      {work.totalCost != null ? fmt(work.totalCost) + " €" : "—"}
+    {/snippet}
+    {#snippet statusCell(work: Work)}
+      <span
+        class="status-chip"
+        style="background:{statusColor(work.status)}22;color:{statusColor(work.status)};border:1px solid {statusColor(work.status)}44"
+      >{statusLabel(work.status)}</span>
+      {#if work.placement}<span class="pin-indicator" title="Pinned">📍</span>{/if}
+    {/snippet}
+
+    <SortableTable
+      columns={[
+        { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
+        { key: "title", label: "Title", sortValue: (w) => w.title, cellClass: "name-cell", cell: titleCell },
+        { key: "category", label: "Category", sortValue: (w) => categoryMap.get(w.categoryId ?? "")?.name ?? null, cell: categoryCell },
+        { key: "date", label: "Date", sortValue: (w) => (w.date ? new Date(w.date) : null), cell: dateCell },
+        { key: "supplier", label: "Supplier", sortValue: (w) => supplierMap.get(w.supplierId ?? "")?.name ?? null, cell: supplierCell },
+        { key: "cost", label: "Cost", sortValue: (w) => w.totalCost, cell: costCell },
+        { key: "status", label: "Status", sortValue: (w) => w.status, cell: statusCell },
+      ] as Column<Work>[]}
+      rows={filteredWorks}
+      rowKey={(work) => work.id}
+      rowClick={(work) => { modalWork = work; }}
+      emptyMessage={store.works.length === 0 ? "No works yet — click ＋ Add work to get started." : "No works match your filters."}
+    />
   </div>
 
   <div class="footer">{filteredWorks.length} works · total: {fmt(totalCost)} €</div>
@@ -167,21 +166,11 @@
   .filter-sel { cursor: pointer; }
 
   .table-wrapper { flex: 1; overflow-y: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text-muted); }
-  thead { position: sticky; top: 0; background: var(--surface-alt); z-index: 1; }
-  th {
-    padding: 6px 10px; color: var(--text-faint); font-size: 10px;
-    text-transform: uppercase; letter-spacing: 0.05em;
-    text-align: left; border-bottom: 1px solid var(--border);
-  }
-  td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  tr:hover td { background: var(--surface-hover); cursor: pointer; }
-  .emoji-cell { font-size: 16px; width: 32px; text-align: center; }
-  .name-cell { color: var(--text); font-weight: 600; }
+  :global(.emoji-cell) { font-size: 16px; width: 32px; text-align: center; }
+  :global(.name-cell) { color: var(--text); font-weight: 600; }
   .desc { font-size: 11px; color: var(--text-faint); font-weight: 400; margin-left: 6px; }
   .status-chip { padding: 2px 7px; border-radius: var(--radius-sm); font-size: 10px; font-weight: 500; }
   .pin-indicator { font-size: 11px; margin-left: 4px; }
-  .empty { text-align: center; color: var(--text-faint); padding: 32px; }
 
   .footer { padding: var(--space-2) var(--space-4); border-top: 1px solid var(--border); font-size: 11px; color: var(--text-faint); flex-shrink: 0; }
 </style>
