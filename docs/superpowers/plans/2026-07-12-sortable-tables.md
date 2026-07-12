@@ -199,11 +199,12 @@ git commit -m "feat: add headless sort-state helper for tables"
 
 **Files:**
 - Create: `packages/editor/src/lib/components/ui/SortableTable.svelte`
+- Create: `packages/editor/src/lib/components/ui/SortableTable.types.ts`
 - Test: `packages/editor/test/SortableTable.test.ts`
 
 **Interfaces:**
 - Consumes: `createSortState`, `SortState`, `compareValues` from `../../utils/sortState.svelte` (Task 1).
-- Produces: exported `Column<T>` type and the `SortableTable` component with props `{ columns, rows, rowKey, rowClick?, rowClass?, defaultSort?, emptyMessage?, class?, extraRow?, isRowExpanded?, expandedRow? }`. All 8 migration tasks depend on this exact prop shape.
+- Produces: `Column<T>` type (exported from the plain `SortableTable.types.ts` module — NOT from the `.svelte` file itself; svelte-check cannot resolve a generic interface exported from inside a `generics="T"` script block as a named type import, so it lives in its own `.ts` file) and the `SortableTable` component with props `{ columns, rows, rowKey, rowClick?, rowClass?, defaultSort?, emptyMessage?, class?, extraRow?, isRowExpanded?, expandedRow? }`. All 8 migration tasks import `Column` from `./ui/SortableTable.types` (or `../ui/SortableTable.types` from `settings/`), and `SortableTable` as the default export from `./ui/SortableTable.svelte`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -633,7 +634,8 @@ git commit -m "feat: add generic SortableTable component"
 In `packages/editor/src/lib/components/InventoryPage.svelte`, after the `Input` import (line 6):
 
 ```svelte
-  import SortableTable, { type Column } from "./ui/SortableTable.svelte";
+  import SortableTable from "./ui/SortableTable.svelte";
+  import type { Column } from "./ui/SortableTable.types";
 ```
 
 - [ ] **Step 2: Replace the table markup**
@@ -747,7 +749,8 @@ git commit -m "refactor: migrate InventoryPage to SortableTable"
 After the `Input` import (line 6):
 
 ```svelte
-  import SortableTable, { type Column } from "./ui/SortableTable.svelte";
+  import SortableTable from "./ui/SortableTable.svelte";
+  import type { Column } from "./ui/SortableTable.types";
 ```
 
 - [ ] **Step 2: Replace the table markup**
@@ -858,7 +861,8 @@ git commit -m "refactor: migrate WorksPage to SortableTable"
 After the `DonutChart` import (line 11):
 
 ```svelte
-  import SortableTable, { type Column } from "./ui/SortableTable.svelte";
+  import SortableTable from "./ui/SortableTable.svelte";
+  import type { Column } from "./ui/SortableTable.types";
 ```
 
 - [ ] **Step 2: Replace the table markup**
@@ -979,7 +983,8 @@ git commit -m "refactor: migrate CostsPage to SortableTable"
 After the `Input` import (line 6):
 
 ```svelte
-  import SortableTable, { type Column } from "./ui/SortableTable.svelte";
+  import SortableTable from "./ui/SortableTable.svelte";
+  import type { Column } from "./ui/SortableTable.types";
 ```
 
 - [ ] **Step 2: Replace the table markup**
@@ -1108,7 +1113,8 @@ This is the most involved migration: each chore row can expand into an assignmen
 After the `ChoreEditModal` import (line 7):
 
 ```svelte
-  import SortableTable, { type Column } from "./ui/SortableTable.svelte";
+  import SortableTable from "./ui/SortableTable.svelte";
+  import type { Column } from "./ui/SortableTable.types";
 ```
 
 - [ ] **Step 2: Replace the table markup**
@@ -1309,7 +1315,8 @@ git commit -m "refactor: migrate ChoresPage to SortableTable with expand rows"
 After the `Modal` import (line 7):
 
 ```svelte
-  import SortableTable, { type Column } from "../ui/SortableTable.svelte";
+  import SortableTable from "../ui/SortableTable.svelte";
+  import type { Column } from "../ui/SortableTable.types";
 ```
 
 - [ ] **Step 2: Replace the API Tokens table**
@@ -1454,7 +1461,8 @@ git commit -m "refactor: migrate SettingsSecurity tables to SortableTable"
 After the `Modal` import (line 6):
 
 ```svelte
-  import SortableTable, { type Column } from "../ui/SortableTable.svelte";
+  import SortableTable from "../ui/SortableTable.svelte";
+  import type { Column } from "../ui/SortableTable.types";
 ```
 
 - [ ] **Step 2: Replace the table markup**
@@ -1546,7 +1554,8 @@ This file has 5 near-identical tables (Cost categories, Inventory categories, Wo
 After the `Tabs` import (line 8):
 
 ```svelte
-  import SortableTable, { type Column } from "../ui/SortableTable.svelte";
+  import SortableTable from "../ui/SortableTable.svelte";
+  import type { Column } from "../ui/SortableTable.types";
 ```
 
 - [ ] **Step 2: Replace the Cost categories table**
