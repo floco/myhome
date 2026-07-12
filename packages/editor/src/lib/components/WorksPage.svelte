@@ -6,6 +6,8 @@
   import Input from "./ui/Input.svelte";
   import SortableTable from "./ui/SortableTable.svelte";
   import type { Column } from "./ui/SortableTable.types";
+  import Card from "./ui/Card.svelte";
+  import WorksTimeline from "./WorksTimeline.svelte";
 
   type WorksStore = ReturnType<typeof createWorksStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -57,6 +59,16 @@
     filteredWorks.reduce((sum, w) => sum + (w.totalCost ?? 0), 0)
   );
 
+  const plannedCount = $derived(store.works.filter((w) => w.status === "planned").length);
+  const inProgressCount = $derived(store.works.filter((w) => w.status === "in_progress").length);
+  const doneCount = $derived(store.works.filter((w) => w.status === "done").length);
+  const allTimeCost = $derived(store.works.reduce((sum, w) => sum + (w.totalCost ?? 0), 0));
+
+  function handleTimelineClick(id: string): void {
+    const found = store.works.find((w) => w.id === id);
+    if (found) modalWork = found;
+  }
+
   function statusLabel(status: Work["status"]): string {
     if (status === "in_progress") return "In progress";
     return status.charAt(0).toUpperCase() + status.slice(1);
@@ -74,69 +86,106 @@
 </script>
 
 <div class="page">
-  <div class="toolbar">
-    <Input placeholder="🔍 Search…" bind:value={searchQuery} />
-    <select class="native-input filter-sel" bind:value={statusFilter}>
-      <option value="">All statuses</option>
-      <option value="planned">Planned</option>
-      <option value="in_progress">In progress</option>
-      <option value="done">Done</option>
-    </select>
-    <select class="native-input filter-sel" bind:value={categoryFilter}>
-      <option value="">All categories</option>
-      {#each settingsStore.workCategories as cat}
-        <option value={cat.id}>{cat.emoji} {cat.name}</option>
-      {/each}
-    </select>
-    <Button onclick={() => { modalWork = "create"; }}>＋ Add work</Button>
+
+  {#if store.works.length === 0}
+    <div class="empty-charts">
+      <span class="empty-icon">🔧</span>
+      <p>No works yet — click ＋ Add work to get started.</p>
+    </div>
+  {:else}
+    <div class="chart-card-wrap">
+      <Card>
+        <div class="chart-label">House timeline</div>
+        <div class="stat-chips-row">
+          <div class="stat-chip">
+            <div class="stat-title">Planned</div>
+            <div class="stat-value">{plannedCount}</div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-title">In progress</div>
+            <div class="stat-value">{inProgressCount}</div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-title">Done</div>
+            <div class="stat-value">{doneCount}</div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-title">Total cost</div>
+            <div class="stat-value">{fmt(allTimeCost)} €</div>
+          </div>
+        </div>
+        <WorksTimeline works={store.works} onworkclick={handleTimelineClick} />
+      </Card>
+    </div>
+  {/if}
+
+  <div class="table-card-wrap">
+    <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
+    <div class="toolbar">
+      <Input placeholder="🔍 Search…" bind:value={searchQuery} />
+      <select class="native-input filter-sel" bind:value={statusFilter}>
+        <option value="">All statuses</option>
+        <option value="planned">Planned</option>
+        <option value="in_progress">In progress</option>
+        <option value="done">Done</option>
+      </select>
+      <select class="native-input filter-sel" bind:value={categoryFilter}>
+        <option value="">All categories</option>
+        {#each settingsStore.workCategories as cat}
+          <option value={cat.id}>{cat.emoji} {cat.name}</option>
+        {/each}
+      </select>
+      <Button onclick={() => { modalWork = "create"; }}>＋ Add work</Button>
+    </div>
+
+    <div class="table-wrapper">
+      {#snippet emojiCell(work: Work)}
+        {categoryMap.get(work.categoryId ?? "")?.emoji ?? "🔧"}
+      {/snippet}
+      {#snippet titleCell(work: Work)}
+        {work.title}
+        {#if work.description}<span class="desc">{work.description}</span>{/if}
+      {/snippet}
+      {#snippet categoryCell(work: Work)}
+        {categoryMap.get(work.categoryId ?? "")?.name ?? "—"}
+      {/snippet}
+      {#snippet dateCell(work: Work)}
+        {work.date}
+      {/snippet}
+      {#snippet supplierCell(work: Work)}
+        {supplierMap.get(work.supplierId ?? "")?.name ?? "—"}
+      {/snippet}
+      {#snippet costCell(work: Work)}
+        {work.totalCost != null ? fmt(work.totalCost) + " €" : "—"}
+      {/snippet}
+      {#snippet statusCell(work: Work)}
+        <span
+          class="status-chip"
+          style="background:{statusColor(work.status)}22;color:{statusColor(work.status)};border:1px solid {statusColor(work.status)}44"
+        >{statusLabel(work.status)}</span>
+        {#if work.placement}<span class="pin-indicator" title="Pinned">📍</span>{/if}
+      {/snippet}
+
+      <SortableTable
+        columns={[
+          { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
+          { key: "title", label: "Title", sortValue: (w) => w.title, cellClass: "name-cell", cell: titleCell },
+          { key: "category", label: "Category", sortValue: (w) => categoryMap.get(w.categoryId ?? "")?.name ?? null, cell: categoryCell },
+          { key: "date", label: "Date", sortValue: (w) => (w.date ? new Date(w.date) : null), cell: dateCell },
+          { key: "supplier", label: "Supplier", sortValue: (w) => supplierMap.get(w.supplierId ?? "")?.name ?? null, cell: supplierCell },
+          { key: "cost", label: "Cost", sortValue: (w) => w.totalCost, cell: costCell },
+          { key: "status", label: "Status", sortValue: (w) => w.status, cell: statusCell },
+        ] as Column<Work>[]}
+        rows={filteredWorks}
+        rowKey={(work) => work.id}
+        rowClick={(work) => { modalWork = work; }}
+        emptyMessage={store.works.length === 0 ? "No works yet — click ＋ Add work to get started." : "No works match your filters."}
+      />
+    </div>
+
+    <div class="footer">{filteredWorks.length} works · total: {fmt(totalCost)} €</div>
+    </Card>
   </div>
-
-  <div class="table-wrapper">
-    {#snippet emojiCell(work: Work)}
-      {categoryMap.get(work.categoryId ?? "")?.emoji ?? "🔧"}
-    {/snippet}
-    {#snippet titleCell(work: Work)}
-      {work.title}
-      {#if work.description}<span class="desc">{work.description}</span>{/if}
-    {/snippet}
-    {#snippet categoryCell(work: Work)}
-      {categoryMap.get(work.categoryId ?? "")?.name ?? "—"}
-    {/snippet}
-    {#snippet dateCell(work: Work)}
-      {work.date}
-    {/snippet}
-    {#snippet supplierCell(work: Work)}
-      {supplierMap.get(work.supplierId ?? "")?.name ?? "—"}
-    {/snippet}
-    {#snippet costCell(work: Work)}
-      {work.totalCost != null ? fmt(work.totalCost) + " €" : "—"}
-    {/snippet}
-    {#snippet statusCell(work: Work)}
-      <span
-        class="status-chip"
-        style="background:{statusColor(work.status)}22;color:{statusColor(work.status)};border:1px solid {statusColor(work.status)}44"
-      >{statusLabel(work.status)}</span>
-      {#if work.placement}<span class="pin-indicator" title="Pinned">📍</span>{/if}
-    {/snippet}
-
-    <SortableTable
-      columns={[
-        { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
-        { key: "title", label: "Title", sortValue: (w) => w.title, cellClass: "name-cell", cell: titleCell },
-        { key: "category", label: "Category", sortValue: (w) => categoryMap.get(w.categoryId ?? "")?.name ?? null, cell: categoryCell },
-        { key: "date", label: "Date", sortValue: (w) => (w.date ? new Date(w.date) : null), cell: dateCell },
-        { key: "supplier", label: "Supplier", sortValue: (w) => supplierMap.get(w.supplierId ?? "")?.name ?? null, cell: supplierCell },
-        { key: "cost", label: "Cost", sortValue: (w) => w.totalCost, cell: costCell },
-        { key: "status", label: "Status", sortValue: (w) => w.status, cell: statusCell },
-      ] as Column<Work>[]}
-      rows={filteredWorks}
-      rowKey={(work) => work.id}
-      rowClick={(work) => { modalWork = work; }}
-      emptyMessage={store.works.length === 0 ? "No works yet — click ＋ Add work to get started." : "No works match your filters."}
-    />
-  </div>
-
-  <div class="footer">{filteredWorks.length} works · total: {fmt(totalCost)} €</div>
 </div>
 
 {#if modalWork !== null}
@@ -151,6 +200,28 @@
 
 <style>
   .page { display: flex; flex-direction: column; height: 100%; background: var(--bg); font-family: var(--font-sans); }
+
+  .empty-charts {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 32px; gap: 10px; color: var(--text-faint); border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .empty-icon { font-size: 36px; }
+  .empty-charts p { margin: 0; font-size: 13px; }
+
+  .chart-card-wrap { padding: var(--space-4); flex-shrink: 0; }
+  .chart-label {
+    font-size: 10px; color: var(--text-faint); text-transform: uppercase;
+    letter-spacing: .06em; margin-bottom: 6px;
+  }
+  .stat-chips-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat-chip {
+    flex: 1; background: var(--surface-alt); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 6px 10px;
+  }
+  .stat-title { font-size: 8px; color: var(--text-faint); text-transform: uppercase; margin-bottom: 2px; }
+  .stat-value { font-size: 13px; color: var(--text); font-weight: 600; }
+
+  .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
 
   .toolbar {
     display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
