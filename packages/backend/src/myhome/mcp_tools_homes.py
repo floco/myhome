@@ -21,6 +21,10 @@ def _create_home_impl(name: str, home_type: str) -> dict:
     return ph_create_home(name, home_type).model_dump()
 
 
+def _create_demo_home_impl(name: str = "Demo Home") -> dict:
+    return ph_create_home(name, "demo").model_dump()
+
+
 def _update_home_impl(
     home_id: str,
     name: str | None = None,
@@ -53,6 +57,15 @@ async def create_home(ctx: Context, name: str, type: str) -> dict:
     """Create a new home. type must be 'existing' or 'project'."""
     await _require_role(ctx.request_context.request, "normal")
     return _create_home_impl(name, type)
+
+
+@mcp.tool()
+async def create_demo_home(ctx: Context, name: str = "Demo Home") -> dict:
+    """Create a new home pre-filled with realistic sample data (30+ records)
+    across every module: chores, inventory, costs, works, KB, consumables,
+    plus a generated floor plan. Useful for exploring the app."""
+    await _require_role(ctx.request_context.request, "normal")
+    return _create_demo_home_impl(name)
 
 
 @mcp.tool()

@@ -32,7 +32,9 @@
   }
 
   function typeIcon(type: string): string {
-    return type === "project" ? "🏗" : "🏠";
+    if (type === "project") return "🏗";
+    if (type === "demo") return "🧪";
+    return "🏠";
   }
 </script>
 

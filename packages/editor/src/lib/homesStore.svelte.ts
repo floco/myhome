@@ -1,7 +1,7 @@
 export interface Home {
   id: string;
   name: string;
-  type: "existing" | "project";
+  type: "existing" | "project" | "demo";
   enabledModules: string[];
   createdAt: string;
 }
@@ -22,7 +22,7 @@ async function loadHomes(): Promise<void> {
   }
 }
 
-async function createHome(name: string, type: "existing" | "project"): Promise<Home> {
+async function createHome(name: string, type: "existing" | "project" | "demo"): Promise<Home> {
   const resp = await fetch("/api/homes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -37,7 +37,7 @@ async function createHome(name: string, type: "existing" | "project"): Promise<H
 
 async function patchHome(
   id: string,
-  patch: { name?: string; type?: "existing" | "project"; enabledModules?: string[] },
+  patch: { name?: string; type?: "existing" | "project" | "demo"; enabledModules?: string[] },
 ): Promise<void> {
   const resp = await fetch(`/api/homes/${id}`, {
     method: "PATCH",

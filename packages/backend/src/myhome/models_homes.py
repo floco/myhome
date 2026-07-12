@@ -15,23 +15,25 @@ DEFAULT_EXISTING_MODULES: list[str] = [
 
 DEFAULT_PROJECT_MODULES: list[str] = ["home", "plan", "works", "kb"]
 
+DEFAULT_DEMO_MODULES: list[str] = list(ALL_MODULE_IDS)
+
 
 class Home(BaseModel):
     id: str
     name: str
-    type: Literal["existing", "project"]
+    type: Literal["existing", "project", "demo"]
     enabledModules: list[str]
     createdAt: str
 
 
 class HomeCreate(BaseModel):
     name: str
-    type: Literal["existing", "project"]
+    type: Literal["existing", "project", "demo"]
 
 
 class HomePatch(BaseModel):
     name: str | None = None
-    type: Literal["existing", "project"] | None = None
+    type: Literal["existing", "project", "demo"] | None = None
     enabledModules: list[str] | None = None
 
 

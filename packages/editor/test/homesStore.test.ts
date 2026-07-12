@@ -101,3 +101,13 @@ describe("homesStore — activeHome", () => {
     expect(homesStore.activeHome?.name).toBe("Test");
   });
 });
+
+describe("homesStore — createHome demo type", () => {
+  it("accepts type 'demo' and switches to the new home", async () => {
+    const newHome = { id: "h-demo", name: "Demo House", type: "demo", enabledModules: ["home", "plan", "chores"], createdAt: "" };
+    vi.stubGlobal("fetch", makeFetch(201, newHome));
+    await homesStore.createHome("Demo House", "demo");
+    expect(homesStore.homes[0].type).toBe("demo");
+    expect(homesStore.activeHomeId).toBe("h-demo");
+  });
+});
