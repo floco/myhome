@@ -5,6 +5,8 @@
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
   import ConsumableModal from "./ConsumableModal.svelte";
+  import SortableTable from "./ui/SortableTable.svelte";
+  import type { Column } from "./ui/SortableTable.types";
 
   type ConsumableStore = ReturnType<typeof createConsumableStore>;
   type SettingsStore = Pick<ReturnType<typeof createSettingsStore>, "consumableCategories" | "consumableUnits">;
@@ -88,64 +90,63 @@
   </div>
 
   <div class="table-wrapper">
-    <table>
-      <thead>
-        <tr>
-          <th></th>
-          <th>Name</th>
-          <th>Category</th>
-          <th>Quantity</th>
-          <th>Min</th>
-          <th>Stock</th>
-          <th>Status</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each filtered as c (c.id)}
-          {@const st = stockStatus(c)}
-          {@const fill = barFill(c)}
-          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
-          <tr
-            onclick={() => { editConsumable = c; }}
-            class:row-low={st === "low"}
-            class:row-empty={st === "empty"}
-          >
-            <td class="emoji-cell">{c.emoji}</td>
-            <td class="name-cell">{c.name}</td>
-            <td>{categoryName(c.categoryId)}</td>
-            <td>{c.quantity} {c.unit}</td>
-            <td class="faint">{c.minQuantity} {c.unit}</td>
-            <td class="bar-cell">
-              <div class="bar-track">
-                <div class="bar-fill" style="width:{fill * 100}%;background:{STATUS_COLOR[st]}"></div>
-                <div class="bar-min"></div>
-              </div>
-            </td>
-            <td>
-              <span class="status-badge" style="color:{STATUS_COLOR[st]};background:{STATUS_COLOR[st]}22">
-                {STATUS_LABEL[st]}
-              </span>
-            </td>
-            <td class="actions-cell" onclick={(e) => e.stopPropagation()}>
-              {#if onplaceonmap && !c.placement}
-                <button class="icon-btn" title="Place on map" onclick={() => onplaceonmap?.(c.id)}>📌</button>
-              {/if}
-            </td>
-          </tr>
-        {/each}
+    {#snippet emojiCell(c: Consumable)}
+      {c.emoji}
+    {/snippet}
+    {#snippet nameCell(c: Consumable)}
+      {c.name}
+    {/snippet}
+    {#snippet categoryCell(c: Consumable)}
+      {categoryName(c.categoryId)}
+    {/snippet}
+    {#snippet quantityCell(c: Consumable)}
+      {c.quantity} {c.unit}
+    {/snippet}
+    {#snippet minCell(c: Consumable)}
+      {c.minQuantity} {c.unit}
+    {/snippet}
+    {#snippet stockCell(c: Consumable)}
+      {@const st = stockStatus(c)}
+      {@const fill = barFill(c)}
+      <div class="bar-track">
+        <div class="bar-fill" style="width:{fill * 100}%;background:{STATUS_COLOR[st]}"></div>
+        <div class="bar-min"></div>
+      </div>
+    {/snippet}
+    {#snippet statusCell(c: Consumable)}
+      {@const st = stockStatus(c)}
+      <span class="status-badge" style="color:{STATUS_COLOR[st]};background:{STATUS_COLOR[st]}22">
+        {STATUS_LABEL[st]}
+      </span>
+    {/snippet}
+    {#snippet actionsCell(c: Consumable)}
+      {#if onplaceonmap && !c.placement}
+        <button class="icon-btn" title="Place on map" onclick={() => onplaceonmap?.(c.id)}>📌</button>
+      {/if}
+    {/snippet}
 
-        {#if filtered.length === 0}
-          <tr>
-            <td colspan="8" class="empty">
-              {store.consumables.length === 0
-                ? "No consumables yet — click ＋ Add consumable to get started."
-                : "No consumables match your filters."}
-            </td>
-          </tr>
-        {/if}
-      </tbody>
-    </table>
+    <SortableTable
+      columns={[
+        { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
+        { key: "name", label: "Name", sortValue: (c) => c.name, cellClass: "name-cell", cell: nameCell },
+        { key: "category", label: "Category", sortValue: (c) => categoryName(c.categoryId), cell: categoryCell },
+        { key: "quantity", label: "Quantity", sortValue: (c) => c.quantity, cell: quantityCell },
+        { key: "min", label: "Min", cellClass: "faint", sortValue: (c) => c.minQuantity, cell: minCell },
+        { key: "stock", label: "Stock", sortable: false, cellClass: "bar-cell", cell: stockCell },
+        { key: "status", label: "Status", sortValue: (c) => stockStatus(c), cell: statusCell },
+        { key: "actions", label: "", sortable: false, cellClass: "actions-cell", stopRowClick: true, cell: actionsCell },
+      ] as Column<Consumable>[]}
+      rows={filtered}
+      rowKey={(c) => c.id}
+      rowClick={(c) => { editConsumable = c; }}
+      rowClass={(c) => {
+        const st = stockStatus(c);
+        return st === "low" ? "row-low" : st === "empty" ? "row-empty" : "";
+      }}
+      emptyMessage={store.consumables.length === 0
+        ? "No consumables yet — click ＋ Add consumable to get started."
+        : "No consumables match your filters."}
+    />
   </div>
 
   <div class="footer">{filtered.length} item{filtered.length !== 1 ? "s" : ""}</div>
@@ -182,21 +183,15 @@
   .toggle-btn:not(.active):hover { background: var(--surface-hover); color: var(--text); }
 
   .table-wrapper { flex: 1; overflow-y: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text-muted); }
-  thead { position: sticky; top: 0; background: var(--surface-alt); z-index: 1; }
-  th { padding: 6px 10px; color: var(--text-faint); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; text-align: left; border-bottom: 1px solid var(--border); }
-  td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  tr:hover td { background: var(--surface-hover); cursor: pointer; }
-  .emoji-cell { font-size: 16px; width: 32px; text-align: center; }
-  .name-cell { color: var(--text); font-weight: 600; }
-  .faint { color: var(--text-faint); }
-  .actions-cell { white-space: nowrap; text-align: right; }
-  .empty { text-align: center; color: var(--text-faint); padding: 32px; }
+  :global(.emoji-cell) { font-size: 16px; width: 32px; text-align: center; }
+  :global(.name-cell) { color: var(--text); font-weight: 600; }
+  :global(.faint) { color: var(--text-faint); }
+  :global(.actions-cell) { white-space: nowrap; text-align: right; }
 
-  .row-low td { background: color-mix(in srgb, #ff9800 6%, transparent); }
-  .row-empty td { background: color-mix(in srgb, var(--danger) 8%, transparent); }
+  :global(.row-low td) { background: color-mix(in srgb, #ff9800 6%, transparent); }
+  :global(.row-empty td) { background: color-mix(in srgb, var(--danger) 8%, transparent); }
 
-  .bar-cell { width: 80px; }
+  :global(.bar-cell) { width: 80px; }
   .bar-track { position: relative; width: 60px; height: 6px; background: var(--surface-alt); border-radius: 3px; overflow: hidden; }
   .bar-fill { height: 100%; border-radius: 3px; transition: width 0.2s; }
   .bar-min { position: absolute; left: 33.3%; top: 0; bottom: 0; width: 1.5px; background: rgba(255,255,255,0.35); }

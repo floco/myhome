@@ -1870,7 +1870,7 @@ Delete these lines from the `<style>` block (585–589 in the original):
 Globalize the classes now applied via `cellClass`/`rowClass` to `SortableTable`-owned elements:
 
 ```css
-  :global(.editing-row) td { background: var(--surface-alt); }
+  :global(.editing-row td) { background: var(--surface-alt); }
   :global(.emoji-cell) { font-size: 15px; }
   :global(.unit-cell) { color: var(--text-faint); }
   :global(.name-cell-input) :global(.ui-input) { width: 160px; }
