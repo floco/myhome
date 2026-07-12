@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 import uuid
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 
 from .demo_content import (
     CHORES,
@@ -16,6 +17,7 @@ from .demo_content import (
     WORKS,
 )
 from .demo_geometry import room_centroid
+from . import persistence_chores, persistence_costs, persistence_inventory, persistence_works
 from .models import HouseDocument, Room
 from .models_chores import Assignment, ChoreDocument, Chore, CompletionRecord, Position
 from .models_costs import CostEntry, CostsDocument
@@ -310,3 +312,74 @@ def generate_demo_consumables(house: HouseDocument, settings: SettingsDocument, 
         transactions.extend(_build_consumable_transactions(consumable.id, quantity, rng, now))
 
     return ConsumableDocument(consumables=consumables, transactions=transactions)
+
+
+# ChoreDocument, InventoryDocument, CostsDocument, WorksDocument are already
+# imported (unaliased) by the generator functions added above.
+
+_ASSETS_DIR = Path(__file__).parent / "demo_assets"
+
+
+def _attach_placeholder(*, save_attachment, get_attachment_path, generate_pdf_thumbnail, home_id: str, record_id: str, src: Path, dest_name: str) -> None:
+    data = src.read_bytes()
+    save_attachment(home_id, record_id, dest_name, data)
+    if dest_name.endswith(".pdf"):
+        pdf_path = get_attachment_path(home_id, record_id, dest_name)
+        thumb_path = pdf_path.with_name(pdf_path.name + ".thumb.jpg")
+        generate_pdf_thumbnail(pdf_path, thumb_path)
+
+
+def attach_demo_files(
+    home_id: str,
+    chores_doc: ChoreDocument,
+    inventory_doc: InventoryDocument,
+    costs_doc: CostsDocument,
+    works_doc: WorksDocument,
+    rng: random.Random,
+) -> None:
+    photo_files = [_ASSETS_DIR / "placeholder-photo-1.png", _ASSETS_DIR / "placeholder-photo-2.png"]
+
+    chore_subset = rng.sample(chores_doc.chores, k=max(1, round(len(chores_doc.chores) * 0.3)))
+    for chore in chore_subset:
+        photo = rng.choice(photo_files)
+        _attach_placeholder(
+            save_attachment=persistence_chores.save_attachment,
+            get_attachment_path=persistence_chores.get_attachment_path,
+            generate_pdf_thumbnail=persistence_chores.generate_pdf_thumbnail,
+            home_id=home_id, record_id=chore.id, src=photo, dest_name=photo.name,
+        )
+        chore.attachments.append(photo.name)
+
+    inventory_subset = rng.sample(inventory_doc.items, k=max(1, round(len(inventory_doc.items) * 0.3)))
+    manual = _ASSETS_DIR / "placeholder-manual.pdf"
+    for item in inventory_subset:
+        _attach_placeholder(
+            save_attachment=persistence_inventory.save_attachment,
+            get_attachment_path=persistence_inventory.get_attachment_path,
+            generate_pdf_thumbnail=persistence_inventory.generate_pdf_thumbnail,
+            home_id=home_id, record_id=item.id, src=manual, dest_name=manual.name,
+        )
+        item.attachments.append(manual.name)
+
+    costs_subset = rng.sample(costs_doc.entries, k=max(1, round(len(costs_doc.entries) * 0.3)))
+    receipt = _ASSETS_DIR / "placeholder-receipt.pdf"
+    for entry in costs_subset:
+        _attach_placeholder(
+            save_attachment=persistence_costs.save_attachment,
+            get_attachment_path=persistence_costs.get_attachment_path,
+            generate_pdf_thumbnail=persistence_costs.generate_pdf_thumbnail,
+            home_id=home_id, record_id=entry.id, src=receipt, dest_name=receipt.name,
+        )
+        entry.attachments.append(receipt.name)
+
+    done_works = [w for w in works_doc.works if w.status == "done"]
+    works_subset = rng.sample(done_works, k=max(1, round(len(done_works) * 0.3))) if done_works else []
+    warranty = _ASSETS_DIR / "placeholder-warranty.pdf"
+    for work in works_subset:
+        _attach_placeholder(
+            save_attachment=persistence_works.save_attachment,
+            get_attachment_path=persistence_works.get_attachment_path,
+            generate_pdf_thumbnail=persistence_works.generate_pdf_thumbnail,
+            home_id=home_id, record_id=work.id, src=warranty, dest_name=warranty.name,
+        )
+        work.attachments.append(warranty.name)

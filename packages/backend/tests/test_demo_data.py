@@ -211,3 +211,42 @@ def test_generate_demo_consumables_reference_valid_categories():
     category_ids = {c.id for c in settings.consumableCategories}
     for c in doc.consumables:
         assert c.categoryId in category_ids
+
+
+import os
+
+from myhome.demo_data import attach_demo_files
+
+
+def test_attach_demo_files_gives_a_subset_of_records_attachments(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    home_id = "test-home"
+    (tmp_path / "homes" / home_id).mkdir(parents=True)
+
+    house = generate_demo_house()
+    settings = generate_demo_settings()
+    rng = random.Random(42)
+    chores_doc = generate_demo_chores(house, rng)
+    inventory_doc = generate_demo_inventory(house, settings, rng)
+    costs_doc = generate_demo_costs(settings, rng)
+    works_doc = generate_demo_works(house, settings, rng)
+
+    attach_demo_files(home_id, chores_doc, inventory_doc, costs_doc, works_doc, random.Random(1))
+
+    chores_with_attachments = [c for c in chores_doc.chores if c.attachments]
+    inventory_with_attachments = [i for i in inventory_doc.items if i.attachments]
+    costs_with_attachments = [c for c in costs_doc.entries if c.attachments]
+    done_works = [w for w in works_doc.works if w.status == "done"]
+    works_with_attachments = [w for w in done_works if w.attachments]
+
+    assert 0 < len(chores_with_attachments) < len(chores_doc.chores)
+    assert 0 < len(inventory_with_attachments) < len(inventory_doc.items)
+    assert 0 < len(costs_with_attachments) < len(costs_doc.entries)
+    assert 0 < len(works_with_attachments) <= len(done_works)
+
+    for chore in chores_with_attachments:
+        path = tmp_path / "homes" / home_id / "chores-attachments" / chore.id / chore.attachments[0]
+        assert path.exists()
+    for item in inventory_with_attachments:
+        path = tmp_path / "homes" / home_id / "inventory-attachments" / item.id / item.attachments[0]
+        assert path.exists()
