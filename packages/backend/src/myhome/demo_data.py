@@ -4,13 +4,14 @@ import random
 import uuid
 from datetime import date, datetime, timedelta, timezone
 
-from .demo_content import CHORES, INVENTORY_CATEGORY_ROOM_HINTS, INVENTORY_ITEMS
+from .demo_content import CHORES, INVENTORY_CATEGORY_ROOM_HINTS, INVENTORY_ITEMS, WORKS
 from .demo_geometry import room_centroid
 from .models import HouseDocument, Room
 from .models_chores import Assignment, ChoreDocument, Chore, CompletionRecord, Position
 from .models_costs import CostEntry, CostsDocument
 from .models_inventory import InventoryDocument, InventoryItem, InventoryPlacement, InventoryPosition
 from .models_settings import SettingsDocument
+from .models_works import Work, WorksDocument, WorkPlacement, WorkPosition
 
 
 def _find_room(house: HouseDocument, label: str) -> Room:
@@ -175,3 +176,47 @@ def generate_demo_costs(settings: SettingsDocument, rng: random.Random) -> Costs
     ))
 
     return CostsDocument(entries=entries)
+
+
+def generate_demo_works(house: HouseDocument, settings: SettingsDocument, rng: random.Random) -> WorksDocument:
+    today = date.today()
+    supplier_ids = [s.id for s in settings.suppliers]
+    all_rooms = [(f.id, r) for f in house.floors for r in f.rooms]
+
+    shuffled = WORKS[:]
+    rng.shuffle(shuffled)
+    done_count = round(len(shuffled) * 0.5)
+    in_progress_count = round(len(shuffled) * 0.15)
+
+    works: list[Work] = []
+    for i, (title, category_id, (cost_min, cost_max)) in enumerate(shuffled):
+        floor_id, room = rng.choice(all_rooms)
+        cx, cy = room_centroid(room)
+        placement = WorkPlacement(
+            floorId=floor_id,
+            position=WorkPosition(x=cx + rng.uniform(-0.8, 0.8), y=cy + rng.uniform(-0.8, 0.8)),
+        )
+
+        if i < done_count:
+            status = "done"
+            work_date = today - timedelta(days=rng.randint(10, 700))
+            total_cost = round(rng.uniform(cost_min, cost_max), 2)
+            supplier_id = rng.choice(supplier_ids)
+        elif i < done_count + in_progress_count:
+            status = "in_progress"
+            work_date = today - timedelta(days=rng.randint(0, 30))
+            total_cost = round(rng.uniform(cost_min, cost_max) * 0.5, 2)
+            supplier_id = rng.choice(supplier_ids)
+        else:
+            status = "planned"
+            work_date = today + timedelta(days=rng.randint(5, 180))
+            total_cost = None
+            supplier_id = None
+
+        works.append(Work(
+            id=str(uuid.uuid4()), title=title, status=status, categoryId=category_id,
+            date=work_date.isoformat(), totalCost=total_cost, supplierId=supplier_id,
+            placement=placement,
+        ))
+
+    return WorksDocument(works=works)

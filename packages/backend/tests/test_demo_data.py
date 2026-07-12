@@ -120,3 +120,37 @@ def test_generate_demo_costs_spread_across_last_12_months():
     cutoff = (date.today() - timedelta(days=370)).isoformat()
     assert all(e.date >= cutoff for e in doc.entries)
     assert len({e.date[:7] for e in doc.entries}) >= 6  # spans several distinct months
+
+
+from myhome.demo_data import generate_demo_works
+
+
+def test_generate_demo_works_has_at_least_32_entries():
+    house = generate_demo_house()
+    settings = generate_demo_settings()
+    doc = generate_demo_works(house, settings, random.Random(42))
+    assert len(doc.works) >= 32
+
+
+def test_generate_demo_works_has_a_mix_of_statuses():
+    house = generate_demo_house()
+    settings = generate_demo_settings()
+    doc = generate_demo_works(house, settings, random.Random(42))
+    statuses = {w.status for w in doc.works}
+    assert statuses == {"planned", "in_progress", "done"}
+    done = [w for w in doc.works if w.status == "done"]
+    assert all(w.totalCost is not None for w in done)
+    planned = [w for w in doc.works if w.status == "planned"]
+    assert all(w.totalCost is None for w in planned)
+
+
+def test_generate_demo_works_reference_valid_categories_and_floors():
+    house = generate_demo_house()
+    settings = generate_demo_settings()
+    doc = generate_demo_works(house, settings, random.Random(42))
+    category_ids = {c.id for c in settings.workCategories}
+    floor_ids = {f.id for f in house.floors}
+    for w in doc.works:
+        assert w.categoryId in category_ids
+        assert w.placement is not None
+        assert w.placement.floorId in floor_ids
