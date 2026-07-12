@@ -4,6 +4,8 @@
   import Input from "../ui/Input.svelte";
   import Card from "../ui/Card.svelte";
   import Modal from "../ui/Modal.svelte";
+  import SortableTable from "../ui/SortableTable.svelte";
+  import type { Column } from "../ui/SortableTable.types";
 
   let downloadingBackup = $state(false);
   let backupError = $state<string | null>(null);
@@ -280,29 +282,32 @@
 
   {#if scheduledBackups.length > 0}
     <div class="table-wrapper" style="margin-top: var(--space-3)">
-      <table>
-        <thead>
-          <tr><th>Created</th><th>Size</th><th></th></tr>
-        </thead>
-        <tbody>
-          {#each scheduledBackups as backup (backup.filename)}
-            <tr class="backup-row">
-              <td>{new Date(backup.createdAt).toLocaleString()}</td>
-              <td>{formatBackupSize(backup.sizeBytes)}</td>
-              <td class="actions">
-                {#if confirmDeleteBackupFilename === backup.filename}
-                  <span class="confirm-text">Delete?</span>
-                  <button class="icon-action danger" onclick={() => deleteScheduledBackup(backup.filename)}>✓</button>
-                  <button class="icon-action" onclick={() => { confirmDeleteBackupFilename = null; }}>✕</button>
-                {:else}
-                  <button class="icon-action" onclick={() => downloadScheduledBackup(backup.filename)} title="Download">⬇</button>
-                  <button class="icon-action danger" onclick={() => { confirmDeleteBackupFilename = backup.filename; }} title="Delete">🗑</button>
-                {/if}
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
+      {#snippet createdCell(backup: ScheduledBackupEntry)}
+        {new Date(backup.createdAt).toLocaleString()}
+      {/snippet}
+      {#snippet sizeCell(backup: ScheduledBackupEntry)}
+        {formatBackupSize(backup.sizeBytes)}
+      {/snippet}
+      {#snippet actionsCell(backup: ScheduledBackupEntry)}
+        {#if confirmDeleteBackupFilename === backup.filename}
+          <span class="confirm-text">Delete?</span>
+          <button class="icon-action danger" onclick={() => deleteScheduledBackup(backup.filename)}>✓</button>
+          <button class="icon-action" onclick={() => { confirmDeleteBackupFilename = null; }}>✕</button>
+        {:else}
+          <button class="icon-action" onclick={() => downloadScheduledBackup(backup.filename)} title="Download">⬇</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteBackupFilename = backup.filename; }} title="Delete">🗑</button>
+        {/if}
+      {/snippet}
+      <SortableTable
+        columns={[
+          { key: "created", label: "Created", sortValue: (b) => new Date(b.createdAt), cell: createdCell },
+          { key: "size", label: "Size", sortValue: (b) => b.sizeBytes, cell: sizeCell },
+          { key: "actions", label: "", sortable: false, cellClass: "actions", cell: actionsCell },
+        ] as Column<ScheduledBackupEntry>[]}
+        rows={scheduledBackups}
+        rowKey={(b) => b.filename}
+        rowClass={() => "backup-row"}
+      />
     </div>
   {/if}
 </Card>
@@ -338,13 +343,8 @@
   .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
 
   .table-wrapper { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text-muted); }
-  thead { background: var(--surface-alt); }
-  th { padding: 5px 10px; color: var(--text-faint); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; text-align: left; border-bottom: 1px solid var(--border); }
-  td { padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  tr:hover td { background: var(--surface-hover); }
 
-  .actions { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  :global(.actions) { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
   .icon-action { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 12px; padding: 2px 5px; border-radius: 3px; }
   .icon-action:hover { background: var(--surface-hover); color: var(--text-muted); }
   .icon-action.danger { color: var(--danger); }
