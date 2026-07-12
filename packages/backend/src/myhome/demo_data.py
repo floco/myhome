@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import random
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
-from .demo_content import CHORES
+from .demo_content import CHORES, INVENTORY_CATEGORY_ROOM_HINTS, INVENTORY_ITEMS
 from .demo_geometry import room_centroid
 from .models import HouseDocument, Room
 from .models_chores import Assignment, ChoreDocument, Chore, CompletionRecord, Position
+from .models_inventory import InventoryDocument, InventoryItem, InventoryPlacement, InventoryPosition
+from .models_settings import SettingsDocument
 
 
 def _find_room(house: HouseDocument, label: str) -> Room:
@@ -81,3 +83,36 @@ def generate_demo_chores(house: HouseDocument, rng: random.Random) -> ChoreDocum
             ))
 
     return ChoreDocument(chores=chores, assignments=assignments, completions=completions)
+
+
+def generate_demo_inventory(house: HouseDocument, settings: SettingsDocument, rng: random.Random) -> InventoryDocument:
+    today = date.today()
+    items: list[InventoryItem] = []
+
+    for name, emoji, category_id, (price_min, price_max) in INVENTORY_ITEMS:
+        hints = INVENTORY_CATEGORY_ROOM_HINTS.get(category_id, [])
+        room_label = rng.choice(hints) if hints else house.floors[0].rooms[0].label
+        room = _find_room(house, room_label)
+        floor_id = _floor_id_for_room(house, room.id)
+
+        purchase_days_ago = rng.randint(30, 5 * 365)
+        purchase_date = today - timedelta(days=purchase_days_ago)
+        warranty_days = rng.randint(365, 3 * 365)
+        warranty_expiry = purchase_date + timedelta(days=warranty_days)
+        cx, cy = room_centroid(room)
+
+        items.append(InventoryItem(
+            id=str(uuid.uuid4()),
+            name=name,
+            emoji=emoji,
+            category=category_id,
+            purchaseDate=purchase_date.isoformat(),
+            purchasePrice=round(rng.uniform(price_min, price_max), 2),
+            warrantyExpiryDate=warranty_expiry.isoformat(),
+            placement=InventoryPlacement(
+                floorId=floor_id, roomId=room.id,
+                position=InventoryPosition(x=cx + rng.uniform(-0.8, 0.8), y=cy + rng.uniform(-0.8, 0.8)),
+            ),
+        ))
+
+    return InventoryDocument(items=items)

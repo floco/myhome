@@ -53,3 +53,40 @@ def test_generate_demo_chores_is_deterministic_for_a_given_seed():
     # between them -- the whole-day offset driven by the rng seed is what's
     # actually deterministic here.
     assert [c.nextDueDate[:10] for c in doc1.chores] == [c.nextDueDate[:10] for c in doc2.chores]
+
+
+from datetime import date
+
+from myhome.demo_content import generate_demo_settings
+from myhome.demo_data import generate_demo_inventory
+
+
+def test_generate_demo_inventory_has_at_least_32_items():
+    house = generate_demo_house()
+    settings = generate_demo_settings()
+    doc = generate_demo_inventory(house, settings, random.Random(42))
+    assert len(doc.items) >= 32
+
+
+def test_generate_demo_inventory_items_have_valid_category_and_placement():
+    house = generate_demo_house()
+    settings = generate_demo_settings()
+    doc = generate_demo_inventory(house, settings, random.Random(42))
+    category_ids = {c.id for c in settings.inventoryCategories}
+    floor_ids = {f.id for f in house.floors}
+    room_ids = {r.id for f in house.floors for r in f.rooms}
+    for item in doc.items:
+        assert item.category in category_ids
+        assert item.placement is not None
+        assert item.placement.floorId in floor_ids
+        assert item.placement.roomId in room_ids
+        assert item.purchasePrice > 0
+
+
+def test_generate_demo_inventory_some_warranties_already_expired():
+    house = generate_demo_house()
+    settings = generate_demo_settings()
+    doc = generate_demo_inventory(house, settings, random.Random(42))
+    today = date.today().isoformat()
+    expired = [i for i in doc.items if i.warrantyExpiryDate and i.warrantyExpiryDate < today]
+    assert len(expired) > 0
