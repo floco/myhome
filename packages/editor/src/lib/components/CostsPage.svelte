@@ -9,6 +9,8 @@
   import Input from "./ui/Input.svelte";
   import Card from "./ui/Card.svelte";
   import DonutChart from "./DonutChart.svelte";
+  import SortableTable from "./ui/SortableTable.svelte";
+  import type { Column } from "./ui/SortableTable.types";
 
   type CostsStore = ReturnType<typeof createCostsStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -255,44 +257,49 @@
 
   <!-- Table -->
   <div class="table-wrapper">
-    <table>
-      <thead>
-        <tr>
-          <th></th>
-          <th>Category</th>
-          <th>Date</th>
-          <th>Supplier</th>
-          <th class="num-col">Qty</th>
-          <th class="num-col">Unit price</th>
-          <th class="num-col">Total</th>
-          <th>Room</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each filtered as entry (entry.id)}
-          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
-          <tr onclick={() => { modalEntry = entry; }}>
-            <td class="emoji-cell">{categoryEmoji(entry.categoryId)}</td>
-            <td class="name-cell">{categoryName(entry.categoryId)}</td>
-            <td>{entry.date}</td>
-            <td>{entry.supplierId ? (supplierMap.get(entry.supplierId)?.name ?? "—") : "—"}</td>
-            <td class="num-col">{formatQty(entry)}</td>
-            <td class="num-col">{formatUnitPrice(entry)}</td>
-            <td class="num-col amount-cell">{entry.totalAmount.toLocaleString()} €</td>
-            <td>{roomName(entry.roomId)}</td>
-          </tr>
-        {/each}
-        {#if filtered.length === 0}
-          <tr>
-            <td colspan="8" class="empty">
-              {costsStore.entries.length === 0
-                ? "No entries yet — click ＋ Add entry to get started."
-                : "No entries match your filters."}
-            </td>
-          </tr>
-        {/if}
-      </tbody>
-    </table>
+    {#snippet emojiCell(entry: CostEntry)}
+      {categoryEmoji(entry.categoryId)}
+    {/snippet}
+    {#snippet categoryCell(entry: CostEntry)}
+      {categoryName(entry.categoryId)}
+    {/snippet}
+    {#snippet dateCell(entry: CostEntry)}
+      {entry.date}
+    {/snippet}
+    {#snippet supplierCell(entry: CostEntry)}
+      {entry.supplierId ? (supplierMap.get(entry.supplierId)?.name ?? "—") : "—"}
+    {/snippet}
+    {#snippet qtyCell(entry: CostEntry)}
+      {formatQty(entry)}
+    {/snippet}
+    {#snippet unitPriceCell(entry: CostEntry)}
+      {formatUnitPrice(entry)}
+    {/snippet}
+    {#snippet totalCell(entry: CostEntry)}
+      {entry.totalAmount.toLocaleString()} €
+    {/snippet}
+    {#snippet roomCell(entry: CostEntry)}
+      {roomName(entry.roomId)}
+    {/snippet}
+
+    <SortableTable
+      columns={[
+        { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
+        { key: "category", label: "Category", sortValue: (e) => categoryName(e.categoryId), cellClass: "name-cell", cell: categoryCell },
+        { key: "date", label: "Date", sortValue: (e) => new Date(e.date), cell: dateCell },
+        { key: "supplier", label: "Supplier", sortValue: (e) => (e.supplierId ? supplierMap.get(e.supplierId)?.name ?? null : null), cell: supplierCell },
+        { key: "qty", label: "Qty", headerClass: "num-col", cellClass: "num-col", sortValue: (e) => e.quantity, cell: qtyCell },
+        { key: "unitPrice", label: "Unit price", headerClass: "num-col", cellClass: "num-col", sortValue: (e) => e.unitPrice, cell: unitPriceCell },
+        { key: "total", label: "Total", headerClass: "num-col", cellClass: "num-col amount-cell", sortValue: (e) => e.totalAmount, cell: totalCell },
+        { key: "room", label: "Room", sortValue: (e) => roomName(e.roomId), cell: roomCell },
+      ] as Column<CostEntry>[]}
+      rows={filtered}
+      rowKey={(entry) => entry.id}
+      rowClick={(entry) => { modalEntry = entry; }}
+      emptyMessage={costsStore.entries.length === 0
+        ? "No entries yet — click ＋ Add entry to get started."
+        : "No entries match your filters."}
+    />
   </div>
 
   <div class="footer">
@@ -387,21 +394,10 @@
   .native-input:focus { outline: none; border-color: var(--accent); }
 
   .table-wrapper { flex: 1; overflow-y: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text-muted); }
-  thead { position: sticky; top: 0; background: var(--surface-alt); z-index: 1; }
-  th {
-    padding: 6px 10px; color: var(--text-faint); font-size: 10px;
-    text-transform: uppercase; letter-spacing: .05em;
-    text-align: left; border-bottom: 1px solid var(--border);
-  }
-  th.num-col { text-align: right; }
-  td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
-  td.num-col { text-align: right; }
-  tr:hover td { background: var(--surface-hover); cursor: pointer; }
-  .emoji-cell { font-size: 15px; width: 28px; text-align: center; }
-  .name-cell { color: var(--text); }
-  .amount-cell { color: var(--text); }
-  .empty { text-align: center; color: var(--text-faint); padding: 32px; }
+  :global(.num-col) { text-align: right; }
+  :global(.emoji-cell) { font-size: 15px; width: 28px; text-align: center; }
+  :global(.name-cell) { color: var(--text); }
+  :global(.amount-cell) { color: var(--text); }
 
   .footer {
     padding: 6px 12px; font-size: 11px; color: var(--text-faint);

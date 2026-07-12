@@ -5,6 +5,8 @@
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
   import ChoreEditModal from "./ChoreEditModal.svelte";
+  import SortableTable from "./ui/SortableTable.svelte";
+  import type { Column } from "./ui/SortableTable.types";
 
   type ChoreStore = ReturnType<typeof createChoreStore>;
   type Assignment = ChoreStore["assignments"][number];
@@ -177,102 +179,96 @@
   </div>
 
   <div class="table-wrapper">
-    <table>
-      <thead>
-        <tr>
-          <th></th>
-          <th></th>
-          <th>Name</th>
-          <th>Schedule</th>
-          <th>Rooms</th>
-          <th>Next due</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each filteredChores as chore (chore.id)}
-          {@const assignments = assignmentsForChore(chore.id)}
-          {@const nextDue = earliestDue(assignments)}
-          {@const isExpanded = expandedHistory === chore.id}
-          {@const completingChore = completing?.kind === "chore" && completing.id === chore.id ? completing : null}
-          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
-          <tr onclick={() => { editChore = chore; }}>
-            <td class="expand-cell" onclick={(e) => { e.stopPropagation(); expandedHistory = isExpanded ? null : chore.id; }}>
-              <button class="expand-btn">{isExpanded ? "▼" : "▶"}</button>
-            </td>
-            <td class="emoji-cell">{chore.emoji}</td>
-            <td class="name-cell">
-              {displayName(chore)}{#if chore.scheduleFromDue}&nbsp;<span class="sfd-badge" title="Schedules from due date">📅</span>{/if}
-            </td>
-            <td>{scheduleLabel(chore)}</td>
-            <td>{roomsSummary(assignments)}</td>
-            <td>{nextDue ? formatDate(nextDue) : "—"}</td>
-            <td class="actions-cell" onclick={(e) => e.stopPropagation()}>
-              {#if completingChore}
+    {#snippet expandCell(chore: Chore)}
+      <button
+        class="expand-btn"
+        onclick={(e) => { e.stopPropagation(); expandedHistory = expandedHistory === chore.id ? null : chore.id; }}
+      >{expandedHistory === chore.id ? "▼" : "▶"}</button>
+    {/snippet}
+    {#snippet emojiCell(chore: Chore)}
+      {chore.emoji}
+    {/snippet}
+    {#snippet nameCell(chore: Chore)}
+      {displayName(chore)}{#if chore.scheduleFromDue}&nbsp;<span class="sfd-badge" title="Schedules from due date">📅</span>{/if}
+    {/snippet}
+    {#snippet scheduleCell(chore: Chore)}
+      {scheduleLabel(chore)}
+    {/snippet}
+    {#snippet roomsCell(chore: Chore)}
+      {roomsSummary(assignmentsForChore(chore.id))}
+    {/snippet}
+    {#snippet nextDueCell(chore: Chore)}
+      {@const nextDue = earliestDue(assignmentsForChore(chore.id))}
+      {nextDue ? formatDate(nextDue) : "—"}
+    {/snippet}
+    {#snippet actionsCell(chore: Chore)}
+      {@const completingChore = completing?.kind === "chore" && completing.id === chore.id ? completing : null}
+      {#if completingChore}
+        <input
+          class="note-input"
+          bind:value={completingChore.notes}
+          placeholder="Note (optional)"
+          onkeydown={(e) => { if (e.key === "Enter") confirmComplete(); if (e.key === "Escape") completing = null; }}
+        />
+        <button class="icon-btn confirm-btn" onclick={confirmComplete}>✓</button>
+        <button class="icon-btn" onclick={() => { completing = null; }}>✕</button>
+      {:else}
+        <button class="icon-btn" title="Mark all done" onclick={() => { completing = { kind: "chore", id: chore.id, notes: "" }; }}>✓</button>
+      {/if}
+      <button class="icon-btn" title="Delay all assignments by 1 week" onclick={() => store.delayChore(chore.id, 7)}>⏭</button>
+    {/snippet}
+    {#snippet assignmentsExpanded(chore: Chore)}
+      {@const assignments = assignmentsForChore(chore.id)}
+      <div class="expand-body">
+        {#if assignments.length > 0}
+          {#each assignments as a (a.id)}
+            {@const completingAssign = completing?.kind === "assignment" && completing.id === a.id ? completing : null}
+            <div class="assign-row">
+              <span class="assign-where">{a.roomId ? getRoomName(a.roomId) : "🏠 Whole house"}</span>
+              <span class="assign-due">Due: {formatDate(a.nextDueDate)}</span>
+              {#if completingAssign}
                 <input
                   class="note-input"
-                  bind:value={completingChore.notes}
+                  bind:value={completingAssign.notes}
                   placeholder="Note (optional)"
                   onkeydown={(e) => { if (e.key === "Enter") confirmComplete(); if (e.key === "Escape") completing = null; }}
                 />
                 <button class="icon-btn confirm-btn" onclick={confirmComplete}>✓</button>
                 <button class="icon-btn" onclick={() => { completing = null; }}>✕</button>
               {:else}
-                <button class="icon-btn" title="Mark all done" onclick={() => { completing = { kind: "chore", id: chore.id, notes: "" }; }}>✓</button>
+                <button class="icon-btn" onclick={() => { completing = { kind: "assignment", id: a.id, notes: "" }; }}>✓</button>
               {/if}
-              <button class="icon-btn" title="Delay all assignments by 1 week" onclick={() => store.delayChore(chore.id, 7)}>⏭</button>
-            </td>
-          </tr>
-
-          {#if isExpanded}
-            <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-            <tr class="expand-row" onclick={(e) => e.stopPropagation()}>
-              <td colspan="7">
-                <div class="expand-body">
-                  {#if assignments.length > 0}
-                    {#each assignments as a (a.id)}
-                      {@const completingAssign = completing?.kind === "assignment" && completing.id === a.id ? completing : null}
-                      <div class="assign-row">
-                        <span class="assign-where">{a.roomId ? getRoomName(a.roomId) : "🏠 Whole house"}</span>
-                        <span class="assign-due">Due: {formatDate(a.nextDueDate)}</span>
-                        {#if completingAssign}
-                          <input
-                            class="note-input"
-                            bind:value={completingAssign.notes}
-                            placeholder="Note (optional)"
-                            onkeydown={(e) => { if (e.key === "Enter") confirmComplete(); if (e.key === "Escape") completing = null; }}
-                          />
-                          <button class="icon-btn confirm-btn" onclick={confirmComplete}>✓</button>
-                          <button class="icon-btn" onclick={() => { completing = null; }}>✕</button>
-                        {:else}
-                          <button class="icon-btn" onclick={() => { completing = { kind: "assignment", id: a.id, notes: "" }; }}>✓</button>
-                        {/if}
-                        <button class="icon-btn danger" onclick={() => store.deleteAssignment(a.id)}>✕</button>
-                        <button class="icon-btn" title="Delay by 1 week" onclick={() => store.delayAssignment(a.id, 7)}>⏭</button>
-                      </div>
-                    {/each}
-                  {:else}
-                    <div class="no-assign">Not assigned to any room</div>
-                  {/if}
-                </div>
-              </td>
-            </tr>
-          {/if}
-        {/each}
-
-        {#if filteredChores.length === 0}
-          <tr>
-            <td colspan="7" class="empty">
-              {store.chores.length === 0
-                ? "No chores yet — click ＋ Add chore to get started."
-                : dueFilter === "attention"
-                  ? "No chores need attention right now."
-                  : "No chores match your filters."}
-            </td>
-          </tr>
+              <button class="icon-btn danger" onclick={() => store.deleteAssignment(a.id)}>✕</button>
+              <button class="icon-btn" title="Delay by 1 week" onclick={() => store.delayAssignment(a.id, 7)}>⏭</button>
+            </div>
+          {/each}
+        {:else}
+          <div class="no-assign">Not assigned to any room</div>
         {/if}
-      </tbody>
-    </table>
+      </div>
+    {/snippet}
+
+    <SortableTable
+      columns={[
+        { key: "expand", label: "", sortable: false, cellClass: "expand-cell", cell: expandCell },
+        { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
+        { key: "name", label: "Name", sortValue: (c) => displayName(c), cellClass: "name-cell", cell: nameCell },
+        { key: "schedule", label: "Schedule", sortValue: (c) => scheduleLabel(c), cell: scheduleCell },
+        { key: "rooms", label: "Rooms", sortValue: (c) => roomsSummary(assignmentsForChore(c.id)), cell: roomsCell },
+        { key: "nextDue", label: "Next due", sortValue: (c) => { const d = earliestDue(assignmentsForChore(c.id)); return d ? new Date(d) : null; }, cell: nextDueCell },
+        { key: "actions", label: "", sortable: false, cellClass: "actions-cell", stopRowClick: true, cell: actionsCell },
+      ] as Column<Chore>[]}
+      rows={filteredChores}
+      rowKey={(chore) => chore.id}
+      rowClick={(chore) => { editChore = chore; }}
+      isRowExpanded={(chore) => expandedHistory === chore.id}
+      expandedRow={assignmentsExpanded}
+      emptyMessage={store.chores.length === 0
+        ? "No chores yet — click ＋ Add chore to get started."
+        : dueFilter === "attention"
+          ? "No chores need attention right now."
+          : "No chores match your filters."}
+    />
   </div>
 
   <div class="footer">{filteredChores.length} chore{filteredChores.length !== 1 ? "s" : ""}</div>
@@ -305,27 +301,17 @@
   .msg-success { color: var(--success); font-size: 11px; }
 
   .table-wrapper { flex: 1; overflow-y: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text-muted); }
-  thead { position: sticky; top: 0; background: var(--surface-alt); z-index: 1; }
-  th {
-    padding: 6px 10px; color: var(--text-faint); font-size: 10px;
-    text-transform: uppercase; letter-spacing: 0.05em;
-    text-align: left; border-bottom: 1px solid var(--border);
-  }
-  td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  tr:not(.expand-row):hover td { background: var(--surface-hover); cursor: pointer; }
-  .emoji-cell { font-size: 16px; width: 32px; text-align: center; }
-  .name-cell { color: var(--text); font-weight: 600; }
+  :global(.emoji-cell) { font-size: 16px; width: 32px; text-align: center; }
+  :global(.name-cell) { color: var(--text); font-weight: 600; }
   .sfd-badge { font-size: 11px; cursor: help; }
-  .actions-cell { white-space: nowrap; text-align: right; }
-  .empty { text-align: center; color: var(--text-faint); padding: 32px; }
+  :global(.actions-cell) { white-space: nowrap; text-align: right; }
 
   .icon-btn {
     padding: 8px 14px; border: none; border-radius: var(--radius-sm);
     background: var(--surface-alt); color: var(--text-muted); cursor: pointer; font-size: 15px;
     min-height: 38px;
   }
-  .expand-cell { width: 20px; padding: 0 4px; text-align: center; }
+  :global(.expand-cell) { width: 20px; padding: 0 4px; text-align: center; }
   .expand-btn { background: none; border: none; cursor: pointer; color: var(--text-faint); font-size: 9px; padding: 2px 4px; line-height: 1; }
   .expand-btn:hover { color: var(--text); }
   .icon-btn:hover { background: var(--surface-hover); color: var(--text); }
@@ -339,7 +325,6 @@
   }
   .note-input:focus { outline: none; border-color: var(--accent); }
 
-  .expand-row td { background: var(--surface-alt); padding: 0; cursor: default; }
   .expand-body { padding: 10px 16px; display: flex; flex-direction: column; gap: 6px; }
 
   .assign-row { display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap; }

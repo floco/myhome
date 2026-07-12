@@ -4,6 +4,8 @@
   import InventoryModal from "./InventoryModal.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
+  import SortableTable from "./ui/SortableTable.svelte";
+  import type { Column } from "./ui/SortableTable.types";
 
   type InvStore = ReturnType<typeof createInventoryStore>;
   type HouseStore = ReturnType<typeof createHouseStore>;
@@ -115,45 +117,46 @@
   </div>
 
   <div class="table-wrapper">
-    <table>
-      <thead>
-        <tr>
-          <th></th>
-          <th>Name</th>
-          <th>Category</th>
-          <th>Room</th>
-          <th>Purchased</th>
-          <th>Cost</th>
-          <th>Warranty</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each filtered as item (item.id)}
-          {@const chip = warrantyChip(item)}
-          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
-          <tr onclick={() => { modalItem = item; }}>
-            <td class="emoji-cell">{item.emoji}</td>
-            <td class="name-cell">{item.name}</td>
-            <td>{item.category || "—"}</td>
-            <td>{roomName(item.placement?.roomId)}</td>
-            <td>{formatDate(item.purchaseDate)}</td>
-            <td>{formatPrice(item.purchasePrice)}</td>
-            <td>
-              <span class="chip" style="color:{chip.color}">{chip.label}</span>
-            </td>
-          </tr>
-        {/each}
-        {#if filtered.length === 0}
-          <tr>
-            <td colspan="7" class="empty">
-              {store.items.length === 0
-                ? "No items yet — click ＋ Add item to get started."
-                : "No items match your filters."}
-            </td>
-          </tr>
-        {/if}
-      </tbody>
-    </table>
+    {#snippet emojiCell(item: InventoryItem)}
+      {item.emoji}
+    {/snippet}
+    {#snippet nameCell(item: InventoryItem)}
+      {item.name}
+    {/snippet}
+    {#snippet categoryCell(item: InventoryItem)}
+      {item.category || "—"}
+    {/snippet}
+    {#snippet roomCell(item: InventoryItem)}
+      {roomName(item.placement?.roomId)}
+    {/snippet}
+    {#snippet purchasedCell(item: InventoryItem)}
+      {formatDate(item.purchaseDate)}
+    {/snippet}
+    {#snippet costCell(item: InventoryItem)}
+      {formatPrice(item.purchasePrice)}
+    {/snippet}
+    {#snippet warrantyCell(item: InventoryItem)}
+      {@const chip = warrantyChip(item)}
+      <span class="chip" style="color:{chip.color}">{chip.label}</span>
+    {/snippet}
+
+    <SortableTable
+      columns={[
+        { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
+        { key: "name", label: "Name", sortValue: (i) => i.name, cellClass: "name-cell", cell: nameCell },
+        { key: "category", label: "Category", sortValue: (i) => i.category || null, cell: categoryCell },
+        { key: "room", label: "Room", sortValue: (i) => roomName(i.placement?.roomId), cell: roomCell },
+        { key: "purchased", label: "Purchased", sortValue: (i) => (i.purchaseDate ? new Date(i.purchaseDate) : null), cell: purchasedCell },
+        { key: "cost", label: "Cost", sortValue: (i) => i.purchasePrice, cell: costCell },
+        { key: "warranty", label: "Warranty", sortable: false, cell: warrantyCell },
+      ] as Column<InventoryItem>[]}
+      rows={filtered}
+      rowKey={(item) => item.id}
+      rowClick={(item) => { modalItem = item; }}
+      emptyMessage={store.items.length === 0
+        ? "No items yet — click ＋ Add item to get started."
+        : "No items match your filters."}
+    />
   </div>
 
   <div class="footer">
@@ -195,19 +198,9 @@
   .native-input:focus { outline: none; border-color: var(--accent); }
 
   .table-wrapper { flex: 1; overflow-y: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text-muted); }
-  thead { position: sticky; top: 0; background: var(--surface-alt); z-index: 1; }
-  th {
-    padding: 6px 10px; color: var(--text-faint); font-size: 10px;
-    text-transform: uppercase; letter-spacing: 0.05em;
-    text-align: left; border-bottom: 1px solid var(--border);
-  }
-  td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
-  tr:hover td { background: var(--surface-hover); cursor: pointer; }
-  .emoji-cell { font-size: 16px; width: 32px; text-align: center; }
-  .name-cell { color: var(--text); }
+  :global(.emoji-cell) { font-size: 16px; width: 32px; text-align: center; }
+  :global(.name-cell) { color: var(--text); }
   .chip { font-size: 10px; font-weight: 500; }
-  .empty { text-align: center; color: var(--text-faint); padding: 32px; }
 
   .footer {
     padding: 6px 12px; font-size: 11px; color: var(--text-faint);

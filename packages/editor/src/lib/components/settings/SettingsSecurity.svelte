@@ -5,6 +5,8 @@
   import Input from "../ui/Input.svelte";
   import Card from "../ui/Card.svelte";
   import Modal from "../ui/Modal.svelte";
+  import SortableTable from "../ui/SortableTable.svelte";
+  import type { Column } from "../ui/SortableTable.types";
 
   type AuthStore = ReturnType<typeof createAuthStore>;
 
@@ -228,29 +230,30 @@
     {#if apiTokens.length === 0}
       <p class="empty-hint">No tokens yet.</p>
     {:else}
-      <table class="token-table">
-        <thead>
-          <tr><th>Name</th><th>Scope</th><th>Created</th><th>Last used</th><th></th></tr>
-        </thead>
-        <tbody>
-          {#each apiTokens as t (t.id)}
-            <tr>
-              <td>{t.name}</td>
-              <td><span class="role-badge">{t.role}</span></td>
-              <td>{t.created_at?.slice(0, 10) ?? "—"}</td>
-              <td>{t.last_used_at ? t.last_used_at.slice(0, 10) : "—"}</td>
-              <td>
-                {#if confirmRevokeTokenId === t.id}
-                  <Button variant="danger" onclick={() => revokeToken(t.id)}>Confirm revoke</Button>
-                  <Button variant="secondary" onclick={() => { confirmRevokeTokenId = null; }}>Cancel</Button>
-                {:else}
-                  <Button variant="secondary" onclick={() => { confirmRevokeTokenId = t.id; }}>Revoke</Button>
-                {/if}
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
+      {#snippet tokenNameCell(t: TokenInfo)}{t.name}{/snippet}
+      {#snippet tokenScopeCell(t: TokenInfo)}<span class="role-badge">{t.role}</span>{/snippet}
+      {#snippet tokenCreatedCell(t: TokenInfo)}{t.created_at?.slice(0, 10) ?? "—"}{/snippet}
+      {#snippet tokenLastUsedCell(t: TokenInfo)}{t.last_used_at ? t.last_used_at.slice(0, 10) : "—"}{/snippet}
+      {#snippet tokenActionsCell(t: TokenInfo)}
+        {#if confirmRevokeTokenId === t.id}
+          <Button variant="danger" onclick={() => revokeToken(t.id)}>Confirm revoke</Button>
+          <Button variant="secondary" onclick={() => { confirmRevokeTokenId = null; }}>Cancel</Button>
+        {:else}
+          <Button variant="secondary" onclick={() => { confirmRevokeTokenId = t.id; }}>Revoke</Button>
+        {/if}
+      {/snippet}
+      <SortableTable
+        class="token-table"
+        columns={[
+          { key: "name", label: "Name", sortValue: (t) => t.name, cell: tokenNameCell },
+          { key: "scope", label: "Scope", sortValue: (t) => t.role, cell: tokenScopeCell },
+          { key: "created", label: "Created", sortValue: (t) => (t.created_at ? new Date(t.created_at) : null), cell: tokenCreatedCell },
+          { key: "lastUsed", label: "Last used", sortValue: (t) => (t.last_used_at ? new Date(t.last_used_at) : null), cell: tokenLastUsedCell },
+          { key: "actions", label: "", sortable: false, cell: tokenActionsCell },
+        ] as Column<TokenInfo>[]}
+        rows={apiTokens}
+        rowKey={(t) => t.id}
+      />
     {/if}
   {/if}
 </Card>
@@ -262,57 +265,59 @@
       <Button onclick={() => { showNewUserModal = true; userError = null; }}>New user</Button>
     </div>
     {#if usersLoaded}
-      <table class="token-table">
-        <thead>
-          <tr><th>Username</th><th>Role</th><th>Created</th><th>Actions</th></tr>
-        </thead>
-        <tbody>
-          {#each users as u (u.id)}
-            <tr>
-              <td>{u.username}</td>
-              <td>
-                {#if editingUserId === u.id}
-                  <select bind:value={editUserRole} class="modal-select">
-                    {#each ["ro", "normal", "admin"] as r}
-                      <option value={r}>{r}</option>
-                    {/each}
-                  </select>
-                  <Button onclick={() => updateUserRole(u.id, editUserRole)}>Save</Button>
-                  <Button variant="secondary" onclick={() => { editingUserId = null; }}>Cancel</Button>
-                {:else}
-                  <span class="role-badge">{u.role}</span>
-                {/if}
-              </td>
-              <td>{u.created_at?.slice(0, 10) ?? "—"}</td>
-              <td style="display:flex;gap:4px;flex-wrap:wrap">
-                {#if editingUserId !== u.id}
-                  <Button variant="secondary" onclick={() => { editingUserId = u.id; editUserRole = u.role; }}>Edit role</Button>
-                {/if}
-                {#if resetPasswordUserId === u.id}
-                  <input
-                    type="password"
-                    bind:value={resetPasswordValue}
-                    placeholder="New password (min 8)"
-                    class="inline-pw-input"
-                  />
-                  <Button onclick={() => resetUserPassword(u.id)}>Set</Button>
-                  <Button variant="secondary" onclick={() => { resetPasswordUserId = null; resetPasswordValue = ""; }}>Cancel</Button>
-                {:else}
-                  <Button variant="secondary" onclick={() => { resetPasswordUserId = u.id; }}>Reset pw</Button>
-                {/if}
-                {#if u.id !== authStore.user?.id}
-                  {#if confirmDeleteUserId === u.id}
-                    <Button variant="danger" onclick={() => deleteUser(u.id)}>Confirm delete</Button>
-                    <Button variant="secondary" onclick={() => { confirmDeleteUserId = null; }}>Cancel</Button>
-                  {:else}
-                    <Button variant="secondary" onclick={() => { confirmDeleteUserId = u.id; }}>Delete</Button>
-                  {/if}
-                {/if}
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
+      {#snippet userNameCell(u: UserInfo)}{u.username}{/snippet}
+      {#snippet userRoleCell(u: UserInfo)}
+        {#if editingUserId === u.id}
+          <select bind:value={editUserRole} class="modal-select">
+            {#each ["ro", "normal", "admin"] as r}
+              <option value={r}>{r}</option>
+            {/each}
+          </select>
+          <Button onclick={() => updateUserRole(u.id, editUserRole)}>Save</Button>
+          <Button variant="secondary" onclick={() => { editingUserId = null; }}>Cancel</Button>
+        {:else}
+          <span class="role-badge">{u.role}</span>
+        {/if}
+      {/snippet}
+      {#snippet userCreatedCell(u: UserInfo)}{u.created_at?.slice(0, 10) ?? "—"}{/snippet}
+      {#snippet userActionsCell(u: UserInfo)}
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          {#if editingUserId !== u.id}
+            <Button variant="secondary" onclick={() => { editingUserId = u.id; editUserRole = u.role; }}>Edit role</Button>
+          {/if}
+          {#if resetPasswordUserId === u.id}
+            <input
+              type="password"
+              bind:value={resetPasswordValue}
+              placeholder="New password (min 8)"
+              class="inline-pw-input"
+            />
+            <Button onclick={() => resetUserPassword(u.id)}>Set</Button>
+            <Button variant="secondary" onclick={() => { resetPasswordUserId = null; resetPasswordValue = ""; }}>Cancel</Button>
+          {:else}
+            <Button variant="secondary" onclick={() => { resetPasswordUserId = u.id; }}>Reset pw</Button>
+          {/if}
+          {#if u.id !== authStore.user?.id}
+            {#if confirmDeleteUserId === u.id}
+              <Button variant="danger" onclick={() => deleteUser(u.id)}>Confirm delete</Button>
+              <Button variant="secondary" onclick={() => { confirmDeleteUserId = null; }}>Cancel</Button>
+            {:else}
+              <Button variant="secondary" onclick={() => { confirmDeleteUserId = u.id; }}>Delete</Button>
+            {/if}
+          {/if}
+        </div>
+      {/snippet}
+      <SortableTable
+        class="token-table"
+        columns={[
+          { key: "username", label: "Username", sortValue: (u) => u.username, cell: userNameCell },
+          { key: "role", label: "Role", sortValue: (u) => u.role, cell: userRoleCell },
+          { key: "created", label: "Created", sortValue: (u) => (u.created_at ? new Date(u.created_at) : null), cell: userCreatedCell },
+          { key: "actions", label: "Actions", sortable: false, cell: userActionsCell },
+        ] as Column<UserInfo>[]}
+        rows={users}
+        rowKey={(u) => u.id}
+      />
     {/if}
   </Card>
 {/if}
@@ -441,9 +446,8 @@
   .empty-hint { font-size: 0.875rem; color: var(--text-faint); margin: var(--space-2) 0 0; }
   .error { color: var(--danger); font-size: 11px; margin-top: 6px; }
 
-  .token-table { width: 100%; border-collapse: collapse; margin-top: var(--space-2); font-size: 0.875rem; }
-  .token-table th { text-align: left; padding: 6px 8px; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
-  .token-table td { padding: 8px 8px; border-bottom: 1px solid var(--border); color: var(--text); }
+  :global(table.token-table) { margin-top: var(--space-2); font-size: 0.875rem; }
+  :global(table.token-table td) { color: var(--text); }
   .role-badge { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
 
   .modal-form { display: flex; flex-direction: column; gap: 14px; }

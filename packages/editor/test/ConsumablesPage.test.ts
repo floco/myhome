@@ -136,7 +136,7 @@ describe("ConsumablesPage", () => {
     });
     await tick();
     flushSync();
-    expect(target.querySelector(".empty")).not.toBeNull();
+    expect(target.querySelector(".ui-sortable-table-empty")).not.toBeNull();
     unmount(comp);
     target.remove();
   });
