@@ -4,12 +4,21 @@ import random
 import uuid
 from datetime import date, datetime, timedelta, timezone
 
-from .demo_content import CHORES, INVENTORY_CATEGORY_ROOM_HINTS, INVENTORY_ITEMS, WORKS
+from .demo_content import (
+    CHORES,
+    INVENTORY_CATEGORY_ROOM_HINTS,
+    INVENTORY_ITEMS,
+    KB_CLOSERS,
+    KB_OPENERS,
+    KB_TITLES,
+    WORKS,
+)
 from .demo_geometry import room_centroid
 from .models import HouseDocument, Room
 from .models_chores import Assignment, ChoreDocument, Chore, CompletionRecord, Position
 from .models_costs import CostEntry, CostsDocument
 from .models_inventory import InventoryDocument, InventoryItem, InventoryPlacement, InventoryPosition
+from .models_kb import KBDocument, KBEntry
 from .models_settings import SettingsDocument
 from .models_works import Work, WorksDocument, WorkPlacement, WorkPosition
 
@@ -220,3 +229,19 @@ def generate_demo_works(house: HouseDocument, settings: SettingsDocument, rng: r
         ))
 
     return WorksDocument(works=works)
+
+
+def generate_demo_kb(rng: random.Random) -> KBDocument:
+    now = datetime.now(timezone.utc)
+    entries: list[KBEntry] = []
+
+    for title in KB_TITLES:
+        created = now - timedelta(days=rng.randint(10, 400))
+        updated = created + timedelta(days=rng.randint(0, max(1, (now - created).days)))
+        content = f"## {title}\n\n{rng.choice(KB_OPENERS)}\n\n{rng.choice(KB_CLOSERS)}"
+        entries.append(KBEntry(
+            id=str(uuid.uuid4()), title=title, content=content,
+            createdAt=created.isoformat(), updatedAt=updated.isoformat(),
+        ))
+
+    return KBDocument(entries=entries)

@@ -154,3 +154,19 @@ def test_generate_demo_works_reference_valid_categories_and_floors():
         assert w.categoryId in category_ids
         assert w.placement is not None
         assert w.placement.floorId in floor_ids
+
+
+from myhome.demo_data import generate_demo_kb
+
+
+def test_generate_demo_kb_has_at_least_32_entries():
+    doc = generate_demo_kb(random.Random(42))
+    assert len(doc.entries) >= 32
+
+
+def test_generate_demo_kb_entries_have_content_and_valid_dates():
+    doc = generate_demo_kb(random.Random(42))
+    for entry in doc.entries:
+        assert entry.title
+        assert entry.content
+        assert entry.updatedAt >= entry.createdAt
