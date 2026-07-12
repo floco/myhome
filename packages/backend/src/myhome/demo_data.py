@@ -8,6 +8,7 @@ from .demo_content import CHORES, INVENTORY_CATEGORY_ROOM_HINTS, INVENTORY_ITEMS
 from .demo_geometry import room_centroid
 from .models import HouseDocument, Room
 from .models_chores import Assignment, ChoreDocument, Chore, CompletionRecord, Position
+from .models_costs import CostEntry, CostsDocument
 from .models_inventory import InventoryDocument, InventoryItem, InventoryPlacement, InventoryPosition
 from .models_settings import SettingsDocument
 
@@ -116,3 +117,61 @@ def generate_demo_inventory(house: HouseDocument, settings: SettingsDocument, rn
         ))
 
     return InventoryDocument(items=items)
+
+
+def _months_ago(base: date, n: int) -> date:
+    month_index = base.month - 1 - n
+    year = base.year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(base.day, 28)
+    return date(year, month, day)
+
+
+def generate_demo_costs(settings: SettingsDocument, rng: random.Random) -> CostsDocument:
+    today = date.today()
+    entries: list[CostEntry] = []
+    supplier_ids = [s.id for s in settings.suppliers]
+
+    for i in range(12):
+        entries.append(CostEntry(
+            id=str(uuid.uuid4()), categoryId="cat-mortgage",
+            date=_months_ago(today, i).isoformat(),
+            totalAmount=round(rng.uniform(1200, 1800), 2), notes="Monthly mortgage payment",
+        ))
+    for i in range(12):
+        entries.append(CostEntry(
+            id=str(uuid.uuid4()), categoryId="cat-electricity",
+            date=_months_ago(today, i).isoformat(),
+            totalAmount=round(rng.uniform(60, 180), 2), notes="Electricity bill",
+        ))
+    for i in range(4):
+        entries.append(CostEntry(
+            id=str(uuid.uuid4()), categoryId="cat-water",
+            date=_months_ago(today, i * 3).isoformat(),
+            totalAmount=round(rng.uniform(80, 150), 2), notes="Quarterly water bill",
+        ))
+    entries.append(CostEntry(
+        id=str(uuid.uuid4()), categoryId="cat-insurance",
+        date=(today - timedelta(days=rng.randint(30, 300))).isoformat(),
+        totalAmount=round(rng.uniform(800, 1500), 2), notes="Annual home insurance premium",
+    ))
+    for note in ["Furnace repair", "Gutter cleaning", "Pest control treatment"]:
+        entries.append(CostEntry(
+            id=str(uuid.uuid4()), categoryId="cat-maintenance",
+            date=(today - timedelta(days=rng.randint(1, 365))).isoformat(),
+            totalAmount=round(rng.uniform(100, 600), 2), notes=note,
+            supplierId=rng.choice(supplier_ids),
+        ))
+    for note in ["Streaming subscription bundle", "Home theater setup"]:
+        entries.append(CostEntry(
+            id=str(uuid.uuid4()), categoryId="cat-entertainment",
+            date=(today - timedelta(days=rng.randint(1, 365))).isoformat(),
+            totalAmount=round(rng.uniform(20, 150), 2), notes=note,
+        ))
+    entries.append(CostEntry(
+        id=str(uuid.uuid4()), categoryId="cat-groceries",
+        date=(today - timedelta(days=rng.randint(1, 365))).isoformat(),
+        totalAmount=round(rng.uniform(300, 600), 2), notes="Monthly grocery restock",
+    ))
+
+    return CostsDocument(entries=entries)

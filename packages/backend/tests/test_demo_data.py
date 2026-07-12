@@ -90,3 +90,33 @@ def test_generate_demo_inventory_some_warranties_already_expired():
     today = date.today().isoformat()
     expired = [i for i in doc.items if i.warrantyExpiryDate and i.warrantyExpiryDate < today]
     assert len(expired) > 0
+
+
+from myhome.demo_data import generate_demo_costs
+
+
+def test_generate_demo_costs_has_at_least_32_entries():
+    settings = generate_demo_settings()
+    doc = generate_demo_costs(settings, random.Random(42))
+    assert len(doc.entries) >= 32
+
+
+def test_generate_demo_costs_entries_reference_valid_categories_and_suppliers():
+    settings = generate_demo_settings()
+    doc = generate_demo_costs(settings, random.Random(42))
+    category_ids = {c.id for c in settings.costCategories}
+    supplier_ids = {s.id for s in settings.suppliers}
+    for entry in doc.entries:
+        assert entry.categoryId in category_ids
+        assert entry.totalAmount > 0
+        if entry.supplierId is not None:
+            assert entry.supplierId in supplier_ids
+
+
+def test_generate_demo_costs_spread_across_last_12_months():
+    from datetime import date, timedelta
+    settings = generate_demo_settings()
+    doc = generate_demo_costs(settings, random.Random(42))
+    cutoff = (date.today() - timedelta(days=370)).isoformat()
+    assert all(e.date >= cutoff for e in doc.entries)
+    assert len({e.date[:7] for e in doc.entries}) >= 6  # spans several distinct months
