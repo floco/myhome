@@ -8,12 +8,14 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .demo_data import seed_demo_home
 from .ids import InvalidIdError
 from .models_homes import (
     Home,
     HomesDocument,
     DEFAULT_EXISTING_MODULES,
     DEFAULT_PROJECT_MODULES,
+    DEFAULT_DEMO_MODULES,
 )
 
 _LEGACY_FILES = [
@@ -65,11 +67,12 @@ def save_homes(doc: HomesDocument) -> None:
 
 
 def create_home(name: str, home_type: str) -> Home:
-    modules = (
-        DEFAULT_EXISTING_MODULES[:]
-        if home_type == "existing"
-        else DEFAULT_PROJECT_MODULES[:]
-    )
+    if home_type == "existing":
+        modules = DEFAULT_EXISTING_MODULES[:]
+    elif home_type == "demo":
+        modules = DEFAULT_DEMO_MODULES[:]
+    else:
+        modules = DEFAULT_PROJECT_MODULES[:]
     home = Home(
         id=secrets.token_hex(8),
         name=name,
@@ -81,6 +84,18 @@ def create_home(name: str, home_type: str) -> Home:
     doc = load_homes()
     doc.homes.append(home)
     save_homes(doc)
+
+    if home_type == "demo":
+        try:
+            seed_demo_home(home.id)
+        except Exception:
+            doc.homes = [h for h in doc.homes if h.id != home.id]
+            save_homes(doc)
+            home_dir = _home_dir(home.id)
+            if home_dir.exists():
+                shutil.rmtree(home_dir)
+            raise
+
     return home
 
 

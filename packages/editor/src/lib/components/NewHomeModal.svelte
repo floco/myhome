@@ -13,7 +13,7 @@
   let { open, onclose, required = false }: Props = $props();
 
   let name = $state("");
-  let type = $state<"existing" | "project">("existing");
+  let type = $state<"existing" | "project" | "demo">("existing");
   let saving = $state(false);
   let error = $state<string | null>(null);
 
@@ -54,6 +54,14 @@
         <span class="type-body">
           <strong>Project home</strong>
           <small>Scouting locations, searching for land, or managing a build.</small>
+        </span>
+      </label>
+      <label class="type-option" class:selected={type === "demo"}>
+        <input type="radio" bind:group={type} value="demo" />
+        <span class="type-icon">🧪</span>
+        <span class="type-body">
+          <strong>Demo home</strong>
+          <small>Pre-filled with sample data across every module — great for exploring the app.</small>
         </span>
       </label>
     </fieldset>
