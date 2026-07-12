@@ -50,3 +50,17 @@ def test_delete_home_unknown_id_raises():
     from myhome.mcp_tools_homes import _delete_home_impl
     with pytest.raises(ValueError):
         _delete_home_impl("nonexistent")
+
+
+def test_create_demo_home():
+    from myhome.mcp_tools_homes import _create_demo_home_impl, _list_homes_impl
+    home = _create_demo_home_impl("My Demo")
+    assert home["name"] == "My Demo"
+    assert home["type"] == "demo"
+    assert _list_homes_impl()[0]["id"] == home["id"]
+
+
+def test_create_demo_home_defaults_name():
+    from myhome.mcp_tools_homes import _create_demo_home_impl
+    home = _create_demo_home_impl()
+    assert home["name"] == "Demo Home"
