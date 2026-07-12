@@ -15,9 +15,19 @@ from .demo_content import (
     KB_OPENERS,
     KB_TITLES,
     WORKS,
+    generate_demo_settings,
 )
-from .demo_geometry import room_centroid
-from . import persistence_chores, persistence_costs, persistence_inventory, persistence_works
+from .demo_geometry import generate_demo_house, room_centroid
+from . import (
+    persistence,
+    persistence_chores,
+    persistence_consumables,
+    persistence_costs,
+    persistence_inventory,
+    persistence_kb,
+    persistence_settings,
+    persistence_works,
+)
 from .models import HouseDocument, Room
 from .models_chores import Assignment, ChoreDocument, Chore, CompletionRecord, Position
 from .models_costs import CostEntry, CostsDocument
@@ -383,3 +393,32 @@ def attach_demo_files(
             home_id=home_id, record_id=work.id, src=warranty, dest_name=warranty.name,
         )
         work.attachments.append(warranty.name)
+
+
+def seed_demo_home(home_id: str) -> None:
+    rng = random.Random()
+
+    house = generate_demo_house()
+    settings = generate_demo_settings()
+    chores_doc = generate_demo_chores(house, rng)
+    inventory_doc = generate_demo_inventory(house, settings, rng)
+    costs_doc = generate_demo_costs(settings, rng)
+    works_doc = generate_demo_works(house, settings, rng)
+    kb_doc = generate_demo_kb(rng)
+    consumables_doc = generate_demo_consumables(house, settings, rng)
+
+    persistence_settings.save_settings(home_id, settings)
+    persistence.save_house(home_id, house)
+    persistence_chores.save_chores(home_id, chores_doc)
+    persistence_inventory.save_inventory(home_id, inventory_doc)
+    persistence_costs.save_costs(home_id, costs_doc)
+    persistence_works.save_works(home_id, works_doc)
+    for entry in kb_doc.entries:
+        persistence_kb.save_entry(home_id, entry)
+    persistence_consumables.save_consumables(home_id, consumables_doc)
+
+    attach_demo_files(home_id, chores_doc, inventory_doc, costs_doc, works_doc, rng)
+    persistence_chores.save_chores(home_id, chores_doc)
+    persistence_inventory.save_inventory(home_id, inventory_doc)
+    persistence_costs.save_costs(home_id, costs_doc)
+    persistence_works.save_works(home_id, works_doc)

@@ -250,3 +250,49 @@ def test_attach_demo_files_gives_a_subset_of_records_attachments(tmp_path, monke
     for item in inventory_with_attachments:
         path = tmp_path / "homes" / home_id / "inventory-attachments" / item.id / item.attachments[0]
         assert path.exists()
+
+
+from myhome.demo_data import seed_demo_home
+from myhome import (
+    persistence,
+    persistence_chores,
+    persistence_consumables,
+    persistence_costs,
+    persistence_inventory,
+    persistence_kb,
+    persistence_settings,
+    persistence_works,
+)
+
+
+def test_seed_demo_home_writes_every_module(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    home_id = "seed-test-home"
+    (tmp_path / "homes" / home_id).mkdir(parents=True)
+
+    seed_demo_home(home_id)
+
+    house = persistence.load_house(home_id)
+    assert house is not None
+    assert len(house.floors) == 2
+
+    settings = persistence_settings.load_settings(home_id)
+    assert len(settings.costCategories) == 9
+
+    chores = persistence_chores.load_chores(home_id)
+    assert len(chores.chores) >= 32
+
+    inventory = persistence_inventory.load_inventory(home_id)
+    assert len(inventory.items) >= 32
+
+    costs = persistence_costs.load_costs(home_id)
+    assert len(costs.entries) >= 32
+
+    works = persistence_works.load_works(home_id)
+    assert len(works.works) >= 32
+
+    kb_entries = persistence_kb.load_all(home_id)
+    assert len(kb_entries) >= 32
+
+    consumables = persistence_consumables.load_consumables(home_id)
+    assert len(consumables.consumables) >= 32
