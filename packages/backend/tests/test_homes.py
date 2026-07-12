@@ -75,3 +75,12 @@ def test_delete_home(client):
 def test_delete_home_returns_404_for_unknown(client):
     resp = client.delete("/api/homes/nonexistent")
     assert resp.status_code == 404
+
+
+def test_create_home_demo_enables_all_modules(client):
+    resp = client.post("/api/homes", json={"name": "Demo House", "type": "demo"})
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["type"] == "demo"
+    from myhome.models_homes import ALL_MODULE_IDS
+    assert set(data["enabledModules"]) == set(ALL_MODULE_IDS)

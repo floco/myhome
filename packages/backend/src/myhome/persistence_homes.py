@@ -14,6 +14,7 @@ from .models_homes import (
     HomesDocument,
     DEFAULT_EXISTING_MODULES,
     DEFAULT_PROJECT_MODULES,
+    DEFAULT_DEMO_MODULES,
 )
 
 _LEGACY_FILES = [
@@ -65,11 +66,12 @@ def save_homes(doc: HomesDocument) -> None:
 
 
 def create_home(name: str, home_type: str) -> Home:
-    modules = (
-        DEFAULT_EXISTING_MODULES[:]
-        if home_type == "existing"
-        else DEFAULT_PROJECT_MODULES[:]
-    )
+    if home_type == "existing":
+        modules = DEFAULT_EXISTING_MODULES[:]
+    elif home_type == "demo":
+        modules = DEFAULT_DEMO_MODULES[:]
+    else:
+        modules = DEFAULT_PROJECT_MODULES[:]
     home = Home(
         id=secrets.token_hex(8),
         name=name,
