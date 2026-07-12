@@ -72,3 +72,30 @@ describe("ChoresPage — external selection", () => {
     unmount(comp);
   });
 });
+
+describe("ChoresPage — expand/collapse assignments", () => {
+  it("expands and collapses the assignment detail row on toggle click", () => {
+    const chore = makeChore();
+    const store = makeStore([chore]);
+    store.assignments = [{ id: "a1", choreId: "c1", roomId: null, nextDueDate: new Date().toISOString() }] as typeof store.assignments;
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    expect(target.querySelector(".assign-row")).toBeNull();
+
+    const toggleBtn = target.querySelector(".expand-btn") as HTMLButtonElement;
+    toggleBtn.click();
+    flushSync();
+    expect(target.querySelector(".assign-row")).not.toBeNull();
+    expect(target.querySelector(".assign-where")?.textContent).toBe("🏠 Whole house");
+
+    toggleBtn.click();
+    flushSync();
+    expect(target.querySelector(".assign-row")).toBeNull();
+
+    unmount(comp);
+  });
+});
