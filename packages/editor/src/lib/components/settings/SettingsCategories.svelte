@@ -6,6 +6,8 @@
   import EmojiPicker from "../ui/EmojiPicker.svelte";
   import Card from "../ui/Card.svelte";
   import Tabs from "../ui/Tabs.svelte";
+  import SortableTable from "../ui/SortableTable.svelte";
+  import type { Column } from "../ui/SortableTable.types";
 
   type SettingsStore = ReturnType<typeof createSettingsStore>;
 
@@ -275,63 +277,70 @@
     </div>
 
     <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Color</th>
-            <th>Emoji</th>
-            <th>Name</th>
-            <th>Unit</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each store.costCategories as cat (cat.id)}
-            {#if editingCostId === cat.id}
-              <tr class="editing-row">
-                <td><input type="color" bind:value={costDraft.color} class="color-input" /></td>
-                <td><EmojiPicker bind:value={costDraft.emoji} /></td>
-                <td class="name-cell-input"><Input bind:value={costDraft.name} placeholder="Name" /></td>
-                <td class="unit-cell-input"><Input bind:value={costDraftUnit} placeholder="L, kWh…" /></td>
-                <td class="actions">
-                  <button class="icon-action ok" onclick={saveEditCost} title="Save">✓</button>
-                  <button class="icon-action" onclick={cancelEditCost} title="Cancel">✕</button>
-                </td>
-              </tr>
-            {:else}
-              <tr>
-                <td><span class="color-swatch" style="background:{cat.color}"></span></td>
-                <td class="emoji-cell">{cat.emoji}</td>
-                <td>{cat.name}</td>
-                <td class="unit-cell">{cat.unit ?? "—"}</td>
-                <td class="actions">
-                  {#if confirmDeleteCostId === cat.id}
-                    <span class="confirm-text">Delete?</span>
-                    <button class="icon-action danger" onclick={() => deleteCostCategory(cat.id)}>✓</button>
-                    <button class="icon-action" onclick={() => { confirmDeleteCostId = null; }}>✕</button>
-                  {:else}
-                    <button class="icon-action" onclick={() => startEditCost(cat)} title="Edit">✏</button>
-                    <button class="icon-action danger" onclick={() => { confirmDeleteCostId = cat.id; }} title="Delete">🗑</button>
-                  {/if}
-                </td>
-              </tr>
-            {/if}
-          {/each}
-
-          {#if showNewCostForm}
-            <tr class="editing-row">
-              <td><input type="color" bind:value={newCostDraft.color} class="color-input" /></td>
-              <td><EmojiPicker bind:value={newCostDraft.emoji} /></td>
-              <td class="name-cell-input"><Input bind:value={newCostDraft.name} placeholder="Name *" /></td>
-              <td class="unit-cell-input"><Input bind:value={newCostDraft.unit} placeholder="L, kWh… (optional)" /></td>
-              <td class="actions">
-                <button class="icon-action ok" onclick={addCostCategory} title="Add">✓</button>
-                <button class="icon-action" onclick={() => { showNewCostForm = false; costError = null; }} title="Cancel">✕</button>
-              </td>
-            </tr>
-          {/if}
-        </tbody>
-      </table>
+      {#snippet costColorCell(cat: CostCategory)}
+        {#if editingCostId === cat.id}
+          <input type="color" bind:value={costDraft.color} class="color-input" />
+        {:else}
+          <span class="color-swatch" style="background:{cat.color}"></span>
+        {/if}
+      {/snippet}
+      {#snippet costEmojiCell(cat: CostCategory)}
+        {#if editingCostId === cat.id}
+          <EmojiPicker bind:value={costDraft.emoji} />
+        {:else}
+          {cat.emoji}
+        {/if}
+      {/snippet}
+      {#snippet costNameCell(cat: CostCategory)}
+        {#if editingCostId === cat.id}
+          <Input bind:value={costDraft.name} placeholder="Name" />
+        {:else}
+          {cat.name}
+        {/if}
+      {/snippet}
+      {#snippet costUnitCell(cat: CostCategory)}
+        {#if editingCostId === cat.id}
+          <Input bind:value={costDraftUnit} placeholder="L, kWh…" />
+        {:else}
+          {cat.unit ?? "—"}
+        {/if}
+      {/snippet}
+      {#snippet costActionsCell(cat: CostCategory)}
+        {#if editingCostId === cat.id}
+          <button class="icon-action ok" onclick={saveEditCost} title="Save">✓</button>
+          <button class="icon-action" onclick={cancelEditCost} title="Cancel">✕</button>
+        {:else if confirmDeleteCostId === cat.id}
+          <span class="confirm-text">Delete?</span>
+          <button class="icon-action danger" onclick={() => deleteCostCategory(cat.id)}>✓</button>
+          <button class="icon-action" onclick={() => { confirmDeleteCostId = null; }}>✕</button>
+        {:else}
+          <button class="icon-action" onclick={() => startEditCost(cat)} title="Edit">✏</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteCostId = cat.id; }} title="Delete">🗑</button>
+        {/if}
+      {/snippet}
+      {#snippet costNewRow()}
+        <td><input type="color" bind:value={newCostDraft.color} class="color-input" /></td>
+        <td><EmojiPicker bind:value={newCostDraft.emoji} /></td>
+        <td class="name-cell-input"><Input bind:value={newCostDraft.name} placeholder="Name *" /></td>
+        <td class="unit-cell-input"><Input bind:value={newCostDraft.unit} placeholder="L, kWh… (optional)" /></td>
+        <td class="actions">
+          <button class="icon-action ok" onclick={addCostCategory} title="Add">✓</button>
+          <button class="icon-action" onclick={() => { showNewCostForm = false; costError = null; }} title="Cancel">✕</button>
+        </td>
+      {/snippet}
+      <SortableTable
+        columns={[
+          { key: "color", label: "Color", sortable: false, cell: costColorCell },
+          { key: "emoji", label: "Emoji", sortable: false, cellClass: "emoji-cell", cell: costEmojiCell },
+          { key: "name", label: "Name", sortValue: (c) => c.name, cellClass: (c) => editingCostId === c.id ? "name-cell-input" : "", cell: costNameCell },
+          { key: "unit", label: "Unit", sortValue: (c) => c.unit, cellClass: (c) => editingCostId === c.id ? "unit-cell-input" : "unit-cell", cell: costUnitCell },
+          { key: "actions", label: "", sortable: false, cellClass: "actions", cell: costActionsCell },
+        ] as Column<CostCategory>[]}
+        rows={store.costCategories}
+        rowKey={(c) => c.id}
+        rowClass={(c) => editingCostId === c.id ? "editing-row" : ""}
+        extraRow={showNewCostForm ? costNewRow : undefined}
+      />
     </div>
     {#if costError}<div class="error">{costError}</div>{/if}
   </Card>
@@ -345,48 +354,43 @@
     </div>
 
     <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr><th>Name</th><th></th></tr>
-        </thead>
-        <tbody>
-          {#each store.inventoryCategories as cat (cat.id)}
-            {#if editingInvId === cat.id}
-              <tr class="editing-row">
-                <td class="name-cell-input wide"><Input bind:value={invDraft.name} placeholder="Name" /></td>
-                <td class="actions">
-                  <button class="icon-action ok" onclick={saveEditInv} title="Save">✓</button>
-                  <button class="icon-action" onclick={cancelEditInv} title="Cancel">✕</button>
-                </td>
-              </tr>
-            {:else}
-              <tr>
-                <td>{cat.name}</td>
-                <td class="actions">
-                  {#if confirmDeleteInvId === cat.id}
-                    <span class="confirm-text">Delete?</span>
-                    <button class="icon-action danger" onclick={() => deleteInventoryCategory(cat.id)}>✓</button>
-                    <button class="icon-action" onclick={() => { confirmDeleteInvId = null; }}>✕</button>
-                  {:else}
-                    <button class="icon-action" onclick={() => startEditInv(cat)} title="Edit">✏</button>
-                    <button class="icon-action danger" onclick={() => { confirmDeleteInvId = cat.id; }} title="Delete">🗑</button>
-                  {/if}
-                </td>
-              </tr>
-            {/if}
-          {/each}
-
-          {#if showNewInvForm}
-            <tr class="editing-row">
-              <td class="name-cell-input wide"><Input bind:value={newInvDraft.name} placeholder="Name *" /></td>
-              <td class="actions">
-                <button class="icon-action ok" onclick={addInventoryCategory} title="Add">✓</button>
-                <button class="icon-action" onclick={() => { showNewInvForm = false; invError = null; }} title="Cancel">✕</button>
-              </td>
-            </tr>
-          {/if}
-        </tbody>
-      </table>
+      {#snippet invNameCell(cat: InventoryCategory)}
+        {#if editingInvId === cat.id}
+          <Input bind:value={invDraft.name} placeholder="Name" />
+        {:else}
+          {cat.name}
+        {/if}
+      {/snippet}
+      {#snippet invActionsCell(cat: InventoryCategory)}
+        {#if editingInvId === cat.id}
+          <button class="icon-action ok" onclick={saveEditInv} title="Save">✓</button>
+          <button class="icon-action" onclick={cancelEditInv} title="Cancel">✕</button>
+        {:else if confirmDeleteInvId === cat.id}
+          <span class="confirm-text">Delete?</span>
+          <button class="icon-action danger" onclick={() => deleteInventoryCategory(cat.id)}>✓</button>
+          <button class="icon-action" onclick={() => { confirmDeleteInvId = null; }}>✕</button>
+        {:else}
+          <button class="icon-action" onclick={() => startEditInv(cat)} title="Edit">✏</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteInvId = cat.id; }} title="Delete">🗑</button>
+        {/if}
+      {/snippet}
+      {#snippet invNewRow()}
+        <td class="name-cell-input wide"><Input bind:value={newInvDraft.name} placeholder="Name *" /></td>
+        <td class="actions">
+          <button class="icon-action ok" onclick={addInventoryCategory} title="Add">✓</button>
+          <button class="icon-action" onclick={() => { showNewInvForm = false; invError = null; }} title="Cancel">✕</button>
+        </td>
+      {/snippet}
+      <SortableTable
+        columns={[
+          { key: "name", label: "Name", sortValue: (c) => c.name, cellClass: (c) => editingInvId === c.id ? "name-cell-input wide" : "", cell: invNameCell },
+          { key: "actions", label: "", sortable: false, cellClass: "actions", cell: invActionsCell },
+        ] as Column<InventoryCategory>[]}
+        rows={store.inventoryCategories}
+        rowKey={(c) => c.id}
+        rowClass={(c) => editingInvId === c.id ? "editing-row" : ""}
+        extraRow={showNewInvForm ? invNewRow : undefined}
+      />
     </div>
     {#if invError}<div class="error">{invError}</div>{/if}
   </Card>
@@ -399,50 +403,52 @@
       <Button onclick={() => { showNewWorkForm = true; workError = null; }}>＋ Add</Button>
     </div>
     <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr><th>Emoji</th><th>Name</th><th></th></tr>
-        </thead>
-        <tbody>
-          {#each store.workCategories as cat (cat.id)}
-            {#if editingWorkId === cat.id}
-              <tr class="editing-row">
-                <td><EmojiPicker bind:value={workDraft.emoji} /></td>
-                <td class="name-cell-input"><Input bind:value={workDraft.name} placeholder="Name" /></td>
-                <td class="actions">
-                  <button class="icon-action ok" onclick={saveEditWork} title="Save">✓</button>
-                  <button class="icon-action" onclick={cancelEditWork} title="Cancel">✕</button>
-                </td>
-              </tr>
-            {:else}
-              <tr>
-                <td class="emoji-cell">{cat.emoji}</td>
-                <td>{cat.name}</td>
-                <td class="actions">
-                  {#if confirmDeleteWorkId === cat.id}
-                    <span class="confirm-text">Delete?</span>
-                    <button class="icon-action danger" onclick={() => deleteWorkCategory(cat.id)}>✓</button>
-                    <button class="icon-action" onclick={() => { confirmDeleteWorkId = null; }}>✕</button>
-                  {:else}
-                    <button class="icon-action" onclick={() => startEditWork(cat)} title="Edit">✏</button>
-                    <button class="icon-action danger" onclick={() => { confirmDeleteWorkId = cat.id; }} title="Delete">🗑</button>
-                  {/if}
-                </td>
-              </tr>
-            {/if}
-          {/each}
-          {#if showNewWorkForm}
-            <tr class="editing-row">
-              <td><EmojiPicker bind:value={newWorkDraft.emoji} /></td>
-              <td class="name-cell-input"><Input bind:value={newWorkDraft.name} placeholder="Name *" /></td>
-              <td class="actions">
-                <button class="icon-action ok" onclick={addWorkCategory} title="Add">✓</button>
-                <button class="icon-action" onclick={() => { showNewWorkForm = false; workError = null; }} title="Cancel">✕</button>
-              </td>
-            </tr>
-          {/if}
-        </tbody>
-      </table>
+      {#snippet workEmojiCell(cat: WorkCategory)}
+        {#if editingWorkId === cat.id}
+          <EmojiPicker bind:value={workDraft.emoji} />
+        {:else}
+          {cat.emoji}
+        {/if}
+      {/snippet}
+      {#snippet workNameCell(cat: WorkCategory)}
+        {#if editingWorkId === cat.id}
+          <Input bind:value={workDraft.name} placeholder="Name" />
+        {:else}
+          {cat.name}
+        {/if}
+      {/snippet}
+      {#snippet workActionsCell(cat: WorkCategory)}
+        {#if editingWorkId === cat.id}
+          <button class="icon-action ok" onclick={saveEditWork} title="Save">✓</button>
+          <button class="icon-action" onclick={cancelEditWork} title="Cancel">✕</button>
+        {:else if confirmDeleteWorkId === cat.id}
+          <span class="confirm-text">Delete?</span>
+          <button class="icon-action danger" onclick={() => deleteWorkCategory(cat.id)}>✓</button>
+          <button class="icon-action" onclick={() => { confirmDeleteWorkId = null; }}>✕</button>
+        {:else}
+          <button class="icon-action" onclick={() => startEditWork(cat)} title="Edit">✏</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteWorkId = cat.id; }} title="Delete">🗑</button>
+        {/if}
+      {/snippet}
+      {#snippet workNewRow()}
+        <td><EmojiPicker bind:value={newWorkDraft.emoji} /></td>
+        <td class="name-cell-input"><Input bind:value={newWorkDraft.name} placeholder="Name *" /></td>
+        <td class="actions">
+          <button class="icon-action ok" onclick={addWorkCategory} title="Add">✓</button>
+          <button class="icon-action" onclick={() => { showNewWorkForm = false; workError = null; }} title="Cancel">✕</button>
+        </td>
+      {/snippet}
+      <SortableTable
+        columns={[
+          { key: "emoji", label: "Emoji", sortable: false, cellClass: "emoji-cell", cell: workEmojiCell },
+          { key: "name", label: "Name", sortValue: (c) => c.name, cellClass: (c) => editingWorkId === c.id ? "name-cell-input" : "", cell: workNameCell },
+          { key: "actions", label: "", sortable: false, cellClass: "actions", cell: workActionsCell },
+        ] as Column<WorkCategory>[]}
+        rows={store.workCategories}
+        rowKey={(c) => c.id}
+        rowClass={(c) => editingWorkId === c.id ? "editing-row" : ""}
+        extraRow={showNewWorkForm ? workNewRow : undefined}
+      />
     </div>
     {#if workError}<div class="error">{workError}</div>{/if}
   </Card>
@@ -455,47 +461,43 @@
       <Button onclick={() => { showNewSupplierForm = true; supplierError = null; }}>＋ Add</Button>
     </div>
     <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr><th>Name</th><th></th></tr>
-        </thead>
-        <tbody>
-          {#each store.suppliers as s (s.id)}
-            {#if editingSupplierId === s.id}
-              <tr class="editing-row">
-                <td class="name-cell-input wide"><Input bind:value={supplierDraft.name} placeholder="Name" /></td>
-                <td class="actions">
-                  <button class="icon-action ok" onclick={saveEditSupplier} title="Save">✓</button>
-                  <button class="icon-action" onclick={cancelEditSupplier} title="Cancel">✕</button>
-                </td>
-              </tr>
-            {:else}
-              <tr>
-                <td>{s.name}</td>
-                <td class="actions">
-                  {#if confirmDeleteSupplierId === s.id}
-                    <span class="confirm-text">Delete?</span>
-                    <button class="icon-action danger" onclick={() => deleteSupplier(s.id)}>✓</button>
-                    <button class="icon-action" onclick={() => { confirmDeleteSupplierId = null; }}>✕</button>
-                  {:else}
-                    <button class="icon-action" onclick={() => startEditSupplier(s)} title="Edit">✏</button>
-                    <button class="icon-action danger" onclick={() => { confirmDeleteSupplierId = s.id; }} title="Delete">🗑</button>
-                  {/if}
-                </td>
-              </tr>
-            {/if}
-          {/each}
-          {#if showNewSupplierForm}
-            <tr class="editing-row">
-              <td class="name-cell-input wide"><Input bind:value={newSupplierDraft.name} placeholder="Name *" /></td>
-              <td class="actions">
-                <button class="icon-action ok" onclick={addSupplier} title="Add">✓</button>
-                <button class="icon-action" onclick={() => { showNewSupplierForm = false; supplierError = null; }} title="Cancel">✕</button>
-              </td>
-            </tr>
-          {/if}
-        </tbody>
-      </table>
+      {#snippet supplierNameCell(s: Supplier)}
+        {#if editingSupplierId === s.id}
+          <Input bind:value={supplierDraft.name} placeholder="Name" />
+        {:else}
+          {s.name}
+        {/if}
+      {/snippet}
+      {#snippet supplierActionsCell(s: Supplier)}
+        {#if editingSupplierId === s.id}
+          <button class="icon-action ok" onclick={saveEditSupplier} title="Save">✓</button>
+          <button class="icon-action" onclick={cancelEditSupplier} title="Cancel">✕</button>
+        {:else if confirmDeleteSupplierId === s.id}
+          <span class="confirm-text">Delete?</span>
+          <button class="icon-action danger" onclick={() => deleteSupplier(s.id)}>✓</button>
+          <button class="icon-action" onclick={() => { confirmDeleteSupplierId = null; }}>✕</button>
+        {:else}
+          <button class="icon-action" onclick={() => startEditSupplier(s)} title="Edit">✏</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteSupplierId = s.id; }} title="Delete">🗑</button>
+        {/if}
+      {/snippet}
+      {#snippet supplierNewRow()}
+        <td class="name-cell-input wide"><Input bind:value={newSupplierDraft.name} placeholder="Name *" /></td>
+        <td class="actions">
+          <button class="icon-action ok" onclick={addSupplier} title="Add">✓</button>
+          <button class="icon-action" onclick={() => { showNewSupplierForm = false; supplierError = null; }} title="Cancel">✕</button>
+        </td>
+      {/snippet}
+      <SortableTable
+        columns={[
+          { key: "name", label: "Name", sortValue: (s) => s.name, cellClass: (s) => editingSupplierId === s.id ? "name-cell-input wide" : "", cell: supplierNameCell },
+          { key: "actions", label: "", sortable: false, cellClass: "actions", cell: supplierActionsCell },
+        ] as Column<Supplier>[]}
+        rows={store.suppliers}
+        rowKey={(s) => s.id}
+        rowClass={(s) => editingSupplierId === s.id ? "editing-row" : ""}
+        extraRow={showNewSupplierForm ? supplierNewRow : undefined}
+      />
     </div>
     {#if supplierError}<div class="error">{supplierError}</div>{/if}
   </Card>
@@ -525,50 +527,52 @@
 
     <h3 class="subsection-title" style="margin-top: var(--space-4)">Categories</h3>
     <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr><th>Emoji</th><th>Name</th><th></th></tr>
-        </thead>
-        <tbody>
-          {#each store.consumableCategories as cat (cat.id)}
-            {#if editingConsumableCatId === cat.id}
-              <tr class="editing-row">
-                <td><EmojiPicker bind:value={consumableCatDraft.emoji} /></td>
-                <td class="name-cell-input"><Input bind:value={consumableCatDraft.name} placeholder="Name" /></td>
-                <td class="actions">
-                  <button class="icon-action ok" onclick={saveEditConsumableCat} title="Save">✓</button>
-                  <button class="icon-action" onclick={cancelEditConsumableCat} title="Cancel">✕</button>
-                </td>
-              </tr>
-            {:else}
-              <tr>
-                <td class="emoji-cell">{cat.emoji}</td>
-                <td>{cat.name}</td>
-                <td class="actions">
-                  {#if confirmDeleteConsumableCatId === cat.id}
-                    <span class="confirm-text">Delete?</span>
-                    <button class="icon-action danger" onclick={() => deleteConsumableCategory(cat.id)}>✓</button>
-                    <button class="icon-action" onclick={() => { confirmDeleteConsumableCatId = null; }}>✕</button>
-                  {:else}
-                    <button class="icon-action" onclick={() => startEditConsumableCat(cat)} title="Edit">✏</button>
-                    <button class="icon-action danger" onclick={() => { confirmDeleteConsumableCatId = cat.id; }} title="Delete">🗑</button>
-                  {/if}
-                </td>
-              </tr>
-            {/if}
-          {/each}
-          {#if showNewConsumableCatForm}
-            <tr class="editing-row">
-              <td><EmojiPicker bind:value={newConsumableCatDraft.emoji} /></td>
-              <td class="name-cell-input"><Input bind:value={newConsumableCatDraft.name} placeholder="Name *" /></td>
-              <td class="actions">
-                <button class="icon-action ok" onclick={addConsumableCategory} title="Add">✓</button>
-                <button class="icon-action" onclick={() => { showNewConsumableCatForm = false; consumableCatError = null; }} title="Cancel">✕</button>
-              </td>
-            </tr>
-          {/if}
-        </tbody>
-      </table>
+      {#snippet consCatEmojiCell(cat: ConsumableCategory)}
+        {#if editingConsumableCatId === cat.id}
+          <EmojiPicker bind:value={consumableCatDraft.emoji} />
+        {:else}
+          {cat.emoji}
+        {/if}
+      {/snippet}
+      {#snippet consCatNameCell(cat: ConsumableCategory)}
+        {#if editingConsumableCatId === cat.id}
+          <Input bind:value={consumableCatDraft.name} placeholder="Name" />
+        {:else}
+          {cat.name}
+        {/if}
+      {/snippet}
+      {#snippet consCatActionsCell(cat: ConsumableCategory)}
+        {#if editingConsumableCatId === cat.id}
+          <button class="icon-action ok" onclick={saveEditConsumableCat} title="Save">✓</button>
+          <button class="icon-action" onclick={cancelEditConsumableCat} title="Cancel">✕</button>
+        {:else if confirmDeleteConsumableCatId === cat.id}
+          <span class="confirm-text">Delete?</span>
+          <button class="icon-action danger" onclick={() => deleteConsumableCategory(cat.id)}>✓</button>
+          <button class="icon-action" onclick={() => { confirmDeleteConsumableCatId = null; }}>✕</button>
+        {:else}
+          <button class="icon-action" onclick={() => startEditConsumableCat(cat)} title="Edit">✏</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteConsumableCatId = cat.id; }} title="Delete">🗑</button>
+        {/if}
+      {/snippet}
+      {#snippet consCatNewRow()}
+        <td><EmojiPicker bind:value={newConsumableCatDraft.emoji} /></td>
+        <td class="name-cell-input"><Input bind:value={newConsumableCatDraft.name} placeholder="Name *" /></td>
+        <td class="actions">
+          <button class="icon-action ok" onclick={addConsumableCategory} title="Add">✓</button>
+          <button class="icon-action" onclick={() => { showNewConsumableCatForm = false; consumableCatError = null; }} title="Cancel">✕</button>
+        </td>
+      {/snippet}
+      <SortableTable
+        columns={[
+          { key: "emoji", label: "Emoji", sortable: false, cellClass: "emoji-cell", cell: consCatEmojiCell },
+          { key: "name", label: "Name", sortValue: (c) => c.name, cellClass: (c) => editingConsumableCatId === c.id ? "name-cell-input" : "", cell: consCatNameCell },
+          { key: "actions", label: "", sortable: false, cellClass: "actions", cell: consCatActionsCell },
+        ] as Column<ConsumableCategory>[]}
+        rows={store.consumableCategories}
+        rowKey={(c) => c.id}
+        rowClass={(c) => editingConsumableCatId === c.id ? "editing-row" : ""}
+        extraRow={showNewConsumableCatForm ? consCatNewRow : undefined}
+      />
     </div>
     <div class="add-row">
       <Button onclick={() => { showNewConsumableCatForm = true; consumableCatError = null; }}>＋ Add category</Button>
@@ -582,23 +586,18 @@
   h2 { margin: 0; font-size: 13px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
 
   .table-wrapper { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text-muted); }
-  thead { background: var(--surface-alt); }
-  th { padding: 5px 10px; color: var(--text-faint); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; text-align: left; border-bottom: 1px solid var(--border); }
-  td { padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  tr:hover td { background: var(--surface-hover); }
-  .editing-row td { background: var(--surface-alt); }
+  :global(.editing-row td) { background: var(--surface-alt); }
 
   .color-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; }
-  .emoji-cell { font-size: 15px; }
-  .unit-cell { color: var(--text-faint); }
+  :global(.emoji-cell) { font-size: 15px; }
+  :global(.unit-cell) { color: var(--text-faint); }
 
   .color-input { width: 36px; height: 24px; border: 1px solid var(--border); border-radius: 3px; padding: 0; cursor: pointer; background: none; }
-  .name-cell-input :global(.ui-input) { width: 160px; }
-  .name-cell-input.wide :global(.ui-input) { width: 260px; }
-  .unit-cell-input :global(.ui-input) { width: 100px; }
+  :global(.name-cell-input .ui-input) { width: 160px; }
+  :global(.name-cell-input.wide .ui-input) { width: 260px; }
+  :global(.unit-cell-input .ui-input) { width: 100px; }
 
-  .actions { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  :global(.actions) { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
   .icon-action { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 12px; padding: 2px 5px; border-radius: 3px; }
   .icon-action:hover { background: var(--surface-hover); color: var(--text-muted); }
   .icon-action.ok { color: var(--success); }
