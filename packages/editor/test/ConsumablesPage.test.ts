@@ -161,3 +161,28 @@ describe("ConsumablesPage", () => {
     target.remove();
   });
 });
+
+describe("ConsumablesPage — stock status summary", () => {
+  it("renders one donut segment per non-empty stock bucket and the right stat numbers", async () => {
+    const store = makeStore();
+    await makeTick();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ConsumablesPage, {
+      target,
+      props: {
+        store,
+        settingsStore: { consumableCategories: [], consumableUnits: [] },
+        onplaceonmap: vi.fn(),
+      },
+    });
+    await tick();
+    flushSync();
+
+    expect(target.querySelectorAll(".chart-card-wrap svg path")).toHaveLength(3);
+    expect(target.querySelector(".stat-value.low")?.textContent).toBe("1");
+    expect(target.querySelector(".stat-value.empty")?.textContent).toBe("1");
+
+    unmount(comp);
+  });
+});

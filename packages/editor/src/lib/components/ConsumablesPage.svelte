@@ -7,6 +7,8 @@
   import ConsumableModal from "./ConsumableModal.svelte";
   import SortableTable from "./ui/SortableTable.svelte";
   import type { Column } from "./ui/SortableTable.types";
+  import Card from "./ui/Card.svelte";
+  import DonutChart from "./DonutChart.svelte";
 
   type ConsumableStore = ReturnType<typeof createConsumableStore>;
   type SettingsStore = Pick<ReturnType<typeof createSettingsStore>, "consumableCategories" | "consumableUnits">;
@@ -44,6 +46,33 @@
   };
   const STATUS_LABEL: Record<string, string> = { ok: "OK", low: "LOW", empty: "EMPTY" };
 
+  const STOCK_META: Record<"ok" | "low" | "empty", { label: string; emoji: string; color: string }> = {
+    ok: { label: "OK", emoji: "🟢", color: "#4caf50" },
+    low: { label: "Low", emoji: "🟠", color: "#ff9800" },
+    empty: { label: "Empty", emoji: "🔴", color: "#f44336" },
+  };
+
+  const stockBreakdown = $derived(
+    (["ok", "low", "empty"] as const)
+      .map((status) => {
+        const count = store.consumables.filter((c) => stockStatus(c) === status).length;
+        const meta = STOCK_META[status];
+        return {
+          id: status,
+          label: meta.label,
+          emoji: meta.emoji,
+          color: meta.color,
+          valueLabel: `${count}`,
+          pct: store.consumables.length > 0 ? (count / store.consumables.length) * 100 : 0,
+          count,
+        };
+      })
+      .filter((b) => b.count > 0)
+  );
+
+  const lowStockCount = $derived(store.consumables.filter((c) => stockStatus(c) === "low").length);
+  const emptyStockCount = $derived(store.consumables.filter((c) => stockStatus(c) === "empty").length);
+
   const filtered = $derived(
     store.consumables.filter((c) => {
       if (searchQuery && !c.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -64,92 +93,136 @@
 </script>
 
 <div class="page">
-  <div class="toolbar">
-    <Input placeholder="🔍 Search…" bind:value={searchQuery} />
-    <select class="native-select" bind:value={categoryFilter}>
-      <option value="">All categories</option>
-      {#each settingsStore.consumableCategories as cat}
-        <option value={cat.id}>{cat.emoji} {cat.name}</option>
-      {/each}
-    </select>
-    <div class="filter-toggle">
-      <button
-        class="toggle-btn"
-        class:active={!attentionFilter}
-        onclick={() => { attentionFilter = false; }}
-        title="All"
-      >☰</button>
-      <button
-        class="toggle-btn"
-        class:active={attentionFilter}
-        onclick={() => { attentionFilter = true; }}
-        title="Needs attention"
-      >⚠</button>
+
+  {#if store.consumables.length === 0}
+    <div class="empty-charts">
+      <span class="empty-icon">🛒</span>
+      <p>No consumables yet — click ＋ Add consumable to get started.</p>
     </div>
-    <Button onclick={() => { showCreate = true; }}>＋ Add consumable</Button>
-  </div>
+  {:else}
+    <div class="chart-card-wrap">
+      <Card>
+        <div class="chart-inner">
+          <div class="pie-area">
+            <div class="chart-label">Stock status</div>
+            <DonutChart
+              segments={stockBreakdown}
+              centerLabel="Items"
+              centerValue={`${store.consumables.length}`}
+              showLabels={true}
+            />
+          </div>
 
-  <div class="table-wrapper">
-    {#snippet emojiCell(c: Consumable)}
-      {c.emoji}
-    {/snippet}
-    {#snippet nameCell(c: Consumable)}
-      {c.name}
-    {/snippet}
-    {#snippet categoryCell(c: Consumable)}
-      {categoryName(c.categoryId)}
-    {/snippet}
-    {#snippet quantityCell(c: Consumable)}
-      {c.quantity} {c.unit}
-    {/snippet}
-    {#snippet minCell(c: Consumable)}
-      {c.minQuantity} {c.unit}
-    {/snippet}
-    {#snippet stockCell(c: Consumable)}
-      {@const st = stockStatus(c)}
-      {@const fill = barFill(c)}
-      <div class="bar-track">
-        <div class="bar-fill" style="width:{fill * 100}%;background:{STATUS_COLOR[st]}"></div>
-        <div class="bar-min"></div>
+          <div class="chart-divider"></div>
+
+          <div class="stats-area">
+            <div class="chart-label">At a glance</div>
+            <div class="stat-chips-col">
+              <div class="stat-chip">
+                <div class="stat-title">Low</div>
+                <div class="stat-value low">{lowStockCount}</div>
+              </div>
+              <div class="stat-chip">
+                <div class="stat-title">Empty</div>
+                <div class="stat-value empty">{emptyStockCount}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  {/if}
+
+  <div class="table-card-wrap">
+    <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
+    <div class="toolbar">
+      <Input placeholder="🔍 Search…" bind:value={searchQuery} />
+      <select class="native-select" bind:value={categoryFilter}>
+        <option value="">All categories</option>
+        {#each settingsStore.consumableCategories as cat}
+          <option value={cat.id}>{cat.emoji} {cat.name}</option>
+        {/each}
+      </select>
+      <div class="filter-toggle">
+        <button
+          class="toggle-btn"
+          class:active={!attentionFilter}
+          onclick={() => { attentionFilter = false; }}
+          title="All"
+        >☰</button>
+        <button
+          class="toggle-btn"
+          class:active={attentionFilter}
+          onclick={() => { attentionFilter = true; }}
+          title="Needs attention"
+        >⚠</button>
       </div>
-    {/snippet}
-    {#snippet statusCell(c: Consumable)}
-      {@const st = stockStatus(c)}
-      <span class="status-badge" style="color:{STATUS_COLOR[st]};background:{STATUS_COLOR[st]}22">
-        {STATUS_LABEL[st]}
-      </span>
-    {/snippet}
-    {#snippet actionsCell(c: Consumable)}
-      {#if onplaceonmap && !c.placement}
-        <button class="icon-btn" title="Place on map" onclick={() => onplaceonmap?.(c.id)}>📌</button>
-      {/if}
-    {/snippet}
+      <Button onclick={() => { showCreate = true; }}>＋ Add consumable</Button>
+    </div>
 
-    <SortableTable
-      columns={[
-        { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
-        { key: "name", label: "Name", sortValue: (c) => c.name, cellClass: "name-cell", cell: nameCell },
-        { key: "category", label: "Category", sortValue: (c) => categoryName(c.categoryId), cell: categoryCell },
-        { key: "quantity", label: "Quantity", sortValue: (c) => c.quantity, cell: quantityCell },
-        { key: "min", label: "Min", cellClass: "faint", sortValue: (c) => c.minQuantity, cell: minCell },
-        { key: "stock", label: "Stock", sortable: false, cellClass: "bar-cell", cell: stockCell },
-        { key: "status", label: "Status", sortValue: (c) => stockStatus(c), cell: statusCell },
-        { key: "actions", label: "", sortable: false, cellClass: "actions-cell", stopRowClick: true, cell: actionsCell },
-      ] as Column<Consumable>[]}
-      rows={filtered}
-      rowKey={(c) => c.id}
-      rowClick={(c) => { editConsumable = c; }}
-      rowClass={(c) => {
-        const st = stockStatus(c);
-        return st === "low" ? "row-low" : st === "empty" ? "row-empty" : "";
-      }}
-      emptyMessage={store.consumables.length === 0
-        ? "No consumables yet — click ＋ Add consumable to get started."
-        : "No consumables match your filters."}
-    />
+    <div class="table-wrapper">
+      {#snippet emojiCell(c: Consumable)}
+        {c.emoji}
+      {/snippet}
+      {#snippet nameCell(c: Consumable)}
+        {c.name}
+      {/snippet}
+      {#snippet categoryCell(c: Consumable)}
+        {categoryName(c.categoryId)}
+      {/snippet}
+      {#snippet quantityCell(c: Consumable)}
+        {c.quantity} {c.unit}
+      {/snippet}
+      {#snippet minCell(c: Consumable)}
+        {c.minQuantity} {c.unit}
+      {/snippet}
+      {#snippet stockCell(c: Consumable)}
+        {@const st = stockStatus(c)}
+        {@const fill = barFill(c)}
+        <div class="bar-track">
+          <div class="bar-fill" style="width:{fill * 100}%;background:{STATUS_COLOR[st]}"></div>
+          <div class="bar-min"></div>
+        </div>
+      {/snippet}
+      {#snippet statusCell(c: Consumable)}
+        {@const st = stockStatus(c)}
+        <span class="status-badge" style="color:{STATUS_COLOR[st]};background:{STATUS_COLOR[st]}22">
+          {STATUS_LABEL[st]}
+        </span>
+      {/snippet}
+      {#snippet actionsCell(c: Consumable)}
+        {#if onplaceonmap && !c.placement}
+          <button class="icon-btn" title="Place on map" onclick={() => onplaceonmap?.(c.id)}>📌</button>
+        {/if}
+      {/snippet}
+
+      <SortableTable
+        columns={[
+          { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
+          { key: "name", label: "Name", sortValue: (c) => c.name, cellClass: "name-cell", cell: nameCell },
+          { key: "category", label: "Category", sortValue: (c) => categoryName(c.categoryId), cell: categoryCell },
+          { key: "quantity", label: "Quantity", sortValue: (c) => c.quantity, cell: quantityCell },
+          { key: "min", label: "Min", cellClass: "faint", sortValue: (c) => c.minQuantity, cell: minCell },
+          { key: "stock", label: "Stock", sortable: false, cellClass: "bar-cell", cell: stockCell },
+          { key: "status", label: "Status", sortValue: (c) => stockStatus(c), cell: statusCell },
+          { key: "actions", label: "", sortable: false, cellClass: "actions-cell", stopRowClick: true, cell: actionsCell },
+        ] as Column<Consumable>[]}
+        rows={filtered}
+        rowKey={(c) => c.id}
+        rowClick={(c) => { editConsumable = c; }}
+        rowClass={(c) => {
+          const st = stockStatus(c);
+          return st === "low" ? "row-low" : st === "empty" ? "row-empty" : "";
+        }}
+        emptyMessage={store.consumables.length === 0
+          ? "No consumables yet — click ＋ Add consumable to get started."
+          : "No consumables match your filters."}
+      />
+    </div>
+
+    <div class="footer">{filtered.length} item{filtered.length !== 1 ? "s" : ""}</div>
+    </Card>
   </div>
-
-  <div class="footer">{filtered.length} item{filtered.length !== 1 ? "s" : ""}</div>
 </div>
 
 {#if showCreate || editConsumable}
@@ -164,6 +237,35 @@
 
 <style>
   .page { display: flex; flex-direction: column; height: 100%; background: var(--bg); font-family: var(--font-sans); }
+
+  .empty-charts {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 32px; gap: 10px; color: var(--text-faint); border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .empty-icon { font-size: 36px; }
+  .empty-charts p { margin: 0; font-size: 13px; }
+
+  .chart-card-wrap { padding: var(--space-4); flex-shrink: 0; }
+  .chart-inner { display: flex; gap: 24px; align-items: flex-start; }
+  .chart-label {
+    font-size: 10px; color: var(--text-faint); text-transform: uppercase;
+    letter-spacing: .06em; margin-bottom: 6px;
+  }
+  .pie-area { flex-shrink: 0; }
+  .chart-divider { width: 1px; background: var(--border); align-self: stretch; flex-shrink: 0; margin: 0 8px; }
+
+  .stats-area { flex: 1; min-width: 0; }
+  .stat-chips-col { display: flex; flex-direction: column; gap: 8px; max-width: 220px; }
+  .stat-chip {
+    background: var(--surface-alt); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 6px 10px;
+  }
+  .stat-title { font-size: 8px; color: var(--text-faint); text-transform: uppercase; margin-bottom: 2px; }
+  .stat-value { font-size: 13px; color: var(--text); font-weight: 600; }
+  .stat-value.low { color: #ff9800; }
+  .stat-value.empty { color: #f44336; }
+
+  .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
 
   .toolbar {
     display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);

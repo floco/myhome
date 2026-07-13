@@ -237,26 +237,28 @@
     </div>
   {/if}
 
-  <!-- Toolbar -->
-  <div class="toolbar">
-    <Input bind:value={searchQuery} placeholder="🔍 Search entries…" />
-    <select class="native-input" bind:value={categoryFilter}>
-      <option value="">All categories</option>
-      {#each settingsStore.costCategories as cat}
-        <option value={cat.id}>{cat.emoji} {cat.name}</option>
-      {/each}
-    </select>
-    <select class="native-input" bind:value={yearFilter}>
-      <option value="">All years</option>
-      {#each allYears as y}
-        <option value={String(y)}>{y}</option>
-      {/each}
-    </select>
-    <Button onclick={() => { modalEntry = "create"; }}>＋ Add entry</Button>
-  </div>
-
   <!-- Table -->
-  <div class="table-wrapper">
+  <div class="table-card-wrap">
+    <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <Input bind:value={searchQuery} placeholder="🔍 Search entries…" />
+      <select class="native-input" bind:value={categoryFilter}>
+        <option value="">All categories</option>
+        {#each settingsStore.costCategories as cat}
+          <option value={cat.id}>{cat.emoji} {cat.name}</option>
+        {/each}
+      </select>
+      <select class="native-input" bind:value={yearFilter}>
+        <option value="">All years</option>
+        {#each allYears as y}
+          <option value={String(y)}>{y}</option>
+        {/each}
+      </select>
+      <Button onclick={() => { modalEntry = "create"; }}>＋ Add entry</Button>
+    </div>
+
+    <div class="table-wrapper">
     {#snippet emojiCell(entry: CostEntry)}
       {categoryEmoji(entry.categoryId)}
     {/snippet}
@@ -300,13 +302,15 @@
         ? "No entries yet — click ＋ Add entry to get started."
         : "No entries match your filters."}
     />
-  </div>
+    </div>
 
-  <div class="footer">
-    {filtered.length} entr{filtered.length !== 1 ? "ies" : "y"}
-    {#if filteredTotal > 0}
-      · total: {filteredTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} €
-    {/if}
+    <div class="footer">
+      {filtered.length} entr{filtered.length !== 1 ? "ies" : "y"}
+      {#if filteredTotal > 0}
+        · total: {filteredTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} €
+      {/if}
+    </div>
+    </Card>
   </div>
 </div>
 
@@ -343,7 +347,7 @@
   .empty-icon { font-size: 36px; }
   .empty-charts p { margin: 0; font-size: 13px; }
 
-  .chart-card-wrap { padding: var(--space-4) var(--space-4) 0; flex-shrink: 0; }
+  .chart-card-wrap { padding: var(--space-4); flex-shrink: 0; }
   .chart-inner {
     display: flex; gap: 24px; align-items: flex-start;
   }
@@ -380,6 +384,8 @@
   .yoy { font-size: 10px; margin-left: 4px; }
   .yoy.up { color: var(--danger); }
   .yoy.down { color: var(--success); }
+
+  .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
 
   .toolbar {
     display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);

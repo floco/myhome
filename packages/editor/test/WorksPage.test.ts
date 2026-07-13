@@ -47,3 +47,23 @@ describe("WorksPage — external selection", () => {
     unmount(comp);
   });
 });
+
+describe("WorksPage — timeline click opens modal", () => {
+  it("opens the edit modal for the work whose timeline dot was clicked", () => {
+    const work = makeWork({ id: "w1", title: "Fix roof leak" });
+    const store = makeWorksStore([work]);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const comp = mount(WorksPage, { target, props: { store, settingsStore: makeSettingsStore() } });
+    flushSync();
+
+    const circle = target.querySelector(".chart-card-wrap circle") as SVGCircleElement;
+    circle.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+
+    expect(target.querySelector(".ui-modal-title")?.textContent).toBe("Edit work");
+
+    unmount(comp);
+  });
+});
