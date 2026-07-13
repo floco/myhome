@@ -9,6 +9,21 @@ column, and for the order_index convention.
 """
 from __future__ import annotations
 
-from sqlalchemy import MetaData
+from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table
 
 metadata = MetaData()
+
+homes = Table(
+    "homes", metadata,
+    Column("id", String, primary_key=True),
+    Column("name", String, nullable=False),
+    Column("type", String, nullable=False),
+    Column("created_at", String, nullable=False),
+)
+
+home_modules = Table(
+    "home_modules", metadata,
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
+    Column("module_id", String, primary_key=True),
+    Column("order_index", Integer, nullable=False),
+)

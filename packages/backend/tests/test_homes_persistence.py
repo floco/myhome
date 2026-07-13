@@ -1,21 +1,16 @@
 # packages/backend/tests/test_homes_persistence.py
-import shutil
-import pytest
-from myhome.models_homes import Home, HomesDocument
 from myhome.persistence_homes import (
-    load_homes,
-    save_homes,
     create_home,
-    patch_home,
     delete_home,
-    migrate_legacy_if_needed,
+    load_homes,
+    patch_home,
+    save_homes,
 )
 
 
-def test_load_returns_empty_when_no_file(tmp_path, monkeypatch):
+def test_load_returns_empty_when_no_data(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    doc = load_homes()
-    assert doc.homes == []
+    assert load_homes().homes == []
 
 
 def test_create_home_adds_to_registry_and_creates_dir(tmp_path, monkeypatch):
@@ -28,6 +23,7 @@ def test_create_home_adds_to_registry_and_creates_dir(tmp_path, monkeypatch):
     doc = load_homes()
     assert len(doc.homes) == 1
     assert doc.homes[0].id == home.id
+    assert doc.homes[0].enabledModules == home.enabledModules
 
 
 def test_create_project_home_has_limited_modules(tmp_path, monkeypatch):
@@ -53,12 +49,12 @@ def test_patch_home_enabled_modules(tmp_path, monkeypatch):
     home = create_home("Test", "existing")
     updated = patch_home(home.id, name=None, home_type=None, enabled_modules=["home", "plan"])
     assert updated.enabledModules == ["home", "plan"]
+    assert load_homes().homes[0].enabledModules == ["home", "plan"]
 
 
 def test_patch_home_returns_none_for_unknown_id(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    result = patch_home("nonexistent", name="X", home_type=None, enabled_modules=None)
-    assert result is None
+    assert patch_home("nonexistent", name="X", home_type=None, enabled_modules=None) is None
 
 
 def test_delete_home_removes_from_registry_and_dir(tmp_path, monkeypatch):
@@ -66,8 +62,7 @@ def test_delete_home_removes_from_registry_and_dir(tmp_path, monkeypatch):
     home = create_home("Test", "existing")
     home_dir = tmp_path / "homes" / home.id
     assert home_dir.is_dir()
-    result = delete_home(home.id)
-    assert result is True
+    assert delete_home(home.id) is True
     assert not home_dir.exists()
     assert load_homes().homes == []
 
@@ -77,29 +72,36 @@ def test_delete_home_returns_false_for_unknown_id(tmp_path, monkeypatch):
     assert delete_home("nonexistent") is False
 
 
-def test_migrate_legacy_moves_files_and_creates_registry(tmp_path, monkeypatch):
+def test_save_homes_preserves_untouched_homes(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    (tmp_path / "house.json").write_text('{"version":1,"house":{},"floors":[]}')
-    (tmp_path / "chores.json").write_text('{"version":1,"chores":[],"assignments":[]}')
-    migrate_legacy_if_needed()
+    home_a = create_home("Home A", "existing")
+    home_b = create_home("Home B", "existing")
+    patch_home(home_a.id, name="Home A Renamed", home_type=None, enabled_modules=None)
     doc = load_homes()
-    assert len(doc.homes) == 1
-    assert doc.homes[0].id == "default"
-    assert doc.homes[0].type == "existing"
-    assert (tmp_path / "homes" / "default" / "house.json").exists()
-    assert (tmp_path / "homes" / "default" / "chores.json").exists()
-    assert not (tmp_path / "house.json").exists()
+    ids = {h.id for h in doc.homes}
+    assert ids == {home_a.id, home_b.id}
+    names = {h.id: h.name for h in doc.homes}
+    assert names[home_a.id] == "Home A Renamed"
+    assert names[home_b.id] == "Home B"
 
 
-def test_migrate_is_idempotent(tmp_path, monkeypatch):
+def test_delete_one_home_does_not_remove_another(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    (tmp_path / "house.json").write_text('{}')
-    migrate_legacy_if_needed()
-    migrate_legacy_if_needed()
-    assert len(load_homes().homes) == 1
+    home_a = create_home("Home A", "existing")
+    home_b = create_home("Home B", "existing")
+    delete_home(home_a.id)
+    remaining = load_homes().homes
+    assert len(remaining) == 1
+    assert remaining[0].id == home_b.id
 
 
-def test_migrate_does_nothing_when_no_legacy_files(tmp_path, monkeypatch):
+def test_save_homes_direct_round_trip(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    migrate_legacy_if_needed()
-    assert not (tmp_path / "homes.json").exists()
+    from myhome.models_homes import Home, HomesDocument
+    doc = HomesDocument(homes=[
+        Home(id="h1", name="A", type="existing", enabledModules=["home", "chores"], createdAt="2026-01-01T00:00:00+00:00"),
+    ])
+    save_homes(doc)
+    loaded = load_homes()
+    assert len(loaded.homes) == 1
+    assert loaded.homes[0].enabledModules == ["home", "chores"]

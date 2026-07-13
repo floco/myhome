@@ -85,9 +85,6 @@ def _first_boot() -> None:
 
 _first_boot()
 
-from .persistence_homes import migrate_legacy_if_needed
-migrate_legacy_if_needed()
-
 
 # ── Auth middleware ────────────────────────────────────────────────────────
 
