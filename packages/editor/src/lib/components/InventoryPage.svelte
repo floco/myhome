@@ -274,7 +274,7 @@
   .empty-charts p { margin: 0; font-size: 13px; }
 
   .chart-card-wrap { padding: var(--space-4); flex-shrink: 0; }
-  .chart-inner { display: flex; gap: 24px; align-items: flex-start; }
+  .chart-inner { display: flex; gap: 24px; align-items: center; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;

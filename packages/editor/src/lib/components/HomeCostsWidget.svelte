@@ -44,6 +44,8 @@
           {segments}
           centerLabel="Total"
           centerValue={`${total.toLocaleString(undefined, { maximumFractionDigits: 0 })} €`}
+          showLabels
+          compact
         />
       </div>
     {/if}

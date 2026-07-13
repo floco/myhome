@@ -349,7 +349,7 @@
 
   .chart-card-wrap { padding: var(--space-4); flex-shrink: 0; }
   .chart-inner {
-    display: flex; gap: 24px; align-items: flex-start;
+    display: flex; gap: 24px; align-items: center;
   }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;

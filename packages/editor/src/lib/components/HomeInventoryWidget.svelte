@@ -47,10 +47,6 @@
       pct: total > 0 ? (c.count / total) * 100 : 0,
     }))
   );
-
-  function colorFor(category: string): string {
-    return paletteFor(category);
-  }
 </script>
 
 <div class="widget" role="button" tabindex="0" onclick={onnavigate} onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onnavigate(); } }}>
@@ -62,18 +58,8 @@
     {#if categoryCounts.length === 0}
       <p class="empty">No inventory items yet.</p>
     {:else}
-      <div class="body">
-        <div class="chart-wrap">
-          <DonutChart {segments} centerLabel="Items" centerValue={`${total}`} />
-        </div>
-        <ul class="counts">
-          {#each categoryCounts as c (c.category)}
-            <li>
-              <span class="dot" style="background:{colorFor(c.category)}"></span>
-              {c.category} <b>{c.count}</b>
-            </li>
-          {/each}
-        </ul>
+      <div class="chart-wrap">
+        <DonutChart {segments} centerLabel="Items" centerValue={`${total}`} showLabels compact />
       </div>
     {/if}
   </Card>
@@ -84,11 +70,6 @@
   .header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-2); }
   .header h3 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
   .sub { font-size: 11px; color: var(--text-faint); }
-  .body { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
   .chart-wrap { display: flex; justify-content: center; }
-  .counts { list-style: none; margin: 0; padding: 0; width: 100%; font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
-  .counts li { display: flex; align-items: center; gap: 6px; }
-  .counts b { margin-left: auto; color: var(--text); }
-  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
   .empty { font-size: 12px; color: var(--text-faint); text-align: center; padding: var(--space-4) 0; margin: 0; }
 </style>

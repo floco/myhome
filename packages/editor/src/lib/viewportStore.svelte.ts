@@ -1,4 +1,5 @@
-import type { Point } from "@myhome/geometry";
+import type { Point, Floor } from "@myhome/geometry";
+import { fitViewportToFloor } from "./viewportFit";
 
 export interface ViewportState {
   panX: number;
@@ -35,10 +36,12 @@ export function createViewportStore() {
     viewport.panY += dy;
   }
 
-  function reset(): void {
-    viewport.panX = DEFAULT_VIEWPORT.panX;
-    viewport.panY = DEFAULT_VIEWPORT.panY;
-    viewport.zoom = DEFAULT_VIEWPORT.zoom;
+  function reset(floor?: Floor, width?: number, height?: number): void {
+    const fitted =
+      floor && width && height ? fitViewportToFloor(floor, width, height) : DEFAULT_VIEWPORT;
+    viewport.panX = fitted.panX;
+    viewport.panY = fitted.panY;
+    viewport.zoom = fitted.zoom;
   }
 
   return {

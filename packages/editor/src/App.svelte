@@ -1168,7 +1168,7 @@
                 title={saveTitle}
                 onclick={handleSave}
               >{saveIcon} <span class="ft-label">{saveStatus === 'error' ? 'Error!' : saveStatus === 'saving' ? 'Saving' : saveStatus === 'saved' ? 'Saved' : 'Save'}</span></button>
-              <button class="ft-btn" title="Reset view" onclick={() => viewportStore.reset()}>↺ <span class="ft-label">Reset</span></button>
+              <button class="ft-btn" title="Reset view" onclick={() => viewportStore.reset(floorStore.floor, canvasWidth, canvasHeight)}>↺ <span class="ft-label">Reset</span></button>
               <div class="ft-sep"></div>
               <button class="ft-btn" title="Undo (Ctrl+Z)" disabled={!floorStore.hasUndo} onclick={handleUndo}>↩ <span class="ft-label">Undo</span></button>
               <button class="ft-btn" title="Redo (Ctrl+Y)" disabled={!floorStore.hasRedo} onclick={handleRedo}>↪ <span class="ft-label">Redo</span></button>

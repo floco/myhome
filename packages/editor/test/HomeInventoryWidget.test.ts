@@ -44,7 +44,7 @@ describe("HomeInventoryWidget", () => {
     target.remove();
   });
 
-  it("shows per-category counts", async () => {
+  it("shows per-category counts as chart labels", async () => {
     const inventoryStore = makeStore();
     await makeTick();
     const target = document.createElement("div");
@@ -53,7 +53,7 @@ describe("HomeInventoryWidget", () => {
     await tick();
     flushSync();
 
-    const text = target.querySelector(".counts")!.textContent;
+    const text = target.querySelector("svg")!.textContent;
     expect(text).toContain("Tools");
     expect(text).toContain("2");
     expect(text).toContain("Furniture");

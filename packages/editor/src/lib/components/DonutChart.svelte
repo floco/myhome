@@ -20,19 +20,33 @@
     centerLabel: string;
     centerValue: string;
     showLabels?: boolean;
+    compact?: boolean;
     onsliceclick?: (id: string) => void;
   }
-  let { segments, centerLabel, centerValue, showLabels = false, onsliceclick }: Props = $props();
+  let {
+    segments,
+    centerLabel,
+    centerValue,
+    showLabels = false,
+    compact = false,
+    onsliceclick,
+  }: Props = $props();
 
   // The connector-line labels need extra side margin to fit within the
   // chart's own box -- otherwise long labels (e.g. "Mortgage / Rent") bleed
   // into whatever sits next to the chart. Only widen when labels are shown;
   // the plain donut (dashboard widgets) keeps its original compact size.
-  const VIEW_W = showLabels ? 420 : 310;
+  // `compact` scales the whole thing down further for the narrow dashboard
+  // sidebar, which doesn't have the ~420px of width the full-page module
+  // cards can spare for leader-line labels.
+  const VIEW_W = compact ? (showLabels ? 340 : 220) : showLabels ? 420 : 310;
   const CX = VIEW_W / 2;
-  const CY = 110;
-  const OUTER_R = 70;
-  const INNER_R = 28;
+  const CY = compact ? 90 : 110;
+  const VIEW_H = compact ? 180 : 220;
+  const OUTER_R = compact ? 52 : 70;
+  const INNER_R = compact ? 22 : 28;
+  const LABEL_FONT = compact ? 8 : 9;
+  const VALUE_FONT = compact ? 7 : 8;
 
   function polarPoint(cx: number, cy: number, r: number, angleDeg: number) {
     const rad = (angleDeg * Math.PI) / 180;
@@ -74,9 +88,9 @@
     isRight: boolean;
   }
 
-  const LABEL_MIN_GAP = 20;
-  const COLLAR_DIST = OUTER_R + 22;
-  const STUB_LEN = 10;
+  const LABEL_MIN_GAP = compact ? 14 : 20;
+  const COLLAR_DIST = OUTER_R + (compact ? 14 : 22);
+  const STUB_LEN = compact ? 7 : 10;
 
   // Spread a column of labels apart so none collide, keeping them as close
   // as possible to their desired (angle-derived) position and preserving
@@ -127,7 +141,7 @@
   })());
 </script>
 
-<svg viewBox="0 0 {VIEW_W} 220" width={VIEW_W} height="220" style="overflow:visible">
+<svg viewBox="0 0 {VIEW_W} {VIEW_H}" width={VIEW_W} height={VIEW_H} style="overflow:visible">
   {#each slices as s (s.seg.id)}
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <path
@@ -162,7 +176,7 @@
         y={l.labelY - 3}
         text-anchor={l.isRight ? "start" : "end"}
         fill={l.seg.color}
-        font-size="9"
+        font-size={LABEL_FONT}
         font-family="sans-serif"
         font-weight="600"
         style="cursor:{onsliceclick ? 'pointer' : 'default'}"
@@ -173,7 +187,7 @@
         y={l.labelY + 9}
         text-anchor={l.isRight ? "start" : "end"}
         fill="var(--text-faint)"
-        font-size="8"
+        font-size={VALUE_FONT}
         font-family="sans-serif"
       >{l.seg.valueLabel} · {l.seg.pct.toFixed(0)}%</text>
     {/each}
