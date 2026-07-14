@@ -1,40 +1,29 @@
 import json
-import os
-from pathlib import Path
 
-from .ids import InvalidIdError
+from sqlalchemy import select
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+
+from .db import get_engine
 from .models import HouseDocument
-
-
-def _home_dir(home_id: str) -> Path:
-    # Normalize lexically (no filesystem access -- Path.resolve() follows
-    # symlinks and touches disk, which CodeQL's own path-injection sink set
-    # flags even before any check runs) then verify containment within
-    # homes_root. This is CodeQL's own recommended py/path-injection
-    # sanitizer shape: os.path.normpath + startswith against a safe root.
-    homes_root = os.path.normpath(os.path.join(os.environ.get("DATA_DIR", "/data"), "homes"))
-    candidate = os.path.normpath(os.path.join(homes_root, home_id))
-    if not candidate.startswith(homes_root + os.sep):
-        raise InvalidIdError(f"Invalid home_id: {home_id!r}")
-    return Path(candidate)
-
-
-def _house_file(home_id: str) -> Path:
-    return _home_dir(home_id) / "house.json"
+from .schema import house_documents as house_documents_table
 
 
 def load_house(home_id: str) -> HouseDocument | None:
-    path = _house_file(home_id)
-    if not path.exists():
+    engine = get_engine()
+    with engine.connect() as conn:
+        row = conn.execute(
+            select(house_documents_table.c.doc).where(house_documents_table.c.home_id == home_id)
+        ).first()
+    if row is None:
         return None
-    with path.open() as f:
-        return HouseDocument.model_validate(json.load(f))
+    return HouseDocument.model_validate(json.loads(row[0]))
 
 
 def save_house(home_id: str, doc: HouseDocument) -> None:
-    path = _house_file(home_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    with tmp.open("w") as f:
-        json.dump(doc.model_dump(), f, indent=2)
-    tmp.replace(path)
+    engine = get_engine()
+    with engine.begin() as conn:
+        stmt = sqlite_insert(house_documents_table).values(home_id=home_id, doc=json.dumps(doc.model_dump()))
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[house_documents_table.c.home_id], set_={"doc": stmt.excluded.doc},
+        )
+        conn.execute(stmt)

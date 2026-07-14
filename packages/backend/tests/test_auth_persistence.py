@@ -41,13 +41,14 @@ def test_user_oidc_sub_defaults_to_none():
     assert user.oidc_sub is None
 
 
-def test_save_users_atomic_write(data_dir):
+def test_save_and_load_users_preserves_order(data_dir):
     doc = UserDocument(users=[
-        User(id="u1", username="bob", password_hash="h", role="normal", created_at="2026-01-01T00:00:00+00:00")
+        User(id="u1", username="alice", role="admin", created_at="2026-01-01T00:00:00+00:00"),
+        User(id="u2", username="bob", role="normal", created_at="2026-01-02T00:00:00+00:00"),
     ])
     save_users(doc)
-    assert (data_dir / "users.json").exists()
-    assert not (data_dir / "users.tmp").exists()
+    loaded = load_users()
+    assert [u.username for u in loaded.users] == ["alice", "bob"]
 
 
 def test_load_tokens_returns_empty_when_no_file(data_dir):
@@ -106,7 +107,3 @@ def test_save_and_load_oidc_config_roundtrip(data_dir):
     assert loaded.default_role == "ro"
 
 
-def test_save_oidc_config_atomic_write(data_dir):
-    save_oidc_config(OidcConfig(enabled=True, provider_name="Test", issuer="https://x.test"))
-    assert (data_dir / "oidc_config.json").exists()
-    assert not (data_dir / "oidc_config.tmp").exists()

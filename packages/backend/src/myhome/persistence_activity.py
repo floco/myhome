@@ -1,11 +1,11 @@
-import json
-import os
 import uuid
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
-from .ids import InvalidIdError
+from sqlalchemy import select
+
+from .db import get_engine
 from .models_activity import ActivityEntry, ActivityLogDocument
+from .schema import activity_log_entries as activity_log_entries_table
 
 RETENTION_DAYS = 90
 
@@ -16,42 +16,35 @@ MODULE_NOUNS = {
 }
 
 
-def _data_dir() -> Path:
-    return Path(os.environ.get("DATA_DIR", "/data"))
-
-
-def _home_dir(home_id: str) -> Path:
-    # Normalize lexically (no filesystem access -- Path.resolve() follows
-    # symlinks and touches disk, which CodeQL's own path-injection sink set
-    # flags even before any check runs) then verify containment within
-    # homes_root. This is CodeQL's own recommended py/path-injection
-    # sanitizer shape: os.path.normpath + startswith against a safe root.
-    homes_root = os.path.normpath(os.path.join(str(_data_dir()), "homes"))
-    candidate = os.path.normpath(os.path.join(homes_root, home_id))
-    if not candidate.startswith(homes_root + os.sep):
-        raise InvalidIdError(f"Invalid home_id: {home_id!r}")
-    return Path(candidate)
-
-
-def _activity_file(home_id: str) -> Path:
-    return _home_dir(home_id) / "activity_log.json"
-
-
 def load_activity_log(home_id: str) -> ActivityLogDocument:
-    path = _activity_file(home_id)
-    if not path.exists():
-        return ActivityLogDocument()
-    with path.open() as f:
-        return ActivityLogDocument.model_validate(json.load(f))
+    engine = get_engine()
+    with engine.connect() as conn:
+        rows = conn.execute(
+            select(activity_log_entries_table).where(activity_log_entries_table.c.home_id == home_id)
+            .order_by(activity_log_entries_table.c.timestamp)
+        ).mappings().all()
+    return ActivityLogDocument(entries=[
+        ActivityEntry(
+            id=r["id"], timestamp=r["timestamp"], userId=r["user_id"], username=r["username"],
+            module=r["module"], action=r["action"], entityLabel=r["entity_label"], refId=r["ref_id"],
+        )
+        for r in rows
+    ])
 
 
 def save_activity_log(home_id: str, doc: ActivityLogDocument) -> None:
-    path = _activity_file(home_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    with tmp.open("w") as f:
-        json.dump(doc.model_dump(), f, indent=2)
-    tmp.replace(path)
+    engine = get_engine()
+    with engine.begin() as conn:
+        conn.execute(activity_log_entries_table.delete().where(activity_log_entries_table.c.home_id == home_id))
+        if doc.entries:
+            conn.execute(activity_log_entries_table.insert(), [
+                {
+                    "id": e.id, "home_id": home_id, "timestamp": e.timestamp, "user_id": e.userId,
+                    "username": e.username, "module": e.module, "action": e.action,
+                    "entity_label": e.entityLabel, "ref_id": e.refId,
+                }
+                for e in doc.entries
+            ])
 
 
 def _resolve_username(user_id: str) -> str:

@@ -1,13 +1,16 @@
 # packages/backend/src/myhome/persistence_homes.py
 from __future__ import annotations
 
-import json
 import os
 import secrets
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
+from sqlalchemy import select
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+
+from .db import get_engine
 from .demo_data import seed_demo_home
 from .ids import InvalidIdError
 from .models_homes import (
@@ -17,23 +20,11 @@ from .models_homes import (
     DEFAULT_PROJECT_MODULES,
     DEFAULT_DEMO_MODULES,
 )
-
-_LEGACY_FILES = [
-    "house.json", "chores.json", "costs.json", "inventory.json",
-    "works.json", "kb.json", "consumables.json", "settings.json",
-]
-_LEGACY_ATTACHMENT_DIRS = [
-    "chores-attachments", "costs-attachments", "inventory-attachments",
-    "works-attachments", "kb-attachments",
-]
+from .schema import home_modules as home_modules_table, homes as homes_table
 
 
 def _data_dir() -> Path:
     return Path(os.environ.get("DATA_DIR", "/data"))
-
-
-def _homes_file() -> Path:
-    return _data_dir() / "homes.json"
 
 
 def _home_dir(home_id: str) -> Path:
@@ -42,6 +33,8 @@ def _home_dir(home_id: str) -> Path:
     # flags even before any check runs) then verify containment within
     # homes_root. This is CodeQL's own recommended py/path-injection
     # sanitizer shape: os.path.normpath + startswith against a safe root.
+    # Still needed here for the home's kb/ and *-attachments/ directories,
+    # which remain plain files on disk.
     homes_root = os.path.normpath(os.path.join(str(_data_dir()), "homes"))
     candidate = os.path.normpath(os.path.join(homes_root, home_id))
     if not candidate.startswith(homes_root + os.sep):
@@ -50,20 +43,61 @@ def _home_dir(home_id: str) -> Path:
 
 
 def load_homes() -> HomesDocument:
-    path = _homes_file()
-    if not path.exists():
-        return HomesDocument()
-    with path.open() as f:
-        return HomesDocument.model_validate(json.load(f))
+    engine = get_engine()
+    with engine.connect() as conn:
+        home_rows = conn.execute(select(homes_table)).mappings().all()
+        module_rows = conn.execute(
+            select(home_modules_table).order_by(
+                home_modules_table.c.home_id, home_modules_table.c.order_index
+            )
+        ).mappings().all()
+    modules_by_home: dict[str, list[str]] = {}
+    for r in module_rows:
+        modules_by_home.setdefault(r["home_id"], []).append(r["module_id"])
+    homes_list = [
+        Home(
+            id=r["id"],
+            name=r["name"],
+            type=r["type"],
+            enabledModules=modules_by_home.get(r["id"], []),
+            createdAt=r["created_at"],
+        )
+        for r in home_rows
+    ]
+    return HomesDocument(homes=homes_list)
 
 
 def save_homes(doc: HomesDocument) -> None:
-    path = _homes_file()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    with tmp.open("w") as f:
-        json.dump(doc.model_dump(), f, indent=2)
-    tmp.replace(path)
+    # homes.id is a hard FK target from every per-home table (chores,
+    # costs, ...), each written by its own save_x() at a different time
+    # than this one -- so, unlike other modules' save_x(), this can't
+    # blindly truncate-and-reinsert the whole table (that would transiently
+    # delete every home's row and cascade-delete all of its data on every
+    # single create_home/patch_home call). Instead: upsert every home in
+    # the document, and only delete home ids that have genuinely been
+    # removed from the document (i.e. delete_home()).
+    engine = get_engine()
+    with engine.begin() as conn:
+        existing_ids = {row[0] for row in conn.execute(select(homes_table.c.id))}
+        new_ids = {home.id for home in doc.homes}
+        removed_ids = existing_ids - new_ids
+        if removed_ids:
+            conn.execute(homes_table.delete().where(homes_table.c.id.in_(removed_ids)))
+        for home in doc.homes:
+            stmt = sqlite_insert(homes_table).values(
+                id=home.id, name=home.name, type=home.type, created_at=home.createdAt,
+            )
+            stmt = stmt.on_conflict_do_update(
+                index_elements=[homes_table.c.id],
+                set_={"name": stmt.excluded.name, "type": stmt.excluded.type, "created_at": stmt.excluded.created_at},
+            )
+            conn.execute(stmt)
+            conn.execute(home_modules_table.delete().where(home_modules_table.c.home_id == home.id))
+            if home.enabledModules:
+                conn.execute(home_modules_table.insert(), [
+                    {"home_id": home.id, "module_id": module_id, "order_index": i}
+                    for i, module_id in enumerate(home.enabledModules)
+                ])
 
 
 def create_home(name: str, home_type: str) -> Home:
@@ -130,31 +164,3 @@ def delete_home(home_id: str) -> bool:
     if home_dir.exists():
         shutil.rmtree(home_dir)
     return True
-
-
-def migrate_legacy_if_needed() -> None:
-    data_dir = _data_dir()
-    if _homes_file().exists():
-        return
-    has_legacy = any((data_dir / f).exists() for f in _LEGACY_FILES)
-    if not has_legacy:
-        return
-    default_id = "default"
-    home_dir = _home_dir(default_id)
-    home_dir.mkdir(parents=True, exist_ok=True)
-    for fname in _LEGACY_FILES:
-        src = data_dir / fname
-        if src.exists():
-            shutil.move(str(src), str(home_dir / fname))
-    for dir_name in _LEGACY_ATTACHMENT_DIRS:
-        src = data_dir / dir_name
-        if src.exists():
-            shutil.move(str(src), str(home_dir / dir_name))
-    home = Home(
-        id=default_id,
-        name="My Home",
-        type="existing",
-        enabledModules=DEFAULT_EXISTING_MODULES[:],
-        createdAt=datetime.now(timezone.utc).isoformat(),
-    )
-    save_homes(HomesDocument(homes=[home]))

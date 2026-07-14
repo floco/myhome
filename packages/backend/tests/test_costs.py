@@ -92,20 +92,6 @@ def test_delete_entry_404(client, home_id):
     assert resp.status_code == 404
 
 
-def test_old_supplier_field_loads_with_supplierId_none(client, tmp_path, home_id):
-    import json
-    # Simulate a costs.json file written before the migration
-    old_data = {
-        "version": 1,
-        "entries": [{"id": "e1", "categoryId": "cat-fuel", "date": "2025-01-01", "totalAmount": 100.0, "supplier": "OldSupplier"}]
-    }
-    (tmp_path / "homes" / home_id / "costs.json").write_text(json.dumps(old_data))
-    resp = client.get(f"/api/homes/{home_id}/costs")
-    assert resp.status_code == 200
-    entry = resp.json()["entries"][0]
-    assert entry["supplierId"] is None  # old field dropped, new field defaults to None
-
-
 def _make_valid_pdf() -> bytes:
     import fitz
     doc = fitz.open()

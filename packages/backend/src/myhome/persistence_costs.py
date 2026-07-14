@@ -4,8 +4,12 @@ import os
 import shutil
 from pathlib import Path
 
+from sqlalchemy import select
+
+from .db import get_engine
 from .ids import InvalidIdError
-from .models_costs import CostsDocument
+from .models_costs import CostEntry, CostsDocument
+from .schema import cost_entries as cost_entries_table
 
 _log = logging.getLogger(__name__)
 
@@ -23,10 +27,6 @@ def _home_dir(home_id: str) -> Path:
     return Path(candidate)
 
 
-def _costs_file(home_id: str) -> Path:
-    return _home_dir(home_id) / "costs.json"
-
-
 def _attachments_dir(home_id: str, entry_id: str) -> Path:
     # Same inline lexical-normalize-then-verify-containment shape as
     # _home_dir() above -- entry_id is validated at the route layer too, but
@@ -40,23 +40,36 @@ def _attachments_dir(home_id: str, entry_id: str) -> Path:
 
 
 def load_costs(home_id: str) -> CostsDocument:
-    path = _costs_file(home_id)
-    if not path.exists():
-        return CostsDocument()
-    with path.open() as f:
-        raw = json.load(f)
-    # Migration: entries saved before 2026-06-21 used "supplier" (freeform string).
-    # Pydantic v2 ignores unknown fields, so old entries load with supplierId=None automatically.
-    return CostsDocument.model_validate(raw)
+    engine = get_engine()
+    with engine.connect() as conn:
+        rows = conn.execute(
+            select(cost_entries_table).where(cost_entries_table.c.home_id == home_id)
+            .order_by(cost_entries_table.c.order_index)
+        ).mappings().all()
+    return CostsDocument(entries=[
+        CostEntry(
+            id=r["id"], categoryId=r["category_id"], date=r["date"], totalAmount=r["total_amount"],
+            quantity=r["quantity"], unitPrice=r["unit_price"], supplierId=r["supplier_id"],
+            notes=r["notes"], roomId=r["room_id"], attachments=json.loads(r["attachments"]),
+        )
+        for r in rows
+    ])
 
 
 def save_costs(home_id: str, doc: CostsDocument) -> None:
-    path = _costs_file(home_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    with tmp.open("w") as f:
-        json.dump(doc.model_dump(), f, indent=2)
-    tmp.replace(path)
+    engine = get_engine()
+    with engine.begin() as conn:
+        conn.execute(cost_entries_table.delete().where(cost_entries_table.c.home_id == home_id))
+        if doc.entries:
+            conn.execute(cost_entries_table.insert(), [
+                {
+                    "id": e.id, "home_id": home_id, "order_index": i, "category_id": e.categoryId,
+                    "date": e.date, "total_amount": e.totalAmount, "quantity": e.quantity,
+                    "unit_price": e.unitPrice, "supplier_id": e.supplierId, "notes": e.notes,
+                    "room_id": e.roomId, "attachments": json.dumps(e.attachments),
+                }
+                for i, e in enumerate(doc.entries)
+            ])
 
 
 def get_attachment_path(home_id: str, entry_id: str, filename: str) -> Path:

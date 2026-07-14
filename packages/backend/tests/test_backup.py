@@ -29,8 +29,9 @@ def test_download_backup_empty_data_dir(client):
     resp = client.get("/api/backup/download")
     assert resp.status_code == 200
     zip_names = zipfile.ZipFile(io.BytesIO(resp.content)).namelist()
-    # users.json is in data dir from fixture; filter it out
-    non_auth_files = [n for n in zip_names if n not in ("users.json",)]
+    # myhome.db (+ its WAL/SHM sidecar files) is in the data dir from the
+    # fixture's save_users() call; filter it out.
+    non_auth_files = [n for n in zip_names if not n.startswith("myhome.db")]
     assert non_auth_files == []
 
 

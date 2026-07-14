@@ -48,7 +48,9 @@ def _first_boot() -> None:
     data_dir = Path(os.environ.get("DATA_DIR", "/data"))
     if not data_dir.exists():
         return  # DATA_DIR not yet mounted (CI/test import without fixture)
-    if (data_dir / "users.json").exists():
+    from .persistence_auth import load_users
+
+    if load_users().users:
         return
     from passlib.context import CryptContext
 
@@ -84,9 +86,6 @@ def _first_boot() -> None:
 
 
 _first_boot()
-
-from .persistence_homes import migrate_legacy_if_needed
-migrate_legacy_if_needed()
 
 
 # ── Auth middleware ────────────────────────────────────────────────────────

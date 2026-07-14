@@ -269,6 +269,15 @@ def test_seed_demo_home_writes_every_module(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     home_id = "seed-test-home"
     (tmp_path / "homes" / home_id).mkdir(parents=True)
+    # Per-home tables FK-reference homes.id (for cascade-delete-on-home-
+    # delete), so a row must exist there before seed_demo_home()'s writes.
+    from myhome.db import get_engine
+    from myhome.schema import homes as homes_table
+    engine = get_engine()
+    with engine.begin() as conn:
+        conn.execute(homes_table.insert().values(
+            id=home_id, name="Seed Test Home", type="demo", created_at="2026-01-01T00:00:00+00:00",
+        ))
 
     seed_demo_home(home_id)
 

@@ -4,8 +4,12 @@ import os
 import shutil
 from pathlib import Path
 
+from sqlalchemy import select
+
+from .db import get_engine
 from .ids import InvalidIdError
-from .models_works import WorksDocument
+from .models_works import Work, WorkPlacement, WorkPosition, WorksDocument
+from .schema import works as works_table
 
 _log = logging.getLogger(__name__)
 
@@ -23,10 +27,6 @@ def _home_dir(home_id: str) -> Path:
     return Path(candidate)
 
 
-def _works_file(home_id: str) -> Path:
-    return _home_dir(home_id) / "works.json"
-
-
 def _attachments_dir(home_id: str, work_id: str) -> Path:
     # Same inline lexical-normalize-then-verify-containment shape as
     # _home_dir() above -- work_id is validated at the route layer too, but
@@ -40,20 +40,42 @@ def _attachments_dir(home_id: str, work_id: str) -> Path:
 
 
 def load_works(home_id: str) -> WorksDocument:
-    path = _works_file(home_id)
-    if not path.exists():
-        return WorksDocument()
-    with path.open() as f:
-        return WorksDocument.model_validate(json.load(f))
+    engine = get_engine()
+    with engine.connect() as conn:
+        rows = conn.execute(
+            select(works_table).where(works_table.c.home_id == home_id).order_by(works_table.c.order_index)
+        ).mappings().all()
+    return WorksDocument(works=[
+        Work(
+            id=r["id"], title=r["title"], description=r["description"], status=r["status"],
+            categoryId=r["category_id"], date=r["date"], totalCost=r["total_cost"],
+            supplierId=r["supplier_id"], notes=r["notes"], attachments=json.loads(r["attachments"]),
+            placement=(
+                WorkPlacement(floorId=r["placement_floor_id"], position=WorkPosition(x=r["placement_x"], y=r["placement_y"]))
+                if r["placement_floor_id"] is not None else None
+            ),
+        )
+        for r in rows
+    ])
 
 
 def save_works(home_id: str, doc: WorksDocument) -> None:
-    path = _works_file(home_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    with tmp.open("w") as f:
-        json.dump(doc.model_dump(), f, indent=2)
-    tmp.replace(path)
+    engine = get_engine()
+    with engine.begin() as conn:
+        conn.execute(works_table.delete().where(works_table.c.home_id == home_id))
+        if doc.works:
+            conn.execute(works_table.insert(), [
+                {
+                    "id": w.id, "home_id": home_id, "order_index": i, "title": w.title,
+                    "description": w.description, "status": w.status, "category_id": w.categoryId,
+                    "date": w.date, "total_cost": w.totalCost, "supplier_id": w.supplierId,
+                    "notes": w.notes, "attachments": json.dumps(w.attachments),
+                    "placement_floor_id": w.placement.floorId if w.placement else None,
+                    "placement_x": w.placement.position.x if w.placement else None,
+                    "placement_y": w.placement.position.y if w.placement else None,
+                }
+                for i, w in enumerate(doc.works)
+            ])
 
 
 def get_attachment_path(home_id: str, work_id: str, filename: str) -> Path:

@@ -1,40 +1,40 @@
+# packages/backend/src/myhome/persistence_notifications.py
 import json
-import os
-from pathlib import Path
 
-from .ids import InvalidIdError
+from sqlalchemy import select
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+
+from .db import get_engine
 from .models_notifications import NotificationState
-
-
-def _home_dir(home_id: str) -> Path:
-    # Normalize lexically (no filesystem access -- Path.resolve() follows
-    # symlinks and touches disk, which CodeQL's own path-injection sink set
-    # flags even before any check runs) then verify containment within
-    # homes_root. This is CodeQL's own recommended py/path-injection
-    # sanitizer shape: os.path.normpath + startswith against a safe root.
-    homes_root = os.path.normpath(os.path.join(os.environ.get("DATA_DIR", "/data"), "homes"))
-    candidate = os.path.normpath(os.path.join(homes_root, home_id))
-    if not candidate.startswith(homes_root + os.sep):
-        raise InvalidIdError(f"Invalid home_id: {home_id!r}")
-    return Path(candidate)
-
-
-def _state_file(home_id: str) -> Path:
-    return _home_dir(home_id) / "notifications_state.json"
+from .schema import notification_state as notification_state_table
 
 
 def load_notification_state(home_id: str) -> NotificationState:
-    path = _state_file(home_id)
-    if not path.exists():
+    engine = get_engine()
+    with engine.connect() as conn:
+        row = conn.execute(
+            select(notification_state_table).where(notification_state_table.c.home_id == home_id)
+        ).mappings().first()
+    if row is None:
         return NotificationState()
-    with path.open() as f:
-        return NotificationState.model_validate(json.load(f))
+    return NotificationState(
+        warrantyNotified=json.loads(row["warranty_notified"]),
+        lastPushDigestDate=row["last_push_digest_date"],
+    )
 
 
 def save_notification_state(home_id: str, state: NotificationState) -> None:
-    path = _state_file(home_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    with tmp.open("w") as f:
-        json.dump(state.model_dump(), f, indent=2)
-    tmp.replace(path)
+    engine = get_engine()
+    with engine.begin() as conn:
+        stmt = sqlite_insert(notification_state_table).values(
+            home_id=home_id, warranty_notified=json.dumps(state.warrantyNotified),
+            last_push_digest_date=state.lastPushDigestDate,
+        )
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[notification_state_table.c.home_id],
+            set_={
+                "warranty_notified": stmt.excluded.warranty_notified,
+                "last_push_digest_date": stmt.excluded.last_push_digest_date,
+            },
+        )
+        conn.execute(stmt)

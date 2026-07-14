@@ -17,6 +17,7 @@ dependencies = [
     # which bcrypt removed in 4.1 -- pin below that to avoid a warning on every hash/verify.
     "bcrypt>=4.0,<4.1",
     "mcp>=1.28",
+    "sqlalchemy>=2.0",
 ]
 
 [project.optional-dependencies]
