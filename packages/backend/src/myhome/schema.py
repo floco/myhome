@@ -252,3 +252,33 @@ works = Table(
     Column("placement_x", Float),
     Column("placement_y", Float),
 )
+
+consumables = Table(
+    "consumables", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+    Column("emoji", String, nullable=False),
+    Column("unit", String, nullable=False),
+    Column("quantity", Float, nullable=False),
+    Column("min_quantity", Float, nullable=False),
+    Column("category_id", String),
+    Column("description", String, nullable=False),
+    Column("placement_floor_id", String),
+    Column("placement_room_id", String),
+    Column("placement_x", Float),
+    Column("placement_y", Float),
+)
+
+consumable_transactions = Table(
+    "consumable_transactions", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("consumable_id", String, ForeignKey("consumables.id", ondelete="CASCADE"), nullable=False),
+    Column("delta", Float, nullable=False),
+    Column("quantity_after", Float, nullable=False),
+    Column("note", String, nullable=False),
+    Column("timestamp", String, nullable=False),
+)

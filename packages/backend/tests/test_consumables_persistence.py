@@ -13,6 +13,15 @@ HOME_ID = "test-home"
 def _setup(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     (tmp_path / "homes" / HOME_ID).mkdir(parents=True)
+    # Per-home tables FK-reference homes.id (for cascade-delete-on-home-
+    # delete), so a row must exist there before any per-home table insert.
+    from myhome.db import get_engine
+    from myhome.schema import homes as homes_table
+    engine = get_engine()
+    with engine.begin() as conn:
+        conn.execute(homes_table.insert().values(
+            id=HOME_ID, name="Test Home", type="existing", created_at="2026-01-01T00:00:00+00:00",
+        ))
 
 
 def make_doc() -> ConsumableDocument:
@@ -52,12 +61,6 @@ def test_load_returns_empty_when_missing(tmp_path, monkeypatch):
     assert doc.transactions == []
 
 
-def test_save_creates_file(tmp_path, monkeypatch):
-    _setup(tmp_path, monkeypatch)
-    save_consumables(HOME_ID, make_doc())
-    assert (tmp_path / "homes" / HOME_ID / "consumables.json").exists()
-
-
 def test_round_trip(tmp_path, monkeypatch):
     _setup(tmp_path, monkeypatch)
     save_consumables(HOME_ID, make_doc())
@@ -76,8 +79,12 @@ def test_consumable_without_placement_round_trips(tmp_path, monkeypatch):
     assert loaded.consumables[0].placement is None
 
 
-def test_save_creates_data_dir_if_missing(tmp_path, monkeypatch):
-    nested = tmp_path / "nested" / "data"
-    monkeypatch.setenv("DATA_DIR", str(nested))
-    save_consumables(HOME_ID, make_doc())
-    assert (nested / "homes" / HOME_ID / "consumables.json").exists()
+def test_round_trip_preserves_order(tmp_path, monkeypatch):
+    _setup(tmp_path, monkeypatch)
+    doc = ConsumableDocument(consumables=[
+        Consumable(id="c1", name="Batteries"),
+        Consumable(id="c2", name="Soap"),
+    ])
+    save_consumables(HOME_ID, doc)
+    loaded = load_consumables(HOME_ID)
+    assert [c.id for c in loaded.consumables] == ["c1", "c2"]
