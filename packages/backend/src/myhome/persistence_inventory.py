@@ -4,8 +4,12 @@ import os
 import shutil
 from pathlib import Path
 
+from sqlalchemy import select
+
+from .db import get_engine
 from .ids import InvalidIdError
-from .models_inventory import InventoryDocument
+from .models_inventory import InventoryDocument, InventoryItem, InventoryPlacement, InventoryPosition
+from .schema import inventory_items as inventory_items_table
 
 _log = logging.getLogger(__name__)
 
@@ -21,10 +25,6 @@ def _home_dir(home_id: str) -> Path:
     if not candidate.startswith(homes_root + os.sep):
         raise InvalidIdError(f"Invalid home_id: {home_id!r}")
     return Path(candidate)
-
-
-def _inventory_file(home_id: str) -> Path:
-    return _home_dir(home_id) / "inventory.json"
 
 
 def _attachments_dir(home_id: str, item_id: str) -> Path:
@@ -48,20 +48,49 @@ def get_attachment_path(home_id: str, item_id: str, filename: str) -> Path:
 
 
 def load_inventory(home_id: str) -> InventoryDocument:
-    path = _inventory_file(home_id)
-    if not path.exists():
-        return InventoryDocument()
-    with path.open() as f:
-        return InventoryDocument.model_validate(json.load(f))
+    engine = get_engine()
+    with engine.connect() as conn:
+        rows = conn.execute(
+            select(inventory_items_table).where(inventory_items_table.c.home_id == home_id)
+            .order_by(inventory_items_table.c.order_index)
+        ).mappings().all()
+    return InventoryDocument(items=[
+        InventoryItem(
+            id=r["id"], name=r["name"], emoji=r["emoji"], category=r["category"], brand=r["brand"],
+            model=r["model"], serialNumber=r["serial_number"], purchaseDate=r["purchase_date"],
+            purchasePrice=r["purchase_price"], warrantyExpiryDate=r["warranty_expiry_date"],
+            notes=r["notes"], attachments=json.loads(r["attachments"]),
+            placement=(
+                InventoryPlacement(
+                    floorId=r["placement_floor_id"], roomId=r["placement_room_id"],
+                    position=InventoryPosition(x=r["placement_x"], y=r["placement_y"]),
+                )
+                if r["placement_floor_id"] is not None else None
+            ),
+        )
+        for r in rows
+    ])
 
 
 def save_inventory(home_id: str, doc: InventoryDocument) -> None:
-    path = _inventory_file(home_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    with tmp.open("w") as f:
-        json.dump(doc.model_dump(), f, indent=2)
-    tmp.replace(path)
+    engine = get_engine()
+    with engine.begin() as conn:
+        conn.execute(inventory_items_table.delete().where(inventory_items_table.c.home_id == home_id))
+        if doc.items:
+            conn.execute(inventory_items_table.insert(), [
+                {
+                    "id": it.id, "home_id": home_id, "order_index": i, "name": it.name, "emoji": it.emoji,
+                    "category": it.category, "brand": it.brand, "model": it.model,
+                    "serial_number": it.serialNumber, "purchase_date": it.purchaseDate,
+                    "purchase_price": it.purchasePrice, "warranty_expiry_date": it.warrantyExpiryDate,
+                    "notes": it.notes, "attachments": json.dumps(it.attachments),
+                    "placement_floor_id": it.placement.floorId if it.placement else None,
+                    "placement_room_id": it.placement.roomId if it.placement else None,
+                    "placement_x": it.placement.position.x if it.placement else None,
+                    "placement_y": it.placement.position.y if it.placement else None,
+                }
+                for i, it in enumerate(doc.items)
+            ])
 
 
 def save_attachment(home_id: str, item_id: str, filename: str, data: bytes) -> None:

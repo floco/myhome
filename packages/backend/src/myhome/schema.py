@@ -211,3 +211,25 @@ cost_entries = Table(
     Column("room_id", String),
     Column("attachments", Text, nullable=False),
 )
+
+inventory_items = Table(
+    "inventory_items", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+    Column("emoji", String, nullable=False),
+    Column("category", String, nullable=False),
+    Column("brand", String),
+    Column("model", String),
+    Column("serial_number", String),
+    Column("purchase_date", String),
+    Column("purchase_price", Float),
+    Column("warranty_expiry_date", String),
+    Column("notes", String, nullable=False),
+    Column("attachments", Text, nullable=False),
+    Column("placement_floor_id", String),
+    Column("placement_room_id", String),
+    Column("placement_x", Float),
+    Column("placement_y", Float),
+)
