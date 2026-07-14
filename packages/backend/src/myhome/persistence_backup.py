@@ -1,4 +1,3 @@
-import json
 import os
 import re
 import zipfile
@@ -6,7 +5,12 @@ from collections.abc import Iterator
 from datetime import datetime, timezone
 from pathlib import Path
 
+from sqlalchemy import select
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+
+from .db import get_engine
 from .models_backup import BackupConfig, BackupEntry, BackupState
+from .schema import backup_config as backup_config_table, backup_state as backup_state_table
 
 _FILENAME_RE = re.compile(r"^myhome-backup-(\d{8})-(\d{6})\.zip$")
 
@@ -47,46 +51,53 @@ def iter_backup_files(data_dir: Path, exclude_dirs: frozenset[str] = frozenset()
         yield path, rel
 
 
-def _config_file() -> Path:
-    return _data_dir() / "backup_config.json"
-
-
-def _state_file() -> Path:
-    return _data_dir() / "backup_state.json"
-
-
 def load_backup_config() -> BackupConfig:
-    path = _config_file()
-    if not path.exists():
+    engine = get_engine()
+    with engine.connect() as conn:
+        row = conn.execute(select(backup_config_table).where(backup_config_table.c.id == 1)).mappings().first()
+    if row is None:
         return BackupConfig()
-    with path.open() as f:
-        return BackupConfig.model_validate(json.load(f))
+    return BackupConfig(
+        enabled=bool(row["enabled"]), frequency=row["frequency"], time=row["time"],
+        dayOfWeek=row["day_of_week"], dayOfMonth=row["day_of_month"], retentionCount=row["retention_count"],
+    )
 
 
 def save_backup_config(config: BackupConfig) -> None:
-    path = _config_file()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    with tmp.open("w") as f:
-        json.dump(config.model_dump(), f, indent=2)
-    tmp.replace(path)
+    engine = get_engine()
+    with engine.begin() as conn:
+        stmt = sqlite_insert(backup_config_table).values(
+            id=1, enabled=config.enabled, frequency=config.frequency, time=config.time,
+            day_of_week=config.dayOfWeek, day_of_month=config.dayOfMonth, retention_count=config.retentionCount,
+        )
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[backup_config_table.c.id],
+            set_={
+                "enabled": stmt.excluded.enabled, "frequency": stmt.excluded.frequency, "time": stmt.excluded.time,
+                "day_of_week": stmt.excluded.day_of_week, "day_of_month": stmt.excluded.day_of_month,
+                "retention_count": stmt.excluded.retention_count,
+            },
+        )
+        conn.execute(stmt)
 
 
 def load_backup_state() -> BackupState:
-    path = _state_file()
-    if not path.exists():
+    engine = get_engine()
+    with engine.connect() as conn:
+        row = conn.execute(select(backup_state_table).where(backup_state_table.c.id == 1)).mappings().first()
+    if row is None:
         return BackupState()
-    with path.open() as f:
-        return BackupState.model_validate(json.load(f))
+    return BackupState(lastRunDate=row["last_run_date"])
 
 
 def save_backup_state(state: BackupState) -> None:
-    path = _state_file()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    with tmp.open("w") as f:
-        json.dump(state.model_dump(), f, indent=2)
-    tmp.replace(path)
+    engine = get_engine()
+    with engine.begin() as conn:
+        stmt = sqlite_insert(backup_state_table).values(id=1, last_run_date=state.lastRunDate)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[backup_state_table.c.id], set_={"last_run_date": stmt.excluded.last_run_date},
+        )
+        conn.execute(stmt)
 
 
 def list_backups() -> list[BackupEntry]:

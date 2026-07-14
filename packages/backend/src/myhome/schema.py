@@ -67,3 +67,26 @@ oidc_config = Table(
     Column("default_role", String, nullable=False),
     Column("scopes", Text, nullable=False),
 )
+
+mcp_config = Table(
+    "mcp_config", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("enabled", Boolean, nullable=False),
+)
+
+backup_config = Table(
+    "backup_config", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("enabled", Boolean, nullable=False),
+    Column("frequency", String, nullable=False),
+    Column("time", String, nullable=False),
+    Column("day_of_week", Integer, nullable=False),
+    Column("day_of_month", Integer, nullable=False),
+    Column("retention_count", Integer, nullable=False),
+)
+
+backup_state = Table(
+    "backup_state", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("last_run_date", String),
+)

@@ -1,26 +1,26 @@
-import json
-import os
-from pathlib import Path
+# packages/backend/src/myhome/persistence_mcp.py
+from sqlalchemy import select
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
+from .db import get_engine
 from .models_mcp import McpConfig
-
-
-def _mcp_config_file() -> Path:
-    return Path(os.environ.get("DATA_DIR", "/data")) / "mcp_config.json"
+from .schema import mcp_config as mcp_config_table
 
 
 def load_mcp_config() -> McpConfig:
-    path = _mcp_config_file()
-    if not path.exists():
+    engine = get_engine()
+    with engine.connect() as conn:
+        row = conn.execute(select(mcp_config_table).where(mcp_config_table.c.id == 1)).mappings().first()
+    if row is None:
         return McpConfig()
-    with path.open() as f:
-        return McpConfig.model_validate(json.load(f))
+    return McpConfig(enabled=bool(row["enabled"]))
 
 
 def save_mcp_config(config: McpConfig) -> None:
-    path = _mcp_config_file()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    with tmp.open("w") as f:
-        json.dump(config.model_dump(), f, indent=2)
-    tmp.replace(path)
+    engine = get_engine()
+    with engine.begin() as conn:
+        stmt = sqlite_insert(mcp_config_table).values(id=1, enabled=config.enabled)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[mcp_config_table.c.id], set_={"enabled": stmt.excluded.enabled},
+        )
+        conn.execute(stmt)
