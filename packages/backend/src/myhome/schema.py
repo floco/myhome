@@ -296,3 +296,10 @@ activity_log_entries = Table(
     Column("ref_id", String),
     Index("ix_activity_log_home_timestamp", "home_id", "timestamp"),
 )
+
+notification_state = Table(
+    "notification_state", metadata,
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
+    Column("warranty_notified", Text, nullable=False),
+    Column("last_push_digest_date", String),
+)
