@@ -211,7 +211,8 @@
   }
 </script>
 
-<Card style="display:flex; padding:0; overflow:hidden; height:100%; font-family: var(--font-sans);">
+<div class="page">
+<Card style="display:flex; padding:0; overflow:hidden; flex:1; min-height:0; font-family: var(--font-sans);">
   <div class="kb-sidebar">
     <div class="sidebar-toolbar">
       <Input placeholder="🔍 Search…" bind:value={searchQuery} />
@@ -312,12 +313,18 @@
     {/if}
   </div>
 </Card>
+</div>
 
 {#if lightboxOpen && mediaItems.length > 0}
   <Lightbox items={mediaItems} initialIndex={lightboxIndex} onclose={() => { lightboxOpen = false; }} />
 {/if}
 
 <style>
+  .page {
+    display: flex; height: 100%; box-sizing: border-box;
+    padding: var(--space-4); background: var(--bg);
+  }
+
   .kb-sidebar {
     width: 260px; flex-shrink: 0;
     display: flex; flex-direction: column;
