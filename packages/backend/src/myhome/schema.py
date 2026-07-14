@@ -192,3 +192,22 @@ chore_completions = Table(
     Column("scheduled_due", String, nullable=False),
     Column("notes", String, nullable=False),
 )
+
+# category_id/supplier_id are plain columns, no ForeignKey -- see the
+# hard-FK rule in this plan's Global Constraints (settings' category
+# tables are cleared/reinserted by a different save_x() call).
+cost_entries = Table(
+    "cost_entries", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("category_id", String, nullable=False),
+    Column("date", String, nullable=False),
+    Column("total_amount", Float, nullable=False),
+    Column("quantity", Float),
+    Column("unit_price", Float),
+    Column("supplier_id", String),
+    Column("notes", String, nullable=False),
+    Column("room_id", String),
+    Column("attachments", Text, nullable=False),
+)
