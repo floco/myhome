@@ -28,8 +28,21 @@ def _make_user(tmp_path, monkeypatch, user_id="u1", username="alice"):
     ]))
 
 
+def _make_home(home_id="home-1"):
+    # activity_log_entries FK-references homes.id (for cascade-delete-on-
+    # home-delete), so a row must exist there before any log_activity() call.
+    from myhome.db import get_engine
+    from myhome.schema import homes as homes_table
+    engine = get_engine()
+    with engine.begin() as conn:
+        conn.execute(homes_table.insert().values(
+            id=home_id, name="Test Home", type="existing", created_at="2026-01-01T00:00:00+00:00",
+        ))
+
+
 def test_log_activity_appends_entry_with_resolved_username(tmp_path, monkeypatch):
     _make_user(tmp_path, monkeypatch)
+    _make_home()
     log_activity("home-1", "u1", "chores", "complete", "Sweep kitchen", "chore-1")
     entries = load_activity_log("home-1").entries
     assert len(entries) == 1
@@ -42,6 +55,7 @@ def test_log_activity_appends_entry_with_resolved_username(tmp_path, monkeypatch
 
 def test_log_activity_resolves_unknown_user_gracefully(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    _make_home()
     log_activity("home-1", "ghost", "works", "create", "Fix boiler")
     entries = load_activity_log("home-1").entries
     assert entries[0].username == "unknown"
@@ -49,6 +63,7 @@ def test_log_activity_resolves_unknown_user_gracefully(tmp_path, monkeypatch):
 
 def test_log_activity_prunes_entries_older_than_90_days(tmp_path, monkeypatch):
     _make_user(tmp_path, monkeypatch)
+    _make_home()
     old_timestamp = (datetime.now(timezone.utc) - timedelta(days=91)).isoformat()
     doc = load_activity_log("home-1")
     doc.entries = [

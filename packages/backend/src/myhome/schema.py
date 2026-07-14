@@ -9,7 +9,7 @@ column, and for the order_index convention.
 """
 from __future__ import annotations
 
-from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, MetaData, String, Table, Text
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Index, Integer, MetaData, String, Table, Text
 
 metadata = MetaData()
 
@@ -281,4 +281,18 @@ consumable_transactions = Table(
     Column("quantity_after", Float, nullable=False),
     Column("note", String, nullable=False),
     Column("timestamp", String, nullable=False),
+)
+
+activity_log_entries = Table(
+    "activity_log_entries", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("timestamp", String, nullable=False),
+    Column("user_id", String, nullable=False),
+    Column("username", String, nullable=False),
+    Column("module", String, nullable=False),
+    Column("action", String, nullable=False),
+    Column("entity_label", String, nullable=False),
+    Column("ref_id", String),
+    Index("ix_activity_log_home_timestamp", "home_id", "timestamp"),
 )
