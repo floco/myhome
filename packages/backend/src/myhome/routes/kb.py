@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 from ..deps import get_current_user_id
-from ..models_kb import KBCreate, KBDocument, KBEntry, KBUpdate
+from ..models_kb import KBCreate, KBDocument, KBEntry, KBFolder, KBFolderCreate, KBFolderUpdate, KBUpdate
 from ..persistence_activity import log_activity
 from ..persistence_kb import (
     get_attachment_path,
@@ -19,6 +19,15 @@ from ..persistence_kb import (
     load_entry,
     save_attachment,
     save_entry,
+)
+from ..persistence_kb_folders import (
+    create_folder,
+    delete_folder,
+    get_folder,
+    list_folders,
+    move_folder,
+    rename_folder,
+    would_create_cycle,
 )
 
 router = APIRouter()
@@ -49,7 +58,7 @@ def _sanitise_filename(name: str) -> str:
 
 @router.get("/api/homes/{home_id}/kb", response_model=KBDocument)
 def get_kb(home_id: str) -> KBDocument:
-    return KBDocument(entries=load_all(home_id))
+    return KBDocument(entries=load_all(home_id), folders=list_folders(home_id))
 
 
 @router.post("/api/homes/{home_id}/kb", response_model=KBEntry, status_code=201)
@@ -57,11 +66,14 @@ def create_entry(
     home_id: str, body: KBCreate,
     current_user_id: str = Depends(get_current_user_id),
 ) -> KBEntry:
+    if body.folderId is not None and get_folder(home_id, body.folderId) is None:
+        raise HTTPException(status_code=404, detail="Folder not found")
     now = _now()
     entry = KBEntry(
         id=str(uuid.uuid4()),
         title=body.title,
         content=body.content,
+        folderId=body.folderId,
         createdAt=now,
         updatedAt=now,
     )
@@ -82,6 +94,10 @@ def update_entry(
         entry.title = body.title
     if body.content is not None:
         entry.content = body.content
+    if "folderId" in body.model_fields_set:
+        if body.folderId is not None and get_folder(home_id, body.folderId) is None:
+            raise HTTPException(status_code=404, detail="Folder not found")
+        entry.folderId = body.folderId
     entry.updatedAt = _now()
     save_entry(home_id, entry)
     log_activity(home_id, current_user_id, "kb", "update", entry.title, id)
@@ -98,6 +114,40 @@ def delete_kb_entry(
     if not delete_entry(home_id, id):
         raise HTTPException(status_code=404)
     log_activity(home_id, current_user_id, "kb", "delete", entry.title, id)
+
+
+@router.post("/api/homes/{home_id}/kb/folders", response_model=KBFolder, status_code=201)
+def create_kb_folder(home_id: str, body: KBFolderCreate) -> KBFolder:
+    if body.parentId is not None and get_folder(home_id, body.parentId) is None:
+        raise HTTPException(status_code=404, detail="Parent folder not found")
+    return create_folder(home_id, body.name, body.parentId)
+
+
+@router.put("/api/homes/{home_id}/kb/folders/{id}", status_code=204)
+def update_kb_folder(home_id: str, id: str, body: KBFolderUpdate) -> None:
+    if get_folder(home_id, id) is None:
+        raise HTTPException(status_code=404)
+    fields = body.model_fields_set
+    if "name" in fields and body.name is not None:
+        rename_folder(home_id, id, body.name)
+    if "parentId" in fields:
+        if body.parentId is not None:
+            if get_folder(home_id, body.parentId) is None:
+                raise HTTPException(status_code=404, detail="Parent folder not found")
+            if would_create_cycle(home_id, id, body.parentId):
+                raise HTTPException(status_code=400, detail="Cannot move a folder into itself or a descendant")
+        move_folder(home_id, id, body.parentId)
+
+
+@router.delete("/api/homes/{home_id}/kb/folders/{id}", status_code=204)
+def delete_kb_folder(home_id: str, id: str) -> None:
+    if get_folder(home_id, id) is None:
+        raise HTTPException(status_code=404)
+    has_subfolders = any(f.parentId == id for f in list_folders(home_id))
+    has_entries = any(e.folderId == id for e in load_all(home_id))
+    if has_subfolders or has_entries:
+        raise HTTPException(status_code=400, detail="Folder must be empty before it can be deleted")
+    delete_folder(home_id, id)
 
 
 @router.post("/api/homes/{home_id}/kb/{id}/attachments", status_code=201)

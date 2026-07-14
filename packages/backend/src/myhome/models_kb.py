@@ -21,6 +21,7 @@ class KBFolder(BaseModel):
 class KBDocument(BaseModel):
     version: int = 1
     entries: list[KBEntry] = []
+    folders: list[KBFolder] = []
 
 
 class KBCreate(BaseModel):
@@ -33,3 +34,13 @@ class KBUpdate(BaseModel):
     title: str | None = None
     content: str | None = None
     folderId: str | None = None
+
+
+class KBFolderCreate(BaseModel):
+    name: str
+    parentId: str | None = None
+
+
+class KBFolderUpdate(BaseModel):
+    name: str | None = None
+    parentId: str | None = None
