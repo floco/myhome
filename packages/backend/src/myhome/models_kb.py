@@ -11,6 +11,12 @@ class KBEntry(BaseModel):
     attachments: list[str] = []
 
 
+class KBFolder(BaseModel):
+    id: str
+    name: str
+    parentId: str | None = None
+
+
 class KBDocument(BaseModel):
     version: int = 1
     entries: list[KBEntry] = []
