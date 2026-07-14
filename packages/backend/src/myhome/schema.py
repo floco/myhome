@@ -150,3 +150,45 @@ settings = Table(
     Column("notif_ha_notify_service", String),
     Column("notif_ha_push_time", String, nullable=False),
 )
+
+chores = Table(
+    "chores", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("donetick_id", Integer),
+    Column("name", String, nullable=False),
+    Column("emoji", String, nullable=False),
+    Column("period_days", Float, nullable=False),
+    Column("frequency_type", String, nullable=False),
+    Column("frequency", Integer, nullable=False),
+    Column("frequency_metadata", Text, nullable=False),
+    Column("schedule_from_due", Boolean, nullable=False),
+    Column("next_due_date", String, nullable=False),
+    Column("description", String, nullable=False),
+    Column("attachments", Text, nullable=False),
+)
+
+chore_assignments = Table(
+    "chore_assignments", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("chore_id", String, ForeignKey("chores.id", ondelete="CASCADE"), nullable=False),
+    Column("room_id", String),
+    Column("position_x", Float),
+    Column("position_y", Float),
+    Column("next_due_date", String, nullable=False),
+)
+
+chore_completions = Table(
+    "chore_completions", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("chore_id", String, ForeignKey("chores.id", ondelete="CASCADE"), nullable=False),
+    Column("assignment_id", String),
+    Column("completed_at", String, nullable=False),
+    Column("scheduled_due", String, nullable=False),
+    Column("notes", String, nullable=False),
+)
