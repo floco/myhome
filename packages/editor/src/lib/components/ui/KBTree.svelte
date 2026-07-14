@@ -287,8 +287,8 @@
     font-size: 12px; color: var(--text); border-radius: var(--radius-sm); cursor: pointer;
   }
   .folder-menu button:hover:not(:disabled) { background: var(--surface-hover); }
-  .folder-menu button:disabled { color: var(--text-faint); cursor: default; }
   .folder-menu button.danger { color: var(--danger); }
+  .folder-menu button:disabled { color: var(--text-faint); cursor: default; }
 
   .entry-row { padding: 8px 10px 8px 26px; border-left: 3px solid transparent; border-radius: var(--radius-md); }
   .entry-row.active { background: var(--surface-alt); border-left-color: var(--accent); }
