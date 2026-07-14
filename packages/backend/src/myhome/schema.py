@@ -233,3 +233,22 @@ inventory_items = Table(
     Column("placement_x", Float),
     Column("placement_y", Float),
 )
+
+works = Table(
+    "works", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("title", String, nullable=False),
+    Column("description", String, nullable=False),
+    Column("status", String, nullable=False),
+    Column("category_id", String),
+    Column("date", String, nullable=False),
+    Column("total_cost", Float),
+    Column("supplier_id", String),
+    Column("notes", String, nullable=False),
+    Column("attachments", Text, nullable=False),
+    Column("placement_floor_id", String),
+    Column("placement_x", Float),
+    Column("placement_y", Float),
+)
