@@ -9,7 +9,7 @@ column, and for the order_index convention.
 """
 from __future__ import annotations
 
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, MetaData, String, Table, Text
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, MetaData, String, Table, Text
 
 metadata = MetaData()
 
@@ -89,4 +89,64 @@ backup_state = Table(
     "backup_state", metadata,
     Column("id", Integer, primary_key=True),
     Column("last_run_date", String),
+)
+
+cost_categories = Table(
+    "cost_categories", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+    Column("emoji", String, nullable=False),
+    Column("unit", String),
+    Column("color", String, nullable=False),
+    Column("placement_floor_id", String),
+    Column("placement_x", Float),
+    Column("placement_y", Float),
+)
+
+inventory_categories = Table(
+    "inventory_categories", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+)
+
+work_categories = Table(
+    "work_categories", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+    Column("emoji", String, nullable=False),
+)
+
+suppliers = Table(
+    "suppliers", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+)
+
+consumable_categories = Table(
+    "consumable_categories", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+    Column("emoji", String, nullable=False),
+)
+
+settings = Table(
+    "settings", metadata,
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
+    Column("consumable_units", Text, nullable=False),
+    Column("notif_enabled", Boolean, nullable=False),
+    Column("notif_chores_due_soon_threshold", Float, nullable=False),
+    Column("notif_warranty_days_threshold", Integer, nullable=False),
+    Column("notif_ha_push_enabled", Boolean, nullable=False),
+    Column("notif_ha_notify_service", String),
+    Column("notif_ha_push_time", String, nullable=False),
 )
