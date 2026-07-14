@@ -74,6 +74,8 @@ def _build_file(entry: KBEntry) -> str:
     ]
     if entry.attachments:
         lines.append(f"attachments: {','.join(entry.attachments)}")
+    if entry.folderId:
+        lines.append(f"folderId: {entry.folderId}")
     lines += ["---", "", entry.content]
     return "\n".join(lines)
 
@@ -95,6 +97,7 @@ def _read_entry_file(path: Path) -> KBEntry | None:
         createdAt=meta.get("createdAt", ""),
         updatedAt=meta.get("updatedAt", ""),
         attachments=attachments,
+        folderId=meta.get("folderId") or None,
     )
 
 

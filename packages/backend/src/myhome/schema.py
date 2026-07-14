@@ -309,3 +309,11 @@ house_documents = Table(
     Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
     Column("doc", Text, nullable=False),
 )
+
+kb_folders = Table(
+    "kb_folders", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("parent_id", String, ForeignKey("kb_folders.id")),
+    Column("name", String, nullable=False),
+)

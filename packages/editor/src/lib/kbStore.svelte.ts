@@ -5,15 +5,24 @@ export interface KBEntry {
   createdAt: string;
   updatedAt: string;
   attachments: string[];
+  folderId: string | null;
+}
+
+export interface KBFolder {
+  id: string;
+  name: string;
+  parentId: string | null;
 }
 
 export interface KBDocument {
   version: number;
   entries: KBEntry[];
+  folders: KBFolder[];
 }
 
 export function createKBStore(getHomeId: () => string | null = () => null) {
   const entries = $state<KBEntry[]>([]);
+  const folders = $state<KBFolder[]>([]);
   let loaded = $state(false);
   let loadError = $state<string | null>(null);
 
@@ -26,7 +35,9 @@ export function createKBStore(getHomeId: () => string | null = () => null) {
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const doc: KBDocument = await resp.json();
       entries.length = 0;
-      for (const e of doc.entries) entries.push({ attachments: [], ...e });
+      for (const e of doc.entries) entries.push({ attachments: [], folderId: null, ...e });
+      folders.length = 0;
+      for (const f of doc.folders ?? []) folders.push(f);
     } catch (e) {
       loadError = e instanceof Error ? e.message : String(e);
     } finally {
@@ -34,13 +45,17 @@ export function createKBStore(getHomeId: () => string | null = () => null) {
     }
   }
 
-  async function createEntry(data: { title: string; content: string }): Promise<KBEntry> {
+  async function createEntry(
+    data: { title: string; content: string; folderId?: string | null },
+  ): Promise<KBEntry> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
+    const payload: Record<string, unknown> = { title: data.title, content: data.content };
+    if (data.folderId !== undefined) payload.folderId = data.folderId;
     const resp = await fetch(`/api/homes/${homeId}/kb`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const entry: KBEntry = await resp.json();
@@ -50,7 +65,7 @@ export function createKBStore(getHomeId: () => string | null = () => null) {
 
   async function updateEntry(
     id: string,
-    patch: { title?: string; content?: string },
+    patch: { title?: string; content?: string; folderId?: string | null },
   ): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
@@ -91,10 +106,48 @@ export function createKBStore(getHomeId: () => string | null = () => null) {
     await init();
   }
 
+  async function createFolder(data: { name: string; parentId?: string | null }): Promise<KBFolder> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/kb/folders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: data.name, parentId: data.parentId ?? null }),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const folder: KBFolder = await resp.json();
+    await init();
+    return folder;
+  }
+
+  async function updateFolder(
+    id: string,
+    patch: { name?: string; parentId?: string | null },
+  ): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/kb/folders/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
+  async function deleteFolder(id: string): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/kb/folders/${id}`, { method: "DELETE" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
   init();
 
   return {
     get entries() { return entries as KBEntry[]; },
+    get folders() { return folders as KBFolder[]; },
     get loaded() { return loaded; },
     get loadError() { return loadError; },
     createEntry,
@@ -102,6 +155,9 @@ export function createKBStore(getHomeId: () => string | null = () => null) {
     deleteEntry,
     uploadAttachment,
     deleteAttachment,
+    createFolder,
+    updateFolder,
+    deleteFolder,
     reload: init,
   };
 }

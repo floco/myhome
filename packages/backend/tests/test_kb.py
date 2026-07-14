@@ -151,3 +151,133 @@ def test_kb_delete_entry_removes_attachment_dir(client, tmp_path, home_id):
     assert att_dir.exists()
     client.delete(f"/api/homes/{home_id}/kb/{eid}")
     assert not att_dir.exists()
+
+
+def test_entry_folder_id_round_trips_through_frontmatter(home_id):
+    entry = make_entry()
+    entry.folderId = "f1"
+    save_entry(home_id, entry)
+    from myhome.persistence_kb import load_entry
+    loaded = load_entry(home_id, "e1")
+    assert loaded.folderId == "f1"
+
+
+def test_entry_without_folder_id_defaults_to_none(home_id):
+    save_entry(home_id, make_entry())
+    from myhome.persistence_kb import load_entry
+    loaded = load_entry(home_id, "e1")
+    assert loaded.folderId is None
+
+
+def test_get_kb_includes_empty_folders_by_default(client, home_id):
+    resp = client.get(f"/api/homes/{home_id}/kb")
+    assert resp.json()["folders"] == []
+
+
+def test_create_kb_folder(client, home_id):
+    resp = client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "Appliances"})
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["name"] == "Appliances"
+    assert data["parentId"] is None
+    folders = client.get(f"/api/homes/{home_id}/kb").json()["folders"]
+    assert folders[0]["name"] == "Appliances"
+
+
+def test_create_kb_subfolder(client, home_id):
+    parent = client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "Parent"}).json()
+    resp = client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "Child", "parentId": parent["id"]})
+    assert resp.status_code == 201
+    assert resp.json()["parentId"] == parent["id"]
+
+
+def test_create_kb_folder_unknown_parent_404(client, home_id):
+    resp = client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "X", "parentId": "nonexistent"})
+    assert resp.status_code == 404
+
+
+def test_rename_kb_folder(client, home_id):
+    folder = client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "Old"}).json()
+    resp = client.put(f"/api/homes/{home_id}/kb/folders/{folder['id']}", json={"name": "New"})
+    assert resp.status_code == 204
+    folders = client.get(f"/api/homes/{home_id}/kb").json()["folders"]
+    assert folders[0]["name"] == "New"
+
+
+def test_update_kb_folder_not_found(client, home_id):
+    resp = client.put(f"/api/homes/{home_id}/kb/folders/nonexistent", json={"name": "New"})
+    assert resp.status_code == 404
+
+
+def test_move_kb_folder_to_root(client, home_id):
+    parent = client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "Parent"}).json()
+    child = client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "Child", "parentId": parent["id"]}).json()
+    resp = client.put(f"/api/homes/{home_id}/kb/folders/{child['id']}", json={"parentId": None})
+    assert resp.status_code == 204
+    folders = client.get(f"/api/homes/{home_id}/kb").json()["folders"]
+    moved = next(f for f in folders if f["id"] == child["id"])
+    assert moved["parentId"] is None
+
+
+def test_move_kb_folder_into_own_descendant_rejected(client, home_id):
+    a = client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "A"}).json()
+    b = client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "B", "parentId": a["id"]}).json()
+    resp = client.put(f"/api/homes/{home_id}/kb/folders/{a['id']}", json={"parentId": b["id"]})
+    assert resp.status_code == 400
+
+
+def test_delete_kb_folder(client, home_id):
+    folder = client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "Temp"}).json()
+    resp = client.delete(f"/api/homes/{home_id}/kb/folders/{folder['id']}")
+    assert resp.status_code == 204
+    assert client.get(f"/api/homes/{home_id}/kb").json()["folders"] == []
+
+
+def test_delete_kb_folder_not_found(client, home_id):
+    resp = client.delete(f"/api/homes/{home_id}/kb/folders/nonexistent")
+    assert resp.status_code == 404
+
+
+def test_delete_kb_folder_with_entries_blocked(client, home_id):
+    folder = client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "Has entries"}).json()
+    client.post(f"/api/homes/{home_id}/kb", json={"title": "X", "content": "", "folderId": folder["id"]})
+    resp = client.delete(f"/api/homes/{home_id}/kb/folders/{folder['id']}")
+    assert resp.status_code == 400
+
+
+def test_delete_kb_folder_with_subfolder_blocked(client, home_id):
+    parent = client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "Parent"}).json()
+    client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "Child", "parentId": parent["id"]})
+    resp = client.delete(f"/api/homes/{home_id}/kb/folders/{parent['id']}")
+    assert resp.status_code == 400
+
+
+def test_create_entry_with_folder_id(client, home_id):
+    folder = client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "Manuals"}).json()
+    resp = client.post(f"/api/homes/{home_id}/kb", json={"title": "X", "content": "", "folderId": folder["id"]})
+    assert resp.status_code == 201
+    assert resp.json()["folderId"] == folder["id"]
+
+
+def test_create_entry_unknown_folder_id_404(client, home_id):
+    resp = client.post(f"/api/homes/{home_id}/kb", json={"title": "X", "content": "", "folderId": "nonexistent"})
+    assert resp.status_code == 404
+
+
+def test_move_entry_to_folder(client, home_id):
+    folder = client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "Manuals"}).json()
+    entry_id = _entry_id(client, home_id)
+    resp = client.put(f"/api/homes/{home_id}/kb/{entry_id}", json={"folderId": folder["id"]})
+    assert resp.status_code == 204
+    entries = client.get(f"/api/homes/{home_id}/kb").json()["entries"]
+    assert next(e for e in entries if e["id"] == entry_id)["folderId"] == folder["id"]
+
+
+def test_move_entry_back_to_root(client, home_id):
+    folder = client.post(f"/api/homes/{home_id}/kb/folders", json={"name": "Manuals"}).json()
+    entry_id = _entry_id(client, home_id)
+    client.put(f"/api/homes/{home_id}/kb/{entry_id}", json={"folderId": folder["id"]})
+    resp = client.put(f"/api/homes/{home_id}/kb/{entry_id}", json={"folderId": None})
+    assert resp.status_code == 204
+    entries = client.get(f"/api/homes/{home_id}/kb").json()["entries"]
+    assert next(e for e in entries if e["id"] == entry_id)["folderId"] is None

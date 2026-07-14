@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { mount, unmount, flushSync, tick } from "svelte";
 import KBPage from "../src/lib/components/KBPage.svelte";
-import type { KBEntry } from "../src/lib/kbStore.svelte";
+import type { KBEntry, KBFolder } from "../src/lib/kbStore.svelte";
 
 function makeEntry(overrides: Partial<KBEntry> = {}): KBEntry {
   return {
@@ -11,13 +11,19 @@ function makeEntry(overrides: Partial<KBEntry> = {}): KBEntry {
     createdAt: "2026-06-28T10:00:00Z",
     updatedAt: "2026-06-28T10:00:00Z",
     attachments: [],
+    folderId: null,
     ...overrides,
   };
+}
+
+function makeFolder(overrides: Partial<KBFolder> = {}): KBFolder {
+  return { id: "f1", name: "Manuals", parentId: null, ...overrides };
 }
 
 function makeStore(entries: KBEntry[] = [], overrides: Partial<ReturnType<typeof makeStore>> = {}) {
   return {
     entries,
+    folders: [] as KBFolder[],
     loaded: true,
     loadError: null as string | null,
     createEntry: vi.fn().mockResolvedValue(
@@ -27,6 +33,9 @@ function makeStore(entries: KBEntry[] = [], overrides: Partial<ReturnType<typeof
     deleteEntry: vi.fn().mockResolvedValue(undefined),
     uploadAttachment: vi.fn().mockResolvedValue("file.jpg"),
     deleteAttachment: vi.fn().mockResolvedValue(undefined),
+    createFolder: vi.fn().mockResolvedValue(makeFolder({ id: "newf1", name: "New folder" })),
+    updateFolder: vi.fn().mockResolvedValue(undefined),
+    deleteFolder: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -442,6 +451,64 @@ describe("KBPage — external selection", () => {
 
     expect(target.querySelector(".content-empty")).not.toBeNull();
 
+    unmount(app);
+    target.remove();
+  });
+});
+
+describe("KBPage — Card wrapper", () => {
+  it("wraps the page content in a Card", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(KBPage, { target, props: { store: makeStore([]) } });
+    flushSync();
+    expect(target.querySelector(".ui-card")).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+});
+
+describe("KBPage — folders", () => {
+  it("＋ Folder button calls store.createFolder with a root-level folder", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore([]);
+    const app = mount(KBPage, { target, props: { store } });
+    flushSync();
+    const btn = Array.from(target.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "＋ Folder",
+    ) as HTMLButtonElement;
+    btn.click();
+    await tick();
+    flushSync();
+    expect(store.createFolder).toHaveBeenCalledWith({ name: "New folder", parentId: null });
+    unmount(app);
+    target.remove();
+  });
+
+  it("renders folders from the store in the tree", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore([], { folders: [makeFolder({ id: "f1", name: "Manuals" })] });
+    const app = mount(KBPage, { target, props: { store } });
+    flushSync();
+    expect(target.querySelector(".folder-name")?.textContent).toBe("Manuals");
+    unmount(app);
+    target.remove();
+  });
+
+  it("selecting an entry nested in a folder shows its content", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore(
+      [makeEntry({ id: "e1", title: "Nested", folderId: "f1" })],
+      { folders: [makeFolder({ id: "f1", name: "Manuals" })] },
+    );
+    const app = mount(KBPage, { target, props: { store } });
+    flushSync();
+    (target.querySelector(".entry-row") as HTMLElement).click();
+    flushSync();
+    expect(target.querySelector(".content-title")?.textContent?.trim()).toBe("Nested");
     unmount(app);
     target.remove();
   });
