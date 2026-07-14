@@ -151,3 +151,19 @@ def test_kb_delete_entry_removes_attachment_dir(client, tmp_path, home_id):
     assert att_dir.exists()
     client.delete(f"/api/homes/{home_id}/kb/{eid}")
     assert not att_dir.exists()
+
+
+def test_entry_folder_id_round_trips_through_frontmatter(home_id):
+    entry = make_entry()
+    entry.folderId = "f1"
+    save_entry(home_id, entry)
+    from myhome.persistence_kb import load_entry
+    loaded = load_entry(home_id, "e1")
+    assert loaded.folderId == "f1"
+
+
+def test_entry_without_folder_id_defaults_to_none(home_id):
+    save_entry(home_id, make_entry())
+    from myhome.persistence_kb import load_entry
+    loaded = load_entry(home_id, "e1")
+    assert loaded.folderId is None

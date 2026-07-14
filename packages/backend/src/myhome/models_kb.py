@@ -9,6 +9,7 @@ class KBEntry(BaseModel):
     createdAt: str
     updatedAt: str
     attachments: list[str] = []
+    folderId: str | None = None
 
 
 class KBFolder(BaseModel):
@@ -25,8 +26,10 @@ class KBDocument(BaseModel):
 class KBCreate(BaseModel):
     title: str
     content: str = ""
+    folderId: str | None = None
 
 
 class KBUpdate(BaseModel):
     title: str | None = None
     content: str | None = None
+    folderId: str | None = None
