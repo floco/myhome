@@ -1,23 +1,21 @@
-import json
-import pytest
-from myhome.ids import InvalidIdError
-from myhome.models import HouseDocument, House, Floor
+# packages/backend/tests/test_persistence.py
+from myhome.models import Floor, House, HouseDocument
 from myhome.persistence import load_house, save_house
 
 HOME_ID = "test-home"
 
 
-def test_save_house_rejects_path_traversal_home_id(tmp_path, monkeypatch):
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    outside = tmp_path.parent / "escaped-house.json"
-    with pytest.raises(InvalidIdError):
-        save_house("../" + outside.name.removesuffix(".json"), make_doc())
-    assert not outside.exists()
-
-
 def _setup(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    (tmp_path / "homes" / HOME_ID).mkdir(parents=True)
+    # house_documents FK-references homes.id (for cascade-delete-on-home-
+    # delete), so a row must exist there before save_house().
+    from myhome.db import get_engine
+    from myhome.schema import homes as homes_table
+    engine = get_engine()
+    with engine.begin() as conn:
+        conn.execute(homes_table.insert().values(
+            id=HOME_ID, name="Test Home", type="existing", created_at="2026-01-01T00:00:00+00:00",
+        ))
 
 
 def make_doc() -> HouseDocument:
@@ -33,12 +31,6 @@ def test_load_returns_none_when_missing(tmp_path, monkeypatch):
     assert load_house(HOME_ID) is None
 
 
-def test_save_creates_file(tmp_path, monkeypatch):
-    _setup(tmp_path, monkeypatch)
-    save_house(HOME_ID, make_doc())
-    assert (tmp_path / "homes" / HOME_ID / "house.json").exists()
-
-
 def test_round_trip(tmp_path, monkeypatch):
     _setup(tmp_path, monkeypatch)
     save_house(HOME_ID, make_doc())
@@ -49,8 +41,10 @@ def test_round_trip(tmp_path, monkeypatch):
     assert loaded.version == 1
 
 
-def test_save_creates_data_dir_if_missing(tmp_path, monkeypatch):
-    nested = tmp_path / "nested" / "data"
-    monkeypatch.setenv("DATA_DIR", str(nested))
+def test_save_overwrites_existing_document(tmp_path, monkeypatch):
+    _setup(tmp_path, monkeypatch)
     save_house(HOME_ID, make_doc())
-    assert (nested / "homes" / HOME_ID / "house.json").exists()
+    updated = make_doc()
+    updated.house.name = "Renamed"
+    save_house(HOME_ID, updated)
+    assert load_house(HOME_ID).house.name == "Renamed"

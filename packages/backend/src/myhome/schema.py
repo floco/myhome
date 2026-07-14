@@ -303,3 +303,9 @@ notification_state = Table(
     Column("warranty_notified", Text, nullable=False),
     Column("last_push_digest_date", String),
 )
+
+house_documents = Table(
+    "house_documents", metadata,
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
+    Column("doc", Text, nullable=False),
+)

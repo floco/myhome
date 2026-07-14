@@ -2,12 +2,13 @@
 import pytest
 
 
-def test_get_house_rejects_path_traversal_home_id(client):
+def test_get_house_returns_404_for_nonexistent_home_id(client):
     # A bare ".." is a single path segment (no "/"), so it matches the
-    # {home_id} route param and reaches _home_dir() -- this is exactly the
-    # payload the shared validate_safe_id() check exists to reject.
+    # {home_id} route param. The house document is now a SQL row keyed by
+    # home_id (a query parameter, not a filesystem path), so a malformed id
+    # simply matches no row -- 404, not the old path-injection guard's 400.
     resp = client.get("/api/homes/%2e%2e/house")
-    assert resp.status_code == 400
+    assert resp.status_code == 404
 
 
 def test_get_homes_returns_empty_list(client):
