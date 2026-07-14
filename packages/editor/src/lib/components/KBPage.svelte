@@ -4,6 +4,8 @@
   import MarkdownEditor from "./ui/MarkdownEditor.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
+  import Card from "./ui/Card.svelte";
+  import KBTree from "./ui/KBTree.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
 
@@ -28,12 +30,9 @@
   let uploadError = $state<string | null>(null);
   let lightboxOpen = $state(false);
   let lightboxIndex = $state(0);
-
-  const filteredEntries = $derived(
-    store.entries.filter((e) =>
-      e.title.toLowerCase().includes(searchQuery.toLowerCase()),
-    ),
-  );
+  let collapsedIds = $state<Set<string>>(new Set());
+  let renamingFolderId = $state<string | null>(null);
+  let dragging = $state<{ kind: "entry" | "folder"; id: string } | null>(null);
 
   const selectedEntry = $derived(
     selectedId ? (store.entries.find((e) => e.id === selectedId) ?? null) : null,
@@ -132,35 +131,114 @@
 
   function handleItemClick(index: number): void { lightboxIndex = index; lightboxOpen = true; }
 
+  function toggleFolder(folderId: string): void {
+    const next = new Set(collapsedIds);
+    if (next.has(folderId)) next.delete(folderId); else next.add(folderId);
+    collapsedIds = next;
+  }
+
+  async function handleCreateFolder(parentId: string | null): Promise<void> {
+    try {
+      const folder = await store.createFolder({ name: "New folder", parentId });
+      if (parentId) {
+        const next = new Set(collapsedIds);
+        next.delete(parentId);
+        collapsedIds = next;
+      }
+      renamingFolderId = folder.id;
+    } catch (e) {
+      error = e instanceof Error ? e.message : "Create folder failed";
+    }
+  }
+
+  async function handleCreateEntryIn(folderId: string): Promise<void> {
+    try {
+      const entry = await store.createEntry({ title: "New entry", content: "", folderId });
+      selectEntry(entry);
+      editing = true;
+    } catch (e) {
+      error = e instanceof Error ? e.message : "Create failed";
+    }
+  }
+
+  async function handleRenameFolder(folderId: string, name: string): Promise<void> {
+    try {
+      await store.updateFolder(folderId, { name });
+    } catch (e) {
+      error = e instanceof Error ? e.message : "Rename failed";
+    } finally {
+      renamingFolderId = null;
+    }
+  }
+
+  function handleCancelRename(): void {
+    renamingFolderId = null;
+  }
+
+  async function handleDeleteFolder(folderId: string): Promise<void> {
+    try {
+      await store.deleteFolder(folderId);
+    } catch (e) {
+      error = e instanceof Error ? e.message : "Delete folder failed";
+    }
+  }
+
+  function handleStartDrag(kind: "entry" | "folder", id: string): void {
+    dragging = { kind, id };
+  }
+
+  function handleEndDrag(): void {
+    dragging = null;
+  }
+
+  async function handleDropOn(targetFolderId: string | null): Promise<void> {
+    const active = dragging;
+    dragging = null;
+    if (!active) return;
+    try {
+      if (active.kind === "entry") {
+        await store.updateEntry(active.id, { folderId: targetFolderId });
+      } else if (active.id !== targetFolderId) {
+        await store.updateFolder(active.id, { parentId: targetFolderId });
+      }
+    } catch (e) {
+      error = e instanceof Error ? e.message : "Move failed";
+    }
+  }
+
   function fmtDate(iso: string): string {
     return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
   }
 </script>
 
-<div class="kb-page">
+<Card style="display:flex; padding:0; overflow:hidden; height:100%; font-family: var(--font-sans);">
   <div class="kb-sidebar">
     <div class="sidebar-toolbar">
       <Input placeholder="🔍 Search…" bind:value={searchQuery} />
       <Button onclick={handleNew}>＋ New</Button>
+      <Button variant="secondary" onclick={() => handleCreateFolder(null)}>＋ Folder</Button>
     </div>
     <div class="entry-list">
-      {#each filteredEntries as entry (entry.id)}
-        <div
-          role="button"
-          tabindex="0"
-          class="entry-row"
-          class:active={entry.id === selectedId}
-          onclick={() => selectEntry(entry)}
-          onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") selectEntry(entry); }}
-        >
-          <div class="entry-title">{entry.title}</div>
-          <div class="entry-date">{fmtDate(entry.updatedAt)}</div>
-        </div>
-      {:else}
-        <div class="list-empty">
-          {searchQuery ? "No matching entries." : "No entries yet."}
-        </div>
-      {/each}
+      <KBTree
+        folders={store.folders}
+        entries={store.entries}
+        {selectedId}
+        {searchQuery}
+        {collapsedIds}
+        {renamingFolderId}
+        {dragging}
+        onselectentry={selectEntry}
+        ontogglefolder={toggleFolder}
+        oncreatesubfolder={handleCreateFolder}
+        oncreateentryin={handleCreateEntryIn}
+        onstartrename={(id) => { renamingFolderId = id; }}
+        oncommitrename={handleRenameFolder}
+        oncancelrename={handleCancelRename}
+        ondeletefolder={handleDeleteFolder}
+        onstartdrag={handleStartDrag}
+        onenddrag={handleEndDrag}
+        ondropon={handleDropOn}
+      />
     </div>
   </div>
 
@@ -233,15 +311,13 @@
       {/if}
     {/if}
   </div>
-</div>
+</Card>
 
 {#if lightboxOpen && mediaItems.length > 0}
   <Lightbox items={mediaItems} initialIndex={lightboxIndex} onclose={() => { lightboxOpen = false; }} />
 {/if}
 
 <style>
-  .kb-page { display: flex; height: 100%; background: var(--bg); font-family: var(--font-sans); }
-
   .kb-sidebar {
     width: 260px; flex-shrink: 0;
     display: flex; flex-direction: column;
@@ -257,15 +333,6 @@
     flex: 1; overflow-y: auto; padding: var(--space-2);
     display: flex; flex-direction: column; gap: 2px;
   }
-  .entry-row {
-    padding: 8px 10px; border-radius: var(--radius-md);
-    cursor: pointer; border-left: 3px solid transparent;
-  }
-  .entry-row:hover { background: var(--surface-hover); }
-  .entry-row.active { background: var(--surface-alt); border-left-color: var(--accent); }
-  .entry-title { font-size: 13px; color: var(--text); font-weight: 500; }
-  .entry-date { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
-  .list-empty { font-size: 12px; color: var(--text-faint); text-align: center; padding: 20px 0; }
 
   .kb-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
   .content-empty {
