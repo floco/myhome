@@ -1270,7 +1270,7 @@
         />
 
       {:else if currentRoute === "#/settings"}
-        <SettingsPage store={settingsStore} {authStore} />
+        <SettingsPage store={settingsStore} {authStore} importFromDonetick={choreStore.importFromDonetick} />
 
       {:else if currentRoute === "#/locations"}
         <PlaceholderPage icon="🌍" label="Locations" description="Pin and compare candidate locations on a map." />

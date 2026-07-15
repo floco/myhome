@@ -51,7 +51,7 @@ describe("SettingsPage — nav shell", () => {
   });
 
   it("shows the General panel by default", () => {
-    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore() } });
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore(), importFromDonetick: vi.fn(async () => 0) } });
     flushSync();
     expect(target.textContent).toContain("Home");
     expect(target.textContent).toContain("Modules");
@@ -59,7 +59,7 @@ describe("SettingsPage — nav shell", () => {
   });
 
   it("shows all 7 groups for an admin, including Integrations and Activity Log", () => {
-    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin") } });
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin"), importFromDonetick: vi.fn(async () => 0) } });
     flushSync();
     const labels = [...target.querySelectorAll(".nav-item")].map((b) => b.textContent);
     expect(labels.some((l) => l?.includes("General"))).toBe(true);
@@ -73,7 +73,7 @@ describe("SettingsPage — nav shell", () => {
   });
 
   it("hides Integrations for a non-admin, but keeps Security & Access and Activity Log", () => {
-    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("normal") } });
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("normal"), importFromDonetick: vi.fn(async () => 0) } });
     flushSync();
     const labels = [...target.querySelectorAll(".nav-item")].map((b) => b.textContent);
     expect(labels.some((l) => l?.includes("Integrations"))).toBe(false);
@@ -83,7 +83,7 @@ describe("SettingsPage — nav shell", () => {
   });
 
   it("switching to Categories via the nav shows the category sub-tabs", () => {
-    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore() } });
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore(), importFromDonetick: vi.fn(async () => 0) } });
     flushSync();
     const categoriesBtn = [...target.querySelectorAll<HTMLButtonElement>(".nav-item")].find((b) => b.textContent?.includes("Categories"))!;
     categoriesBtn.click();
@@ -94,7 +94,7 @@ describe("SettingsPage — nav shell", () => {
   });
 
   it("the mobile dropdown lists the same groups as the sidebar", () => {
-    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin") } });
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin"), importFromDonetick: vi.fn(async () => 0) } });
     flushSync();
     const sidebarCount = target.querySelectorAll(".nav-item").length;
     const dropdownCount = target.querySelectorAll(".nav-select option").length;

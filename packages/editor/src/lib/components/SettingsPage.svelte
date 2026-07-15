@@ -17,8 +17,9 @@
   interface Props {
     store: SettingsStore;
     authStore: AuthStore;
+    importFromDonetick: (token: string) => Promise<number>;
   }
-  let { store, authStore }: Props = $props();
+  let { store, authStore, importFromDonetick }: Props = $props();
 
   interface SettingsGroupDef {
     id: string;
@@ -66,7 +67,7 @@
       {:else if activeGroup === "security"}
         <SettingsSecurity {authStore} />
       {:else if activeGroup === "integrations"}
-        <SettingsIntegrations {authStore} />
+        <SettingsIntegrations {authStore} {importFromDonetick} />
       {:else if activeGroup === "backup"}
         <SettingsBackup />
       {:else if activeGroup === "activity"}
