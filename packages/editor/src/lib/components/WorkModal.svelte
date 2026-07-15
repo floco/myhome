@@ -2,6 +2,7 @@
   import type { createWorksStore, Work } from "../worksStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
+  import { apiUrl } from "../apiUrl";
   import DatePicker from "./DatePicker.svelte";
   import Modal from "./ui/Modal.svelte";
   import Input from "./ui/Input.svelte";
@@ -123,7 +124,7 @@
 
   const mediaItems = $derived<MediaItem[]>(
     (currentWork?.attachments ?? []).map(name => {
-      const url = `/api/works/${work!.id}/attachments/${name}`;
+      const url = apiUrl(`/api/works/${work!.id}/attachments/${name}`);
       const isPdf = name.toLowerCase().endsWith(".pdf");
       return {
         id: name,

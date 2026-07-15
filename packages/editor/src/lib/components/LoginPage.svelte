@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { apiUrl } from "../apiUrl";
+
   interface Props {
     onlogin: () => void;
     login: (username: string, password: string) => Promise<unknown>;
@@ -44,7 +46,7 @@
   checkOidcError();
 
   function signInWithOidc(): void {
-    window.location.href = "/api/auth/oidc/login";
+    window.location.href = apiUrl("/api/auth/oidc/login");
   }
 
   async function handleSubmit(e: SubmitEvent): Promise<void> {

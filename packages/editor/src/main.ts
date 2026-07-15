@@ -1,4 +1,5 @@
 // packages/editor/src/main.ts
+import "./lib/ingressFetchShim";
 import "./lib/theme.css";
 import { initTheme } from "./lib/theme";
 import { mount } from "svelte";

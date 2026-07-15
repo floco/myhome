@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { createChoreStore, Chore } from "../choreStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
+  import { apiUrl } from "../apiUrl";
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
@@ -80,7 +81,7 @@
 
   const mediaItems = $derived<MediaItem[]>(
     (chore?.attachments ?? []).map(fname => {
-      const url = `/api/chores/${chore?.id}/attachments/${fname}`;
+      const url = apiUrl(`/api/chores/${chore?.id}/attachments/${fname}`);
       const isPdf = fname.toLowerCase().endsWith(".pdf");
       return { id: fname, name: fname, url, thumbnailUrl: isPdf ? `${url}.thumb.jpg` : url, type: isPdf ? "document" : "image" };
     })
