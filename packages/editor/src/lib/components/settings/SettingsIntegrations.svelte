@@ -2,13 +2,16 @@
 <script lang="ts">
   import type { createAuthStore } from "../../authStore.svelte";
   import Card from "../ui/Card.svelte";
+  import Button from "../ui/Button.svelte";
+  import Input from "../ui/Input.svelte";
 
   type AuthStore = ReturnType<typeof createAuthStore>;
 
   interface Props {
     authStore: AuthStore;
+    importFromDonetick: (token: string) => Promise<number>;
   }
-  let { authStore }: Props = $props();
+  let { authStore, importFromDonetick }: Props = $props();
 
   let mcpEnabled = $state(false);
   let mcpConfigLoaded = $state(false);
@@ -39,6 +42,21 @@
   }
 
   loadMcpConfig();
+
+  let importToken = $state("");
+  let importStatus = $state<"idle" | "loading" | "done" | "error">("idle");
+  let importCount = $state(0);
+
+  async function handleImport(): Promise<void> {
+    importStatus = "loading";
+    try {
+      importCount = await importFromDonetick(importToken.trim());
+      importStatus = "done";
+      importToken = "";
+    } catch {
+      importStatus = "error";
+    }
+  }
 </script>
 
 {#if authStore.user?.role === "admin"}
@@ -63,6 +81,24 @@
     {/if}
     {#if mcpError}<div class="error">{mcpError}</div>{/if}
   </Card>
+
+  <Card>
+    <div class="section-header">
+      <h2>Donetick</h2>
+    </div>
+    <p class="section-desc">
+      Imports chores from your Donetick instance into this home. Paste an API
+      token from Donetick and click Import.
+    </p>
+    <div class="import-row">
+      <Input type="password" placeholder="API token" bind:value={importToken} />
+      <Button disabled={importStatus === "loading"} onclick={handleImport}>
+        {importStatus === "loading" ? "Importing…" : "Import"}
+      </Button>
+      {#if importStatus === "error"}<span class="msg-error">Failed</span>{/if}
+      {#if importStatus === "done"}<span class="msg-success">{importCount} imported</span>{/if}
+    </div>
+  </Card>
 {/if}
 
 <style>
@@ -75,4 +111,8 @@
   .module-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; cursor: pointer; }
   .module-row input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; }
   .mod-label { font-size: 13px; color: var(--text); }
+
+  .import-row { display: flex; align-items: center; gap: 10px; margin-top: var(--space-2); }
+  .msg-error { color: var(--danger); font-size: 11px; }
+  .msg-success { color: var(--success); font-size: 11px; }
 </style>
