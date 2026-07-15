@@ -13,7 +13,7 @@ init: false
 homeassistant_api: true
 ingress: true
 ingress_port: 8000
-panel_icon: mdi:home-floor-plan
+panel_icon: mdi:floor-plan
 panel_title: My Home
 map:
   - data:rw
