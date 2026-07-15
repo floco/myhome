@@ -98,7 +98,16 @@ _EXEMPT_PATHS = {
 
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
-    if request.url.path in _EXEMPT_PATHS:
+    path = request.url.path
+    if path in _EXEMPT_PATHS:
+        return await call_next(request)
+    if not (path.startswith("/api/") or path.startswith("/mcp")):
+        # Static frontend assets (including the SPA shell at "/") are public --
+        # every real route is registered under /api/, so this only ever
+        # matches static files. The SPA itself decides whether to show the
+        # login screen based on 401s from its own /api/auth/me call; it can't
+        # do that if the shell/JS bundle never loads in the first place (e.g.
+        # a Home Assistant ingress request, which never carries our cookies).
         return await call_next(request)
     user = await get_user_from_request(request)
     if user is None:
