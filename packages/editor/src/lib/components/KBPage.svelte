@@ -65,12 +65,42 @@
     error = null;
   }
 
-  function handleTreeSelect(entry: KBEntry): void {
+  // Set right before calling onnavigate() so the reconciliation effect below
+  // can recognize the resulting selectedItemId prop update as an echo of our
+  // own internal navigation (not a fresh external one) while it's in flight.
+  let pendingNavigateId = $state<string | null>(null);
+
+  function navigate(entry: KBEntry): void {
     selectEntry(entry);
+    pendingNavigateId = entry.id;
     onnavigate?.(entry.id);
   }
 
+  function handleTreeSelect(entry: KBEntry): void {
+    navigate(entry);
+  }
+
+  // Reconciles the selectedItemId prop (sourced from the URL, e.g. deep
+  // links, global search, browser back/forward) with local selection state.
+  //
+  // Internal navigation (handleNewPage, handleCreateChild, handleTreeSelect)
+  // sets selectedId immediately via selectEntry(), then calls onnavigate()
+  // to update the URL hash -- but the hashchange event, and therefore the
+  // selectedItemId prop, only updates asynchronously afterward. In that gap,
+  // any unrelated reactive re-run of this effect (e.g. triggered by
+  // store.entries changing) would otherwise see a still-stale selectedItemId
+  // that disagrees with the selectedId we just set, wrongly conclude the
+  // user navigated elsewhere, and revert the selection -- clobbering the
+  // editing=true the caller just set. pendingNavigateId suppresses
+  // reconciliation for exactly that window, without preventing retries once
+  // store.entries finishes loading on a fresh deep-linked page load (where
+  // selectedItemId legitimately differs from selectedId and there's no
+  // pending internal navigation to protect).
   $effect(() => {
+    if (pendingNavigateId !== null) {
+      if (selectedItemId === pendingNavigateId) pendingNavigateId = null;
+      return;
+    }
     if (selectedItemId && selectedItemId !== selectedId) {
       const found = store.entries.find((e) => e.id === selectedItemId);
       if (found) selectEntry(found);
@@ -85,9 +115,8 @@
   async function handleNewPage(): Promise<void> {
     try {
       const entry = await store.createEntry({ title: "New page", content: "" });
-      selectEntry(entry);
+      navigate(entry);
       editing = true;
-      onnavigate?.(entry.id);
     } catch (e) {
       error = e instanceof Error ? e.message : "Create failed";
     }
@@ -104,9 +133,8 @@
       const next = new Set(collapsedIds);
       next.delete(parentId);
       collapsedIds = next;
-      selectEntry(entry);
+      navigate(entry);
       editing = true;
-      onnavigate?.(entry.id);
     } catch (e) {
       error = e instanceof Error ? e.message : "Create failed";
     }
