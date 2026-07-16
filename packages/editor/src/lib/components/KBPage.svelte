@@ -122,14 +122,17 @@
     }
   }
 
+  async function appendChildLink(parentId: string, child: { id: string; title: string }): Promise<void> {
+    const parent = store.entries.find((e) => e.id === parentId);
+    if (!parent) return;
+    const link = `[${child.title}](#/kb/${child.id})`;
+    await store.updateEntry(parentId, { content: `${parent.content}\n\n${link}\n` });
+  }
+
   async function handleCreateChild(parentId: string): Promise<void> {
     try {
-      const parent = store.entries.find((e) => e.id === parentId);
       const entry = await store.createEntry({ title: "New page", content: "", parentId });
-      if (parent) {
-        const link = `[${entry.title}](#/kb/${entry.id})`;
-        await store.updateEntry(parentId, { content: `${parent.content}\n\n${link}\n` });
-      }
+      await appendChildLink(parentId, entry);
       const next = new Set(collapsedIds);
       next.delete(parentId);
       collapsedIds = next;
@@ -276,6 +279,9 @@
       const dragged = store.entries.find((e) => e.id === draggedId);
       if (dragged && dragged.parentId !== targetParentId) {
         await store.updateEntry(draggedId, { parentId: targetParentId });
+        if (targetParentId) {
+          await appendChildLink(targetParentId, dragged);
+        }
       }
       if (orderedIds) {
         await store.reorderSiblings(targetParentId, orderedIds);
