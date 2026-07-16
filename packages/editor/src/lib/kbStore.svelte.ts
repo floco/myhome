@@ -5,24 +5,24 @@ export interface KBEntry {
   createdAt: string;
   updatedAt: string;
   attachments: string[];
-  folderId: string | null;
-}
-
-export interface KBFolder {
-  id: string;
-  name: string;
   parentId: string | null;
+  icon: string;
+  order: number;
+  deletedAt?: string | null;
 }
 
 export interface KBDocument {
   version: number;
   entries: KBEntry[];
-  folders: KBFolder[];
+}
+
+export interface KBTrashDocument {
+  entries: KBEntry[];
 }
 
 export function createKBStore(getHomeId: () => string | null = () => null) {
   const entries = $state<KBEntry[]>([]);
-  const folders = $state<KBFolder[]>([]);
+  const trash = $state<KBEntry[]>([]);
   let loaded = $state(false);
   let loadError = $state<string | null>(null);
 
@@ -35,9 +35,7 @@ export function createKBStore(getHomeId: () => string | null = () => null) {
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const doc: KBDocument = await resp.json();
       entries.length = 0;
-      for (const e of doc.entries) entries.push({ attachments: [], folderId: null, ...e });
-      folders.length = 0;
-      for (const f of doc.folders ?? []) folders.push(f);
+      for (const e of doc.entries) entries.push({ attachments: [], parentId: null, icon: "📄", order: 0, ...e });
     } catch (e) {
       loadError = e instanceof Error ? e.message : String(e);
     } finally {
@@ -46,12 +44,13 @@ export function createKBStore(getHomeId: () => string | null = () => null) {
   }
 
   async function createEntry(
-    data: { title: string; content: string; folderId?: string | null },
+    data: { title: string; content: string; parentId?: string | null; icon?: string },
   ): Promise<KBEntry> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
     const payload: Record<string, unknown> = { title: data.title, content: data.content };
-    if (data.folderId !== undefined) payload.folderId = data.folderId;
+    if (data.parentId !== undefined) payload.parentId = data.parentId;
+    if (data.icon !== undefined) payload.icon = data.icon;
     const resp = await fetch(`/api/homes/${homeId}/kb`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -65,7 +64,7 @@ export function createKBStore(getHomeId: () => string | null = () => null) {
 
   async function updateEntry(
     id: string,
-    patch: { title?: string; content?: string; folderId?: string | null },
+    patch: { title?: string; content?: string; parentId?: string | null; icon?: string },
   ): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
@@ -78,12 +77,26 @@ export function createKBStore(getHomeId: () => string | null = () => null) {
     await init();
   }
 
-  async function deleteEntry(id: string): Promise<void> {
+  async function reorderSiblings(parentId: string | null, orderedIds: string[]): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/kb/reorder`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parentId, orderedIds }),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
+  async function deleteEntry(id: string): Promise<number> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
     const resp = await fetch(`/api/homes/${homeId}/kb/${id}`, { method: "DELETE" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const result = await resp.json();
     await init();
+    return result.deletedCount as number;
   }
 
   async function uploadAttachment(id: string, file: File): Promise<string> {
@@ -106,58 +119,58 @@ export function createKBStore(getHomeId: () => string | null = () => null) {
     await init();
   }
 
-  async function createFolder(data: { name: string; parentId?: string | null }): Promise<KBFolder> {
+  async function loadTrash(): Promise<void> {
     const homeId = getHomeId();
-    if (!homeId) throw new Error("No active home");
-    const resp = await fetch(`/api/homes/${homeId}/kb/folders`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: data.name, parentId: data.parentId ?? null }),
-    });
+    if (!homeId) return;
+    const resp = await fetch(`/api/homes/${homeId}/kb/trash`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const folder: KBFolder = await resp.json();
-    await init();
-    return folder;
+    const doc: KBTrashDocument = await resp.json();
+    trash.length = 0;
+    for (const e of doc.entries) trash.push(e);
   }
 
-  async function updateFolder(
-    id: string,
-    patch: { name?: string; parentId?: string | null },
-  ): Promise<void> {
+  async function restoreEntry(id: string): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
-    const resp = await fetch(`/api/homes/${homeId}/kb/folders/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
-    });
+    const resp = await fetch(`/api/homes/${homeId}/kb/trash/${id}/restore`, { method: "POST" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
+    await loadTrash();
   }
 
-  async function deleteFolder(id: string): Promise<void> {
+  async function permanentlyDeleteEntry(id: string): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
-    const resp = await fetch(`/api/homes/${homeId}/kb/folders/${id}`, { method: "DELETE" });
+    const resp = await fetch(`/api/homes/${homeId}/kb/trash/${id}`, { method: "DELETE" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    await init();
+    await loadTrash();
+  }
+
+  async function emptyTrash(): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/kb/trash/empty`, { method: "POST" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await loadTrash();
   }
 
   init();
 
   return {
     get entries() { return entries as KBEntry[]; },
-    get folders() { return folders as KBFolder[]; },
+    get trash() { return trash as KBEntry[]; },
     get loaded() { return loaded; },
     get loadError() { return loadError; },
     createEntry,
     updateEntry,
+    reorderSiblings,
     deleteEntry,
     uploadAttachment,
     deleteAttachment,
-    createFolder,
-    updateFolder,
-    deleteFolder,
+    loadTrash,
+    restoreEntry,
+    permanentlyDeleteEntry,
+    emptyTrash,
     reload: init,
   };
 }

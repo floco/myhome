@@ -127,7 +127,7 @@ export function buildSearchIndex(stores: SearchStores): SearchResult[] {
     results.push({
       module: "kb",
       id: entry.id,
-      icon: "📄",
+      icon: entry.icon,
       title: entry.title,
       subtitle: "Knowledge Base",
       searchText: norm(entry.title, entry.content),

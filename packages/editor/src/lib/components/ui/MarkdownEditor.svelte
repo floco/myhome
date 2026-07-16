@@ -13,6 +13,8 @@
     minHeight?: string;
     mediaItems?: MediaItem[];
     clickToEdit?: boolean;
+    resolveKbLink?: (id: string) => { title: string; icon: string } | null;
+    onSlashPage?: () => Promise<{ id: string; title: string } | null>;
   }
 
   let {
@@ -22,6 +24,8 @@
     minHeight = "200px",
     mediaItems = [],
     clickToEdit = true,
+    resolveKbLink,
+    onSlashPage,
   }: Props = $props();
 
   let textareaEl: HTMLTextAreaElement | null = $state(null);
@@ -38,9 +42,30 @@
     return () => document.removeEventListener("click", handleClick);
   });
 
+  function resolveKbLinksInHtml(html: string): string {
+    if (!resolveKbLink) return html;
+    const template = document.createElement("template");
+    template.innerHTML = html;
+    template.content.querySelectorAll("a[href^='#/kb/']").forEach((node) => {
+      const a = node as HTMLAnchorElement;
+      const href = a.getAttribute("href") ?? "";
+      const id = decodeURIComponent(href.slice("#/kb/".length));
+      const target = resolveKbLink!(id);
+      if (target) {
+        a.textContent = `${target.icon} ${target.title}`;
+        a.classList.add("kb-link");
+      } else {
+        a.removeAttribute("href");
+        a.textContent = "Page deleted";
+        a.classList.add("kb-link-deleted");
+      }
+    });
+    return template.innerHTML;
+  }
+
   // marked() is sync here (no async extensions); cast to string is safe.
   const renderedHtml = $derived(
-    value.trim() ? DOMPurify.sanitize(marked(value) as string) : "",
+    value.trim() ? resolveKbLinksInHtml(DOMPurify.sanitize(marked(value) as string)) : "",
   );
 
   /** Wrap the current selection (or insert placeholder text) with before/after. */
@@ -62,6 +87,19 @@
     const lineStart = value.lastIndexOf("\n", s - 1) + 1;
     value = value.slice(0, lineStart) + prefix + value.slice(lineStart);
     const ns = lineStart + prefix.length;
+    setTimeout(() => { if (textareaEl) { textareaEl.focus(); textareaEl.setSelectionRange(ns, ns); } }, 0);
+  }
+
+  async function handleTextareaInput(): Promise<void> {
+    if (!onSlashPage || !textareaEl) return;
+    const cursor = textareaEl.selectionStart;
+    const lineStart = value.lastIndexOf("\n", cursor - 1) + 1;
+    if (value.slice(lineStart, cursor) !== "/page") return;
+    const result = await onSlashPage();
+    if (!result || !textareaEl) return;
+    const link = `[${result.title}](#/kb/${result.id})`;
+    value = value.slice(0, lineStart) + link + value.slice(cursor);
+    const ns = lineStart + link.length;
     setTimeout(() => { if (textareaEl) { textareaEl.focus(); textareaEl.setSelectionRange(ns, ns); } }, 0);
   }
 
@@ -148,6 +186,7 @@
     style:min-height={minHeight}
     bind:this={textareaEl}
     bind:value
+    oninput={handleTextareaInput}
     placeholder="Write in Markdown…"
   ></textarea>
 {:else}
@@ -262,6 +301,10 @@
   }
   .md-preview :global(hr) { border: none; border-top: 1px solid var(--border); margin: 0.8em 0; }
   .md-preview :global(a) { color: var(--accent); }
+  .md-preview :global(a.kb-link) { font-weight: 500; }
+  .md-preview :global(a.kb-link-deleted) {
+    color: var(--text-faint); text-decoration: line-through; cursor: default;
+  }
   .md-preview :global(strong) { color: var(--text); }
   .md-preview :global(em) { color: var(--text-muted); }
   .md-preview :global(table) { border-collapse: collapse; width: 100%; margin: 0.5em 0; font-size: 12px; }

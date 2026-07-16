@@ -1,245 +1,227 @@
 <!-- packages/editor/src/lib/components/ui/KBTree.svelte -->
 <script lang="ts">
-  import type { KBEntry, KBFolder } from "../../kbStore.svelte";
+  import type { KBEntry } from "../../kbStore.svelte";
   import Self from "./KBTree.svelte";
 
-  interface Dragging {
-    kind: "entry" | "folder";
+  interface DropIndicator {
     id: string;
+    position: "before" | "after" | "inside";
   }
 
   interface Props {
-    folders: KBFolder[];
     entries: KBEntry[];
     parentId?: string | null;
     depth?: number;
     selectedId: string | null;
     searchQuery: string;
     collapsedIds: Set<string>;
-    renamingFolderId: string | null;
-    dragging: Dragging | null;
-    onselectentry: (entry: KBEntry) => void;
-    ontogglefolder: (folderId: string) => void;
-    oncreatesubfolder: (parentId: string) => void;
-    oncreateentryin: (folderId: string) => void;
-    onstartrename: (folderId: string) => void;
-    oncommitrename: (folderId: string, name: string) => void;
+    renamingId: string | null;
+    dragging: string | null;
+    onselect: (entry: KBEntry) => void;
+    ontoggle: (id: string) => void;
+    oncreatechild: (parentId: string) => void;
+    onstartrename: (id: string) => void;
+    oncommitrename: (id: string, title: string) => void;
     oncancelrename: () => void;
-    ondeletefolder: (folderId: string) => void;
-    onstartdrag: (kind: "entry" | "folder", id: string) => void;
+    ondelete: (id: string) => void;
+    onstartdrag: (id: string) => void;
     onenddrag: () => void;
-    ondropon: (targetFolderId: string | null) => void;
+    ondrop: (draggedId: string, targetParentId: string | null, orderedIds: string[] | null) => void;
   }
 
   let {
-    folders, entries, parentId = null, depth = 0, selectedId, searchQuery, collapsedIds,
-    renamingFolderId, dragging,
-    onselectentry, ontogglefolder, oncreatesubfolder, oncreateentryin,
-    onstartrename, oncommitrename, oncancelrename, ondeletefolder,
-    onstartdrag, onenddrag, ondropon,
+    entries, parentId = null, depth = 0, selectedId, searchQuery, collapsedIds,
+    renamingId, dragging,
+    onselect, ontoggle, oncreatechild, onstartrename, oncommitrename, oncancelrename, ondelete,
+    onstartdrag, onenddrag, ondrop,
   }: Props = $props();
 
   let renameDraft = $state("");
   let menuOpenFor = $state<string | null>(null);
-  let dragOverId = $state<string | null>(null);
+  let dropIndicator = $state<DropIndicator | null>(null);
 
   function matches(text: string): boolean {
     const q = searchQuery.trim().toLowerCase();
     return !q || text.toLowerCase().includes(q);
   }
 
-  const visibleFolderIds = $derived.by(() => {
+  // A live page whose parentId doesn't match any other live page (null, or
+  // pointing at a page that's been trashed/deleted) renders as top-level.
+  function isRootLevel(entry: KBEntry): boolean {
+    return entry.parentId === null || !entries.some((p) => p.id === entry.parentId);
+  }
+
+  const visibleIds = $derived.by(() => {
     const q = searchQuery.trim();
     if (!q) return null;
-    const childFoldersOf = new Map<string | null, KBFolder[]>();
-    for (const f of folders) {
-      const list = childFoldersOf.get(f.parentId) ?? [];
-      list.push(f);
-      childFoldersOf.set(f.parentId, list);
-    }
-    const childEntriesOf = new Map<string | null, KBEntry[]>();
+    const childrenOf = new Map<string | null, KBEntry[]>();
     for (const e of entries) {
-      const list = childEntriesOf.get(e.folderId) ?? [];
+      const key = isRootLevel(e) ? null : e.parentId;
+      const list = childrenOf.get(key) ?? [];
       list.push(e);
-      childEntriesOf.set(e.folderId, list);
+      childrenOf.set(key, list);
     }
     const visible = new Set<string>();
-    function visit(folder: KBFolder): boolean {
-      const ownMatch = matches(folder.name);
-      const hasMatchingEntry = (childEntriesOf.get(folder.id) ?? []).some((e) => matches(e.title));
-      const hasMatchingChild = (childFoldersOf.get(folder.id) ?? []).map(visit).some(Boolean);
-      const keep = ownMatch || hasMatchingEntry || hasMatchingChild;
-      if (keep) visible.add(folder.id);
+    function visit(entry: KBEntry): boolean {
+      const ownMatch = matches(entry.title);
+      const hasMatchingChild = (childrenOf.get(entry.id) ?? []).map(visit).some(Boolean);
+      const keep = ownMatch || hasMatchingChild;
+      if (keep) visible.add(entry.id);
       return keep;
     }
-    for (const f of childFoldersOf.get(null) ?? []) visit(f);
+    for (const e of childrenOf.get(null) ?? []) visit(e);
     return visible;
   });
 
-  const childFolders = $derived(
-    folders
-      .filter((f) => f.parentId === parentId)
-      .filter((f) => visibleFolderIds === null || visibleFolderIds.has(f.id))
-      .slice()
-      .sort((a, b) => a.name.localeCompare(b.name)),
-  );
   const childEntries = $derived(
     entries
-      .filter((e) => e.folderId === parentId)
-      .filter((e) => matches(e.title))
+      .filter((e) => (parentId === null ? isRootLevel(e) : e.parentId === parentId))
+      .filter((e) => visibleIds === null || visibleIds.has(e.id))
       .slice()
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+      .sort((a, b) => a.order - b.order),
   );
 
-  function isOpen(folderId: string): boolean {
-    return searchQuery.trim() !== "" || !collapsedIds.has(folderId);
+  function isOpen(id: string): boolean {
+    return searchQuery.trim() !== "" || !collapsedIds.has(id);
   }
 
-  function hasChildren(folderId: string): boolean {
-    return folders.some((f) => f.parentId === folderId) || entries.some((e) => e.folderId === folderId);
+  function hasChildren(id: string): boolean {
+    return entries.some((e) => e.parentId === id);
   }
 
-  function fmtDate(iso: string): string {
-    return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  }
-
-  function startRename(folder: KBFolder): void {
-    renameDraft = folder.name;
+  function startRename(entry: KBEntry): void {
+    renameDraft = entry.title;
     menuOpenFor = null;
-    onstartrename(folder.id);
+    onstartrename(entry.id);
   }
 
-  function commitRename(folderId: string): void {
-    const name = renameDraft.trim();
-    if (name) oncommitrename(folderId, name);
+  function commitRename(id: string): void {
+    const title = renameDraft.trim();
+    if (title) oncommitrename(id, title);
     else oncancelrename();
   }
 
-  function wouldCreateCycle(folderId: string, targetId: string): boolean {
-    if (folderId === targetId) return true;
+  function wouldCreateCycle(draggedId: string, targetId: string): boolean {
+    if (draggedId === targetId) return true;
     let current: string | null = targetId;
     const seen = new Set<string>();
     while (current !== null) {
-      if (current === folderId) return true;
+      if (current === draggedId) return true;
       if (seen.has(current)) return false;
       seen.add(current);
-      const f = folders.find((x) => x.id === current);
-      current = f ? f.parentId : null;
+      const e = entries.find((x) => x.id === current);
+      current = e ? e.parentId : null;
     }
     return false;
   }
 
-  function canDropOnFolder(targetId: string): boolean {
-    if (!dragging) return false;
-    if (dragging.kind === "folder" && wouldCreateCycle(dragging.id, targetId)) return false;
-    return true;
+  function handleDragOver(e: DragEvent, entry: KBEntry): void {
+    if (!dragging || dragging === entry.id || wouldCreateCycle(dragging, entry.id)) return;
+    e.preventDefault();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const ratio = (e.clientY - rect.top) / rect.height;
+    const position = ratio < 0.25 ? "before" : ratio > 0.75 ? "after" : "inside";
+    dropIndicator = { id: entry.id, position };
+  }
+
+  function handleDrop(e: DragEvent, entry: KBEntry): void {
+    e.preventDefault();
+    const indicator = dropIndicator;
+    dropIndicator = null;
+    if (!dragging || dragging === entry.id || wouldCreateCycle(dragging, entry.id) || !indicator) return;
+    if (indicator.position === "inside") {
+      ondrop(dragging, entry.id, null);
+      return;
+    }
+    const siblings = entries
+      .filter((s) => s.parentId === entry.parentId && s.id !== dragging)
+      .sort((a, b) => a.order - b.order);
+    const targetIndex = siblings.findIndex((s) => s.id === entry.id);
+    const insertAt = indicator.position === "before" ? targetIndex : targetIndex + 1;
+    const orderedIds = siblings.map((s) => s.id);
+    orderedIds.splice(insertAt, 0, dragging);
+    ondrop(dragging, entry.parentId, orderedIds);
   }
 </script>
 
 <ul class="kb-tree" class:root={depth === 0}>
-  {#each childFolders as folder (folder.id)}
-    <li>
-      <div
-        class="tree-row folder-row"
-        class:drop-target={dragOverId === folder.id}
-        draggable="true"
-        role="treeitem"
-        aria-expanded={isOpen(folder.id)}
-        tabindex="0"
-        ondragstart={(e) => { e.dataTransfer?.setData("text/plain", ""); onstartdrag("folder", folder.id); }}
-        ondragend={onenddrag}
-        ondragover={(e) => { if (canDropOnFolder(folder.id)) { e.preventDefault(); dragOverId = folder.id; } }}
-        ondragleave={() => { if (dragOverId === folder.id) dragOverId = null; }}
-        ondrop={(e) => {
-          e.preventDefault();
-          dragOverId = null;
-          if (canDropOnFolder(folder.id)) ondropon(folder.id);
-        }}
-      >
-        <button
-          class="disclosure"
-          onclick={() => ontogglefolder(folder.id)}
-          aria-label={isOpen(folder.id) ? "Collapse folder" : "Expand folder"}
-        >{isOpen(folder.id) ? "▾" : "▸"}</button>
-        <span class="folder-icon">📁</span>
-        {#if renamingFolderId === folder.id}
-          <input
-            class="rename-input"
-            bind:value={renameDraft}
-            onblur={() => commitRename(folder.id)}
-            onkeydown={(e) => {
-              if (e.key === "Enter") commitRename(folder.id);
-              if (e.key === "Escape") oncancelrename();
-            }}
-          />
-        {:else}
-          <span class="folder-name">{folder.name}</span>
-        {/if}
-        <button
-          class="menu-trigger"
-          title="Folder actions"
-          onclick={() => { menuOpenFor = menuOpenFor === folder.id ? null : folder.id; }}
-        >⋯</button>
-        {#if menuOpenFor === folder.id}
-          <div class="folder-menu" role="menu">
-            <button role="menuitem" onclick={() => { oncreatesubfolder(folder.id); menuOpenFor = null; }}>New subfolder</button>
-            <button role="menuitem" onclick={() => { oncreateentryin(folder.id); menuOpenFor = null; }}>New entry here</button>
-            <button role="menuitem" onclick={() => startRename(folder)}>Rename</button>
-            <button
-              role="menuitem"
-              class="danger"
-              disabled={hasChildren(folder.id)}
-              title={hasChildren(folder.id) ? "Folder must be empty" : undefined}
-              onclick={() => { ondeletefolder(folder.id); menuOpenFor = null; }}
-            >Delete</button>
-          </div>
-        {/if}
-      </div>
-      {#if isOpen(folder.id)}
-        <Self
-          {folders} {entries} parentId={folder.id} depth={depth + 1}
-          {selectedId} {searchQuery} {collapsedIds} {renamingFolderId} {dragging}
-          {onselectentry} {ontogglefolder} {oncreatesubfolder} {oncreateentryin}
-          {onstartrename} {oncommitrename} {oncancelrename} {ondeletefolder}
-          {onstartdrag} {onenddrag} {ondropon}
-        />
-      {/if}
-    </li>
-  {/each}
   {#each childEntries as entry (entry.id)}
     <li>
       <div
         role="button"
         tabindex="0"
-        class="tree-row entry-row"
+        class="tree-row"
         class:active={entry.id === selectedId}
+        class:drop-before={dropIndicator?.id === entry.id && dropIndicator.position === "before"}
+        class:drop-after={dropIndicator?.id === entry.id && dropIndicator.position === "after"}
+        class:drop-inside={dropIndicator?.id === entry.id && dropIndicator.position === "inside"}
         draggable="true"
-        ondragstart={(e) => { e.dataTransfer?.setData("text/plain", ""); onstartdrag("entry", entry.id); }}
-        ondragend={onenddrag}
-        onclick={() => onselectentry(entry)}
-        onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") onselectentry(entry); }}
+        ondragstart={(e) => { e.dataTransfer?.setData("text/plain", ""); onstartdrag(entry.id); }}
+        ondragend={() => { dropIndicator = null; onenddrag(); }}
+        ondragover={(e) => handleDragOver(e, entry)}
+        ondragleave={() => { if (dropIndicator?.id === entry.id) dropIndicator = null; }}
+        ondrop={(e) => handleDrop(e, entry)}
+        onclick={() => onselect(entry)}
+        onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") onselect(entry); }}
       >
-        <span class="entry-title">{entry.title}</span>
-        <span class="entry-date">{fmtDate(entry.updatedAt)}</span>
+        {#if hasChildren(entry.id)}
+          <button
+            class="disclosure"
+            onclick={(e) => { e.stopPropagation(); ontoggle(entry.id); }}
+            aria-label={isOpen(entry.id) ? "Collapse" : "Expand"}
+          >{isOpen(entry.id) ? "▾" : "▸"}</button>
+        {:else}
+          <span class="disclosure-spacer"></span>
+        {/if}
+        <span class="page-icon">{entry.icon || "📄"}</span>
+        {#if renamingId === entry.id}
+          <input
+            class="rename-input"
+            bind:value={renameDraft}
+            onclick={(e) => e.stopPropagation()}
+            onblur={() => commitRename(entry.id)}
+            onkeydown={(e) => {
+              if (e.key === "Enter") commitRename(entry.id);
+              if (e.key === "Escape") oncancelrename();
+            }}
+          />
+        {:else}
+          <span class="page-title">{entry.title}</span>
+        {/if}
+        <button
+          class="add-child"
+          title="Add child page"
+          onclick={(e) => { e.stopPropagation(); oncreatechild(entry.id); }}
+        >＋</button>
+        <button
+          class="menu-trigger"
+          title="Page actions"
+          onclick={(e) => { e.stopPropagation(); menuOpenFor = menuOpenFor === entry.id ? null : entry.id; }}
+        >⋯</button>
+        {#if menuOpenFor === entry.id}
+          <div class="page-menu" role="menu">
+            <button role="menuitem" onclick={(e) => { e.stopPropagation(); oncreatechild(entry.id); menuOpenFor = null; }}>Add child page</button>
+            <button role="menuitem" onclick={(e) => { e.stopPropagation(); startRename(entry); }}>Rename</button>
+            <button role="menuitem" class="danger" onclick={(e) => { e.stopPropagation(); ondelete(entry.id); menuOpenFor = null; }}>Delete</button>
+          </div>
+        {/if}
       </div>
+      {#if hasChildren(entry.id) && isOpen(entry.id)}
+        <Self
+          {entries} parentId={entry.id} depth={depth + 1}
+          {selectedId} {searchQuery} {collapsedIds} {renamingId} {dragging}
+          {onselect} {ontoggle} {oncreatechild} {onstartrename} {oncommitrename} {oncancelrename} {ondelete}
+          {onstartdrag} {onenddrag} {ondrop}
+        />
+      {/if}
     </li>
   {/each}
-  {#if depth === 0 && childFolders.length === 0 && childEntries.length === 0}
+  {#if depth === 0 && childEntries.length === 0}
     <li class="list-empty">
-      {searchQuery.trim() ? "No matching entries." : "No entries yet."}
+      {searchQuery.trim() ? "No matching pages." : "No pages yet."}
     </li>
   {/if}
 </ul>
-
-{#if depth === 0 && dragging}
-  <div
-    class="root-dropzone"
-    class:drop-target={dragOverId === "__root__"}
-    ondragover={(e) => { e.preventDefault(); dragOverId = "__root__"; }}
-    ondragleave={() => { if (dragOverId === "__root__") dragOverId = null; }}
-    ondrop={(e) => { e.preventDefault(); dragOverId = null; ondropon(null); }}
-  >⬆ Move to top level</div>
-{/if}
 
 <style>
   .kb-tree { list-style: none; margin: 0; padding: 0; }
@@ -249,17 +231,21 @@
     display: flex; align-items: center; gap: 6px;
     padding: 6px 8px; border-radius: var(--radius-md);
     cursor: pointer; position: relative;
+    border-left: 3px solid transparent;
   }
   .tree-row:hover { background: var(--surface-hover); }
-  .tree-row.drop-target { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .tree-row.active { background: var(--surface-alt); border-left-color: var(--accent); }
+  .tree-row.drop-inside { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .tree-row.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+  .tree-row.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
 
-  .folder-row { cursor: default; }
   .disclosure {
     background: none; border: none; padding: 0; width: 14px; flex-shrink: 0;
     color: var(--text-faint); font-size: 10px; cursor: pointer;
   }
-  .folder-icon { flex-shrink: 0; font-size: 13px; }
-  .folder-name {
+  .disclosure-spacer { width: 14px; flex-shrink: 0; }
+  .page-icon { flex-shrink: 0; font-size: 13px; }
+  .page-title {
     flex: 1; min-width: 0; font-size: 13px; color: var(--text); font-weight: 500;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
@@ -270,39 +256,25 @@
   }
   .rename-input:focus { outline: none; }
 
-  .menu-trigger {
+  .add-child, .menu-trigger {
     background: none; border: none; padding: 2px 4px; color: var(--text-faint);
     cursor: pointer; font-size: 13px; opacity: 0; flex-shrink: 0;
   }
-  .tree-row:hover .menu-trigger, .menu-trigger:focus { opacity: 1; }
+  .tree-row:hover .add-child, .tree-row:hover .menu-trigger,
+  .add-child:focus, .menu-trigger:focus { opacity: 1; }
 
-  .folder-menu {
+  .page-menu {
     position: absolute; top: 100%; right: 0; z-index: 10;
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius-md); box-shadow: var(--shadow-md);
     display: flex; flex-direction: column; min-width: 150px; padding: 4px;
   }
-  .folder-menu button {
+  .page-menu button {
     background: none; border: none; text-align: left; padding: 6px 10px;
     font-size: 12px; color: var(--text); border-radius: var(--radius-sm); cursor: pointer;
   }
-  .folder-menu button:hover:not(:disabled) { background: var(--surface-hover); }
-  .folder-menu button.danger { color: var(--danger); }
-  .folder-menu button:disabled { color: var(--text-faint); cursor: default; }
-
-  .entry-row { padding: 8px 10px 8px 26px; border-left: 3px solid transparent; border-radius: var(--radius-md); }
-  .entry-row.active { background: var(--surface-alt); border-left-color: var(--accent); }
-  .entry-title {
-    font-size: 13px; color: var(--text); font-weight: 500; flex: 1; min-width: 0;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .entry-date { font-size: 11px; color: var(--text-faint); flex-shrink: 0; }
+  .page-menu button:hover { background: var(--surface-hover); }
+  .page-menu button.danger { color: var(--danger); }
 
   .list-empty { font-size: 12px; color: var(--text-faint); text-align: center; padding: 20px 0; list-style: none; }
-
-  .root-dropzone {
-    margin: 4px 8px; padding: 10px; border: 2px dashed var(--border); border-radius: var(--radius-md);
-    text-align: center; font-size: 11px; color: var(--text-faint);
-  }
-  .root-dropzone.drop-target { border-color: var(--accent); color: var(--accent); }
 </style>

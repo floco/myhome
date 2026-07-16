@@ -119,7 +119,6 @@
   let selectedConsumableId = $state<string | null>(null);
   let selectedWorkId = $state<string | null>(null);
   let selectedCostEntryId = $state<string | null>(null);
-  let selectedKBEntryId = $state<string | null>(null);
 
   const globalSearchIndex = $derived(buildSearchIndex({
     choreStore, inventoryStore, consumableStore, worksStore, costsStore, kbStore, settingsStore,
@@ -132,7 +131,7 @@
     else if (result.module === "consumables") { selectedConsumableId = result.id; window.location.hash = "#/consumables"; }
     else if (result.module === "works") { selectedWorkId = result.id; window.location.hash = "#/works"; }
     else if (result.module === "costs") { selectedCostEntryId = result.id; window.location.hash = "#/costs"; }
-    else if (result.module === "kb") { selectedKBEntryId = result.id; window.location.hash = "#/kb"; }
+    else if (result.module === "kb") { window.location.hash = "#/kb/" + encodeURIComponent(result.id); }
   }
 
   function handleNotificationSelect(n: Notification): void {
@@ -332,6 +331,9 @@
 
   const isFloorPlan = $derived(currentRoute === "#/plan");
   const isHome = $derived(currentRoute === "#/" || currentRoute === "");
+  const kbRouteId = $derived(
+    currentRoute.startsWith("#/kb/") ? decodeURIComponent(currentRoute.slice("#/kb/".length)) : null,
+  );
 
   const selectedRoom = $derived(
     toolStore.state.selectedRoomId
@@ -1249,8 +1251,8 @@
           }}
         />
 
-      {:else if currentRoute === "#/kb"}
-        <KBPage store={kbStore} selectedItemId={selectedKBEntryId} onclearselection={() => { selectedKBEntryId = null; }} />
+      {:else if currentRoute === "#/kb" || currentRoute.startsWith("#/kb/")}
+        <KBPage store={kbStore} selectedItemId={kbRouteId} onnavigate={(id) => { window.location.hash = "#/kb/" + encodeURIComponent(id); }} />
 
       {:else if currentRoute === "#/costs"}
         <CostsPage

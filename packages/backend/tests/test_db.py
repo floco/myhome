@@ -1,6 +1,7 @@
 from sqlalchemy import text
 
 from myhome.db import get_engine
+from myhome.migrations import CURRENT_VERSION
 
 
 def test_get_engine_creates_db_file(tmp_path, monkeypatch):
@@ -35,7 +36,7 @@ def test_get_engine_bootstraps_schema_version(tmp_path, monkeypatch):
     engine = get_engine()
     with engine.connect() as conn:
         version = conn.execute(text("SELECT version FROM schema_version")).scalar()
-    assert version == 1
+    assert version == CURRENT_VERSION
 
 
 def test_get_engine_creates_separate_db_per_data_dir(tmp_path, monkeypatch):

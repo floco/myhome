@@ -4,9 +4,9 @@
 metadata.create_all() (called from db.get_engine()) handles all additive
 schema changes -- new tables, and it's a no-op for tables that already
 exist. This module exists for the harder case that create_all() can't
-handle: column renames, type changes, backfills. MIGRATIONS is empty today
-because this plan only ever adds tables; future work appends
-(version, fn) pairs here as real schema alterations are needed.
+handle: column renames, type changes, backfills, or drops. Fresh installs
+start at CURRENT_VERSION and skip every entry in MIGRATIONS below; only
+databases created before a given migration was added actually run it.
 """
 from __future__ import annotations
 
@@ -15,9 +15,16 @@ from collections.abc import Callable
 from sqlalchemy import text
 from sqlalchemy.engine import Connection, Engine
 
-CURRENT_VERSION = 1
+CURRENT_VERSION = 2
 
-MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = []
+
+def _drop_kb_folders_table(conn: Connection) -> None:
+    conn.execute(text("DROP TABLE IF EXISTS kb_folders"))
+
+
+MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
+    (2, _drop_kb_folders_table),
+]
 
 
 def run_migrations(engine: Engine) -> None:

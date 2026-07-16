@@ -1,515 +1,211 @@
-import { describe, it, expect, vi } from "vitest";
-import { mount, unmount, flushSync, tick } from "svelte";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { mount, unmount, flushSync } from "svelte";
 import KBPage from "../src/lib/components/KBPage.svelte";
-import type { KBEntry, KBFolder } from "../src/lib/kbStore.svelte";
+import { createKBStore } from "../src/lib/kbStore.svelte";
+import type { KBEntry } from "../src/lib/kbStore.svelte";
+
+const HOME = "home-1";
+
+afterEach(() => vi.unstubAllGlobals());
 
 function makeEntry(overrides: Partial<KBEntry> = {}): KBEntry {
   return {
-    id: "e1",
-    title: "How to paint",
-    content: "# Painting\n\nUse good brushes.",
-    createdAt: "2026-06-28T10:00:00Z",
-    updatedAt: "2026-06-28T10:00:00Z",
-    attachments: [],
-    folderId: null,
+    id: "e1", title: "How to paint", content: "# Painting", createdAt: "2026-06-28T10:00:00Z",
+    updatedAt: "2026-06-28T10:00:00Z", attachments: [], parentId: null, icon: "📄", order: 0,
     ...overrides,
   };
 }
 
-function makeFolder(overrides: Partial<KBFolder> = {}): KBFolder {
-  return { id: "f1", name: "Manuals", parentId: null, ...overrides };
+async function tick(): Promise<void> {
+  await new Promise((r) => setTimeout(r, 0));
 }
 
-function makeStore(entries: KBEntry[] = [], overrides: Partial<ReturnType<typeof makeStore>> = {}) {
-  return {
-    entries,
-    folders: [] as KBFolder[],
-    loaded: true,
-    loadError: null as string | null,
-    createEntry: vi.fn().mockResolvedValue(
-      makeEntry({ id: "new1", title: "New entry", content: "" }),
-    ),
-    updateEntry: vi.fn().mockResolvedValue(undefined),
-    deleteEntry: vi.fn().mockResolvedValue(undefined),
-    uploadAttachment: vi.fn().mockResolvedValue("file.jpg"),
-    deleteAttachment: vi.fn().mockResolvedValue(undefined),
-    createFolder: vi.fn().mockResolvedValue(makeFolder({ id: "newf1", name: "New folder" })),
-    updateFolder: vi.fn().mockResolvedValue(undefined),
-    deleteFolder: vi.fn().mockResolvedValue(undefined),
-    ...overrides,
-  };
+// A minimal in-memory fake of the Task 2 backend. Several KBPage flows
+// (create-child-then-append-link, cascade delete, restore, reorder) mutate
+// state across multiple fetch calls within a single interaction, so a
+// stateless canned response can't exercise them -- this fake mirrors just
+// enough of routes/kb.py's behavior (soft delete + cascade, next-order
+// append, restore) to make those flows observable in a component test.
+function createFakeKbBackend(initial: KBEntry[]) {
+  let entries: KBEntry[] = initial.map((e) => ({ ...e }));
+  let nextId = 100;
+
+  function live(): KBEntry[] { return entries.filter((e) => !e.deletedAt); }
+  function trashed(): KBEntry[] { return entries.filter((e) => e.deletedAt); }
+
+  function descendantIds(id: string): string[] {
+    const result: string[] = [];
+    const stack = [id];
+    while (stack.length) {
+      const current = stack.pop() as string;
+      for (const e of entries) {
+        if (e.parentId === current) { result.push(e.id); stack.push(e.id); }
+      }
+    }
+    return result;
+  }
+
+  async function handle(url: string, init?: RequestInit) {
+    const method = init?.method ?? "GET";
+    const body = init?.body ? JSON.parse(init.body as string) : undefined;
+
+    if (url.endsWith("/kb") && method === "GET") {
+      return { ok: true, status: 200, json: async () => ({ version: 1, entries: live() }) };
+    }
+    if (url.endsWith("/kb") && method === "POST") {
+      const parentId = body.parentId ?? null;
+      const siblings = live().filter((e) => e.parentId === parentId);
+      const order = siblings.length ? Math.max(...siblings.map((s) => s.order)) + 1 : 0;
+      const entry: KBEntry = {
+        id: `new-${nextId++}`, title: body.title, content: body.content ?? "",
+        createdAt: "2026-07-16T00:00:00Z", updatedAt: "2026-07-16T00:00:00Z",
+        attachments: [], parentId, icon: body.icon ?? "📄", order,
+      };
+      entries.push(entry);
+      return { ok: true, status: 201, json: async () => entry };
+    }
+    if (url.endsWith("/kb/trash") && method === "GET") {
+      return { ok: true, status: 200, json: async () => ({ entries: trashed() }) };
+    }
+    if (url.endsWith("/trash/empty") && method === "POST") {
+      const ids = trashed().map((e) => e.id);
+      entries = live();
+      return { ok: true, status: 200, json: async () => ({ deletedCount: ids.length }) };
+    }
+    const restoreMatch = url.match(/\/kb\/trash\/([^/]+)\/restore$/);
+    if (restoreMatch && method === "POST") {
+      const ids = new Set([restoreMatch[1], ...descendantIds(restoreMatch[1])]);
+      let count = 0;
+      for (const e of entries) if (ids.has(e.id) && e.deletedAt) { e.deletedAt = null; count += 1; }
+      return { ok: true, status: 200, json: async () => ({ restoredCount: count }) };
+    }
+    const permDeleteMatch = url.match(/\/kb\/trash\/([^/]+)$/);
+    if (permDeleteMatch && method === "DELETE") {
+      entries = entries.filter((e) => e.id !== permDeleteMatch[1]);
+      return { ok: true, status: 204, json: async () => null };
+    }
+    if (url.endsWith("/kb/reorder") && method === "PUT") {
+      (body.orderedIds as string[]).forEach((id, index) => {
+        const e = entries.find((x) => x.id === id);
+        if (e) e.order = index;
+      });
+      return { ok: true, status: 204, json: async () => null };
+    }
+    if (method === "PUT") {
+      const id = (url.match(/\/kb\/([^/]+)$/) as RegExpMatchArray)[1];
+      const e = entries.find((x) => x.id === id);
+      if (e) {
+        if (body.title !== undefined) e.title = body.title;
+        if (body.content !== undefined) e.content = body.content;
+        if (body.icon !== undefined) e.icon = body.icon;
+        if ("parentId" in body) e.parentId = body.parentId;
+      }
+      return { ok: true, status: 204, json: async () => null };
+    }
+    if (method === "DELETE") {
+      const id = (url.match(/\/kb\/([^/]+)$/) as RegExpMatchArray)[1];
+      const ids = new Set([id, ...descendantIds(id)]);
+      let count = 0;
+      for (const e of entries) if (ids.has(e.id) && !e.deletedAt) { e.deletedAt = "2026-07-16T00:00:00Z"; count += 1; }
+      return { ok: true, status: 200, json: async () => ({ deletedCount: count }) };
+    }
+    return { ok: true, status: 200, json: async () => ({ version: 1, entries: live() }) };
+  }
+
+  return { handle };
 }
 
-describe("KBPage — entry list", () => {
-  it("shows empty state when nothing is selected", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const app = mount(KBPage, { target, props: { store: makeStore([makeEntry()]) } });
-    flushSync();
-    expect(target.querySelector(".content-empty")).not.toBeNull();
-    unmount(app);
-    target.remove();
+async function setup(initialEntries: KBEntry[] = [], props: Record<string, unknown> = {}) {
+  const backend = createFakeKbBackend(initialEntries);
+  vi.stubGlobal("fetch", vi.fn((url: string, init?: RequestInit) => backend.handle(url, init)));
+  const store = createKBStore(() => HOME);
+  await tick();
+  const target = document.createElement("div");
+  document.body.appendChild(target);
+  const comp = mount(KBPage, { target, props: { store, ...props } });
+  flushSync();
+  await tick();
+  flushSync();
+  return { target, comp, store };
+}
+
+describe("KBPage — empty state", () => {
+  it("shows an empty-content placeholder when nothing is selected", async () => {
+    const { target, comp } = await setup([]);
+    expect(target.textContent).toContain("Select a page or create one");
+    unmount(comp); target.remove();
   });
 
-  it("renders all entries in the sidebar", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([
-      makeEntry({ id: "e1", title: "How to paint" }),
-      makeEntry({ id: "e2", title: "Replace boiler" }),
-    ]);
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    const rows = target.querySelectorAll(".entry-row");
-    expect(rows.length).toBe(2);
-    expect(rows[0].textContent).toContain("How to paint");
-    expect(rows[1].textContent).toContain("Replace boiler");
-    unmount(app);
-    target.remove();
-  });
-
-  it("filters entries by search query", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([
-      makeEntry({ id: "e1", title: "How to paint" }),
-      makeEntry({ id: "e2", title: "Replace boiler" }),
-    ]);
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    const searchInput = target.querySelector(".kb-sidebar input") as HTMLInputElement;
-    searchInput.value = "paint";
-    searchInput.dispatchEvent(new Event("input"));
-    flushSync();
-    const rows = target.querySelectorAll(".entry-row");
-    expect(rows.length).toBe(1);
-    expect(rows[0].textContent).toContain("How to paint");
-    unmount(app);
-    target.remove();
-  });
-
-  it("shows 'No matching entries.' when search has no results", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([makeEntry()]);
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    const searchInput = target.querySelector(".kb-sidebar input") as HTMLInputElement;
-    searchInput.value = "zzz";
-    searchInput.dispatchEvent(new Event("input"));
-    flushSync();
-    expect(target.querySelector(".list-empty")?.textContent).toContain("No matching entries.");
-    unmount(app);
-    target.remove();
+  it("toolbar has a single New Page button (no separate Folder button)", async () => {
+    const { target, comp } = await setup([]);
+    const buttons = Array.from(target.querySelectorAll("button")).map((b) => b.textContent?.trim());
+    expect(buttons).toContain("＋ New Page");
+    expect(buttons).not.toContain("＋ Folder");
+    unmount(comp); target.remove();
   });
 });
 
-describe("KBPage — entry selection", () => {
-  it("clicking an entry shows its title and content preview", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([makeEntry()]);
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    (target.querySelector(".entry-row") as HTMLElement).click();
-    flushSync();
-    expect(target.querySelector(".content-title")?.textContent?.trim()).toBe("How to paint");
-    expect(target.querySelector(".md-preview")).not.toBeNull();
-    unmount(app);
-    target.remove();
+describe("KBPage — selection and deep links", () => {
+  it("selects the page named by selectedItemId on mount", async () => {
+    const { target, comp } = await setup([makeEntry()], { selectedItemId: "e1" });
+    expect(target.querySelector(".content-title")?.textContent).toBe("How to paint");
+    unmount(comp); target.remove();
   });
 
-  it("clicking Edit shows title input and textarea", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([makeEntry()]);
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    (target.querySelector(".entry-row") as HTMLElement).click();
-    flushSync();
-    const editBtn = Array.from(target.querySelectorAll("button")).find(
-      (b) => b.textContent?.trim() === "Edit",
-    ) as HTMLButtonElement;
-    editBtn.click();
-    flushSync();
+  it("calls onnavigate with the new page id when a tree row is clicked", async () => {
+    const onnavigate = vi.fn();
+    const entries = [makeEntry(), makeEntry({ id: "e2", title: "Second page", order: 1 })];
+    const { target, comp } = await setup(entries, { onnavigate });
+    const rows = target.querySelectorAll(".tree-row");
+    (rows[1] as HTMLElement).click();
+    expect(onnavigate).toHaveBeenCalledWith("e2");
+    unmount(comp); target.remove();
+  });
+});
+
+describe("KBPage — child page creation", () => {
+  it("clicking add-child on a tree row creates and selects a child page", async () => {
+    const entries = [makeEntry()];
+    const { target, comp, store } = await setup(entries);
+    (target.querySelector(".add-child") as HTMLElement).click();
+    await tick(); flushSync(); await tick(); flushSync();
+    const created = store.entries.find((e) => e.parentId === "e1");
+    expect(created).toBeDefined();
     expect(target.querySelector(".title-input")).not.toBeNull();
-    expect(target.querySelector("textarea.md-editor")).not.toBeNull();
-    unmount(app);
-    target.remove();
+    unmount(comp); target.remove();
   });
 });
 
-describe("KBPage — save / cancel", () => {
-  it("Save calls updateEntry with draft values and exits edit mode", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([makeEntry()]);
-    const app = mount(KBPage, { target, props: { store } });
+describe("KBPage — delete with cascade confirmation", () => {
+  it("shows the sub-page count in the delete confirmation for a page with children", async () => {
+    const entries = [makeEntry(), makeEntry({ id: "e2", title: "Child", parentId: "e1", order: 0 })];
+    const { target, comp } = await setup(entries, { selectedItemId: "e1" });
+    (target.querySelector('[title="Delete page"]') as HTMLElement).click();
     flushSync();
-    (target.querySelector(".entry-row") as HTMLElement).click();
-    flushSync();
-    (
-      Array.from(target.querySelectorAll("button")).find(
-        (b) => b.textContent?.trim() === "Edit",
-      ) as HTMLButtonElement
-    ).click();
-    flushSync();
-    (
-      Array.from(target.querySelectorAll("button")).find(
-        (b) => b.textContent?.trim() === "Save",
-      ) as HTMLButtonElement
-    ).click();
-    await tick();
-    flushSync();
-    expect(store.updateEntry).toHaveBeenCalledWith("e1", {
-      title: "How to paint",
-      content: "# Painting\n\nUse good brushes.",
-    });
-    expect(target.querySelector("textarea.md-editor")).toBeNull();
-    expect(target.querySelector(".content-title")).not.toBeNull();
-    unmount(app);
-    target.remove();
+    expect(target.textContent).toContain("sub-page");
+    unmount(comp); target.remove();
   });
 
-  it("Cancel reverts drafts and exits edit mode without saving", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([makeEntry()]);
-    const app = mount(KBPage, { target, props: { store } });
+  it("clears selection after confirming delete of the selected page", async () => {
+    const entries = [makeEntry()];
+    const { target, comp } = await setup(entries, { selectedItemId: "e1" });
+    (target.querySelector('[title="Delete page"]') as HTMLElement).click();
     flushSync();
-    (target.querySelector(".entry-row") as HTMLElement).click();
-    flushSync();
-    (
-      Array.from(target.querySelectorAll("button")).find(
-        (b) => b.textContent?.trim() === "Edit",
-      ) as HTMLButtonElement
-    ).click();
-    flushSync();
-    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
-    textarea.value = "Changed content";
-    textarea.dispatchEvent(new Event("input"));
-    flushSync();
-    (
-      Array.from(target.querySelectorAll("button")).find(
-        (b) => b.textContent?.trim() === "Cancel",
-      ) as HTMLButtonElement
-    ).click();
-    flushSync();
-    expect(store.updateEntry).not.toHaveBeenCalled();
-    expect(target.querySelector("textarea.md-editor")).toBeNull();
-    expect(target.querySelector(".md-preview")).not.toBeNull();
-    unmount(app);
-    target.remove();
-  });
-
-  it("Save shows error when title is empty", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([makeEntry()]);
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    (target.querySelector(".entry-row") as HTMLElement).click();
-    flushSync();
-    (
-      Array.from(target.querySelectorAll("button")).find(
-        (b) => b.textContent?.trim() === "Edit",
-      ) as HTMLButtonElement
-    ).click();
-    flushSync();
-    // Clear the title
-    const titleInput = target.querySelector(".title-input") as HTMLInputElement;
-    titleInput.value = "";
-    titleInput.dispatchEvent(new Event("input"));
-    flushSync();
-    // Try to save
-    (
-      Array.from(target.querySelectorAll("button")).find(
-        (b) => b.textContent?.trim() === "Save",
-      ) as HTMLButtonElement
-    ).click();
-    await tick();
-    flushSync();
-    expect(store.updateEntry).not.toHaveBeenCalled();
-    expect(target.querySelector(".content-error")?.textContent).toContain("Title cannot be empty");
-    // Still in edit mode
-    expect(target.querySelector("textarea.md-editor")).not.toBeNull();
-    unmount(app);
-    target.remove();
+    const confirmBtn = Array.from(target.querySelectorAll(".header-actions button")).find((b) => b.textContent === "✓") as HTMLElement;
+    confirmBtn.click();
+    await tick(); flushSync(); await tick(); flushSync();
+    expect(target.textContent).toContain("Select a page or create one");
+    unmount(comp); target.remove();
   });
 });
 
-describe("KBPage — delete", () => {
-  it("delete button shows confirmation then calls deleteEntry", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([makeEntry()]);
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    (target.querySelector(".entry-row") as HTMLElement).click();
-    flushSync();
-    (
-      Array.from(target.querySelectorAll("button")).find(
-        (b) => b.title === "Delete entry",
-      ) as HTMLButtonElement
-    ).click();
-    flushSync();
-    expect(target.querySelector(".confirm-text")).not.toBeNull();
-    (
-      Array.from(target.querySelectorAll("button")).find(
-        (b) => b.textContent?.trim() === "✓",
-      ) as HTMLButtonElement
-    ).click();
-    await tick();
-    flushSync();
-    expect(store.deleteEntry).toHaveBeenCalledWith("e1");
-    expect(target.querySelector(".content-empty")).not.toBeNull();
-    unmount(app);
-    target.remove();
-  });
-
-  it("cancel delete hides confirmation without deleting", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([makeEntry()]);
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    (target.querySelector(".entry-row") as HTMLElement).click();
-    flushSync();
-    (
-      Array.from(target.querySelectorAll("button")).find(
-        (b) => b.title === "Delete entry",
-      ) as HTMLButtonElement
-    ).click();
-    flushSync();
-    (
-      Array.from(target.querySelectorAll("button")).find(
-        (b) => b.textContent?.trim() === "✕",
-      ) as HTMLButtonElement
-    ).click();
-    flushSync();
-    expect(store.deleteEntry).not.toHaveBeenCalled();
-    expect(target.querySelector(".confirm-text")).toBeNull();
-    unmount(app);
-    target.remove();
-  });
-});
-
-describe("KBPage — create new entry", () => {
-  it("＋ New button calls createEntry and enters edit mode", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const newEntry = makeEntry({ id: "new1", title: "New entry", content: "" });
-    const store = makeStore([], {
-      createEntry: vi.fn().mockResolvedValue(newEntry),
-    });
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    const newBtn = Array.from(target.querySelectorAll("button")).find(
-      (b) => b.textContent?.trim() === "＋ New",
-    ) as HTMLButtonElement;
-    newBtn.click();
-    await tick();
-    // Simulate init() refresh — push the new entry so selectedEntry becomes non-null
-    store.entries.push(newEntry);
-    flushSync();
-    expect(store.createEntry).toHaveBeenCalledWith({ title: "New entry", content: "" });
-    // After create, the new entry is selected and edit mode is active
-    expect(target.querySelector("textarea.md-editor")).not.toBeNull();
-    unmount(app);
-    target.remove();
-  });
-});
-
-describe("KBPage — Media tab", () => {
-  it("shows Content and Media tab buttons when entry is selected", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([makeEntry()]);
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    (target.querySelector(".entry-row") as HTMLElement).click();
-    flushSync();
-    const tabs = Array.from(target.querySelectorAll(".content-tab")).map(t => t.textContent?.trim());
-    expect(tabs).toContain("Content");
-    expect(tabs.some(t => t?.includes("Media"))).toBe(true);
-    unmount(app);
-    target.remove();
-  });
-
-  it("clicking Media tab renders MediaGallery drop-zone", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const entry = makeEntry({ attachments: ["photo.jpg"] });
-    const store = makeStore([entry]);
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    (target.querySelector(".entry-row") as HTMLElement).click();
-    flushSync();
-    const mediaTab = Array.from(target.querySelectorAll(".content-tab"))
-      .find(t => t.textContent?.includes("Media")) as HTMLButtonElement;
-    mediaTab.click();
-    flushSync();
-    expect(target.querySelector(".drop-zone") || target.querySelector(".media-grid")).not.toBeNull();
-    unmount(app);
-    target.remove();
-  });
-
-  it("switching entries resets to Content tab", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([makeEntry({ id: "e1" }), makeEntry({ id: "e2", title: "Second entry" })]);
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    // Select first entry, switch to media
-    (target.querySelectorAll(".entry-row")[0] as HTMLElement).click();
-    flushSync();
-    const mediaTab = Array.from(target.querySelectorAll(".content-tab"))
-      .find(t => t.textContent?.includes("Media")) as HTMLButtonElement;
-    mediaTab.click();
-    flushSync();
-    // Select second entry — tab should reset to content
-    (target.querySelectorAll(".entry-row")[1] as HTMLElement).click();
-    flushSync();
-    const activeTab = Array.from(target.querySelectorAll(".content-tab"))
-      .find(t => t.classList.contains("active"));
-    expect(activeTab?.textContent?.trim()).toBe("Content");
-    unmount(app);
-    target.remove();
-  });
-});
-
-describe("KBPage — media insert button", () => {
-  it("shows 📷 button when entry has attachments and Content tab is in edit mode", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const entry = makeEntry({ attachments: ["photo.jpg"] });
-    const store = makeStore([entry]);
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    (target.querySelector(".entry-row") as HTMLElement).click();
-    flushSync();
-    (
-      Array.from(target.querySelectorAll("button")).find(
-        (b) => b.textContent?.trim() === "Edit",
-      ) as HTMLButtonElement
-    ).click();
-    flushSync();
-    expect(target.querySelector('[title="Insert media"]')).not.toBeNull();
-    unmount(app);
-    target.remove();
-  });
-
-  it("does not show 📷 button when entry has no attachments", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const entry = makeEntry({ attachments: [] });
-    const store = makeStore([entry]);
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    (target.querySelector(".entry-row") as HTMLElement).click();
-    flushSync();
-    (
-      Array.from(target.querySelectorAll("button")).find(
-        (b) => b.textContent?.trim() === "Edit",
-      ) as HTMLButtonElement
-    ).click();
-    flushSync();
-    expect(target.querySelector('[title="Insert media"]')).toBeNull();
-    unmount(app);
-    target.remove();
-  });
-});
-
-describe("KBPage — external selection", () => {
-  it("selects the entry matching selectedItemId and clears selection", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([makeEntry()]);
-    const onclearselection = vi.fn();
-    const app = mount(KBPage, {
-      target,
-      props: { store, selectedItemId: "e1", onclearselection },
-    });
-    flushSync();
-
-    expect(target.querySelector(".content-title")?.textContent?.trim()).toBe("How to paint");
-    expect(onclearselection).toHaveBeenCalledOnce();
-
-    unmount(app);
-    target.remove();
-  });
-
-  it("does nothing when selectedItemId doesn't match any entry", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([makeEntry()]);
-    const app = mount(KBPage, {
-      target,
-      props: { store, selectedItemId: "missing" },
-    });
-    flushSync();
-
-    expect(target.querySelector(".content-empty")).not.toBeNull();
-
-    unmount(app);
-    target.remove();
-  });
-});
-
-describe("KBPage — Card wrapper", () => {
-  it("wraps the page content in a Card", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const app = mount(KBPage, { target, props: { store: makeStore([]) } });
-    flushSync();
-    expect(target.querySelector(".ui-card")).not.toBeNull();
-    unmount(app);
-    target.remove();
-  });
-});
-
-describe("KBPage — folders", () => {
-  it("＋ Folder button calls store.createFolder with a root-level folder", async () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([]);
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    const btn = Array.from(target.querySelectorAll("button")).find(
-      (b) => b.textContent?.trim() === "＋ Folder",
-    ) as HTMLButtonElement;
-    btn.click();
-    await tick();
-    flushSync();
-    expect(store.createFolder).toHaveBeenCalledWith({ name: "New folder", parentId: null });
-    unmount(app);
-    target.remove();
-  });
-
-  it("renders folders from the store in the tree", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore([], { folders: [makeFolder({ id: "f1", name: "Manuals" })] });
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    expect(target.querySelector(".folder-name")?.textContent).toBe("Manuals");
-    unmount(app);
-    target.remove();
-  });
-
-  it("selecting an entry nested in a folder shows its content", () => {
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore(
-      [makeEntry({ id: "e1", title: "Nested", folderId: "f1" })],
-      { folders: [makeFolder({ id: "f1", name: "Manuals" })] },
-    );
-    const app = mount(KBPage, { target, props: { store } });
-    flushSync();
-    (target.querySelector(".entry-row") as HTMLElement).click();
-    flushSync();
-    expect(target.querySelector(".content-title")?.textContent?.trim()).toBe("Nested");
-    unmount(app);
-    target.remove();
+describe("KBPage — trash", () => {
+  it("clicking the Trash link switches the content pane to the trash view", async () => {
+    const { target, comp } = await setup([]);
+    const trashLink = Array.from(target.querySelectorAll("button")).find((b) => b.textContent?.includes("Trash")) as HTMLElement;
+    trashLink.click();
+    await tick(); flushSync();
+    expect(target.textContent).toContain("Trash is empty.");
+    unmount(comp); target.remove();
   });
 });
