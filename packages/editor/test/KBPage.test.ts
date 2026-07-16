@@ -176,6 +176,54 @@ describe("KBPage — child page creation", () => {
   });
 });
 
+describe("KBPage — moving an existing page under another", () => {
+  it("dragging a page onto another page appends a link into the new parent's content", async () => {
+    const entries = [
+      makeEntry({ id: "a", title: "Page A", content: "Existing content." }),
+      makeEntry({ id: "b", title: "Page B", order: 1 }),
+    ];
+    const { target, comp, store } = await setup(entries);
+    const rows = target.querySelectorAll(".tree-row");
+    const sourceRow = rows[1] as HTMLElement; // Page B
+    const targetRow = rows[0] as HTMLElement; // Page A
+
+    sourceRow.dispatchEvent(new Event("dragstart", { bubbles: true }));
+    vi.spyOn(targetRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
+    targetRow.dispatchEvent(new MouseEvent("dragover", { bubbles: true, clientY: 10 }));
+    targetRow.dispatchEvent(new MouseEvent("drop", { bubbles: true, clientY: 10 }));
+    await tick(); flushSync(); await tick(); flushSync();
+
+    const parentA = store.entries.find((e) => e.id === "a");
+    const movedB = store.entries.find((e) => e.id === "b");
+    expect(movedB?.parentId).toBe("a");
+    expect(parentA?.content).toContain("[Page B](#/kb/b)");
+    unmount(comp); target.remove();
+  });
+
+  it("does not duplicate the link when only reordering within the same parent", async () => {
+    const entries = [
+      makeEntry({ id: "a", title: "Page A", content: "" }),
+      makeEntry({ id: "b", title: "Page B", parentId: "a", order: 0 }),
+      makeEntry({ id: "c", title: "Page C", parentId: "a", order: 1 }),
+    ];
+    const { target, comp, store } = await setup(entries);
+    const rows = target.querySelectorAll(".tree-row");
+    // rows: [Page A, Page B, Page C] -- reorder C before B, both already under A
+    const sourceRow = rows[2] as HTMLElement; // Page C
+    const targetRow = rows[1] as HTMLElement; // Page B
+
+    sourceRow.dispatchEvent(new Event("dragstart", { bubbles: true }));
+    vi.spyOn(targetRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
+    targetRow.dispatchEvent(new MouseEvent("dragover", { bubbles: true, clientY: 1 }));
+    targetRow.dispatchEvent(new MouseEvent("drop", { bubbles: true, clientY: 1 }));
+    await tick(); flushSync(); await tick(); flushSync();
+
+    const parentA = store.entries.find((e) => e.id === "a");
+    expect(parentA?.content).toBe("");
+    unmount(comp); target.remove();
+  });
+});
+
 describe("KBPage — delete with cascade confirmation", () => {
   it("shows the sub-page count in the delete confirmation for a page with children", async () => {
     const entries = [makeEntry(), makeEntry({ id: "e2", title: "Child", parentId: "e1", order: 0 })];
