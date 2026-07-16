@@ -431,3 +431,140 @@ describe("MarkdownEditor — clickToEdit", () => {
     target.remove();
   });
 });
+
+describe("MarkdownEditor — resolveKbLink", () => {
+  it("replaces the link text with the live title and icon when resolvable", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: {
+        value: "See [stale text](#/kb/p1) for details",
+        editing: false,
+        resolveKbLink: (id: string) => (id === "p1" ? { title: "Current Title", icon: "🔧" } : null),
+      },
+    });
+    flushSync();
+    const link = target.querySelector("a.kb-link");
+    expect(link).not.toBeNull();
+    expect(link?.textContent).toBe("🔧 Current Title");
+    unmount(app);
+    target.remove();
+  });
+
+  it("renders a Page deleted chip when the link cannot be resolved", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: {
+        value: "See [old link](#/kb/gone) for details",
+        editing: false,
+        resolveKbLink: () => null,
+      },
+    });
+    flushSync();
+    const chip = target.querySelector("a.kb-link-deleted");
+    expect(chip).not.toBeNull();
+    expect(chip?.textContent).toBe("Page deleted");
+    expect(chip?.hasAttribute("href")).toBe(false);
+    unmount(app);
+    target.remove();
+  });
+
+  it("leaves non-kb links untouched", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: {
+        value: "[External](https://example.com)",
+        editing: false,
+        resolveKbLink: () => null,
+      },
+    });
+    flushSync();
+    const link = target.querySelector("a[href='https://example.com']");
+    expect(link?.textContent).toBe("External");
+    unmount(app);
+    target.remove();
+  });
+
+  it("does not alter kb links when resolveKbLink is not provided", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "[Some text](#/kb/p1)", editing: false },
+    });
+    flushSync();
+    const link = target.querySelector("a[href='#/kb/p1']");
+    expect(link?.textContent).toBe("Some text");
+    unmount(app);
+    target.remove();
+  });
+});
+
+describe("MarkdownEditor — /page slash command", () => {
+  it("replaces /page with a link to the created child page", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const onSlashPage = async () => ({ id: "new-child", title: "New page" });
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true, onSlashPage },
+    });
+    flushSync();
+    const textarea = target.querySelector(".md-editor") as HTMLTextAreaElement;
+    textarea.value = "/page";
+    textarea.selectionStart = 5;
+    textarea.selectionEnd = 5;
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(textarea.value).toBe("[New page](#/kb/new-child)");
+    unmount(app);
+    target.remove();
+  });
+
+  it("does nothing when onSlashPage is not provided", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true },
+    });
+    flushSync();
+    const textarea = target.querySelector(".md-editor") as HTMLTextAreaElement;
+    textarea.value = "/page";
+    textarea.selectionStart = 5;
+    textarea.selectionEnd = 5;
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(textarea.value).toBe("/page");
+    unmount(app);
+    target.remove();
+  });
+
+  it("does nothing when onSlashPage resolves to null", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const onSlashPage = async () => null;
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true, onSlashPage },
+    });
+    flushSync();
+    const textarea = target.querySelector(".md-editor") as HTMLTextAreaElement;
+    textarea.value = "/page";
+    textarea.selectionStart = 5;
+    textarea.selectionEnd = 5;
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(textarea.value).toBe("/page");
+    unmount(app);
+    target.remove();
+  });
+});

@@ -7,6 +7,8 @@
   import Input from "./ui/Input.svelte";
   import Card from "./ui/Card.svelte";
   import KBTree from "./ui/KBTree.svelte";
+  import KBTrash from "./ui/KBTrash.svelte";
+  import EmojiPicker from "./ui/EmojiPicker.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
 
@@ -14,16 +16,19 @@
   interface Props {
     store: KBStore;
     selectedItemId?: string | null;
-    onclearselection?: () => void;
+    onnavigate?: (id: string) => void;
   }
-  let { store, selectedItemId = null, onclearselection }: Props = $props();
+  let { store, selectedItemId = null, onnavigate }: Props = $props();
 
   let selectedId = $state<string | null>(null);
+  let contentMode = $state<"page" | "trash">("page");
   let contentTab = $state<"content" | "media">("content");
   let editing = $state(false);
   let draftTitle = $state("");
   let draftContent = $state("");
-  let confirmDelete = $state(false);
+  let draftIcon = $state("📄");
+  let confirmDelete = $state<{ count: number } | null>(null);
+  let pendingDeleteId = $state<string | null>(null);
   let saving = $state(false);
   let error = $state<string | null>(null);
   let searchQuery = $state("");
@@ -32,8 +37,8 @@
   let lightboxOpen = $state(false);
   let lightboxIndex = $state(0);
   let collapsedIds = $state<Set<string>>(new Set());
-  let renamingFolderId = $state<string | null>(null);
-  let dragging = $state<{ kind: "entry" | "folder"; id: string } | null>(null);
+  let renamingId = $state<string | null>(null);
+  let dragging = $state<string | null>(null);
 
   const selectedEntry = $derived(
     selectedId ? (store.entries.find((e) => e.id === selectedId) ?? null) : null,
@@ -51,29 +56,101 @@
     selectedId = entry.id;
     draftTitle = entry.title;
     draftContent = entry.content;
+    draftIcon = entry.icon;
     editing = false;
-    confirmDelete = false;
+    confirmDelete = null;
+    pendingDeleteId = null;
     contentTab = "content";
+    contentMode = "page";
     error = null;
   }
 
+  // Set right before calling onnavigate() so the reconciliation effect below
+  // can recognize the resulting selectedItemId prop update as an echo of our
+  // own internal navigation (not a fresh external one) while it's in flight.
+  let pendingNavigateId = $state<string | null>(null);
+
+  function navigate(entry: KBEntry): void {
+    selectEntry(entry);
+    pendingNavigateId = entry.id;
+    onnavigate?.(entry.id);
+  }
+
+  function handleTreeSelect(entry: KBEntry): void {
+    navigate(entry);
+  }
+
+  // Reconciles the selectedItemId prop (sourced from the URL, e.g. deep
+  // links, global search, browser back/forward) with local selection state.
+  //
+  // Internal navigation (handleNewPage, handleCreateChild, handleTreeSelect)
+  // sets selectedId immediately via selectEntry(), then calls onnavigate()
+  // to update the URL hash -- but the hashchange event, and therefore the
+  // selectedItemId prop, only updates asynchronously afterward. In that gap,
+  // any unrelated reactive re-run of this effect (e.g. triggered by
+  // store.entries changing) would otherwise see a still-stale selectedItemId
+  // that disagrees with the selectedId we just set, wrongly conclude the
+  // user navigated elsewhere, and revert the selection -- clobbering the
+  // editing=true the caller just set. pendingNavigateId suppresses
+  // reconciliation for exactly that window, without preventing retries once
+  // store.entries finishes loading on a fresh deep-linked page load (where
+  // selectedItemId legitimately differs from selectedId and there's no
+  // pending internal navigation to protect).
   $effect(() => {
-    if (selectedItemId) {
+    if (pendingNavigateId !== null) {
+      if (selectedItemId === pendingNavigateId) pendingNavigateId = null;
+      return;
+    }
+    if (selectedItemId && selectedItemId !== selectedId) {
       const found = store.entries.find((e) => e.id === selectedItemId);
-      if (found) {
-        selectEntry(found);
-        onclearselection?.();
-      }
+      if (found) selectEntry(found);
     }
   });
 
-  async function handleNew(): Promise<void> {
+  function resolveKbLink(id: string): { title: string; icon: string } | null {
+    const found = store.entries.find((e) => e.id === id);
+    return found ? { title: found.title, icon: found.icon } : null;
+  }
+
+  async function handleNewPage(): Promise<void> {
     try {
-      const entry = await store.createEntry({ title: "New entry", content: "" });
-      selectEntry(entry);
+      const entry = await store.createEntry({ title: "New page", content: "" });
+      navigate(entry);
       editing = true;
     } catch (e) {
       error = e instanceof Error ? e.message : "Create failed";
+    }
+  }
+
+  async function handleCreateChild(parentId: string): Promise<void> {
+    try {
+      const parent = store.entries.find((e) => e.id === parentId);
+      const entry = await store.createEntry({ title: "New page", content: "", parentId });
+      if (parent) {
+        const link = `[${entry.title}](#/kb/${entry.id})`;
+        await store.updateEntry(parentId, { content: `${parent.content}\n\n${link}\n` });
+      }
+      const next = new Set(collapsedIds);
+      next.delete(parentId);
+      collapsedIds = next;
+      navigate(entry);
+      editing = true;
+    } catch (e) {
+      error = e instanceof Error ? e.message : "Create failed";
+    }
+  }
+
+  async function handleSlashPage(): Promise<{ id: string; title: string } | null> {
+    if (!selectedId) return null;
+    try {
+      const entry = await store.createEntry({ title: "New page", content: "", parentId: selectedId });
+      const next = new Set(collapsedIds);
+      next.delete(selectedId);
+      collapsedIds = next;
+      return { id: entry.id, title: entry.title };
+    } catch (e) {
+      error = e instanceof Error ? e.message : "Create failed";
+      return null;
     }
   }
 
@@ -104,15 +181,46 @@
     error = null;
   }
 
-  async function handleDelete(): Promise<void> {
+  async function handleIconChange(icon: string): Promise<void> {
     if (!selectedId) return;
     try {
-      await store.deleteEntry(selectedId);
-      selectedId = null;
-      editing = false;
-      confirmDelete = false;
+      await store.updateEntry(selectedId, { icon });
+    } catch (e) {
+      error = e instanceof Error ? e.message : "Icon update failed";
+    }
+  }
+
+  function childCount(id: string): number {
+    let count = 0;
+    const stack = [id];
+    while (stack.length) {
+      const current = stack.pop()!;
+      for (const e of store.entries) {
+        if (e.parentId === current) { count += 1; stack.push(e.id); }
+      }
+    }
+    return count;
+  }
+
+  function handleAskDelete(id: string): void {
+    pendingDeleteId = id;
+    confirmDelete = { count: childCount(id) + 1 };
+  }
+
+  async function handleConfirmDelete(): Promise<void> {
+    const id = pendingDeleteId;
+    if (!id) return;
+    try {
+      await store.deleteEntry(id);
+      if (selectedId && !store.entries.some((e) => e.id === selectedId)) {
+        selectedId = null;
+        editing = false;
+      }
     } catch (e) {
       error = e instanceof Error ? e.message : "Delete failed";
+    } finally {
+      confirmDelete = null;
+      pendingDeleteId = null;
     }
   }
 
@@ -132,83 +240,71 @@
 
   function handleItemClick(index: number): void { lightboxIndex = index; lightboxOpen = true; }
 
-  function toggleFolder(folderId: string): void {
+  function toggleTree(id: string): void {
     const next = new Set(collapsedIds);
-    if (next.has(folderId)) next.delete(folderId); else next.add(folderId);
+    if (next.has(id)) next.delete(id); else next.add(id);
     collapsedIds = next;
   }
 
-  async function handleCreateFolder(parentId: string | null): Promise<void> {
+  async function handleRenamePage(id: string, title: string): Promise<void> {
     try {
-      const folder = await store.createFolder({ name: "New folder", parentId });
-      if (parentId) {
-        const next = new Set(collapsedIds);
-        next.delete(parentId);
-        collapsedIds = next;
-      }
-      renamingFolderId = folder.id;
-    } catch (e) {
-      error = e instanceof Error ? e.message : "Create folder failed";
-    }
-  }
-
-  async function handleCreateEntryIn(folderId: string): Promise<void> {
-    try {
-      const entry = await store.createEntry({ title: "New entry", content: "", folderId });
-      selectEntry(entry);
-      editing = true;
-    } catch (e) {
-      error = e instanceof Error ? e.message : "Create failed";
-    }
-  }
-
-  async function handleRenameFolder(folderId: string, name: string): Promise<void> {
-    try {
-      await store.updateFolder(folderId, { name });
+      await store.updateEntry(id, { title });
+      if (id === selectedId) draftTitle = title;
     } catch (e) {
       error = e instanceof Error ? e.message : "Rename failed";
     } finally {
-      renamingFolderId = null;
+      renamingId = null;
     }
   }
 
   function handleCancelRename(): void {
-    renamingFolderId = null;
+    renamingId = null;
   }
 
-  async function handleDeleteFolder(folderId: string): Promise<void> {
-    try {
-      await store.deleteFolder(folderId);
-    } catch (e) {
-      error = e instanceof Error ? e.message : "Delete folder failed";
-    }
-  }
-
-  function handleStartDrag(kind: "entry" | "folder", id: string): void {
-    dragging = { kind, id };
+  function handleStartDrag(id: string): void {
+    dragging = id;
   }
 
   function handleEndDrag(): void {
     dragging = null;
   }
 
-  async function handleDropOn(targetFolderId: string | null): Promise<void> {
-    const active = dragging;
-    dragging = null;
-    if (!active) return;
+  async function handleTreeDrop(
+    draggedId: string, targetParentId: string | null, orderedIds: string[] | null,
+  ): Promise<void> {
     try {
-      if (active.kind === "entry") {
-        await store.updateEntry(active.id, { folderId: targetFolderId });
-      } else if (active.id !== targetFolderId) {
-        await store.updateFolder(active.id, { parentId: targetFolderId });
+      const dragged = store.entries.find((e) => e.id === draggedId);
+      if (dragged && dragged.parentId !== targetParentId) {
+        await store.updateEntry(draggedId, { parentId: targetParentId });
+      }
+      if (orderedIds) {
+        await store.reorderSiblings(targetParentId, orderedIds);
       }
     } catch (e) {
       error = e instanceof Error ? e.message : "Move failed";
     }
   }
 
-  function fmtDate(iso: string): string {
-    return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  async function openTrash(): Promise<void> {
+    contentMode = "trash";
+    selectedId = null;
+    try { await store.loadTrash(); }
+    catch (e) { error = e instanceof Error ? e.message : "Failed to load trash"; }
+  }
+
+  async function handleRestore(id: string): Promise<void> {
+    try { await store.restoreEntry(id); }
+    catch (e) { error = e instanceof Error ? e.message : "Restore failed"; }
+  }
+
+  async function handlePermanentDelete(id: string): Promise<void> {
+    try { await store.permanentlyDeleteEntry(id); }
+    catch (e) { error = e instanceof Error ? e.message : "Delete failed"; }
+  }
+
+  async function handleEmptyTrash(): Promise<void> {
+    try { await store.emptyTrash(); }
+    catch (e) { error = e instanceof Error ? e.message : "Empty trash failed"; }
   }
 </script>
 
@@ -217,44 +313,54 @@
   <div class="kb-sidebar">
     <div class="sidebar-toolbar">
       <Input placeholder="🔍 Search…" bind:value={searchQuery} />
-      <Button onclick={handleNew}>＋ New</Button>
-      <Button variant="secondary" onclick={() => handleCreateFolder(null)}>＋ Folder</Button>
+      <Button onclick={handleNewPage}>＋ New Page</Button>
     </div>
     <div class="entry-list">
       <KBTree
-        folders={store.folders}
         entries={store.entries}
         {selectedId}
         {searchQuery}
         {collapsedIds}
-        {renamingFolderId}
+        {renamingId}
         {dragging}
-        onselectentry={selectEntry}
-        ontogglefolder={toggleFolder}
-        oncreatesubfolder={handleCreateFolder}
-        oncreateentryin={handleCreateEntryIn}
-        onstartrename={(id) => { renamingFolderId = id; }}
-        oncommitrename={handleRenameFolder}
+        onselect={handleTreeSelect}
+        ontoggle={toggleTree}
+        oncreatechild={handleCreateChild}
+        onstartrename={(id) => { renamingId = id; }}
+        oncommitrename={handleRenamePage}
         oncancelrename={handleCancelRename}
-        ondeletefolder={handleDeleteFolder}
+        ondelete={handleAskDelete}
         onstartdrag={handleStartDrag}
         onenddrag={handleEndDrag}
-        ondropon={handleDropOn}
+        ondrop={handleTreeDrop}
       />
     </div>
+    <button class="trash-link" onclick={openTrash}>
+      🗑 Trash{store.trash.length > 0 ? ` (${store.trash.length})` : ""}
+    </button>
   </div>
 
   <div class="kb-content">
-    {#if !selectedEntry}
-      <div class="content-empty">Select an entry or create one</div>
+    {#if contentMode === "trash"}
+      <KBTrash
+        entries={store.trash}
+        onrestore={handleRestore}
+        ondeleteforever={handlePermanentDelete}
+        onemptytrash={handleEmptyTrash}
+      />
+    {:else if !selectedEntry}
+      <div class="content-empty">Select a page or create one</div>
     {:else}
       <div class="content-header">
         <div class="content-header-left">
-          {#if editing}
-            <input class="title-input" bind:value={draftTitle} placeholder="Entry title" />
-          {:else}
-            <h1 class="content-title">{selectedEntry.title}</h1>
-          {/if}
+          <div class="title-row">
+            <EmojiPicker bind:value={draftIcon} onchange={handleIconChange} />
+            {#if editing}
+              <input class="title-input" bind:value={draftTitle} placeholder="Page title" />
+            {:else}
+              <h1 class="content-title">{selectedEntry.title}</h1>
+            {/if}
+          </div>
           <div class="content-tab-bar">
             <button class="content-tab" class:active={contentTab === "content"}
               onclick={() => { contentTab = "content"; }}>Content</button>
@@ -268,12 +374,14 @@
           {#if contentTab === "content" && !editing}
             <Button variant="secondary" onclick={() => { editing = true; }}>Edit</Button>
           {/if}
-          {#if confirmDelete}
-            <span class="confirm-text">Delete?</span>
-            <Button variant="danger" onclick={handleDelete}>✓</Button>
-            <Button variant="ghost" onclick={() => { confirmDelete = false; }}>✕</Button>
+          {#if confirmDelete && pendingDeleteId === selectedEntry.id}
+            <span class="confirm-text">
+              Delete{confirmDelete.count > 1 ? ` this and ${confirmDelete.count - 1} sub-page${confirmDelete.count > 2 ? "s" : ""}` : ""}?
+            </span>
+            <Button variant="danger" onclick={handleConfirmDelete}>✓</Button>
+            <Button variant="ghost" onclick={() => { confirmDelete = null; pendingDeleteId = null; }}>✕</Button>
           {:else}
-            <Button variant="ghost" onclick={() => { confirmDelete = true; }} title="Delete entry">🗑</Button>
+            <Button variant="ghost" onclick={() => handleAskDelete(selectedEntry.id)} title="Delete page">🗑</Button>
           {/if}
         </div>
       </div>
@@ -285,7 +393,9 @@
             bind:editing
             mediaItems={contentTab === "content" ? mediaItems : []}
             clickToEdit={false}
-            placeholder="Start writing in Markdown…"
+            placeholder="Start writing in Markdown… (type /page to create a linked child page)"
+            {resolveKbLink}
+            onSlashPage={handleSlashPage}
           />
         {:else}
           <MediaGallery
@@ -342,6 +452,13 @@
     display: flex; flex-direction: column; gap: 2px;
   }
 
+  .trash-link {
+    flex-shrink: 0; text-align: left; padding: 8px 12px;
+    background: none; border: none; border-top: 1px solid var(--border);
+    color: var(--text-muted); font-size: 12px; cursor: pointer; font-family: var(--font-sans);
+  }
+  .trash-link:hover { background: var(--surface-hover); color: var(--text); }
+
   .kb-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
   .content-empty {
     flex: 1; display: flex; align-items: center; justify-content: center;
@@ -354,12 +471,12 @@
     border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
   .content-header-left { flex: 1; min-width: 0; }
-  .content-title { font-size: 18px; font-weight: 600; color: var(--text); margin: 0 0 6px; }
+  .title-row { display: flex; align-items: center; gap: var(--space-2); margin-bottom: 6px; }
+  .content-title { font-size: 18px; font-weight: 600; color: var(--text); margin: 0; }
   .title-input {
-    width: 100%; background: var(--surface-alt); border: 1px solid var(--accent);
+    flex: 1; min-width: 0; background: var(--surface-alt); border: 1px solid var(--accent);
     border-radius: var(--radius-md); color: var(--text); box-sizing: border-box;
     font-size: 16px; font-weight: 600; padding: 6px 10px; font-family: var(--font-sans);
-    margin-bottom: 6px;
   }
   .title-input:focus { outline: none; }
   .content-tab-bar { display: flex; }
