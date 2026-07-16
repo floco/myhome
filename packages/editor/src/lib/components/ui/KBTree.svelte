@@ -177,7 +177,7 @@
             class="disclosure"
             onclick={(e) => { e.stopPropagation(); ontoggle(entry.id); }}
             aria-label={isOpen(entry.id) ? "Collapse" : "Expand"}
-          >{isOpen(entry.id) ? "▾" : "▸"}</button>
+          >{isOpen(entry.id) ? "▼" : "▶"}</button>
         {:else}
           <span class="disclosure-spacer"></span>
         {/if}
@@ -262,11 +262,11 @@
 
   .disclosure {
     display: flex; align-items: center; justify-content: center;
-    background: none; border: none; padding: 0; width: 16px; height: 16px; flex-shrink: 0;
-    color: var(--text-muted); font-size: 11px; cursor: pointer; border-radius: var(--radius-sm);
+    background: none; border: none; padding: 0; width: 22px; height: 22px; flex-shrink: 0;
+    color: var(--text); font-size: 15px; line-height: 1; cursor: pointer; border-radius: var(--radius-sm);
   }
-  .disclosure:hover { background: var(--surface-hover); color: var(--text); }
-  .disclosure-spacer { width: 16px; flex-shrink: 0; }
+  .disclosure:hover { background: var(--surface-hover); }
+  .disclosure-spacer { width: 22px; flex-shrink: 0; }
   .page-icon { flex-shrink: 0; font-size: 13px; }
   .page-title {
     flex: 1; min-width: 0; font-size: 13px; color: var(--text); font-weight: 500;
