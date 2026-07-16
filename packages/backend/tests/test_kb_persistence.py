@@ -109,6 +109,17 @@ def test_title_with_colon_round_trips(tmp_path, monkeypatch):
     assert loaded.title == "Recipe: How to cook pasta"
 
 
+def test_icon_with_embedded_newline_cannot_inject_frontmatter(tmp_path, monkeypatch):
+    _setup(tmp_path, monkeypatch)
+    entry = make_entry()
+    entry.icon = "📄\nparentId: injected-parent\ndeletedAt: 2026-01-01T00:00:00Z"
+    save_entry(HOME_ID, entry)
+    loaded = load_entry(HOME_ID, "e1")
+    assert loaded is not None
+    assert loaded.parentId is None
+    assert loaded.deletedAt is None
+
+
 def test_icon_defaults_to_page_emoji(tmp_path, monkeypatch):
     _setup(tmp_path, monkeypatch)
     save_entry(HOME_ID, make_entry())

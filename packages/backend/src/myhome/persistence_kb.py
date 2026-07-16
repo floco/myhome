@@ -71,14 +71,20 @@ def _parse_frontmatter(text: str) -> tuple[dict, str]:
 
 
 def _build_file(entry: KBEntry) -> str:
+    # Both fields are free text (title from users, icon from either the
+    # EmojiPicker or an MCP caller) and get written as one frontmatter line
+    # each -- an embedded newline would let a crafted value inject a fake
+    # "key: value" line and smuggle in an unintended frontmatter field
+    # (e.g. deletedAt, parentId) when the file is next parsed.
     title = entry.title.replace("\n", " ")
+    icon = entry.icon.replace("\n", " ")
     lines = [
         "---",
         f"id: {entry.id}",
         f"title: {title}",
         f"createdAt: {entry.createdAt}",
         f"updatedAt: {entry.updatedAt}",
-        f"icon: {entry.icon}",
+        f"icon: {icon}",
         f"order: {entry.order}",
     ]
     if entry.attachments:
