@@ -8,25 +8,23 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 from ..deps import get_current_user_id
-from ..models_kb import KBCreate, KBDocument, KBEntry, KBFolder, KBFolderCreate, KBFolderUpdate, KBUpdate
+from ..models_kb import KBCreate, KBDocument, KBEntry, KBReorder, KBTrashDocument, KBUpdate
 from ..persistence_activity import log_activity
 from ..persistence_kb import (
-    get_attachment_path,
     delete_attachment,
     delete_entry,
+    empty_trash,
     generate_pdf_thumbnail,
+    get_attachment_path,
+    list_trash,
     load_all,
     load_entry,
+    next_order,
+    reorder_siblings,
+    restore_subtree,
     save_attachment,
     save_entry,
-)
-from ..persistence_kb_folders import (
-    create_folder,
-    delete_folder,
-    get_folder,
-    list_folders,
-    move_folder,
-    rename_folder,
+    soft_delete_subtree,
     would_create_cycle,
 )
 
@@ -56,9 +54,16 @@ def _sanitise_filename(name: str) -> str:
     return name or "attachment"
 
 
+def _live_entry(home_id: str, id: str) -> KBEntry | None:
+    entry = load_entry(home_id, id)
+    if entry is None or entry.deletedAt is not None:
+        return None
+    return entry
+
+
 @router.get("/api/homes/{home_id}/kb", response_model=KBDocument)
 def get_kb(home_id: str) -> KBDocument:
-    return KBDocument(entries=load_all(home_id), folders=list_folders(home_id))
+    return KBDocument(entries=load_all(home_id))
 
 
 @router.post("/api/homes/{home_id}/kb", response_model=KBEntry, status_code=201)
@@ -66,14 +71,16 @@ def create_entry(
     home_id: str, body: KBCreate,
     current_user_id: str = Depends(get_current_user_id),
 ) -> KBEntry:
-    if body.folderId is not None and get_folder(home_id, body.folderId) is None:
-        raise HTTPException(status_code=404, detail="Folder not found")
+    if body.parentId is not None and _live_entry(home_id, body.parentId) is None:
+        raise HTTPException(status_code=404, detail="Parent page not found")
     now = _now()
     entry = KBEntry(
         id=str(uuid.uuid4()),
         title=body.title,
         content=body.content,
-        folderId=body.folderId,
+        parentId=body.parentId,
+        icon=body.icon,
+        order=next_order(home_id, body.parentId),
         createdAt=now,
         updatedAt=now,
     )
@@ -82,72 +89,95 @@ def create_entry(
     return entry
 
 
+@router.put("/api/homes/{home_id}/kb/reorder", status_code=204)
+def reorder_kb_entries(
+    home_id: str, body: KBReorder,
+    current_user_id: str = Depends(get_current_user_id),
+) -> None:
+    siblings = [e for e in load_all(home_id) if e.parentId == body.parentId]
+    if {e.id for e in siblings} != set(body.orderedIds):
+        raise HTTPException(status_code=400, detail="orderedIds must match current siblings exactly")
+    reorder_siblings(home_id, body.parentId, body.orderedIds)
+
+
 @router.put("/api/homes/{home_id}/kb/{id}", status_code=204)
 def update_entry(
     home_id: str, id: str, body: KBUpdate,
     current_user_id: str = Depends(get_current_user_id),
 ) -> None:
-    entry = load_entry(home_id, id)
+    entry = _live_entry(home_id, id)
     if not entry:
         raise HTTPException(status_code=404)
     if body.title is not None:
         entry.title = body.title
     if body.content is not None:
         entry.content = body.content
-    if "folderId" in body.model_fields_set:
-        if body.folderId is not None and get_folder(home_id, body.folderId) is None:
-            raise HTTPException(status_code=404, detail="Folder not found")
-        entry.folderId = body.folderId
+    if body.icon is not None:
+        entry.icon = body.icon
+    if "parentId" in body.model_fields_set:
+        if body.parentId is not None:
+            if _live_entry(home_id, body.parentId) is None:
+                raise HTTPException(status_code=404, detail="Parent page not found")
+            if would_create_cycle(home_id, id, body.parentId):
+                raise HTTPException(status_code=400, detail="Cannot move a page into itself or a descendant")
+        entry.parentId = body.parentId
+        entry.order = next_order(home_id, body.parentId)
     entry.updatedAt = _now()
     save_entry(home_id, entry)
     log_activity(home_id, current_user_id, "kb", "update", entry.title, id)
 
 
-@router.delete("/api/homes/{home_id}/kb/{id}", status_code=204)
+@router.delete("/api/homes/{home_id}/kb/{id}", status_code=200)
 def delete_kb_entry(
+    home_id: str, id: str,
+    current_user_id: str = Depends(get_current_user_id),
+) -> dict:
+    entry = _live_entry(home_id, id)
+    if not entry:
+        raise HTTPException(status_code=404)
+    deleted_ids = soft_delete_subtree(home_id, id)
+    log_activity(home_id, current_user_id, "kb", "delete", entry.title, id)
+    return {"deletedCount": len(deleted_ids)}
+
+
+@router.get("/api/homes/{home_id}/kb/trash", response_model=KBTrashDocument)
+def get_kb_trash(home_id: str) -> KBTrashDocument:
+    return KBTrashDocument(entries=list_trash(home_id))
+
+
+@router.post("/api/homes/{home_id}/kb/trash/{id}/restore", status_code=200)
+def restore_kb_entry(
+    home_id: str, id: str,
+    current_user_id: str = Depends(get_current_user_id),
+) -> dict:
+    entry = load_entry(home_id, id)
+    if entry is None or entry.deletedAt is None:
+        raise HTTPException(status_code=404)
+    restored_ids = restore_subtree(home_id, id)
+    log_activity(home_id, current_user_id, "kb", "restore", entry.title, id)
+    return {"restoredCount": len(restored_ids)}
+
+
+@router.delete("/api/homes/{home_id}/kb/trash/{id}", status_code=204)
+def permanently_delete_kb_entry(
     home_id: str, id: str,
     current_user_id: str = Depends(get_current_user_id),
 ) -> None:
     entry = load_entry(home_id, id)
-    if not entry:
+    if entry is None or entry.deletedAt is None:
         raise HTTPException(status_code=404)
-    if not delete_entry(home_id, id):
-        raise HTTPException(status_code=404)
-    log_activity(home_id, current_user_id, "kb", "delete", entry.title, id)
+    delete_entry(home_id, id)
+    log_activity(home_id, current_user_id, "kb", "delete_forever", entry.title, id)
 
 
-@router.post("/api/homes/{home_id}/kb/folders", response_model=KBFolder, status_code=201)
-def create_kb_folder(home_id: str, body: KBFolderCreate) -> KBFolder:
-    if body.parentId is not None and get_folder(home_id, body.parentId) is None:
-        raise HTTPException(status_code=404, detail="Parent folder not found")
-    return create_folder(home_id, body.name, body.parentId)
-
-
-@router.put("/api/homes/{home_id}/kb/folders/{id}", status_code=204)
-def update_kb_folder(home_id: str, id: str, body: KBFolderUpdate) -> None:
-    if get_folder(home_id, id) is None:
-        raise HTTPException(status_code=404)
-    fields = body.model_fields_set
-    if "name" in fields and body.name is not None:
-        rename_folder(home_id, id, body.name)
-    if "parentId" in fields:
-        if body.parentId is not None:
-            if get_folder(home_id, body.parentId) is None:
-                raise HTTPException(status_code=404, detail="Parent folder not found")
-            if would_create_cycle(home_id, id, body.parentId):
-                raise HTTPException(status_code=400, detail="Cannot move a folder into itself or a descendant")
-        move_folder(home_id, id, body.parentId)
-
-
-@router.delete("/api/homes/{home_id}/kb/folders/{id}", status_code=204)
-def delete_kb_folder(home_id: str, id: str) -> None:
-    if get_folder(home_id, id) is None:
-        raise HTTPException(status_code=404)
-    has_subfolders = any(f.parentId == id for f in list_folders(home_id))
-    has_entries = any(e.folderId == id for e in load_all(home_id))
-    if has_subfolders or has_entries:
-        raise HTTPException(status_code=400, detail="Folder must be empty before it can be deleted")
-    delete_folder(home_id, id)
+@router.post("/api/homes/{home_id}/kb/trash/empty", status_code=200)
+def empty_kb_trash(
+    home_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+) -> dict:
+    deleted_ids = empty_trash(home_id)
+    log_activity(home_id, current_user_id, "kb", "empty_trash", f"{len(deleted_ids)} pages", None)
+    return {"deletedCount": len(deleted_ids)}
 
 
 @router.post("/api/homes/{home_id}/kb/{id}/attachments", status_code=201)

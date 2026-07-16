@@ -9,7 +9,10 @@ from .schema import activity_log_entries as activity_log_entries_table
 
 RETENTION_DAYS = 90
 
-ACTION_VERBS = {"create": "added", "update": "updated", "delete": "deleted", "complete": "completed"}
+ACTION_VERBS = {
+    "create": "added", "update": "updated", "delete": "deleted", "complete": "completed",
+    "restore": "restored", "delete_forever": "permanently deleted", "empty_trash": "emptied trash of",
+}
 MODULE_NOUNS = {
     "chores": "chore", "works": "work", "costs": "cost entry",
     "inventory": "inventory item", "consumables": "consumable", "kb": "KB article",
