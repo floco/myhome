@@ -262,11 +262,11 @@
 
   .disclosure {
     display: flex; align-items: center; justify-content: center;
-    background: none; border: none; padding: 0; width: 22px; height: 22px; flex-shrink: 0;
-    color: var(--text); font-size: 15px; line-height: 1; cursor: pointer; border-radius: var(--radius-sm);
+    background: none; border: none; padding: 0; width: 18px; height: 18px; flex-shrink: 0;
+    color: var(--text); font-size: 13px; line-height: 1; cursor: pointer; border-radius: var(--radius-sm);
   }
   .disclosure:hover { background: var(--surface-hover); }
-  .disclosure-spacer { width: 22px; flex-shrink: 0; }
+  .disclosure-spacer { width: 18px; flex-shrink: 0; }
   .page-icon { flex-shrink: 0; font-size: 13px; }
   .page-title {
     flex: 1; min-width: 0; font-size: 13px; color: var(--text); font-weight: 500;
