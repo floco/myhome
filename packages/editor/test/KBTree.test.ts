@@ -1,39 +1,34 @@
 import { describe, it, expect, vi } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import KBTree from "../src/lib/components/ui/KBTree.svelte";
-import type { KBEntry, KBFolder } from "../src/lib/kbStore.svelte";
-
-function makeFolder(overrides: Partial<KBFolder> = {}): KBFolder {
-  return { id: "f1", name: "Appliances", parentId: null, ...overrides };
-}
+import type { KBEntry } from "../src/lib/kbStore.svelte";
 
 function makeEntry(overrides: Partial<KBEntry> = {}): KBEntry {
   return {
     id: "e1", title: "How to paint", content: "", createdAt: "2026-06-28T10:00:00Z",
-    updatedAt: "2026-06-28T10:00:00Z", attachments: [], folderId: null, ...overrides,
+    updatedAt: "2026-06-28T10:00:00Z", attachments: [], parentId: null, icon: "📄", order: 0,
+    ...overrides,
   };
 }
 
 function baseProps(overrides: Record<string, unknown> = {}) {
   return {
-    folders: [] as KBFolder[],
     entries: [] as KBEntry[],
     selectedId: null,
     searchQuery: "",
     collapsedIds: new Set<string>(),
-    renamingFolderId: null,
+    renamingId: null,
     dragging: null,
-    onselectentry: vi.fn(),
-    ontogglefolder: vi.fn(),
-    oncreatesubfolder: vi.fn(),
-    oncreateentryin: vi.fn(),
+    onselect: vi.fn(),
+    ontoggle: vi.fn(),
+    oncreatechild: vi.fn(),
     onstartrename: vi.fn(),
     oncommitrename: vi.fn(),
     oncancelrename: vi.fn(),
-    ondeletefolder: vi.fn(),
+    ondelete: vi.fn(),
     onstartdrag: vi.fn(),
     onenddrag: vi.fn(),
-    ondropon: vi.fn(),
+    ondrop: vi.fn(),
     ...overrides,
   };
 }
@@ -48,257 +43,175 @@ function setup(overrides: Record<string, unknown> = {}) {
 }
 
 describe("KBTree — rendering", () => {
-  it("renders root-level folders and entries", () => {
+  it("renders root-level pages sorted by order", () => {
     const { target, comp } = setup({
-      folders: [makeFolder({ id: "f1", name: "Manuals" })],
-      entries: [makeEntry({ id: "e1", title: "Wifi password", folderId: null })],
+      entries: [makeEntry({ id: "b", title: "B", order: 1 }), makeEntry({ id: "a", title: "A", order: 0 })],
     });
-    expect(target.querySelector(".folder-name")?.textContent).toBe("Manuals");
-    expect(target.querySelector(".entry-title")?.textContent).toBe("Wifi password");
-    unmount(comp);
-    target.remove();
+    const titles = Array.from(target.querySelectorAll(".page-title")).map((n) => n.textContent);
+    expect(titles).toEqual(["A", "B"]);
+    unmount(comp); target.remove();
   });
 
-  it("shows 'No entries yet.' when the tree is empty", () => {
+  it("shows the page's icon, defaulting to 📄", () => {
+    const { target, comp } = setup({
+      entries: [makeEntry({ icon: "🔧" }), makeEntry({ id: "e2", icon: "", order: 1 })],
+    });
+    const icons = Array.from(target.querySelectorAll(".page-icon")).map((n) => n.textContent);
+    expect(icons).toContain("🔧");
+    expect(icons).toContain("📄");
+    unmount(comp); target.remove();
+  });
+
+  it("shows a disclosure triangle only for pages with children", () => {
+    const { target, comp } = setup({
+      entries: [makeEntry({ id: "p" }), makeEntry({ id: "c", parentId: "p", order: 0 })],
+    });
+    expect(target.querySelectorAll(".disclosure").length).toBe(1);
+    expect(target.querySelectorAll(".disclosure-spacer").length).toBe(1);
+    unmount(comp); target.remove();
+  });
+
+  it("renders a live page whose parent no longer exists as top-level", () => {
+    const { target, comp } = setup({
+      entries: [makeEntry({ id: "orphan", parentId: "trashed-parent" })],
+    });
+    expect(target.querySelectorAll(".tree-row").length).toBe(1);
+    expect(target.querySelector(".page-title")?.textContent).toBe("How to paint");
+    unmount(comp); target.remove();
+  });
+
+  it("does not render children of a collapsed page", () => {
+    const { target, comp } = setup({
+      entries: [makeEntry({ id: "p" }), makeEntry({ id: "c", parentId: "p", order: 0 })],
+      collapsedIds: new Set(["p"]),
+    });
+    expect(target.querySelectorAll(".tree-row").length).toBe(1);
+    unmount(comp); target.remove();
+  });
+
+  it("shows empty state when there are no pages", () => {
     const { target, comp } = setup();
-    expect(target.querySelector(".list-empty")?.textContent).toContain("No entries yet.");
-    unmount(comp);
-    target.remove();
-  });
-
-  it("nests entries under their folder, not at the root", () => {
-    const { target, comp } = setup({
-      folders: [makeFolder({ id: "f1", name: "Manuals" })],
-      entries: [makeEntry({ id: "e1", title: "Nested entry", folderId: "f1" })],
-    });
-    const allEntryRows = target.querySelectorAll(".entry-row");
-    expect(allEntryRows.length).toBe(1);
-    expect(allEntryRows[0].textContent).toContain("Nested entry");
-    unmount(comp);
-    target.remove();
+    expect(target.textContent).toContain("No pages yet.");
+    unmount(comp); target.remove();
   });
 });
 
-describe("KBTree — expand/collapse", () => {
-  it("clicking the disclosure calls ontogglefolder with the folder id", () => {
-    const ontogglefolder = vi.fn();
+describe("KBTree — selection", () => {
+  it("clicking a row calls onselect with the entry", () => {
+    const onselect = vi.fn();
+    const { target, comp } = setup({ entries: [makeEntry()], onselect });
+    (target.querySelector(".tree-row") as HTMLElement).click();
+    expect(onselect).toHaveBeenCalledWith(expect.objectContaining({ id: "e1" }));
+    unmount(comp); target.remove();
+  });
+
+  it("marks the selected row active", () => {
+    const { target, comp } = setup({ entries: [makeEntry()], selectedId: "e1" });
+    expect(target.querySelector(".tree-row")?.className).toContain("active");
+    unmount(comp); target.remove();
+  });
+
+  it("clicking the disclosure triangle toggles without selecting", () => {
+    const onselect = vi.fn();
+    const ontoggle = vi.fn();
     const { target, comp } = setup({
-      folders: [makeFolder({ id: "f1", name: "Manuals" })],
-      ontogglefolder,
+      entries: [makeEntry({ id: "p" }), makeEntry({ id: "c", parentId: "p", order: 0 })],
+      onselect, ontoggle,
     });
     (target.querySelector(".disclosure") as HTMLElement).click();
-    expect(ontogglefolder).toHaveBeenCalledWith("f1");
-    unmount(comp);
-    target.remove();
-  });
-
-  it("hides nested entries when the folder id is in collapsedIds", () => {
-    const { target, comp } = setup({
-      folders: [makeFolder({ id: "f1", name: "Manuals" })],
-      entries: [makeEntry({ id: "e1", folderId: "f1" })],
-      collapsedIds: new Set(["f1"]),
-    });
-    expect(target.querySelector(".entry-row")).toBeNull();
-    unmount(comp);
-    target.remove();
+    expect(ontoggle).toHaveBeenCalledWith("p");
+    expect(onselect).not.toHaveBeenCalled();
+    unmount(comp); target.remove();
   });
 });
 
-describe("KBTree — search filter", () => {
-  it("hides folders with no matching descendants", () => {
+describe("KBTree — search filtering", () => {
+  it("keeps a page visible if its own title matches", () => {
     const { target, comp } = setup({
-      folders: [makeFolder({ id: "f1", name: "Manuals" }), makeFolder({ id: "f2", name: "Warranties" })],
-      entries: [makeEntry({ id: "e1", title: "Wifi password", folderId: "f1" })],
-      searchQuery: "wifi",
+      entries: [makeEntry({ id: "a", title: "Alpha" }), makeEntry({ id: "b", title: "Beta", order: 1 })],
+      searchQuery: "alp",
     });
-    const names = Array.from(target.querySelectorAll(".folder-name")).map((n) => n.textContent);
-    expect(names).toEqual(["Manuals"]);
-    unmount(comp);
-    target.remove();
+    expect(target.querySelectorAll(".page-title").length).toBe(1);
+    unmount(comp); target.remove();
   });
 
-  it("auto-expands a folder containing a match even if collapsed", () => {
+  it("keeps a parent visible (and auto-expanded) if a descendant matches", () => {
     const { target, comp } = setup({
-      folders: [makeFolder({ id: "f1", name: "Manuals" })],
-      entries: [makeEntry({ id: "e1", title: "Wifi password", folderId: "f1" })],
-      collapsedIds: new Set(["f1"]),
-      searchQuery: "wifi",
+      entries: [makeEntry({ id: "p", title: "Parent" }), makeEntry({ id: "c", title: "Matching child", parentId: "p", order: 0 })],
+      collapsedIds: new Set(["p"]),
+      searchQuery: "matching",
     });
-    expect(target.querySelector(".entry-title")?.textContent).toBe("Wifi password");
-    unmount(comp);
-    target.remove();
-  });
-
-  it("shows 'No matching entries.' when nothing matches", () => {
-    const { target, comp } = setup({
-      entries: [makeEntry({ id: "e1", title: "Wifi password" })],
-      searchQuery: "zzz",
-    });
-    expect(target.querySelector(".list-empty")?.textContent).toContain("No matching entries.");
-    unmount(comp);
-    target.remove();
+    const titles = Array.from(target.querySelectorAll(".page-title")).map((n) => n.textContent);
+    expect(titles).toEqual(["Parent", "Matching child"]);
+    unmount(comp); target.remove();
   });
 });
 
-describe("KBTree — folder context menu", () => {
-  function openMenu(target: HTMLElement) {
-    (target.querySelector(".menu-trigger") as HTMLElement).click();
-    flushSync();
-  }
-
-  it("New subfolder calls oncreatesubfolder with the folder id", () => {
-    const oncreatesubfolder = vi.fn();
-    const { target, comp } = setup({ folders: [makeFolder({ id: "f1" })], oncreatesubfolder });
-    openMenu(target);
-    const btn = Array.from(target.querySelectorAll(".folder-menu button"))
-      .find((b) => b.textContent === "New subfolder") as HTMLButtonElement;
-    btn.click();
-    expect(oncreatesubfolder).toHaveBeenCalledWith("f1");
-    unmount(comp);
-    target.remove();
+describe("KBTree — creation and rename", () => {
+  it("clicking add-child calls oncreatechild with the page id", () => {
+    const oncreatechild = vi.fn();
+    const { target, comp } = setup({ entries: [makeEntry()], oncreatechild });
+    (target.querySelector(".add-child") as HTMLElement).click();
+    expect(oncreatechild).toHaveBeenCalledWith("e1");
+    unmount(comp); target.remove();
   });
 
-  it("New entry here calls oncreateentryin with the folder id", () => {
-    const oncreateentryin = vi.fn();
-    const { target, comp } = setup({ folders: [makeFolder({ id: "f1" })], oncreateentryin });
-    openMenu(target);
-    const btn = Array.from(target.querySelectorAll(".folder-menu button"))
-      .find((b) => b.textContent === "New entry here") as HTMLButtonElement;
-    btn.click();
-    expect(oncreateentryin).toHaveBeenCalledWith("f1");
-    unmount(comp);
-    target.remove();
-  });
-
-  it("Rename calls onstartrename with the folder id", () => {
-    const onstartrename = vi.fn();
-    const { target, comp } = setup({ folders: [makeFolder({ id: "f1" })], onstartrename });
-    openMenu(target);
-    const btn = Array.from(target.querySelectorAll(".folder-menu button"))
-      .find((b) => b.textContent === "Rename") as HTMLButtonElement;
-    btn.click();
-    expect(onstartrename).toHaveBeenCalledWith("f1");
-    unmount(comp);
-    target.remove();
-  });
-
-  it("Delete is disabled when the folder has entries", () => {
-    const { target, comp } = setup({
-      folders: [makeFolder({ id: "f1" })],
-      entries: [makeEntry({ id: "e1", folderId: "f1" })],
-    });
-    openMenu(target);
-    const btn = Array.from(target.querySelectorAll(".folder-menu button"))
-      .find((b) => b.textContent === "Delete") as HTMLButtonElement;
-    expect(btn.disabled).toBe(true);
-    unmount(comp);
-    target.remove();
-  });
-
-  it("Delete calls ondeletefolder when the folder is empty", () => {
-    const ondeletefolder = vi.fn();
-    const { target, comp } = setup({ folders: [makeFolder({ id: "f1" })], ondeletefolder });
-    openMenu(target);
-    const btn = Array.from(target.querySelectorAll(".folder-menu button"))
-      .find((b) => b.textContent === "Delete") as HTMLButtonElement;
-    btn.click();
-    expect(ondeletefolder).toHaveBeenCalledWith("f1");
-    unmount(comp);
-    target.remove();
-  });
-});
-
-describe("KBTree — inline rename", () => {
-  it("shows a text input for the folder being renamed and commits on Enter", () => {
+  it("shows a rename input when renamingId matches, and commits on Enter", () => {
     const oncommitrename = vi.fn();
-    const { target, comp } = setup({
-      folders: [makeFolder({ id: "f1", name: "Old name" })],
-      renamingFolderId: "f1",
-      oncommitrename,
-    });
+    const { target, comp } = setup({ entries: [makeEntry()], renamingId: "e1", oncommitrename });
     const input = target.querySelector(".rename-input") as HTMLInputElement;
     expect(input).not.toBeNull();
-    input.value = "New name";
-    input.dispatchEvent(new Event("input"));
+    input.value = "Renamed title";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
     input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-    expect(oncommitrename).toHaveBeenCalledWith("f1", "New name");
-    unmount(comp);
-    target.remove();
-  });
-
-  it("Escape cancels the rename", () => {
-    const oncancelrename = vi.fn();
-    const { target, comp } = setup({
-      folders: [makeFolder({ id: "f1", name: "Old name" })],
-      renamingFolderId: "f1",
-      oncancelrename,
-    });
-    const input = target.querySelector(".rename-input") as HTMLInputElement;
-    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-    expect(oncancelrename).toHaveBeenCalled();
-    unmount(comp);
-    target.remove();
+    expect(oncommitrename).toHaveBeenCalledWith("e1", "Renamed title");
+    unmount(comp); target.remove();
   });
 });
 
 describe("KBTree — drag and drop", () => {
-  it("dragstart on an entry calls onstartdrag with kind entry", () => {
-    const onstartdrag = vi.fn();
-    const { target, comp } = setup({ entries: [makeEntry({ id: "e1" })], onstartdrag });
-    (target.querySelector(".entry-row") as HTMLElement).dispatchEvent(new Event("dragstart"));
-    expect(onstartdrag).toHaveBeenCalledWith("entry", "e1");
-    unmount(comp);
-    target.remove();
-  });
-
-  it("dropping on a folder calls ondropon with the folder id", () => {
-    const ondropon = vi.fn();
+  it("dropping in the middle band of a row calls ondrop with orderedIds null (nest)", () => {
+    const ondrop = vi.fn();
     const { target, comp } = setup({
-      folders: [makeFolder({ id: "f1" })],
-      dragging: { kind: "entry", id: "e1" },
-      ondropon,
+      entries: [makeEntry({ id: "a" }), makeEntry({ id: "b", order: 1 })],
+      dragging: "a", ondrop,
     });
-    (target.querySelector(".folder-row") as HTMLElement).dispatchEvent(new Event("drop"));
-    expect(ondropon).toHaveBeenCalledWith("f1");
-    unmount(comp);
-    target.remove();
+    const rows = target.querySelectorAll(".tree-row");
+    const targetRow = rows[1] as HTMLElement;
+    vi.spyOn(targetRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
+    targetRow.dispatchEvent(new MouseEvent("dragover", { bubbles: true, clientY: 10 }));
+    targetRow.dispatchEvent(new MouseEvent("drop", { bubbles: true, clientY: 10 }));
+    expect(ondrop).toHaveBeenCalledWith("a", "b", null);
+    unmount(comp); target.remove();
   });
 
-  it("does not allow dropping a folder onto its own descendant", () => {
-    const ondropon = vi.fn();
+  it("dropping in the top band of a row calls ondrop with a before-reordered sibling list", () => {
+    const ondrop = vi.fn();
     const { target, comp } = setup({
-      folders: [
-        makeFolder({ id: "f1", name: "Parent" }),
-        makeFolder({ id: "f2", name: "Child", parentId: "f1" }),
-      ],
-      dragging: { kind: "folder", id: "f1" },
-      ondropon,
+      entries: [makeEntry({ id: "a" }), makeEntry({ id: "b", order: 1 }), makeEntry({ id: "c", order: 2 })],
+      dragging: "c", ondrop,
     });
-    const rows = target.querySelectorAll(".folder-row");
-    (rows[1] as HTMLElement).dispatchEvent(new Event("drop"));
-    expect(ondropon).not.toHaveBeenCalled();
-    unmount(comp);
-    target.remove();
+    const rows = target.querySelectorAll(".tree-row");
+    const targetRow = rows[0] as HTMLElement;
+    vi.spyOn(targetRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
+    targetRow.dispatchEvent(new MouseEvent("dragover", { bubbles: true, clientY: 1 }));
+    targetRow.dispatchEvent(new MouseEvent("drop", { bubbles: true, clientY: 1 }));
+    expect(ondrop).toHaveBeenCalledWith("c", null, ["c", "a", "b"]);
+    unmount(comp); target.remove();
   });
 
-  it("shows the root drop zone only while dragging", () => {
-    const { target: idle, comp: idleComp } = setup();
-    expect(idle.querySelector(".root-dropzone")).toBeNull();
-    unmount(idleComp);
-    idle.remove();
-
-    const { target, comp } = setup({ dragging: { kind: "entry", id: "e1" } });
-    expect(target.querySelector(".root-dropzone")).not.toBeNull();
-    unmount(comp);
-    target.remove();
-  });
-
-  it("dropping on the root zone calls ondropon with null", () => {
-    const ondropon = vi.fn();
-    const { target, comp } = setup({ dragging: { kind: "entry", id: "e1" }, ondropon });
-    (target.querySelector(".root-dropzone") as HTMLElement).dispatchEvent(new Event("drop"));
-    expect(ondropon).toHaveBeenCalledWith(null);
-    unmount(comp);
-    target.remove();
+  it("does not call ondrop when dropping a page onto its own descendant", () => {
+    const ondrop = vi.fn();
+    const { target, comp } = setup({
+      entries: [makeEntry({ id: "p" }), makeEntry({ id: "c", parentId: "p", order: 0 })],
+      dragging: "p", ondrop,
+    });
+    const rows = target.querySelectorAll(".tree-row");
+    const childRow = rows[1] as HTMLElement;
+    vi.spyOn(childRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
+    childRow.dispatchEvent(new MouseEvent("dragover", { bubbles: true, clientY: 10 }));
+    childRow.dispatchEvent(new MouseEvent("drop", { bubbles: true, clientY: 10 }));
+    expect(ondrop).not.toHaveBeenCalled();
+    unmount(comp); target.remove();
   });
 });
