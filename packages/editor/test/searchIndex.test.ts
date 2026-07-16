@@ -127,15 +127,15 @@ describe("buildSearchIndex", () => {
     });
   });
 
-  it("maps a KB entry using the fixed Knowledge Base icon and subtitle", () => {
+  it("maps a KB entry using the entry's own icon and a fixed subtitle", () => {
     const stores = makeStores({
-      kbStore: { entries: [{ id: "kb1", title: "Boiler manual", content: "Reset procedure is..." } as any] },
+      kbStore: { entries: [{ id: "kb1", title: "Boiler manual", content: "Reset procedure is...", icon: "🔧" } as any] },
     });
     const index = buildSearchIndex(stores);
     expect(index[0]).toEqual({
       module: "kb",
       id: "kb1",
-      icon: "📄",
+      icon: "🔧",
       title: "Boiler manual",
       subtitle: "Knowledge Base",
       searchText: "boiler manual reset procedure is...",
