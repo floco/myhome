@@ -51,11 +51,6 @@
   type CompletingState = { kind: "chore"; id: string; notes: string } | { kind: "assignment"; id: string; notes: string };
   let completing = $state<CompletingState | null>(null);
 
-  let showImportInput = $state(false);
-  let importToken = $state("");
-  let importStatus = $state<"idle" | "loading" | "done" | "error">("idle");
-  let importCount = $state(0);
-
   const allRooms = $derived(floorStore.floors.flatMap((f) => f.rooms));
 
   type HealthBucket = "on-track" | "due-soon" | "overdue";
@@ -175,14 +170,6 @@
     return `${assignments.length} rooms`;
   }
 
-  async function handleImport(): Promise<void> {
-    importStatus = "loading";
-    try {
-      importCount = await store.importFromDonetick(importToken.trim());
-      importStatus = "done"; importToken = ""; showImportInput = false;
-    } catch { importStatus = "error"; }
-  }
-
   async function confirmComplete(): Promise<void> {
     if (!completing) return;
     const c = completing;
@@ -259,17 +246,6 @@
         <button class="toggle-btn" class:active={dueFilter === "attention"} title="Needs attention" onclick={() => { dueFilter = "attention"; }}>⚠</button>
       </div>
       <Button onclick={() => onnewchore?.()}>＋ Add chore</Button>
-      {#if !showImportInput}
-        <Button variant="secondary" onclick={() => { showImportInput = true; }}>Import from Donetick</Button>
-      {:else}
-        <Input type="password" placeholder="API token" bind:value={importToken} />
-        <Button disabled={importStatus === "loading"} onclick={handleImport}>
-          {importStatus === "loading" ? "Importing…" : "Import"}
-        </Button>
-        <Button variant="ghost" onclick={() => { showImportInput = false; }}>Cancel</Button>
-        {#if importStatus === "error"}<span class="msg-error">Failed</span>{/if}
-        {#if importStatus === "done"}<span class="msg-success">{importCount} imported</span>{/if}
-      {/if}
     </div>
 
     <div class="table-wrapper">
@@ -422,8 +398,6 @@
   .toggle-btn:not(:last-child) { border-right: 1px solid var(--border); }
   .toggle-btn.active { background: var(--accent); color: var(--accent-contrast); }
   .toggle-btn:not(.active):hover { background: var(--surface-hover); color: var(--text); }
-  .msg-error { color: var(--danger); font-size: 11px; }
-  .msg-success { color: var(--success); font-size: 11px; }
 
   .table-wrapper { flex: 1; overflow-y: auto; }
   :global(.emoji-cell) { font-size: 16px; width: 32px; text-align: center; }
