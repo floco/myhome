@@ -167,6 +167,27 @@ describe("KBTree — creation and rename", () => {
     expect(oncommitrename).toHaveBeenCalledWith("e1", "Renamed title");
     unmount(comp); target.remove();
   });
+
+  it("closes the page-actions menu when clicking elsewhere", () => {
+    const { target, comp } = setup({ entries: [makeEntry(), makeEntry({ id: "e2", title: "Other", order: 1 })] });
+    (target.querySelector(".menu-trigger") as HTMLElement).click();
+    flushSync();
+    expect(target.querySelector(".page-menu")).not.toBeNull();
+    document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+    expect(target.querySelector(".page-menu")).toBeNull();
+    unmount(comp); target.remove();
+  });
+
+  it("keeps the page-actions menu open when clicking inside it", () => {
+    const { target, comp } = setup({ entries: [makeEntry()] });
+    (target.querySelector(".menu-trigger") as HTMLElement).click();
+    flushSync();
+    (target.querySelector(".page-menu") as HTMLElement).click();
+    flushSync();
+    expect(target.querySelector(".page-menu")).not.toBeNull();
+    unmount(comp); target.remove();
+  });
 });
 
 describe("KBTree — drag and drop", () => {
@@ -182,6 +203,37 @@ describe("KBTree — drag and drop", () => {
     targetRow.dispatchEvent(new MouseEvent("dragover", { bubbles: true, clientY: 10 }));
     targetRow.dispatchEvent(new MouseEvent("drop", { bubbles: true, clientY: 10 }));
     expect(ondrop).toHaveBeenCalledWith("a", "b", null);
+    unmount(comp); target.remove();
+  });
+
+  it("shows a distinct nest-target class during the middle-band dragover, not the before/after line classes", () => {
+    const { target, comp } = setup({
+      entries: [makeEntry({ id: "a" }), makeEntry({ id: "b", order: 1 })],
+      dragging: "a",
+    });
+    const rows = target.querySelectorAll(".tree-row");
+    const targetRow = rows[1] as HTMLElement;
+    vi.spyOn(targetRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
+    targetRow.dispatchEvent(new MouseEvent("dragover", { bubbles: true, clientY: 10 }));
+    flushSync();
+    expect(targetRow.className).toContain("drop-inside");
+    expect(targetRow.className).not.toContain("drop-before");
+    expect(targetRow.className).not.toContain("drop-after");
+    unmount(comp); target.remove();
+  });
+
+  it("shows the before-line class during a top-band dragover, distinct from the nest class", () => {
+    const { target, comp } = setup({
+      entries: [makeEntry({ id: "a" }), makeEntry({ id: "b", order: 1 })],
+      dragging: "a",
+    });
+    const rows = target.querySelectorAll(".tree-row");
+    const targetRow = rows[1] as HTMLElement;
+    vi.spyOn(targetRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
+    targetRow.dispatchEvent(new MouseEvent("dragover", { bubbles: true, clientY: 1 }));
+    flushSync();
+    expect(targetRow.className).toContain("drop-before");
+    expect(targetRow.className).not.toContain("drop-inside");
     unmount(comp); target.remove();
   });
 

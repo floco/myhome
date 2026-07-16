@@ -101,6 +101,12 @@
     else oncancelrename();
   }
 
+  // Any click that reaches window without having been stopped by a handler
+  // inside the menu or its trigger (both call stopPropagation) is "outside".
+  function handleWindowClick(): void {
+    menuOpenFor = null;
+  }
+
   function wouldCreateCycle(draggedId: string, targetId: string): boolean {
     if (draggedId === targetId) return true;
     let current: string | null = targetId;
@@ -143,6 +149,8 @@
     ondrop(dragging, entry.parentId, orderedIds);
   }
 </script>
+
+<svelte:window onclick={handleWindowClick} />
 
 <ul class="kb-tree" class:root={depth === 0}>
   {#each childEntries as entry (entry.id)}
@@ -199,7 +207,7 @@
           onclick={(e) => { e.stopPropagation(); menuOpenFor = menuOpenFor === entry.id ? null : entry.id; }}
         >⋯</button>
         {#if menuOpenFor === entry.id}
-          <div class="page-menu" role="menu">
+          <div class="page-menu" role="menu" onclick={(e) => e.stopPropagation()}>
             <button role="menuitem" onclick={(e) => { e.stopPropagation(); oncreatechild(entry.id); menuOpenFor = null; }}>Add child page</button>
             <button role="menuitem" onclick={(e) => { e.stopPropagation(); startRename(entry); }}>Rename</button>
             <button role="menuitem" class="danger" onclick={(e) => { e.stopPropagation(); ondelete(entry.id); menuOpenFor = null; }}>Delete</button>
@@ -235,15 +243,30 @@
   }
   .tree-row:hover { background: var(--surface-hover); }
   .tree-row.active { background: var(--surface-alt); border-left-color: var(--accent); }
-  .tree-row.drop-inside { outline: 2px solid var(--accent); outline-offset: -2px; }
-  .tree-row.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
-  .tree-row.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+
+  /* Nest target ("will be included in this page"): a filled highlight on the
+     row itself. Reorder target ("will be inserted between rows"): an actual
+     line spanning the row's top/bottom edge -- deliberately a different
+     visual language so the two drop outcomes can't be confused mid-drag. */
+  .tree-row.drop-inside {
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    outline: 1px solid var(--accent); outline-offset: -1px;
+  }
+  .tree-row.drop-before::before,
+  .tree-row.drop-after::after {
+    content: ""; position: absolute; left: 2px; right: 2px; height: 2px;
+    background: var(--accent); border-radius: 1px; pointer-events: none;
+  }
+  .tree-row.drop-before::before { top: -1px; }
+  .tree-row.drop-after::after { bottom: -1px; }
 
   .disclosure {
-    background: none; border: none; padding: 0; width: 14px; flex-shrink: 0;
-    color: var(--text-faint); font-size: 10px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; padding: 0; width: 16px; height: 16px; flex-shrink: 0;
+    color: var(--text-muted); font-size: 11px; cursor: pointer; border-radius: var(--radius-sm);
   }
-  .disclosure-spacer { width: 14px; flex-shrink: 0; }
+  .disclosure:hover { background: var(--surface-hover); color: var(--text); }
+  .disclosure-spacer { width: 16px; flex-shrink: 0; }
   .page-icon { flex-shrink: 0; font-size: 13px; }
   .page-title {
     flex: 1; min-width: 0; font-size: 13px; color: var(--text); font-weight: 500;
