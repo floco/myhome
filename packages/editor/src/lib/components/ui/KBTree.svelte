@@ -197,11 +197,6 @@
           <span class="page-title">{entry.title}</span>
         {/if}
         <button
-          class="add-child"
-          title="Add child page"
-          onclick={(e) => { e.stopPropagation(); oncreatechild(entry.id); }}
-        >＋</button>
-        <button
           class="menu-trigger"
           title="Page actions"
           onclick={(e) => { e.stopPropagation(); menuOpenFor = menuOpenFor === entry.id ? null : entry.id; }}
@@ -242,7 +237,8 @@
     border-left: 3px solid transparent;
   }
   .tree-row:hover { background: var(--surface-hover); }
-  .tree-row.active { background: var(--surface-alt); border-left-color: var(--accent); }
+  .tree-row.active { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tree-row.active .page-title { font-weight: 700; }
 
   /* Nest target ("will be included in this page"): a filled highlight on the
      row itself. Reorder target ("will be inserted between rows"): an actual
@@ -279,12 +275,11 @@
   }
   .rename-input:focus { outline: none; }
 
-  .add-child, .menu-trigger {
+  .menu-trigger {
     background: none; border: none; padding: 2px 4px; color: var(--text-faint);
     cursor: pointer; font-size: 13px; opacity: 0; flex-shrink: 0;
   }
-  .tree-row:hover .add-child, .tree-row:hover .menu-trigger,
-  .add-child:focus, .menu-trigger:focus { opacity: 1; }
+  .tree-row:hover .menu-trigger, .menu-trigger:focus { opacity: 1; }
 
   .page-menu {
     position: absolute; top: 100%; right: 0; z-index: 10;
