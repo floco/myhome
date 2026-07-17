@@ -50,15 +50,33 @@ describe("KBTrash", () => {
     unmount(comp); target.remove();
   });
 
-  it("delete forever requires confirmation before calling ondeleteforever", () => {
+  it("delete forever opens a confirm modal naming the page, and only calls ondeleteforever on confirm", () => {
+    const ondeleteforever = vi.fn();
+    const { target, comp } = setup({ entries: [makeEntry()], ondeleteforever });
+    expect(target.querySelector(".ui-modal")).toBeNull();
+    (target.querySelector('[title="Delete forever"]') as HTMLElement).click();
+    flushSync();
+    expect(ondeleteforever).not.toHaveBeenCalled();
+    const modal = target.querySelector(".ui-modal") as HTMLElement;
+    expect(modal).not.toBeNull();
+    expect(modal.textContent).toContain("Old note");
+    const confirmBtn = Array.from(modal.querySelectorAll("button")).find((b) => b.textContent === "Delete Forever") as HTMLElement;
+    confirmBtn.click();
+    expect(ondeleteforever).toHaveBeenCalledWith("e1");
+    unmount(comp); target.remove();
+  });
+
+  it("Cancel in the delete-forever modal does not call ondeleteforever", () => {
     const ondeleteforever = vi.fn();
     const { target, comp } = setup({ entries: [makeEntry()], ondeleteforever });
     (target.querySelector('[title="Delete forever"]') as HTMLElement).click();
     flushSync();
+    const modal = target.querySelector(".ui-modal") as HTMLElement;
+    const cancelBtn = Array.from(modal.querySelectorAll("button")).find((b) => b.textContent === "Cancel") as HTMLElement;
+    cancelBtn.click();
+    flushSync();
     expect(ondeleteforever).not.toHaveBeenCalled();
-    const confirmBtn = target.querySelector(".trash-actions button.ui-button-danger") as HTMLElement;
-    confirmBtn.click();
-    expect(ondeleteforever).toHaveBeenCalledWith("e1");
+    expect(target.querySelector(".ui-modal")).toBeNull();
     unmount(comp); target.remove();
   });
 
@@ -69,14 +87,16 @@ describe("KBTrash", () => {
     unmount(comp); target.remove();
   });
 
-  it("Empty Trash requires confirmation before calling onemptytrash", () => {
+  it("Empty Trash opens a confirm modal, and only calls onemptytrash on confirm", () => {
     const onemptytrash = vi.fn();
     const { target, comp } = setup({ entries: [makeEntry()], onemptytrash });
     const emptyBtn = Array.from(target.querySelectorAll("button")).find((b) => b.textContent === "Empty Trash") as HTMLElement;
     emptyBtn.click();
     flushSync();
     expect(onemptytrash).not.toHaveBeenCalled();
-    const confirmBtn = target.querySelector(".trash-header button.ui-button-danger") as HTMLElement;
+    const modal = target.querySelector(".ui-modal") as HTMLElement;
+    expect(modal).not.toBeNull();
+    const confirmBtn = Array.from(modal.querySelectorAll("button")).find((b) => b.textContent === "Empty Trash") as HTMLElement;
     confirmBtn.click();
     expect(onemptytrash).toHaveBeenCalled();
     unmount(comp); target.remove();

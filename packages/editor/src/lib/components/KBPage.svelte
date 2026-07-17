@@ -11,6 +11,7 @@
   import EmojiPicker from "./ui/EmojiPicker.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
+  import Modal from "./ui/Modal.svelte";
 
   type KBStore = ReturnType<typeof createKBStore>;
   interface Props {
@@ -27,8 +28,7 @@
   let draftTitle = $state("");
   let draftContent = $state("");
   let draftIcon = $state("📄");
-  let confirmDelete = $state<{ count: number } | null>(null);
-  let pendingDeleteId = $state<string | null>(null);
+  let confirmDelete = $state<{ id: string; title: string; count: number } | null>(null);
   let saving = $state(false);
   let error = $state<string | null>(null);
   let searchQuery = $state("");
@@ -39,6 +39,7 @@
   let collapsedIds = $state<Set<string>>(new Set());
   let renamingId = $state<string | null>(null);
   let dragging = $state<string | null>(null);
+  let trashDragOver = $state(false);
 
   const selectedEntry = $derived(
     selectedId ? (store.entries.find((e) => e.id === selectedId) ?? null) : null,
@@ -59,7 +60,6 @@
     draftIcon = entry.icon;
     editing = false;
     confirmDelete = null;
-    pendingDeleteId = null;
     contentTab = "content";
     contentMode = "page";
     error = null;
@@ -206,13 +206,14 @@
   }
 
   function handleAskDelete(id: string): void {
-    pendingDeleteId = id;
-    confirmDelete = { count: childCount(id) + 1 };
+    const entry = store.entries.find((e) => e.id === id);
+    if (!entry) return;
+    confirmDelete = { id, title: entry.title, count: childCount(id) + 1 };
   }
 
   async function handleConfirmDelete(): Promise<void> {
-    const id = pendingDeleteId;
-    if (!id) return;
+    if (!confirmDelete) return;
+    const id = confirmDelete.id;
     try {
       await store.deleteEntry(id);
       if (selectedId && !store.entries.some((e) => e.id === selectedId)) {
@@ -223,7 +224,6 @@
       error = e instanceof Error ? e.message : "Delete failed";
     } finally {
       confirmDelete = null;
-      pendingDeleteId = null;
     }
   }
 
@@ -291,6 +291,13 @@
     }
   }
 
+  function handleDropOnTrash(): void {
+    const id = dragging;
+    handleEndDrag();
+    trashDragOver = false;
+    if (id) handleAskDelete(id);
+  }
+
   async function openTrash(): Promise<void> {
     contentMode = "trash";
     selectedId = null;
@@ -341,7 +348,14 @@
         ondrop={handleTreeDrop}
       />
     </div>
-    <button class="trash-link" onclick={openTrash}>
+    <button
+      class="trash-link"
+      class:drop-target={trashDragOver}
+      onclick={openTrash}
+      ondragover={(e) => { if (dragging) { e.preventDefault(); trashDragOver = true; } }}
+      ondragleave={() => { trashDragOver = false; }}
+      ondrop={(e) => { e.preventDefault(); handleDropOnTrash(); }}
+    >
       🗑 Trash{store.trash.length > 0 ? ` (${store.trash.length})` : ""}
     </button>
   </div>
@@ -380,15 +394,7 @@
           {#if contentTab === "content" && !editing}
             <Button variant="secondary" onclick={() => { editing = true; }}>Edit</Button>
           {/if}
-          {#if confirmDelete && pendingDeleteId === selectedEntry.id}
-            <span class="confirm-text">
-              Delete{confirmDelete.count > 1 ? ` this and ${confirmDelete.count - 1} sub-page${confirmDelete.count > 2 ? "s" : ""}` : ""}?
-            </span>
-            <Button variant="danger" onclick={handleConfirmDelete}>✓</Button>
-            <Button variant="ghost" onclick={() => { confirmDelete = null; pendingDeleteId = null; }}>✕</Button>
-          {:else}
-            <Button variant="ghost" onclick={() => handleAskDelete(selectedEntry.id)} title="Delete page">🗑</Button>
-          {/if}
+          <Button variant="ghost" onclick={() => handleAskDelete(selectedEntry.id)} title="Delete page">🗑</Button>
         </div>
       </div>
 
@@ -436,6 +442,17 @@
   <Lightbox items={mediaItems} initialIndex={lightboxIndex} onclose={() => { lightboxOpen = false; }} />
 {/if}
 
+<Modal open={confirmDelete !== null} title="Delete page" onclose={() => { confirmDelete = null; }} width="420px">
+  <p>
+    Delete <strong>{confirmDelete?.title}</strong>{confirmDelete && confirmDelete.count > 1 ? ` and ${confirmDelete.count - 1} sub-page${confirmDelete.count > 2 ? "s" : ""}` : ""}?
+    You can restore {confirmDelete && confirmDelete.count > 1 ? "them" : "it"} from Trash afterward.
+  </p>
+  {#snippet footer()}
+    <Button variant="ghost" onclick={() => { confirmDelete = null; }}>Cancel</Button>
+    <Button variant="danger" onclick={handleConfirmDelete}>Delete</Button>
+  {/snippet}
+</Modal>
+
 <style>
   .page {
     display: flex; height: 100%; box-sizing: border-box;
@@ -464,6 +481,7 @@
     color: var(--text-muted); font-size: 12px; cursor: pointer; font-family: var(--font-sans);
   }
   .trash-link:hover { background: var(--surface-hover); color: var(--text); }
+  .trash-link.drop-target { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
 
   .kb-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
   .content-empty {
@@ -493,7 +511,6 @@
   .content-tab:hover { color: var(--text); }
   .content-tab.active { border-bottom-color: var(--accent); color: var(--text); }
   .header-actions { display: flex; align-items: center; gap: var(--space-1); flex-shrink: 0; }
-  .confirm-text { font-size: 11px; color: var(--danger); }
 
   .content-body {
     flex: 1; overflow: hidden; padding: var(--space-4);

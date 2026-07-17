@@ -228,13 +228,16 @@ describe("KBPage — moving an existing page under another", () => {
   });
 });
 
-describe("KBPage — delete with cascade confirmation", () => {
-  it("shows the sub-page count in the delete confirmation for a page with children", async () => {
+describe("KBPage — delete with cascade confirmation modal", () => {
+  it("shows the sub-page count and page title in the delete confirmation modal", async () => {
     const entries = [makeEntry(), makeEntry({ id: "e2", title: "Child", parentId: "e1", order: 0 })];
     const { target, comp } = await setup(entries, { selectedItemId: "e1" });
     (target.querySelector('[title="Delete page"]') as HTMLElement).click();
     flushSync();
-    expect(target.textContent).toContain("sub-page");
+    const modal = target.querySelector(".ui-modal") as HTMLElement;
+    expect(modal).not.toBeNull();
+    expect(modal.textContent).toContain("How to paint");
+    expect(modal.textContent).toContain("sub-page");
     unmount(comp); target.remove();
   });
 
@@ -243,10 +246,50 @@ describe("KBPage — delete with cascade confirmation", () => {
     const { target, comp } = await setup(entries, { selectedItemId: "e1" });
     (target.querySelector('[title="Delete page"]') as HTMLElement).click();
     flushSync();
-    const confirmBtn = Array.from(target.querySelectorAll(".header-actions button")).find((b) => b.textContent === "✓") as HTMLElement;
+    const modal = target.querySelector(".ui-modal") as HTMLElement;
+    const confirmBtn = Array.from(modal.querySelectorAll("button")).find((b) => b.textContent === "Delete") as HTMLElement;
     confirmBtn.click();
     await tick(); flushSync(); await tick(); flushSync();
     expect(target.textContent).toContain("Select a page or create one");
+    expect(target.querySelector(".ui-modal")).toBeNull();
+    unmount(comp); target.remove();
+  });
+
+  it("Cancel closes the modal without deleting", async () => {
+    const entries = [makeEntry()];
+    const { target, comp, store } = await setup(entries, { selectedItemId: "e1" });
+    (target.querySelector('[title="Delete page"]') as HTMLElement).click();
+    flushSync();
+    const modal = target.querySelector(".ui-modal") as HTMLElement;
+    const cancelBtn = Array.from(modal.querySelectorAll("button")).find((b) => b.textContent === "Cancel") as HTMLElement;
+    cancelBtn.click();
+    flushSync();
+    expect(target.querySelector(".ui-modal")).toBeNull();
+    expect(store.entries.some((e) => e.id === "e1")).toBe(true);
+    unmount(comp); target.remove();
+  });
+
+  it("shows the confirmation modal when deleting a page from the tree menu that is NOT currently selected", async () => {
+    // Regression test: the confirmation used to be rendered inside the
+    // selected page's own header, so asking to delete a different,
+    // unselected page via the tree's "..." menu set state that nothing
+    // ever rendered -- the confirmation was invisible.
+    const entries = [
+      makeEntry({ id: "e1", title: "Selected page" }),
+      makeEntry({ id: "e2", title: "Other page", order: 1 }),
+    ];
+    const { target, comp } = await setup(entries, { selectedItemId: "e1" });
+    const rows = target.querySelectorAll(".tree-row");
+    const otherRow = Array.from(rows).find((r) => r.textContent?.includes("Other page")) as HTMLElement;
+    (otherRow.querySelector(".menu-trigger") as HTMLElement).click();
+    flushSync();
+    const deleteItem = Array.from(target.querySelectorAll(".page-menu button"))
+      .find((b) => b.textContent === "Delete") as HTMLElement;
+    deleteItem.click();
+    flushSync();
+    const modal = target.querySelector(".ui-modal") as HTMLElement;
+    expect(modal).not.toBeNull();
+    expect(modal.textContent).toContain("Other page");
     unmount(comp); target.remove();
   });
 });
@@ -258,6 +301,28 @@ describe("KBPage — trash", () => {
     trashLink.click();
     await tick(); flushSync();
     expect(target.textContent).toContain("Trash is empty.");
+    unmount(comp); target.remove();
+  });
+
+  it("dragging a page onto the Trash link opens the delete confirmation modal", async () => {
+    const entries = [makeEntry({ id: "e1", title: "Dragged page" })];
+    const { target, comp, store } = await setup(entries);
+    const row = target.querySelector(".tree-row") as HTMLElement;
+    const trashLink = Array.from(target.querySelectorAll("button")).find((b) => b.textContent?.includes("Trash")) as HTMLElement;
+
+    row.dispatchEvent(new Event("dragstart", { bubbles: true }));
+    trashLink.dispatchEvent(new MouseEvent("dragover", { bubbles: true }));
+    trashLink.dispatchEvent(new MouseEvent("drop", { bubbles: true }));
+    flushSync();
+
+    const modal = target.querySelector(".ui-modal") as HTMLElement;
+    expect(modal).not.toBeNull();
+    expect(modal.textContent).toContain("Dragged page");
+
+    const confirmBtn = Array.from(modal.querySelectorAll("button")).find((b) => b.textContent === "Delete") as HTMLElement;
+    confirmBtn.click();
+    await tick(); flushSync(); await tick(); flushSync();
+    expect(store.entries.some((e) => e.id === "e1")).toBe(false);
     unmount(comp); target.remove();
   });
 });
