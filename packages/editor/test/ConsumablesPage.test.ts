@@ -179,7 +179,7 @@ describe("ConsumablesPage — stock status summary", () => {
     await tick();
     flushSync();
 
-    expect(target.querySelectorAll(".chart-card-wrap .hbar-row")).toHaveLength(3);
+    expect(target.querySelectorAll(".chart-card-wrap .stacked-segment")).toHaveLength(3);
     expect(target.querySelector(".stat-value.low")?.textContent).toBe("1");
     expect(target.querySelector(".stat-value.empty")?.textContent).toBe("1");
 

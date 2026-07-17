@@ -126,7 +126,7 @@ describe("ChoresPage — schedule health summary", () => {
     const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
     flushSync();
 
-    expect(target.querySelectorAll(".chart-card-wrap .hbar-row")).toHaveLength(3);
+    expect(target.querySelectorAll(".chart-card-wrap .stacked-segment")).toHaveLength(3);
     expect(target.querySelector(".stat-value")?.textContent).toBe("3");
     expect(target.querySelector(".stat-value.overdue")?.textContent).toBe("1");
     expect(target.querySelector(".stat-value.ontrack")?.textContent).toBe("33%");

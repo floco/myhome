@@ -250,7 +250,7 @@
   .chart-divider { width: 1px; background: var(--border); align-self: stretch; flex-shrink: 0; margin: 0 8px; }
 
   .stats-area { flex: 1; min-width: 0; }
-  .stat-chips-col { display: flex; flex-direction: column; gap: 8px; max-width: 220px; }
+  .stat-chips-col { display: flex; flex-flow: row wrap; gap: 8px; }
   .stat-chip {
     background: var(--surface-alt); border: 1px solid var(--border);
     border-radius: var(--radius-sm); padding: 6px 10px;
