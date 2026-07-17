@@ -8,7 +8,7 @@
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
   import Card from "./ui/Card.svelte";
-  import DonutChart from "./DonutChart.svelte";
+  import TreemapChart from "./TreemapChart.svelte";
   import SortableTable from "./ui/SortableTable.svelte";
   import type { Column } from "./ui/SortableTable.types";
 
@@ -161,12 +161,12 @@
       <Card>
         <div class="chart-inner">
 
-          <!-- Pie chart with connector labels -->
+          <!-- Treemap breakdown by category -->
           <div class="pie-area">
             <div class="chart-label">
               {lastCompleteYearNum} — breakdown by category
             </div>
-            <DonutChart
+            <TreemapChart
               segments={breakdown.map((b) => ({
                 id: b.categoryId,
                 label: b.name,
@@ -175,9 +175,6 @@
                 valueLabel: `${b.totalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} €`,
                 pct: b.pct,
               }))}
-              centerLabel="Total"
-              centerValue={`${breakdown.reduce((a, b) => a + b.totalAmount, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} €`}
-              showLabels={true}
               onsliceclick={(id) => { chartModalCategoryId = id; }}
             />
           </div>
