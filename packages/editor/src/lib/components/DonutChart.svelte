@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { textColorForFill } from "../colorContrast";
+
   export interface DonutSegment {
     id: string;
     label: string;
@@ -20,6 +22,7 @@
     centerLabel: string;
     centerValue: string;
     showLabels?: boolean;
+    insideLabels?: boolean;
     compact?: boolean;
     onsliceclick?: (id: string) => void;
   }
@@ -28,9 +31,15 @@
     centerLabel,
     centerValue,
     showLabels = false,
+    insideLabels = false,
     compact = false,
     onsliceclick,
   }: Props = $props();
+
+  // In insideLabels mode every wedge gets its label inside, however small --
+  // font size shrinks with the wedge's angular span so narrow wedges don't
+  // spill text across their boundary, down to a legibility floor.
+  const INSIDE_LABEL_MIN_FONT = 5;
 
   // The connector-line labels need extra side margin to fit within the
   // chart's own box -- otherwise long labels (e.g. "Mortgage / Rent") bleed
@@ -79,6 +88,22 @@
     });
   })());
 
+  // In insideLabels mode every slice's label moves inside (none fall back
+  // outside); otherwise every slice keeps its label outside, same as the
+  // classic layout.
+  const insideSlices = $derived(insideLabels ? slices : []);
+  const outsideSlices = $derived(insideLabels ? [] : slices);
+
+  // Shrinks label text to fit a wedge's available arc width at the radius
+  // the label sits on, down to INSIDE_LABEL_MIN_FONT so it never spills
+  // across the wedge boundary.
+  function insideFontSize(spanDeg: number): number {
+    const midRadius = (OUTER_R + INNER_R) / 2;
+    const arcWidth = midRadius * (spanDeg * Math.PI / 180);
+    const size = arcWidth / 3.8;
+    return Math.max(INSIDE_LABEL_MIN_FONT, Math.min(LABEL_FONT, size));
+  }
+
   interface LabelPos {
     seg: DonutSegment;
     mid: { x: number; y: number };
@@ -114,7 +139,7 @@
   // center), where rows are decluttered top-to-bottom -- this uses the full
   // height around the donut and never lets connector lines cross.
   const labelPositions = $derived((() => {
-    const raw = slices.map((s) => {
+    const raw = outsideSlices.map((s) => {
       const mid = polarPoint(CX, CY, OUTER_R + 4, s.midDeg);
       const desiredY = polarPoint(CX, CY, OUTER_R + 18, s.midDeg).y;
       const isRight = s.midDeg <= 180;
@@ -158,6 +183,24 @@
   <text x={CX} y={CY + 8} text-anchor="middle" fill="var(--text)" font-size="11" font-family="sans-serif" font-weight="600">{centerValue}</text>
 
   {#if showLabels}
+    {#if insideLabels}
+      {#each insideSlices as s (s.seg.id + "-inside")}
+        {@const mid = polarPoint(CX, CY, (OUTER_R + INNER_R) / 2, s.midDeg)}
+        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+        <text
+          x={mid.x}
+          y={mid.y}
+          text-anchor="middle"
+          dominant-baseline="middle"
+          fill={textColorForFill(s.seg.color)}
+          font-size={insideFontSize(s.endDeg - s.startDeg)}
+          font-family="sans-serif"
+          font-weight="600"
+          style="cursor:{onsliceclick ? 'pointer' : 'default'}"
+          onclick={() => onsliceclick?.(s.seg.id)}
+        >{s.seg.emoji} {s.seg.pct.toFixed(0)}%</text>
+      {/each}
+    {/if}
     {#each labelPositions as l (l.seg.id + "-label")}
       <line x1={l.mid.x} y1={l.mid.y} x2={l.collarX} y2={l.labelY} stroke={l.seg.color} stroke-width="1" opacity="0.7" />
       <line

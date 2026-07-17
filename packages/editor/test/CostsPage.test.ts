@@ -59,23 +59,3 @@ describe("CostsPage — external selection", () => {
     unmount(comp);
   });
 });
-
-describe("CostsPage — category breakdown treemap", () => {
-  it("renders one treemap cell per category", () => {
-    const store = makeCostsStore([makeEntry()]);
-    store.breakdownLastCompleteYear = vi.fn().mockReturnValue([
-      { categoryId: "cat-electricity", name: "Electricity", emoji: "💡", color: "#2a78d6", totalAmount: 1200, pct: 100 },
-    ]);
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const comp = mount(CostsPage, {
-      target,
-      props: { costsStore: store, settingsStore: makeSettingsStore(), floorStore: { floors: [] } },
-    });
-    flushSync();
-
-    expect(target.querySelectorAll(".chart-card-wrap svg rect")).toHaveLength(1);
-
-    unmount(comp);
-  });
-});

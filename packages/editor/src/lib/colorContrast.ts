@@ -14,8 +14,9 @@ function brightness(r: number, g: number, b: number): number {
 
 /**
  * Picks readable ink for text placed directly on an arbitrary fill color
- * (e.g. a treemap cell). Falls back to dark text when the input isn't a
- * parseable `#rrggbb` hex string (e.g. a CSS variable reference).
+ * (e.g. a donut wedge's inside label). Falls back to dark text when the
+ * input isn't a parseable `#rrggbb` hex string (e.g. a CSS variable
+ * reference).
  */
 export function textColorForFill(hex: string): "#ffffff" | "#111111" {
   const rgb = parseHex(hex);
