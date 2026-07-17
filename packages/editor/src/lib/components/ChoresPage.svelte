@@ -8,7 +8,7 @@
   import SortableTable from "./ui/SortableTable.svelte";
   import type { Column } from "./ui/SortableTable.types";
   import Card from "./ui/Card.svelte";
-  import DonutChart from "./DonutChart.svelte";
+  import HorizontalBarChart from "./HorizontalBarChart.svelte";
 
   type ChoreStore = ReturnType<typeof createChoreStore>;
   type Assignment = ChoreStore["assignments"][number];
@@ -190,14 +190,9 @@
     <div class="chart-card-wrap">
       <Card>
         <div class="chart-inner">
-          <div class="pie-area">
+          <div class="bar-area">
             <div class="chart-label">Schedule health</div>
-            <DonutChart
-              segments={healthBreakdown}
-              centerLabel="Assignments"
-              centerValue={`${totalAssignments}`}
-              showLabels={true}
-            />
+            <HorizontalBarChart segments={healthBreakdown} />
           </div>
 
           <div class="chart-divider"></div>
@@ -366,7 +361,7 @@
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
   }
-  .pie-area { flex-shrink: 0; }
+  .bar-area { flex: 1; min-width: 0; }
   .chart-divider { width: 1px; background: var(--border); align-self: stretch; flex-shrink: 0; margin: 0 8px; }
 
   .stats-area { flex: 1; min-width: 0; }

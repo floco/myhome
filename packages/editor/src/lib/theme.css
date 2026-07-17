@@ -20,6 +20,16 @@
   --danger: #e0444d;
   --warning: #d99a1b;
 
+  /* Categorical chart series — validated colorblind-safe order, do not reorder */
+  --chart-series-1: #2a78d6; /* blue */
+  --chart-series-2: #1baf7a; /* aqua */
+  --chart-series-3: #eda100; /* yellow */
+  --chart-series-4: #008300; /* green */
+  --chart-series-5: #4a3aa7; /* violet */
+  --chart-series-6: #e34948; /* red */
+  --chart-series-7: #e87ba4; /* magenta */
+  --chart-series-8: #eb6834; /* orange */
+
   /* Scales (theme-independent) */
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -73,6 +83,16 @@
   --success: #4ade80;
   --danger: #f87171;
   --warning: #fbbf24;
+
+  /* Categorical chart series — same 8 hues, stepped for the dark surface */
+  --chart-series-1: #3987e5;
+  --chart-series-2: #199e70;
+  --chart-series-3: #c98500;
+  --chart-series-4: #008300;
+  --chart-series-5: #9085e9;
+  --chart-series-6: #e66767;
+  --chart-series-7: #d55181;
+  --chart-series-8: #d95926;
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);

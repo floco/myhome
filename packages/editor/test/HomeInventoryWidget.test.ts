@@ -78,6 +78,31 @@ describe("HomeInventoryWidget", () => {
     target.remove();
   });
 
+  it("gives every category a distinct color, even with more than 8 categories", async () => {
+    const manyDoc = {
+      items: Array.from({ length: 10 }, (_, i) => ({
+        id: `i${i}`, name: `Item ${i}`, emoji: "📦", category: `Category ${i}`,
+        brand: null, model: null, serialNumber: null, purchaseDate: null,
+        purchasePrice: null, warrantyExpiryDate: null, notes: "", attachments: [], placement: null,
+      })),
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => manyDoc }));
+    const inventoryStore = createInventoryStore(getHomeId);
+    await makeTick();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(HomeInventoryWidget, { target, props: { inventoryStore, onnavigate: vi.fn() } });
+    await tick();
+    flushSync();
+
+    const fills = Array.from(target.querySelectorAll("svg path")).map((p) => p.getAttribute("fill"));
+    expect(fills).toHaveLength(10);
+    expect(new Set(fills).size).toBe(10);
+
+    unmount(comp);
+    target.remove();
+  });
+
   it("clicking the widget calls onnavigate", async () => {
     const inventoryStore = makeStore();
     await makeTick();
