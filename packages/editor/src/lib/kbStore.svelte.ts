@@ -36,6 +36,11 @@ export function createKBStore(getHomeId: () => string | null = () => null) {
       const doc: KBDocument = await resp.json();
       entries.length = 0;
       for (const e of doc.entries) entries.push({ attachments: [], parentId: null, icon: "📄", order: 0, ...e });
+      // Keep the trash count fresh (shown in the sidebar "Trash (N)" link)
+      // without requiring the user to open Trash first. Every mutating
+      // method below calls init(), so a delete/restore/etc. also refreshes
+      // this automatically.
+      await loadTrash();
     } catch (e) {
       loadError = e instanceof Error ? e.message : String(e);
     } finally {
@@ -134,8 +139,7 @@ export function createKBStore(getHomeId: () => string | null = () => null) {
     if (!homeId) throw new Error("No active home");
     const resp = await fetch(`/api/homes/${homeId}/kb/trash/${id}/restore`, { method: "POST" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    await init();
-    await loadTrash();
+    await init(); // also refreshes trash now
   }
 
   async function permanentlyDeleteEntry(id: string): Promise<void> {

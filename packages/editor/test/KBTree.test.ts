@@ -148,10 +148,14 @@ describe("KBTree — search filtering", () => {
 });
 
 describe("KBTree — creation and rename", () => {
-  it("clicking add-child calls oncreatechild with the page id", () => {
+  it("clicking Add child page in the menu calls oncreatechild with the page id", () => {
     const oncreatechild = vi.fn();
     const { target, comp } = setup({ entries: [makeEntry()], oncreatechild });
-    (target.querySelector(".add-child") as HTMLElement).click();
+    (target.querySelector(".menu-trigger") as HTMLElement).click();
+    flushSync();
+    const addChildItem = Array.from(target.querySelectorAll(".page-menu button"))
+      .find((b) => b.textContent === "Add child page") as HTMLElement;
+    addChildItem.click();
     expect(oncreatechild).toHaveBeenCalledWith("e1");
     unmount(comp); target.remove();
   });

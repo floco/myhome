@@ -164,10 +164,14 @@ describe("KBPage — selection and deep links", () => {
 });
 
 describe("KBPage — child page creation", () => {
-  it("clicking add-child on a tree row creates and selects a child page", async () => {
+  it("clicking Add child page in the menu creates and selects a child page", async () => {
     const entries = [makeEntry()];
     const { target, comp, store } = await setup(entries);
-    (target.querySelector(".add-child") as HTMLElement).click();
+    (target.querySelector(".menu-trigger") as HTMLElement).click();
+    flushSync();
+    const addChildItem = Array.from(target.querySelectorAll(".page-menu button"))
+      .find((b) => b.textContent === "Add child page") as HTMLElement;
+    addChildItem.click();
     await tick(); flushSync(); await tick(); flushSync();
     const created = store.entries.find((e) => e.parentId === "e1");
     expect(created).toBeDefined();
