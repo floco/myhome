@@ -108,7 +108,7 @@ describe("ChoresPage — expand/collapse assignments", () => {
 });
 
 describe("ChoresPage — schedule health summary", () => {
-  it("renders a donut segment per non-empty health bucket and the right stat numbers", () => {
+  it("renders a bar per non-empty health bucket and the right stat numbers", () => {
     const now = Date.now();
     const chore1 = makeChore({ id: "c1", periodDays: 10 });
     const chore2 = makeChore({ id: "c2", periodDays: 10 });
@@ -126,7 +126,7 @@ describe("ChoresPage — schedule health summary", () => {
     const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
     flushSync();
 
-    expect(target.querySelectorAll(".chart-card-wrap svg path")).toHaveLength(3);
+    expect(target.querySelectorAll(".chart-card-wrap .hbar-row")).toHaveLength(3);
     expect(target.querySelector(".stat-value")?.textContent).toBe("3");
     expect(target.querySelector(".stat-value.overdue")?.textContent).toBe("1");
     expect(target.querySelector(".stat-value.ontrack")?.textContent).toBe("33%");
