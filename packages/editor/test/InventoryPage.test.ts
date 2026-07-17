@@ -41,6 +41,25 @@ describe("InventoryPage — category summary", () => {
     unmount(comp);
   });
 
+  it("gives every category a distinct color, even with more than 8 categories", () => {
+    const items = Array.from({ length: 12 }, (_, i) =>
+      makeItem({ id: `i${i}`, category: `Category ${i}`, purchasePrice: 10 }),
+    );
+    const store = makeStore(items);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(InventoryPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    const fills = Array.from(target.querySelectorAll(".chart-card-wrap svg path")).map((p) =>
+      p.getAttribute("fill"),
+    );
+    expect(fills).toHaveLength(12);
+    expect(new Set(fills).size).toBe(12);
+
+    unmount(comp);
+  });
+
   it("shows the empty-charts placeholder when there are no items", () => {
     const store = makeStore([]);
     const target = document.createElement("div");
