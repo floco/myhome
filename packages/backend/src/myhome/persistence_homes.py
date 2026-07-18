@@ -13,6 +13,7 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from .db import get_engine
 from .demo_data import seed_demo_home
 from .ids import InvalidIdError
+from .persistence_locations import seed_default_criteria
 from .models_homes import (
     Home,
     HomesDocument,
@@ -118,6 +119,9 @@ def create_home(name: str, home_type: str) -> Home:
     doc = load_homes()
     doc.homes.append(home)
     save_homes(doc)
+
+    if home_type == "project":
+        seed_default_criteria(home.id)
 
     if home_type == "demo":
         try:

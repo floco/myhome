@@ -37,6 +37,23 @@ def test_create_home_project(client):
     assert "works" in data["enabledModules"]
 
 
+def test_create_home_project_seeds_default_location_criteria(client):
+    resp = client.post("/api/homes", json={"name": "Retirement Search", "type": "project"})
+    home_id = resp.json()["id"]
+    locations_resp = client.get(f"/api/homes/{home_id}/locations")
+    assert locations_resp.status_code == 200
+    data = locations_resp.json()
+    assert len(data["criteria"]) == 11
+    assert data["locations"] == []
+
+
+def test_create_home_existing_does_not_seed_location_criteria(client):
+    resp = client.post("/api/homes", json={"name": "My House", "type": "existing"})
+    home_id = resp.json()["id"]
+    locations_resp = client.get(f"/api/homes/{home_id}/locations")
+    assert locations_resp.json()["criteria"] == []
+
+
 def test_get_homes_lists_created_homes(client):
     client.post("/api/homes", json={"name": "A", "type": "existing"})
     client.post("/api/homes", json={"name": "B", "type": "project"})
