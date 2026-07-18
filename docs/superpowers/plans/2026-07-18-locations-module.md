@@ -68,21 +68,28 @@ def test_save_and_load_round_trip(client, home_id):
     assert doc.ratings[0].note == "Cheap enough"
 
 
-def test_save_deletes_ratings_for_removed_criterion(client, home_id):
+def test_save_removes_criterion_and_its_ratings_together(client, home_id):
+    # save_locations persists exactly what it's given -- callers (routes/MCP
+    # tools) are responsible for dropping ratings that reference a removed
+    # criterion/location before calling save, same as consumables/transactions.
     save_locations(home_id, make_doc())
     doc = load_locations(home_id)
     doc.criteria = []
+    doc.ratings = [r for r in doc.ratings if r.criterionId != "crit1"]
     save_locations(home_id, doc)
     reloaded = load_locations(home_id)
+    assert reloaded.criteria == []
     assert reloaded.ratings == []
 
 
-def test_save_deletes_ratings_for_removed_location(client, home_id):
+def test_save_removes_location_and_its_ratings_together(client, home_id):
     save_locations(home_id, make_doc())
     doc = load_locations(home_id)
     doc.locations = []
+    doc.ratings = [r for r in doc.ratings if r.locationId != "loc1"]
     save_locations(home_id, doc)
     reloaded = load_locations(home_id)
+    assert reloaded.locations == []
     assert reloaded.ratings == []
 
 
