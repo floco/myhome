@@ -90,9 +90,19 @@
     await store.reorderLocations(ids);
   }
 
+  // Popup is ~240px wide and its height varies with note length but rarely
+  // exceeds ~220px -- clamp both axes so it can't render (and be unclickable)
+  // past the viewport edge for cells near the right edge or bottom of the table.
+  const POPUP_WIDTH = 240;
+  const POPUP_HEIGHT_ESTIMATE = 220;
+
   function openRatingPopup(locationId: string, criterionId: string, e: MouseEvent): void {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    openCell = { locationId, criterionId, anchorX: rect.left, anchorY: rect.bottom };
+    const anchorX = Math.max(4, Math.min(rect.left, window.innerWidth - POPUP_WIDTH - 4));
+    const anchorY = rect.bottom + POPUP_HEIGHT_ESTIMATE > window.innerHeight
+      ? Math.max(4, rect.top - POPUP_HEIGHT_ESTIMATE)
+      : rect.bottom;
+    openCell = { locationId, criterionId, anchorX, anchorY };
   }
 
   async function handleSaveRating(score: number | null, note: string): Promise<void> {
