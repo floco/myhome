@@ -6,12 +6,14 @@
   import type { createCostsStore } from "../costsStore.svelte";
   import type { createWorksStore } from "../worksStore.svelte";
   import type { createConsumableStore } from "../consumableStore.svelte";
+  import type { createLocationsStore } from "../locationsStore.svelte";
   import HomeMapWidget from "./HomeMapWidget.svelte";
   import HomeChoresWidget from "./HomeChoresWidget.svelte";
   import HomeCostsWidget from "./HomeCostsWidget.svelte";
   import HomeInventoryWidget from "./HomeInventoryWidget.svelte";
   import HomeWorksWidget from "./HomeWorksWidget.svelte";
   import HomeConsumablesWidget from "./HomeConsumablesWidget.svelte";
+  import HomeLocationsWidget from "./HomeLocationsWidget.svelte";
 
   type HouseStore = ReturnType<typeof createHouseStore>;
   type ChoreStore = ReturnType<typeof createChoreStore>;
@@ -20,6 +22,7 @@
   type CostsStore = ReturnType<typeof createCostsStore>;
   type WorksStore = ReturnType<typeof createWorksStore>;
   type ConsumableStore = ReturnType<typeof createConsumableStore>;
+  type LocationsStore = ReturnType<typeof createLocationsStore>;
 
   interface Props {
     floorStore: HouseStore;
@@ -29,8 +32,9 @@
     costsStore: CostsStore;
     worksStore: WorksStore;
     consumableStore: ConsumableStore;
+    locationsStore: LocationsStore;
   }
-  let { floorStore, choreStore, inventoryStore, settingsStore, costsStore, worksStore, consumableStore }: Props = $props();
+  let { floorStore, choreStore, inventoryStore, settingsStore, costsStore, worksStore, consumableStore, locationsStore }: Props = $props();
 
   function navigate(hash: string): void {
     window.location.hash = hash;
@@ -55,6 +59,7 @@
     <HomeInventoryWidget {inventoryStore} onnavigate={() => navigate("#/inventory")} />
     <HomeWorksWidget {worksStore} onnavigate={() => navigate("#/works")} />
     <HomeConsumablesWidget {consumableStore} onnavigate={() => navigate("#/consumables")} />
+    <HomeLocationsWidget {locationsStore} onnavigate={() => navigate("#/locations")} />
   </div>
 </div>
 
