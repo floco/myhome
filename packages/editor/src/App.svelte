@@ -25,6 +25,8 @@
   import ConsumablesPage from "./lib/components/ConsumablesPage.svelte";
   import { createConsumableStore } from "./lib/consumableStore.svelte";
   import type { Consumable } from "./lib/consumableStore.svelte";
+  import LocationsPage from "./lib/components/LocationsPage.svelte";
+  import { createLocationsStore } from "./lib/locationsStore.svelte";
   import { createNotificationStore } from "./lib/notificationStore.svelte";
   import type { Notification } from "./lib/notificationStore.svelte";
   import NotificationBell from "./lib/components/NotificationBell.svelte";
@@ -75,6 +77,7 @@
   const worksStore = createWorksStore(getHomeId);
   const kbStore = createKBStore(getHomeId);
   const consumableStore = createConsumableStore(getHomeId);
+  const locationsStore = createLocationsStore(getHomeId);
   const notificationStore = createNotificationStore(getHomeId);
   const authStore = createAuthStore();
 
@@ -96,6 +99,7 @@
     worksStore.reload();
     kbStore.reload();
     consumableStore.reload();
+    locationsStore.reload();
     notificationStore.reload();
   });
 
@@ -1197,6 +1201,7 @@
           {costsStore}
           {worksStore}
           {consumableStore}
+          {locationsStore}
         />
 
       {:else if currentRoute === "#/chores" || currentRoute === "#/chores/manage"}
@@ -1275,7 +1280,7 @@
         <SettingsPage store={settingsStore} {authStore} importFromDonetick={choreStore.importFromDonetick} />
 
       {:else if currentRoute === "#/locations"}
-        <PlaceholderPage icon="🌍" label="Locations" description="Pin and compare candidate locations on a map." />
+        <LocationsPage store={locationsStore} />
       {:else if currentRoute === "#/properties"}
         <PlaceholderPage icon="🏘" label="Properties" description="Track property listings, prices, and details." />
       {:else if currentRoute === "#/budget"}
