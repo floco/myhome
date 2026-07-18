@@ -2602,6 +2602,7 @@ git commit -m "feat(locations): add page composing ranking chart and comparison 
 - Create: `packages/editor/src/lib/components/HomeLocationsWidget.svelte`
 - Test: `packages/editor/test/HomeLocationsWidget.test.ts`
 - Modify: `packages/editor/src/lib/components/HomePage.svelte`
+- Modify: `packages/editor/test/HomePage.test.ts` (existing test mounts `HomePage` with a full props object built by a local `makeStores()` helper — add `locationsStore: createLocationsStore(getHomeId)` there, or the new required prop is `undefined` and `HomeLocationsWidget` throws reading `.locations` off it)
 
 **Interfaces:**
 - Consumes: `weightedScore` from `locationsStore.svelte.ts` (Task 5); `Card` from `ui/Card.svelte` (existing).
