@@ -17,7 +17,7 @@
     { id: "works",       href: "#/works",       icon: "🔧", label: "Works"            },
     { id: "kb",          href: "#/kb",          icon: "📖", label: "Knowledge Base"   },
     { id: "costs",       href: "#/costs",       icon: "💶", label: "Costs"            },
-    { id: "locations",   href: "#/locations",   icon: "🌍", label: "Locations",   placeholder: true },
+    { id: "locations",   href: "#/locations",   icon: "🌍", label: "Locations"   },
     { id: "properties",  href: "#/properties",  icon: "🏘", label: "Properties",  placeholder: true },
     { id: "budget",      href: "#/budget",      icon: "💰", label: "Budget",      placeholder: true },
     { id: "visits",      href: "#/visits",      icon: "📅", label: "Visits",      placeholder: true },

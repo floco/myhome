@@ -309,3 +309,31 @@ house_documents = Table(
     Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
     Column("doc", Text, nullable=False),
 )
+
+location_criteria = Table(
+    "location_criteria", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+    Column("description", String, nullable=False),
+    Column("weight", String, nullable=False),
+)
+
+locations = Table(
+    "locations", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+    Column("emoji", String, nullable=False),
+)
+
+location_ratings = Table(
+    "location_ratings", metadata,
+    Column("location_id", String, ForeignKey("locations.id", ondelete="CASCADE"), primary_key=True),
+    Column("criterion_id", String, ForeignKey("location_criteria.id", ondelete="CASCADE"), primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("score", Integer),
+    Column("note", String, nullable=False),
+)
