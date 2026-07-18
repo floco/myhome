@@ -331,11 +331,14 @@ git commit -m "feat(locations): add data layer — schema, models, persistence, 
 **Files:**
 - Create: `packages/backend/src/myhome/routes/locations.py`
 - Modify: `packages/backend/src/myhome/main.py:19` (add `locations` to the routes import) and add `app.include_router(locations.router)` near the other `include_router` calls
+- Modify: `packages/backend/src/myhome/models_activity.py:11` (`ActivityEntry.module` is a closed `Literal` — add `"locations"` to it, or `log_activity(..., "locations", ...)` raises a `pydantic.ValidationError`)
 - Test: `packages/backend/tests/test_locations.py`
 
 **Interfaces:**
 - Consumes: `load_locations`, `save_locations` from `persistence_locations.py` (Task 1); `LocationCriterion`, `LocationCriterionCreate`, `LocationCriterionUpdate`, `Location`, `LocationCreate`, `LocationUpdate`, `LocationRating`, `RatingUpdate`, `ReorderRequest` from `models_locations.py` (Task 1); `log_activity` from `persistence_activity.py` (existing); `get_current_user_id` from `deps.py` (existing).
 - Produces: REST endpoints under `/api/homes/{home_id}/locations...` (full list below). Consumed by Task 5 (frontend store).
+
+**Route ordering note:** FastAPI matches routes in registration order, and `{id}` is a greedy path segment. The `PUT .../criteria/reorder` and `PUT .../locations/reorder` routes MUST be declared *before* their sibling `PUT/DELETE .../criteria/{id}` and `.../locations/{id}` routes below — otherwise a request to `.../criteria/reorder` matches `{id}="reorder"` first and 404s (no criterion literally named "reorder"). The code block below is already in the correct order; preserve it.
 
 ```
 GET    /api/homes/{home_id}/locations
@@ -594,6 +597,16 @@ def create_criterion(
     return item
 
 
+@router.put("/api/homes/{home_id}/locations/criteria/reorder", status_code=204)
+def reorder_criteria(home_id: str, body: ReorderRequest) -> None:
+    doc = load_locations(home_id)
+    by_id = {c.id: c for c in doc.criteria}
+    if set(body.orderedIds) != set(by_id.keys()):
+        raise HTTPException(status_code=400, detail="orderedIds must match existing criterion ids")
+    doc.criteria = [by_id[i] for i in body.orderedIds]
+    save_locations(home_id, doc)
+
+
 @router.put("/api/homes/{home_id}/locations/criteria/{id}", status_code=204)
 def update_criterion(home_id: str, id: str, body: LocationCriterionUpdate) -> None:
     doc = load_locations(home_id)
@@ -620,16 +633,6 @@ def delete_criterion(
     log_activity(home_id, current_user_id, "locations", "delete", item.name, id)
 
 
-@router.put("/api/homes/{home_id}/locations/criteria/reorder", status_code=204)
-def reorder_criteria(home_id: str, body: ReorderRequest) -> None:
-    doc = load_locations(home_id)
-    by_id = {c.id: c for c in doc.criteria}
-    if set(body.orderedIds) != set(by_id.keys()):
-        raise HTTPException(status_code=400, detail="orderedIds must match existing criterion ids")
-    doc.criteria = [by_id[i] for i in body.orderedIds]
-    save_locations(home_id, doc)
-
-
 # --- locations ---
 
 @router.post("/api/homes/{home_id}/locations/locations", response_model=Location, status_code=201)
@@ -643,6 +646,16 @@ def create_location(
     save_locations(home_id, doc)
     log_activity(home_id, current_user_id, "locations", "create", item.name, item.id)
     return item
+
+
+@router.put("/api/homes/{home_id}/locations/locations/reorder", status_code=204)
+def reorder_locations(home_id: str, body: ReorderRequest) -> None:
+    doc = load_locations(home_id)
+    by_id = {l.id: l for l in doc.locations}
+    if set(body.orderedIds) != set(by_id.keys()):
+        raise HTTPException(status_code=400, detail="orderedIds must match existing location ids")
+    doc.locations = [by_id[i] for i in body.orderedIds]
+    save_locations(home_id, doc)
 
 
 @router.put("/api/homes/{home_id}/locations/locations/{id}", status_code=204)
@@ -669,16 +682,6 @@ def delete_location(
     doc.ratings = [r for r in doc.ratings if r.locationId != id]
     save_locations(home_id, doc)
     log_activity(home_id, current_user_id, "locations", "delete", item.name, id)
-
-
-@router.put("/api/homes/{home_id}/locations/locations/reorder", status_code=204)
-def reorder_locations(home_id: str, body: ReorderRequest) -> None:
-    doc = load_locations(home_id)
-    by_id = {l.id: l for l in doc.locations}
-    if set(body.orderedIds) != set(by_id.keys()):
-        raise HTTPException(status_code=400, detail="orderedIds must match existing location ids")
-    doc.locations = [by_id[i] for i in body.orderedIds]
-    save_locations(home_id, doc)
 
 
 # --- ratings ---
@@ -717,15 +720,21 @@ Add a new `include_router` call next to `app.include_router(consumables.router)`
 app.include_router(locations.router)
 ```
 
+Modify `packages/backend/src/myhome/models_activity.py:11` — `ActivityEntry.module` is a closed `Literal`; add `"locations"` to it:
+
+```python
+    module: Literal["chores", "works", "costs", "inventory", "consumables", "kb", "locations"]
+```
+
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd packages/backend && python -m pytest tests/test_locations.py -v`
-Expected: PASS (20 tests)
+Expected: PASS (22 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add packages/backend/src/myhome/routes/locations.py packages/backend/src/myhome/main.py packages/backend/tests/test_locations.py
+git add packages/backend/src/myhome/routes/locations.py packages/backend/src/myhome/main.py packages/backend/src/myhome/models_activity.py packages/backend/tests/test_locations.py
 git commit -m "feat(locations): add REST routes for criteria, locations, and ratings"
 ```
 
