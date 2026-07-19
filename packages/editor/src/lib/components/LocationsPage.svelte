@@ -42,11 +42,11 @@
                 {#each leaders as { loc, score } (loc.id)}
                   <div class="leader-chip">
                     <span class="crown">👑</span>
-                    <span class="leader-emoji">{loc.emoji}</span>
-                    <div class="leader-info">
-                      <div class="leader-name">{loc.name}</div>
-                      <div class="leader-score">{score!.toFixed(1)} / 5</div>
+                    <div class="leader-winner">
+                      <span class="leader-emoji">{loc.emoji}</span>
+                      <span class="leader-name">{loc.name}</span>
                     </div>
+                    <div class="leader-score">{score!.toFixed(1)} / 5</div>
                   </div>
                 {/each}
               </div>
@@ -93,15 +93,15 @@
   .stats-area { flex: 1; min-width: 0; }
 
   .no-leader { margin: 0; font-size: 12px; color: var(--text-faint); font-style: italic; }
-  .leaders-col { display: flex; flex-direction: column; gap: 8px; }
+  .leaders-col { display: flex; flex-direction: column; gap: 10px; }
   .leader-chip {
-    display: flex; align-items: center; gap: 8px;
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px;
     background: var(--surface-alt); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 6px 10px;
+    border-radius: var(--radius-sm); padding: 10px;
   }
-  .crown { font-size: 14px; }
+  .crown { font-size: 32px; line-height: 1; margin-bottom: 2px; }
+  .leader-winner { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
   .leader-emoji { font-size: 18px; }
-  .leader-info { min-width: 0; }
   .leader-name { font-weight: 600; color: var(--text); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .leader-score { font-size: 11px; color: var(--success); font-weight: 600; }
 </style>
