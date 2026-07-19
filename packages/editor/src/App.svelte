@@ -27,6 +27,8 @@
   import type { Consumable } from "./lib/consumableStore.svelte";
   import LocationsPage from "./lib/components/LocationsPage.svelte";
   import { createLocationsStore } from "./lib/locationsStore.svelte";
+  import PropertiesPage from "./lib/components/PropertiesPage.svelte";
+  import { createPropertiesStore } from "./lib/propertiesStore.svelte";
   import { createNotificationStore } from "./lib/notificationStore.svelte";
   import type { Notification } from "./lib/notificationStore.svelte";
   import NotificationBell from "./lib/components/NotificationBell.svelte";
@@ -78,6 +80,7 @@
   const kbStore = createKBStore(getHomeId);
   const consumableStore = createConsumableStore(getHomeId);
   const locationsStore = createLocationsStore(getHomeId);
+  const propertiesStore = createPropertiesStore(getHomeId);
   const notificationStore = createNotificationStore(getHomeId);
   const authStore = createAuthStore();
 
@@ -100,6 +103,7 @@
     kbStore.reload();
     consumableStore.reload();
     locationsStore.reload();
+    propertiesStore.reload();
     notificationStore.reload();
   });
 
@@ -1202,6 +1206,7 @@
           {worksStore}
           {consumableStore}
           {locationsStore}
+          {propertiesStore}
         />
 
       {:else if currentRoute === "#/chores" || currentRoute === "#/chores/manage"}
@@ -1282,7 +1287,7 @@
       {:else if currentRoute === "#/locations"}
         <LocationsPage store={locationsStore} />
       {:else if currentRoute === "#/properties"}
-        <PlaceholderPage icon="🏘" label="Properties" description="Track property listings, prices, and details." />
+        <PropertiesPage store={propertiesStore} {locationsStore} />
       {:else if currentRoute === "#/budget"}
         <PlaceholderPage icon="💰" label="Budget" description="Plan and track your acquisition or build budget." />
       {:else if currentRoute === "#/visits"}
