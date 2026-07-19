@@ -81,7 +81,14 @@ Standalone module following the pattern of Works/Costs: new files only.
 | `models_properties.py` | Pydantic models: `Property`, `PropertiesDocument`, `PropertyCreate`, `PropertyUpdate` |
 | `persistence_properties.py` | Read/write `properties.json` |
 | `routes/properties.py` | REST routes, including attachment upload/get/delete reusing the shared attachment helpers already used by `routes/costs.py` (`save_attachment`, `get_attachment_path`, `delete_attachment`, `delete_all_attachments`) |
-| `mcp_tools_properties.py` | MCP tool exposure (list/create/update/delete), for parity with every other content module |
+| `mcp_tools_properties.py` | MCP tool exposure (`list_properties`, `create_property`, `update_property`, `delete_property`), mirroring `mcp_tools_works.py`'s `_*_impl` + `@mcp.tool()` wrapper pattern, role-gated the same way (`ro` for list, `normal` for mutations) |
+
+`mcp_tools_properties` must also be added to the import list in `mcp_app.py`
+(currently `mcp_tools_chores`, `..._consumables`, `..._costs`, `..._homes`,
+`..._inventory`, `..._kb`, `..._locations`, `..._settings`, `..._works`) —
+that import is what actually registers the tools against the shared `mcp`
+singleton via the `@mcp.tool()` decorators' side effect; adding the file
+alone does nothing.
 
 ### REST API
 
