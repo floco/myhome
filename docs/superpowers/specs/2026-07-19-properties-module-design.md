@@ -143,7 +143,10 @@ Added to `HomePage.svelte`'s side column alongside `HomeLocationsWidget`
 and other `Home*Widget` components. Shown only when the `properties` module
 is enabled and at least one property exists. Header "🏘 Properties" +
 status count chips (Watching X · Visited X · Proposal X · ...) + up to 3
-most-recently-updated properties (name, price, status chip). Click
+most-recently-added properties (name, price, status chip) — "recently
+added" rather than "recently updated" since the truncate-and-reinsert
+persistence pattern used here (same as Works/Locations) doesn't track a
+modification timestamp; list order reflects insertion order. Click
 navigates to `#/properties`. Mirrors `HomeLocationsWidget.svelte`.
 
 ### Routing
