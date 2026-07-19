@@ -9,6 +9,7 @@ from . import (  # noqa: F401 - imported for the side effect of registering tool
     mcp_tools_inventory,
     mcp_tools_kb,
     mcp_tools_locations,
+    mcp_tools_properties,
     mcp_tools_settings,
     mcp_tools_works,
 )
