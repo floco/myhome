@@ -92,3 +92,139 @@ def test_delete_property(client, home_id):
 def test_delete_property_404(client, home_id):
     resp = client.delete(f"/api/homes/{home_id}/properties/nope")
     assert resp.status_code == 404
+
+
+def test_upload_invalid_id_rejected(client, home_id):
+    save_properties(home_id, make_doc())
+    resp = client.post(
+        f"/api/homes/{home_id}/properties/p!1/attachments",
+        files={"file": ("listing.pdf", b"%PDF test", "application/pdf")},
+    )
+    assert resp.status_code == 400
+
+
+def test_get_attachment_traversal_rejected(client, home_id):
+    save_properties(home_id, make_doc())
+    resp = client.get(f"/api/homes/{home_id}/properties/p1/attachments/.hidden")
+    assert resp.status_code == 400
+
+
+def test_delete_attachment_traversal_rejected(client, home_id):
+    save_properties(home_id, make_doc())
+    resp = client.delete(f"/api/homes/{home_id}/properties/p1/attachments/.hidden")
+    assert resp.status_code == 400
+
+
+def test_upload_attachment(client, home_id):
+    save_properties(home_id, make_doc())
+    resp = client.post(
+        f"/api/homes/{home_id}/properties/p1/attachments",
+        files={"file": ("listing.pdf", b"%PDF-1.4 test", "application/pdf")},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["filename"] == "listing.pdf"
+    item = client.get(f"/api/homes/{home_id}/properties").json()["properties"][0]
+    assert "listing.pdf" in item["attachments"]
+
+
+def test_upload_sanitises_filename(client, home_id):
+    save_properties(home_id, make_doc())
+    resp = client.post(
+        f"/api/homes/{home_id}/properties/p1/attachments",
+        files={"file": ("my listing 2025.pdf", b"%PDF test", "application/pdf")},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["filename"] == "my_listing_2025.pdf"
+
+
+def test_upload_unsupported_type_rejected(client, home_id):
+    save_properties(home_id, make_doc())
+    resp = client.post(
+        f"/api/homes/{home_id}/properties/p1/attachments",
+        files={"file": ("notes.txt", b"hello", "text/plain")},
+    )
+    assert resp.status_code == 400
+
+
+def test_upload_image_jpeg_accepted(client, home_id):
+    save_properties(home_id, make_doc())
+    resp = client.post(
+        f"/api/homes/{home_id}/properties/p1/attachments",
+        files={"file": ("photo.jpg", b"\xff\xd8\xff\xe0" + b"\x00" * 100, "image/jpeg")},
+    )
+    assert resp.status_code == 201
+    item = client.get(f"/api/homes/{home_id}/properties").json()["properties"][0]
+    assert "photo.jpg" in item["attachments"]
+
+
+def test_upload_attachment_property_not_found(client, home_id):
+    resp = client.post(
+        f"/api/homes/{home_id}/properties/nope/attachments",
+        files={"file": ("listing.pdf", b"%PDF test", "application/pdf")},
+    )
+    assert resp.status_code == 404
+
+
+def test_get_attachment(client, home_id):
+    save_properties(home_id, make_doc())
+    client.post(
+        f"/api/homes/{home_id}/properties/p1/attachments",
+        files={"file": ("listing.pdf", b"%PDF-1.4 test content", "application/pdf")},
+    )
+    resp = client.get(f"/api/homes/{home_id}/properties/p1/attachments/listing.pdf")
+    assert resp.status_code == 200
+    assert "pdf" in resp.headers["content-type"]
+
+
+def test_get_attachment_not_found(client, home_id):
+    save_properties(home_id, make_doc())
+    resp = client.get(f"/api/homes/{home_id}/properties/p1/attachments/nope.pdf")
+    assert resp.status_code == 404
+
+
+def test_delete_attachment(client, home_id):
+    save_properties(home_id, make_doc())
+    client.post(
+        f"/api/homes/{home_id}/properties/p1/attachments",
+        files={"file": ("listing.pdf", b"%PDF test", "application/pdf")},
+    )
+    resp = client.delete(f"/api/homes/{home_id}/properties/p1/attachments/listing.pdf")
+    assert resp.status_code == 204
+    item = client.get(f"/api/homes/{home_id}/properties").json()["properties"][0]
+    assert "listing.pdf" not in item["attachments"]
+
+
+def test_delete_attachment_not_found(client, home_id):
+    save_properties(home_id, make_doc())
+    resp = client.delete(f"/api/homes/{home_id}/properties/p1/attachments/nope.pdf")
+    assert resp.status_code == 404
+
+
+def test_delete_property_removes_attachments(client, tmp_path, home_id):
+    save_properties(home_id, make_doc())
+    client.post(
+        f"/api/homes/{home_id}/properties/p1/attachments",
+        files={"file": ("listing.pdf", b"%PDF test", "application/pdf")},
+    )
+    client.delete(f"/api/homes/{home_id}/properties/p1")
+    attach_dir = tmp_path / "homes" / home_id / "properties-attachments" / "p1"
+    assert not attach_dir.exists()
+
+
+def _make_valid_pdf() -> bytes:
+    import fitz
+    doc = fitz.open()
+    doc.new_page(width=200, height=200)
+    return doc.write()
+
+
+def test_upload_pdf_creates_thumbnail(client, tmp_path, home_id):
+    save_properties(home_id, make_doc())
+    pdf_bytes = _make_valid_pdf()
+    resp = client.post(
+        f"/api/homes/{home_id}/properties/p1/attachments",
+        files={"file": ("listing.pdf", pdf_bytes, "application/pdf")},
+    )
+    assert resp.status_code == 201
+    thumb = tmp_path / "homes" / home_id / "properties-attachments" / "p1" / "listing.pdf.thumb.jpg"
+    assert thumb.exists(), "thumbnail should be created on PDF upload"
