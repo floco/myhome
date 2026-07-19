@@ -337,3 +337,27 @@ location_ratings = Table(
     Column("score", Integer),
     Column("note", String, nullable=False),
 )
+
+properties = Table(
+    "properties", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+    Column("emoji", String, nullable=False),
+    Column("type", String, nullable=False),
+    Column("status", String, nullable=False),
+    Column("location_id", String),
+    Column("address", String, nullable=False),
+    Column("price", Float),
+    Column("land_size", Float),
+    Column("built_size", Float),
+    Column("bedrooms", Integer),
+    Column("bathrooms", Integer),
+    Column("listing_url", String),
+    Column("contact", String, nullable=False),
+    Column("pros", Text, nullable=False),
+    Column("cons", Text, nullable=False),
+    Column("notes", String, nullable=False),
+    Column("attachments", Text, nullable=False),
+)
