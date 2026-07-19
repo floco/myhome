@@ -7,6 +7,7 @@
   import type { createWorksStore } from "../worksStore.svelte";
   import type { createConsumableStore } from "../consumableStore.svelte";
   import type { createLocationsStore } from "../locationsStore.svelte";
+  import type { createPropertiesStore } from "../propertiesStore.svelte";
   import HomeMapWidget from "./HomeMapWidget.svelte";
   import HomeChoresWidget from "./HomeChoresWidget.svelte";
   import HomeCostsWidget from "./HomeCostsWidget.svelte";
@@ -14,6 +15,7 @@
   import HomeWorksWidget from "./HomeWorksWidget.svelte";
   import HomeConsumablesWidget from "./HomeConsumablesWidget.svelte";
   import HomeLocationsWidget from "./HomeLocationsWidget.svelte";
+  import HomePropertiesWidget from "./HomePropertiesWidget.svelte";
 
   type HouseStore = ReturnType<typeof createHouseStore>;
   type ChoreStore = ReturnType<typeof createChoreStore>;
@@ -23,6 +25,7 @@
   type WorksStore = ReturnType<typeof createWorksStore>;
   type ConsumableStore = ReturnType<typeof createConsumableStore>;
   type LocationsStore = ReturnType<typeof createLocationsStore>;
+  type PropertiesStore = ReturnType<typeof createPropertiesStore>;
 
   interface Props {
     floorStore: HouseStore;
@@ -33,8 +36,9 @@
     worksStore: WorksStore;
     consumableStore: ConsumableStore;
     locationsStore: LocationsStore;
+    propertiesStore: PropertiesStore;
   }
-  let { floorStore, choreStore, inventoryStore, settingsStore, costsStore, worksStore, consumableStore, locationsStore }: Props = $props();
+  let { floorStore, choreStore, inventoryStore, settingsStore, costsStore, worksStore, consumableStore, locationsStore, propertiesStore }: Props = $props();
 
   function navigate(hash: string): void {
     window.location.hash = hash;
@@ -60,6 +64,7 @@
     <HomeWorksWidget {worksStore} onnavigate={() => navigate("#/works")} />
     <HomeConsumablesWidget {consumableStore} onnavigate={() => navigate("#/consumables")} />
     <HomeLocationsWidget {locationsStore} onnavigate={() => navigate("#/locations")} />
+    <HomePropertiesWidget {propertiesStore} onnavigate={() => navigate("#/properties")} />
   </div>
 </div>
 

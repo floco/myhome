@@ -79,6 +79,8 @@
           <option value="inventory">Inventory</option>
           <option value="consumables">Consumables</option>
           <option value="kb">Knowledge Base</option>
+          <option value="locations">Locations</option>
+          <option value="properties">Properties</option>
         </select>
       </div>
       <div class="modal-field">

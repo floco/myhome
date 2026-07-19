@@ -9,6 +9,7 @@ import { createCostsStore } from "../src/lib/costsStore.svelte";
 import { createWorksStore } from "../src/lib/worksStore.svelte";
 import { createConsumableStore } from "../src/lib/consumableStore.svelte";
 import { createLocationsStore } from "../src/lib/locationsStore.svelte";
+import { createPropertiesStore } from "../src/lib/propertiesStore.svelte";
 
 const HOME = "home-123";
 const getHomeId = () => HOME;
@@ -24,6 +25,7 @@ function makeStores() {
     worksStore: createWorksStore(getHomeId),
     consumableStore: createConsumableStore(getHomeId),
     locationsStore: createLocationsStore(getHomeId),
+    propertiesStore: createPropertiesStore(getHomeId),
   };
 }
 
