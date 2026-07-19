@@ -16,6 +16,7 @@ ACTION_VERBS = {
 MODULE_NOUNS = {
     "chores": "chore", "works": "work", "costs": "cost entry",
     "inventory": "inventory item", "consumables": "consumable", "kb": "KB article",
+    "locations": "location", "properties": "property",
 }
 
 
