@@ -19,19 +19,12 @@
         return b.score - a.score;
       }),
   );
-
-  const topScore = $derived(ranked.find((r) => r.score !== null)?.score ?? null);
-
-  function isWinner(score: number | null): boolean {
-    return score !== null && topScore !== null && score === topScore;
-  }
 </script>
 
 <div class="ranking">
   {#each ranked as { loc, score } (loc.id)}
     <div class="row">
       <div class="label">
-        {#if isWinner(score)}<span class="crown">👑</span>{/if}
         <span class="emoji">{loc.emoji}</span>
         <span class="name">{loc.name}</span>
       </div>
@@ -47,7 +40,6 @@
   .ranking { display: flex; flex-direction: column; gap: 8px; }
   .row { display: flex; align-items: center; gap: 10px; }
   .label { display: flex; align-items: center; gap: 4px; width: 160px; flex-shrink: 0; font-size: 12px; color: var(--text); }
-  .crown { font-size: 12px; }
   .emoji { font-size: 14px; }
   .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bar-track { flex: 1; height: 10px; background: var(--surface-alt); border-radius: 5px; overflow: hidden; }

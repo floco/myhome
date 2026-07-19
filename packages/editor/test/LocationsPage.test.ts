@@ -49,4 +49,71 @@ describe("LocationsPage", () => {
     unmount(comp);
     el.remove();
   });
+
+  it("shows a no-ratings placeholder in the at-a-glance panel when nothing is rated yet", async () => {
+    vi.stubGlobal("fetch", makeFetch(200, {
+      version: 1,
+      criteria: [{ id: "c1", name: "Cost", description: "", weight: "medium" }],
+      locations: [{ id: "l1", name: "Nantes", emoji: "🇫🇷" }],
+      ratings: [],
+    }));
+    const store = createLocationsStore(getHomeId);
+    await tick();
+    const el = target();
+    const comp = mount(LocationsPage, { target: el, props: { store } });
+    flushSync();
+    expect(el.querySelector(".no-leader")).not.toBeNull();
+    expect(el.querySelectorAll(".leader-chip").length).toBe(0);
+    unmount(comp);
+    el.remove();
+  });
+
+  it("shows the crowned location in the at-a-glance panel, not in the ranking chart", async () => {
+    vi.stubGlobal("fetch", makeFetch(200, {
+      version: 1,
+      criteria: [{ id: "c1", name: "Cost", description: "", weight: "medium" }],
+      locations: [
+        { id: "l1", name: "Nantes", emoji: "🇫🇷" },
+        { id: "l2", name: "Ljubljana", emoji: "🇸🇮" },
+      ],
+      ratings: [
+        { locationId: "l1", criterionId: "c1", score: 2, note: "" },
+        { locationId: "l2", criterionId: "c1", score: 5, note: "" },
+      ],
+    }));
+    const store = createLocationsStore(getHomeId);
+    await tick();
+    const el = target();
+    const comp = mount(LocationsPage, { target: el, props: { store } });
+    flushSync();
+    const chips = el.querySelectorAll(".leader-chip");
+    expect(chips.length).toBe(1);
+    expect(chips[0].querySelector(".leader-name")?.textContent).toBe("Ljubljana");
+    expect(el.querySelector(".ranking .crown")).toBeNull();
+    unmount(comp);
+    el.remove();
+  });
+
+  it("shows every tied location in the at-a-glance panel", async () => {
+    vi.stubGlobal("fetch", makeFetch(200, {
+      version: 1,
+      criteria: [{ id: "c1", name: "Cost", description: "", weight: "medium" }],
+      locations: [
+        { id: "l1", name: "A", emoji: "📍" },
+        { id: "l2", name: "B", emoji: "📍" },
+      ],
+      ratings: [
+        { locationId: "l1", criterionId: "c1", score: 4, note: "" },
+        { locationId: "l2", criterionId: "c1", score: 4, note: "" },
+      ],
+    }));
+    const store = createLocationsStore(getHomeId);
+    await tick();
+    const el = target();
+    const comp = mount(LocationsPage, { target: el, props: { store } });
+    flushSync();
+    expect(el.querySelectorAll(".leader-chip").length).toBe(2);
+    unmount(comp);
+    el.remove();
+  });
 });

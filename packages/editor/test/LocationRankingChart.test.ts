@@ -11,7 +11,7 @@ function target(): HTMLElement {
 }
 
 describe("LocationRankingChart", () => {
-  it("sorts locations by weighted score descending and crowns the top one", () => {
+  it("sorts locations by weighted score descending", () => {
     const el = target();
     const comp = mount(LocationRankingChart, {
       target: el,
@@ -30,8 +30,8 @@ describe("LocationRankingChart", () => {
     flushSync();
     const rows = Array.from(el.querySelectorAll(".row"));
     expect(rows[0].querySelector(".name")?.textContent).toBe("Ljubljana");
-    expect(rows[0].querySelector(".crown")).not.toBeNull();
-    expect(rows[1].querySelector(".crown")).toBeNull();
+    expect(rows[1].querySelector(".name")?.textContent).toBe("Nantes");
+    expect(el.querySelectorAll(".crown").length).toBe(0);
     unmount(comp);
     el.remove();
   });
@@ -53,28 +53,6 @@ describe("LocationRankingChart", () => {
     const rows = Array.from(el.querySelectorAll(".row"));
     expect(rows[1].querySelector(".name")?.textContent).toBe("Unrated");
     expect(rows[1].querySelector(".score")?.textContent).toBe("—");
-    unmount(comp);
-    el.remove();
-  });
-
-  it("crowns tied top locations", () => {
-    const el = target();
-    const comp = mount(LocationRankingChart, {
-      target: el,
-      props: {
-        locations: [
-          { id: "l1", name: "A", emoji: "📍" },
-          { id: "l2", name: "B", emoji: "📍" },
-        ],
-        criteria,
-        ratings: [
-          { locationId: "l1", criterionId: "c1", score: 4, note: "" },
-          { locationId: "l2", criterionId: "c1", score: 4, note: "" },
-        ],
-      },
-    });
-    flushSync();
-    expect(el.querySelectorAll(".crown").length).toBe(2);
     unmount(comp);
     el.remove();
   });
