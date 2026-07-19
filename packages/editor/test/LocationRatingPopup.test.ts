@@ -24,7 +24,7 @@ describe("LocationRatingPopup", () => {
       },
     });
     flushSync();
-    expect(document.querySelector(".score-btn.selected")?.textContent).toBe("3");
+    expect(document.querySelectorAll(".star-btn.filled").length).toBe(3);
     expect((document.querySelector(".note-textarea") as HTMLTextAreaElement).value).toBe("decent");
     unmount(comp);
     el.remove();
@@ -38,7 +38,7 @@ describe("LocationRatingPopup", () => {
       props: { location, criterion, rating: null, anchorX: 0, anchorY: 0, onsave, onclose: vi.fn() },
     });
     flushSync();
-    const buttons = Array.from(document.querySelectorAll(".score-btn"));
+    const buttons = Array.from(document.querySelectorAll(".star-btn"));
     (buttons[3] as HTMLButtonElement).click(); // score 4
     const textarea = document.querySelector(".note-textarea") as HTMLTextAreaElement;
     textarea.value = "Great fit";

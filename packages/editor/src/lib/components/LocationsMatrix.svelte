@@ -1,56 +1,26 @@
 <script lang="ts">
   import type { createLocationsStore, Location, LocationCriterion, Weight } from "../locationsStore.svelte";
   import { ratingFor, bestScoreForCriterion } from "../locationsStore.svelte";
-  import EmojiPicker from "./ui/EmojiPicker.svelte";
   import LocationRatingPopup from "./LocationRatingPopup.svelte";
+  import LocationModal from "./LocationModal.svelte";
+  import LocationCriterionModal from "./LocationCriterionModal.svelte";
+  import StarRating from "./ui/StarRating.svelte";
 
   type LocationsStore = ReturnType<typeof createLocationsStore>;
   interface Props { store: LocationsStore; }
   let { store }: Props = $props();
 
-  const SCORE_COLOR: Record<number, string> = {
-    1: "var(--danger)", 2: "#ff9800", 3: "#ffc107", 4: "#8bc34a", 5: "var(--success)",
-  };
   const WEIGHT_LABEL: Record<Weight, string> = { low: "Low", medium: "Med", high: "High" };
 
-  let newCriterionName = $state("");
-  let newLocationName = $state("");
-  let newLocationEmoji = $state("📍");
+  let mode = $state<"view" | "edit">("view");
 
-  let editingCriterionId = $state<string | null>(null);
-  let editCriterionName = $state("");
-  let editCriterionDescription = $state("");
-  let editCriterionWeight = $state<Weight>("medium");
   let confirmDeleteCriterionId = $state<string | null>(null);
-
-  let editingLocationId = $state<string | null>(null);
-  let editLocationName = $state("");
-  let editLocationEmoji = $state("📍");
   let confirmDeleteLocationId = $state<string | null>(null);
 
+  let showLocationModal = $state<Location | "new" | null>(null);
+  let showCriterionModal = $state<LocationCriterion | "new" | null>(null);
+
   let openCell = $state<{ locationId: string; criterionId: string; anchorX: number; anchorY: number } | null>(null);
-
-  function startEditCriterion(c: LocationCriterion): void {
-    editingCriterionId = c.id;
-    editCriterionName = c.name;
-    editCriterionDescription = c.description;
-    editCriterionWeight = c.weight;
-  }
-
-  async function saveCriterion(): Promise<void> {
-    if (!editingCriterionId) return;
-    await store.updateCriterion(editingCriterionId, {
-      name: editCriterionName, description: editCriterionDescription, weight: editCriterionWeight,
-    });
-    editingCriterionId = null;
-  }
-
-  async function addCriterion(): Promise<void> {
-    const name = newCriterionName.trim();
-    if (!name) return;
-    await store.createCriterion({ name, description: "", weight: "medium" });
-    newCriterionName = "";
-  }
 
   async function moveCriterion(id: string, dir: -1 | 1): Promise<void> {
     const ids = store.criteria.map((c) => c.id);
@@ -61,26 +31,6 @@
     await store.reorderCriteria(ids);
   }
 
-  function startEditLocation(l: Location): void {
-    editingLocationId = l.id;
-    editLocationName = l.name;
-    editLocationEmoji = l.emoji;
-  }
-
-  async function saveLocation(): Promise<void> {
-    if (!editingLocationId) return;
-    await store.updateLocation(editingLocationId, { name: editLocationName, emoji: editLocationEmoji });
-    editingLocationId = null;
-  }
-
-  async function addLocation(): Promise<void> {
-    const name = newLocationName.trim();
-    if (!name) return;
-    await store.createLocation({ name, emoji: newLocationEmoji });
-    newLocationName = "";
-    newLocationEmoji = "📍";
-  }
-
   async function moveLocation(id: string, dir: -1 | 1): Promise<void> {
     const ids = store.locations.map((l) => l.id);
     const idx = ids.indexOf(id);
@@ -88,6 +38,22 @@
     if (swapWith < 0 || swapWith >= ids.length) return;
     [ids[idx], ids[swapWith]] = [ids[swapWith], ids[idx]];
     await store.reorderLocations(ids);
+  }
+
+  async function handleSaveLocation(data: { name: string; emoji: string }): Promise<void> {
+    if (showLocationModal === "new") {
+      await store.createLocation(data);
+    } else if (showLocationModal) {
+      await store.updateLocation(showLocationModal.id, data);
+    }
+  }
+
+  async function handleSaveCriterion(data: { name: string; description: string; weight: Weight }): Promise<void> {
+    if (showCriterionModal === "new") {
+      await store.createCriterion(data);
+    } else if (showCriterionModal) {
+      await store.updateCriterion(showCriterionModal.id, data);
+    }
   }
 
   // Popup is ~240px wide and its height varies with note length but rarely
@@ -116,21 +82,26 @@
   }
 </script>
 
+<div class="mode-bar">
+  <div class="mode-toggle">
+    <button type="button" class="mode-btn" class:active={mode === "view"} onclick={() => { mode = "view"; }}>👁 View</button>
+    <button type="button" class="mode-btn" class:active={mode === "edit"} onclick={() => { mode = "edit"; }}>✏️ Edit</button>
+  </div>
+</div>
+
 <div class="matrix-wrapper">
   <table class="matrix">
     <thead>
       <tr>
-        <th class="corner">Criteria</th>
+        <th class="corner">
+          Criteria
+          {#if mode === "edit"}
+            <button class="add-btn" onclick={() => { showCriterionModal = "new"; }} title="Add criterion">＋</button>
+          {/if}
+        </th>
         {#each store.locations as loc (loc.id)}
           <th class="location-header">
-            {#if editingLocationId === loc.id}
-              <div class="edit-form">
-                <EmojiPicker bind:value={editLocationEmoji} />
-                <input class="edit-input" bind:value={editLocationName} />
-                <button class="icon-btn" onclick={saveLocation} title="Save">✓</button>
-                <button class="icon-btn" onclick={() => { editingLocationId = null; }} title="Cancel">✕</button>
-              </div>
-            {:else if confirmDeleteLocationId === loc.id}
+            {#if confirmDeleteLocationId === loc.id}
               <div class="header-content">
                 <span class="confirm-text">Delete {loc.name}?</span>
                 <div class="header-actions">
@@ -142,28 +113,23 @@
               <div class="header-content">
                 <span class="loc-emoji">{loc.emoji}</span>
                 <span class="loc-name">{loc.name}</span>
-                <div class="header-actions">
-                  <button class="icon-btn" onclick={() => moveLocation(loc.id, -1)} title="Move left">◀</button>
-                  <button class="icon-btn" onclick={() => moveLocation(loc.id, 1)} title="Move right">▶</button>
-                  <button class="icon-btn" onclick={() => startEditLocation(loc)} title="Edit">✏️</button>
-                  <button class="icon-btn" onclick={() => { confirmDeleteLocationId = loc.id; }} title="Delete">🗑</button>
-                </div>
+                {#if mode === "edit"}
+                  <div class="header-actions">
+                    <button class="icon-btn" onclick={() => moveLocation(loc.id, -1)} title="Move left">◀</button>
+                    <button class="icon-btn" onclick={() => moveLocation(loc.id, 1)} title="Move right">▶</button>
+                    <button class="icon-btn" onclick={() => { showLocationModal = loc; }} title="Edit">✏️</button>
+                    <button class="icon-btn" onclick={() => { confirmDeleteLocationId = loc.id; }} title="Delete">🗑</button>
+                  </div>
+                {/if}
               </div>
             {/if}
           </th>
         {/each}
-        <th class="add-header">
-          <div class="add-form">
-            <EmojiPicker bind:value={newLocationEmoji} />
-            <input
-              class="edit-input"
-              placeholder="New location…"
-              bind:value={newLocationName}
-              onkeydown={(e) => { if (e.key === "Enter") addLocation(); }}
-            />
-            <button class="add-btn" onclick={addLocation} title="Add location">＋</button>
-          </div>
-        </th>
+        {#if mode === "edit"}
+          <th class="add-header">
+            <button class="add-btn" onclick={() => { showLocationModal = "new"; }} title="Add location">＋</button>
+          </th>
+        {/if}
       </tr>
     </thead>
     <tbody>
@@ -171,21 +137,7 @@
         {@const best = bestScoreForCriterion(store.locations, store.ratings, criterion.id)}
         <tr>
           <td class="criterion-cell">
-            {#if editingCriterionId === criterion.id}
-              <div class="edit-form-col">
-                <input class="edit-input" bind:value={editCriterionName} />
-                <textarea class="edit-textarea" bind:value={editCriterionDescription}></textarea>
-                <select class="native-select" bind:value={editCriterionWeight}>
-                  <option value="low">Low weight</option>
-                  <option value="medium">Medium weight</option>
-                  <option value="high">High weight</option>
-                </select>
-                <div class="row-actions">
-                  <button class="icon-btn" onclick={saveCriterion} title="Save">✓</button>
-                  <button class="icon-btn" onclick={() => { editingCriterionId = null; }} title="Cancel">✕</button>
-                </div>
-              </div>
-            {:else if confirmDeleteCriterionId === criterion.id}
+            {#if confirmDeleteCriterionId === criterion.id}
               <div class="criterion-content">
                 <span class="confirm-text">Delete {criterion.name}?</span>
                 <div class="row-actions">
@@ -200,12 +152,14 @@
                   <span class="weight-tag weight-{criterion.weight}">{WEIGHT_LABEL[criterion.weight]}</span>
                 </div>
                 {#if criterion.description}<p class="criterion-desc">{criterion.description}</p>{/if}
-                <div class="row-actions">
-                  <button class="icon-btn" onclick={() => moveCriterion(criterion.id, -1)} title="Move up">▲</button>
-                  <button class="icon-btn" onclick={() => moveCriterion(criterion.id, 1)} title="Move down">▼</button>
-                  <button class="icon-btn" onclick={() => startEditCriterion(criterion)} title="Edit">✏️</button>
-                  <button class="icon-btn" onclick={() => { confirmDeleteCriterionId = criterion.id; }} title="Delete">🗑</button>
-                </div>
+                {#if mode === "edit"}
+                  <div class="row-actions">
+                    <button class="icon-btn" onclick={() => moveCriterion(criterion.id, -1)} title="Move up">▲</button>
+                    <button class="icon-btn" onclick={() => moveCriterion(criterion.id, 1)} title="Move down">▼</button>
+                    <button class="icon-btn" onclick={() => { showCriterionModal = criterion; }} title="Edit">✏️</button>
+                    <button class="icon-btn" onclick={() => { confirmDeleteCriterionId = criterion.id; }} title="Delete">🗑</button>
+                  </div>
+                {/if}
               </div>
             {/if}
           </td>
@@ -221,32 +175,37 @@
               onclick={(e) => openRatingPopup(loc.id, criterion.id, e)}
             >
               {#if rating?.score != null}
-                <span class="score-badge" style="background:{SCORE_COLOR[rating.score]}">{rating.score}</span>
+                <StarRating score={rating.score} size="sm" />
                 {#if rating.note}<span class="note-preview">{rating.note}</span>{/if}
               {:else}
                 <span class="score-empty">—</span>
               {/if}
             </td>
           {/each}
+          {#if mode === "edit"}
+            <td class="add-criterion-filler"></td>
+          {/if}
         </tr>
       {/each}
-      <tr>
-        <td class="add-criterion-cell">
-          <input
-            class="edit-input"
-            placeholder="New criterion…"
-            bind:value={newCriterionName}
-            onkeydown={(e) => { if (e.key === "Enter") addCriterion(); }}
-          />
-          <button class="add-btn" onclick={addCriterion} title="Add criterion">＋</button>
-        </td>
-        {#each store.locations as loc (loc.id)}
-          <td class="add-criterion-filler"></td>
-        {/each}
-      </tr>
     </tbody>
   </table>
 </div>
+
+{#if showLocationModal}
+  <LocationModal
+    location={showLocationModal === "new" ? null : showLocationModal}
+    onsave={handleSaveLocation}
+    onclose={() => { showLocationModal = null; }}
+  />
+{/if}
+
+{#if showCriterionModal}
+  <LocationCriterionModal
+    criterion={showCriterionModal === "new" ? null : showCriterionModal}
+    onsave={handleSaveCriterion}
+    onclose={() => { showCriterionModal = null; }}
+  />
+{/if}
 
 {#if openCell}
   {@const cellLocation = store.locations.find((l) => l.id === openCell!.locationId)}
@@ -265,6 +224,14 @@
 {/if}
 
 <style>
+  .mode-bar { display: flex; justify-content: flex-end; padding: 8px 10px 0; }
+  .mode-toggle { display: flex; gap: 2px; background: var(--surface-alt); border-radius: var(--radius-pill); padding: 2px; }
+  .mode-btn {
+    border: none; background: none; color: var(--text-muted); border-radius: var(--radius-pill);
+    padding: 4px 12px; cursor: pointer; font-size: 11px; font-weight: 600;
+  }
+  .mode-btn.active { background: var(--accent); color: var(--accent-contrast); }
+
   .matrix-wrapper { overflow-x: auto; }
   .matrix { width: 100%; border-collapse: collapse; font-size: 12px; }
   .matrix th, .matrix td { border-bottom: 1px solid var(--border); padding: 8px 10px; vertical-align: top; text-align: left; }
@@ -277,11 +244,6 @@
   .icon-btn { border: none; background: var(--surface-alt); color: var(--text-muted); border-radius: var(--radius-sm); padding: 2px 6px; cursor: pointer; font-size: 11px; }
   .icon-btn:hover { background: var(--surface-hover); color: var(--text); }
   .add-btn { border: none; background: var(--accent); color: var(--accent-contrast); border-radius: var(--radius-sm); padding: 4px 10px; cursor: pointer; font-size: 13px; flex-shrink: 0; }
-  .edit-form, .add-form { display: flex; align-items: center; gap: 4px; }
-  .edit-form-col { display: flex; flex-direction: column; gap: 4px; }
-  .edit-input { flex: 1; background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 4px 6px; font-size: 12px; font-family: var(--font-sans); box-sizing: border-box; }
-  .edit-textarea { background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); padding: 4px 6px; font-size: 12px; font-family: var(--font-sans); resize: vertical; min-height: 40px; }
-  .native-select { background: var(--surface-alt); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius-sm); padding: 4px 6px; font-size: 12px; font-family: var(--font-sans); }
   .confirm-text { font-size: 11px; color: var(--danger); }
 
   .criterion-cell { min-width: 240px; }
@@ -296,10 +258,8 @@
   .rating-cell { cursor: pointer; text-align: center; }
   .rating-cell:hover { background: var(--surface-hover); }
   .rating-cell.best { background: color-mix(in srgb, var(--success) 12%, transparent); outline: 1px solid var(--success); outline-offset: -1px; }
-  .score-badge { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; color: #fff; font-weight: 700; font-size: 11px; }
   .score-empty { color: var(--text-faint); }
   .note-preview { display: block; margin-top: 4px; color: var(--text-muted); font-size: 10px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  .add-criterion-cell { display: flex; align-items: center; gap: 4px; }
   .add-criterion-filler { background: transparent; }
 </style>

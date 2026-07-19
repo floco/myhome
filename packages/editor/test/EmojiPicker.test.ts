@@ -106,4 +106,81 @@ describe("EmojiPicker", () => {
     unmount(comp);
     target.remove();
   });
+
+  it("does not render tabs when flags is false (default)", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(EmojiPicker, { target, props: { value: "🔋", onchange: vi.fn() } });
+    flushSync();
+    (target.querySelector(".ep-trigger") as HTMLElement).click();
+    flushSync();
+    expect(document.querySelector(".tab-bar")).toBeNull();
+    unmount(comp);
+    target.remove();
+  });
+
+  it("renders Objects/Flags tabs when flags is true, defaulting to Objects", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(EmojiPicker, { target, props: { value: "📍", onchange: vi.fn(), flags: true } });
+    flushSync();
+    (target.querySelector(".ep-trigger") as HTMLElement).click();
+    flushSync();
+    const tabs = Array.from(document.querySelectorAll(".tab-bar .tab"));
+    expect(tabs.map((t) => t.textContent)).toEqual(["Objects", "Flags"]);
+    expect(document.querySelector(".tab.active")?.textContent).toBe("Objects");
+    expect(document.querySelectorAll(".ep-flag-grid").length).toBe(0);
+    unmount(comp);
+    target.remove();
+  });
+
+  it("switching to the Flags tab renders flag buttons and the filter narrows them", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(EmojiPicker, { target, props: { value: "📍", onchange: vi.fn(), flags: true } });
+    flushSync();
+    (target.querySelector(".ep-trigger") as HTMLElement).click();
+    flushSync();
+    const tabs = Array.from(document.querySelectorAll(".tab-bar .tab")) as HTMLButtonElement[];
+    tabs[1].click();
+    flushSync();
+    const flagGrid = document.querySelector(".ep-flag-grid");
+    expect(flagGrid).not.toBeNull();
+    const allFlagButtons = flagGrid!.querySelectorAll(".ep-emoji").length;
+    expect(allFlagButtons).toBeGreaterThan(50);
+
+    const filterInput = document.querySelector(".ep-flag-filter") as HTMLInputElement;
+    filterInput.value = "france";
+    filterInput.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    const filteredButtons = flagGrid!.querySelectorAll(".ep-emoji");
+    expect(filteredButtons.length).toBe(1);
+    expect(filteredButtons[0].getAttribute("title")).toBe("France");
+    unmount(comp);
+    target.remove();
+  });
+
+  it("selecting a flag calls onchange with the flag string", () => {
+    const onchange = vi.fn();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(EmojiPicker, { target, props: { value: "📍", onchange, flags: true } });
+    flushSync();
+    (target.querySelector(".ep-trigger") as HTMLElement).click();
+    flushSync();
+    const tabs = Array.from(document.querySelectorAll(".tab-bar .tab")) as HTMLButtonElement[];
+    tabs[1].click();
+    flushSync();
+    const filterInput = document.querySelector(".ep-flag-filter") as HTMLInputElement;
+    filterInput.value = "france";
+    filterInput.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    const flagBtn = document.querySelector(".ep-flag-grid .ep-emoji") as HTMLButtonElement;
+    flagBtn.click();
+    flushSync();
+    expect(onchange).toHaveBeenCalledWith("🇫🇷");
+    expect(document.querySelector(".ep-panel")).toBeNull();
+    unmount(comp);
+    target.remove();
+  });
 });

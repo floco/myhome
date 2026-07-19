@@ -36,6 +36,12 @@ function target(): HTMLElement {
   return el;
 }
 
+function enterEditMode(el: HTMLElement): void {
+  const editBtn = Array.from(el.querySelectorAll(".mode-btn")).find((b) => b.textContent === "✏️ Edit") as HTMLButtonElement;
+  editBtn.click();
+  flushSync();
+}
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe("LocationsMatrix", () => {
@@ -47,7 +53,7 @@ describe("LocationsMatrix", () => {
     const comp = mount(LocationsMatrix, { target: el, props: { store } });
     flushSync();
     expect(el.querySelectorAll(".location-header").length).toBe(2);
-    expect(el.querySelectorAll("tbody tr").length).toBe(3); // 2 criteria + add-criterion row
+    expect(el.querySelectorAll("tbody tr").length).toBe(2);
     unmount(comp);
     el.remove();
   });
@@ -62,7 +68,7 @@ describe("LocationsMatrix", () => {
     const costRow = Array.from(el.querySelectorAll("tbody tr"))[0];
     const bestCells = costRow.querySelectorAll("td.rating-cell.best");
     expect(bestCells.length).toBe(1);
-    expect(bestCells[0].textContent).toContain("5");
+    expect(bestCells[0].querySelectorAll(".star.filled").length).toBe(5);
     unmount(comp);
     el.remove();
   });
@@ -83,7 +89,7 @@ describe("LocationsMatrix", () => {
     el.remove();
   });
 
-  it("adding a location POSTs to the locations endpoint", async () => {
+  it("adding a location opens the modal via the + trigger and POSTs to the locations endpoint", async () => {
     const fetchFn = vi.fn()
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => sampleDoc })
       .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({}) })
@@ -94,11 +100,15 @@ describe("LocationsMatrix", () => {
     const el = target();
     const comp = mount(LocationsMatrix, { target: el, props: { store } });
     flushSync();
-    const input = el.querySelector(".add-header input") as HTMLInputElement;
-    input.value = "Zagreb";
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    flushSync();
+    enterEditMode(el);
     (el.querySelector(".add-header .add-btn") as HTMLButtonElement).click();
+    flushSync();
+    const nameInput = document.querySelector(".ui-input") as HTMLInputElement;
+    nameInput.value = "Zagreb";
+    nameInput.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    const addBtn = Array.from(document.querySelectorAll("button")).find((b) => b.textContent === "Add") as HTMLButtonElement;
+    addBtn.click();
     await tick();
     expect(fetchFn).toHaveBeenCalledWith(
       `/api/homes/${HOME}/locations/locations`,
@@ -115,11 +125,48 @@ describe("LocationsMatrix", () => {
     const el = target();
     const comp = mount(LocationsMatrix, { target: el, props: { store } });
     flushSync();
+    enterEditMode(el);
     const costRow = Array.from(el.querySelectorAll("tbody tr"))[0];
     const deleteBtn = costRow.querySelector(".criterion-cell button[title='Delete']") as HTMLButtonElement;
     deleteBtn.click();
     flushSync();
     expect(costRow.querySelector(".confirm-text")).not.toBeNull();
+    unmount(comp);
+    el.remove();
+  });
+
+  it("View mode hides structural controls but rating cells stay clickable", async () => {
+    vi.stubGlobal("fetch", makeFetch(200, sampleDoc));
+    const store = createLocationsStore(getHomeId);
+    await tick();
+    const el = target();
+    const comp = mount(LocationsMatrix, { target: el, props: { store } });
+    flushSync();
+    expect(el.querySelector(".header-actions")).toBeNull();
+    expect(el.querySelector(".row-actions")).toBeNull();
+    expect(el.querySelector(".add-header")).toBeNull();
+    expect(el.querySelector(".corner .add-btn")).toBeNull();
+
+    const cell = el.querySelector("td.rating-cell") as HTMLElement;
+    cell.click();
+    flushSync();
+    expect(document.querySelector(".popup-title")).not.toBeNull();
+    unmount(comp);
+    el.remove();
+  });
+
+  it("Edit mode shows structural controls", async () => {
+    vi.stubGlobal("fetch", makeFetch(200, sampleDoc));
+    const store = createLocationsStore(getHomeId);
+    await tick();
+    const el = target();
+    const comp = mount(LocationsMatrix, { target: el, props: { store } });
+    flushSync();
+    enterEditMode(el);
+    expect(el.querySelectorAll(".header-actions").length).toBe(2);
+    expect(el.querySelectorAll(".row-actions").length).toBe(2);
+    expect(el.querySelector(".add-header")).not.toBeNull();
+    expect(el.querySelector(".corner .add-btn")).not.toBeNull();
     unmount(comp);
     el.remove();
   });

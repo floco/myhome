@@ -1,9 +1,22 @@
 <script lang="ts">
+  import { COUNTRY_FLAGS } from "../../countryFlags";
+  import Tabs from "./Tabs.svelte";
+
   interface Props {
     value: string;
     onchange?: (v: string) => void;
+    flags?: boolean;
   }
-  let { value = $bindable(), onchange }: Props = $props();
+  let { value = $bindable(), onchange, flags = false }: Props = $props();
+
+  let activeTab = $state<"objects" | "flags">("objects");
+  let flagFilter = $state("");
+
+  const filteredFlags = $derived(
+    flagFilter.trim()
+      ? COUNTRY_FLAGS.filter((c) => c.name.toLowerCase().includes(flagFilter.trim().toLowerCase()))
+      : COUNTRY_FLAGS,
+  );
 
   const EMOJIS = [
     // Home & Rooms
@@ -60,7 +73,12 @@
       panelTop = rect.bottom + 4;
     }
     open = !open;
-    if (!open) customValue = "";
+    if (!open) {
+      customValue = "";
+    } else {
+      activeTab = "objects";
+      flagFilter = "";
+    }
   }
 
   function select(e: string): void {
@@ -107,16 +125,42 @@
 
   {#if open}
     <div class="ep-panel" style="left:{panelLeft}px;top:{panelTop}px" bind:this={panelEl} use:portal>
-      <div class="ep-grid">
-        {#each EMOJIS as e (e)}
-          <button
-            class="ep-emoji"
-            class:ep-selected={value === e}
-            type="button"
-            onclick={() => select(e)}
-          >{e}</button>
-        {/each}
-      </div>
+      {#if flags}
+        <Tabs
+          tabs={[{ id: "objects", label: "Objects" }, { id: "flags", label: "Flags" }]}
+          active={activeTab}
+          onchange={(id) => { activeTab = id as "objects" | "flags"; }}
+        />
+      {/if}
+      {#if !flags || activeTab === "objects"}
+        <div class="ep-grid">
+          {#each EMOJIS as e (e)}
+            <button
+              class="ep-emoji"
+              class:ep-selected={value === e}
+              type="button"
+              onclick={() => select(e)}
+            >{e}</button>
+          {/each}
+        </div>
+      {:else}
+        <input
+          class="ep-flag-filter"
+          bind:value={flagFilter}
+          placeholder="Filter countries…"
+        />
+        <div class="ep-grid ep-flag-grid">
+          {#each filteredFlags as c (c.code)}
+            <button
+              class="ep-emoji"
+              class:ep-selected={value === c.flag}
+              type="button"
+              title={c.name}
+              onclick={() => select(c.flag)}
+            >{c.flag}</button>
+          {/each}
+        </div>
+      {/if}
       <div class="ep-custom">
         <input
           class="ep-custom-input"
@@ -172,6 +216,14 @@
     background: color-mix(in srgb, var(--accent) 20%, transparent);
     outline: 1px solid var(--accent);
   }
+
+  .ep-flag-filter {
+    width: 100%; box-sizing: border-box; background: var(--surface-alt); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text); padding: 4px 8px; font-size: 12px;
+    font-family: var(--font-sans); margin-bottom: 6px;
+  }
+  .ep-flag-filter:focus { outline: none; border-color: var(--accent); }
+  .ep-flag-grid { grid-template-columns: repeat(6, 1fr); }
 
   .ep-custom { display: flex; gap: 4px; }
   .ep-custom-input {
