@@ -35,6 +35,7 @@ def load_users() -> UserDocument:
         User(
             id=r["id"], username=r["username"], password_hash=r["password_hash"], role=r["role"],
             created_at=r["created_at"], auth_provider=r["auth_provider"], oidc_sub=r["oidc_sub"],
+            ha_user_id=r["ha_user_id"],
         )
         for r in rows
     ])
@@ -49,7 +50,7 @@ def save_users(doc: UserDocument) -> None:
                 {
                     "id": u.id, "order_index": i, "username": u.username, "password_hash": u.password_hash,
                     "role": u.role, "created_at": u.created_at, "auth_provider": u.auth_provider,
-                    "oidc_sub": u.oidc_sub,
+                    "oidc_sub": u.oidc_sub, "ha_user_id": u.ha_user_id,
                 }
                 for i, u in enumerate(doc.users)
             ])

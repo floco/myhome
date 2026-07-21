@@ -41,6 +41,19 @@ def test_user_oidc_sub_defaults_to_none():
     assert user.oidc_sub is None
 
 
+def test_save_and_load_users_roundtrip_preserves_ha_user_id(data_dir):
+    doc = UserDocument(users=[
+        User(
+            id="u1", username="bob-ha", role="normal", created_at="2026-01-01T00:00:00+00:00",
+            auth_provider="ha_ingress", ha_user_id="ha-user-abc123",
+        )
+    ])
+    save_users(doc)
+    loaded = load_users()
+    assert loaded.users[0].auth_provider == "ha_ingress"
+    assert loaded.users[0].ha_user_id == "ha-user-abc123"
+
+
 def test_save_and_load_users_preserves_order(data_dir):
     doc = UserDocument(users=[
         User(id="u1", username="alice", role="admin", created_at="2026-01-01T00:00:00+00:00"),
