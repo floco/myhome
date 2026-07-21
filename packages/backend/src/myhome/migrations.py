@@ -15,15 +15,20 @@ from collections.abc import Callable
 from sqlalchemy import text
 from sqlalchemy.engine import Connection, Engine
 
-CURRENT_VERSION = 2
+CURRENT_VERSION = 3
 
 
 def _drop_kb_folders_table(conn: Connection) -> None:
     conn.execute(text("DROP TABLE IF EXISTS kb_folders"))
 
 
+def _add_ha_user_id_column(conn: Connection) -> None:
+    conn.execute(text("ALTER TABLE users ADD COLUMN ha_user_id VARCHAR"))
+
+
 MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (2, _drop_kb_folders_table),
+    (3, _add_ha_user_id_column),
 ]
 
 

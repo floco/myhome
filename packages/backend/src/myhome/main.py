@@ -10,7 +10,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from .backup_scheduler import scheduled_backup_loop
-from .deps import ROLE_ORDER, get_user_from_request
+from .deps import ROLE_ORDER, get_user_from_request, set_auth_cookies
+from .ha_ingress import resolve_ha_ingress_user
 from .ids import InvalidIdError
 from .mcp_app import mcp_asgi_app
 from .mcp_server import mcp
@@ -110,6 +111,11 @@ async def auth_middleware(request: Request, call_next):
         # a Home Assistant ingress request, which never carries our cookies).
         return await call_next(request)
     user = await get_user_from_request(request)
+    newly_ingress_authenticated = False
+    if user is None:
+        user = await resolve_ha_ingress_user(request)
+        if user is not None:
+            newly_ingress_authenticated = True
     if user is None:
         return JSONResponse({"detail": "Authentication required"}, status_code=401)
     user_id, role = user
@@ -121,7 +127,10 @@ async def auth_middleware(request: Request, call_next):
     ):
         return JSONResponse({"detail": "Insufficient permissions"}, status_code=403)
     request.state.user = user
-    return await call_next(request)
+    response = await call_next(request)
+    if newly_ingress_authenticated:
+        set_auth_cookies(response, user_id, role)
+    return response
 
 
 # ── MCP gate ──────────────────────────────────────────────────────────────

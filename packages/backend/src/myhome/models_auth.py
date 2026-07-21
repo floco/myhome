@@ -9,8 +9,9 @@ class User(BaseModel):
     password_hash: str | None = None
     role: str  # "admin" | "normal" | "ro"
     created_at: str  # ISO-8601
-    auth_provider: str = "local"  # "local" | "oidc"
+    auth_provider: str = "local"  # "local" | "oidc" | "ha_ingress"
     oidc_sub: str | None = None  # IdP's stable subject identifier, set only for auth_provider="oidc"
+    ha_user_id: str | None = None  # HA's X-Remote-User-Id, set only for auth_provider="ha_ingress"
 
 
 class UserDocument(BaseModel):

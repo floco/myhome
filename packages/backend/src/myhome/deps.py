@@ -46,6 +46,11 @@ def create_refresh_token(user_id: str) -> str:
     return jwt.encode(payload, _get_or_create_secret(), algorithm=ALGORITHM)
 
 
+def set_auth_cookies(response, user_id: str, role: str) -> None:
+    response.set_cookie("myhome_access", create_access_token(user_id, role), httponly=True, samesite="lax")
+    response.set_cookie("myhome_refresh", create_refresh_token(user_id), httponly=True, samesite="lax")
+
+
 def _decode_access(token: str) -> dict | None:
     try:
         payload = jwt.decode(token, _get_or_create_secret(), algorithms=[ALGORITHM])
@@ -77,10 +82,21 @@ def _bearer_lookup(raw_token: str) -> tuple[str, str] | None:
 
 
 async def _resolve_user(
+    request: Request,
     myhome_access: str | None = Cookie(default=None),
     authorization: str | None = Header(default=None),
 ) -> tuple[str, str] | None:
-    """Return (user_id, role) from cookie JWT or Bearer token, or None."""
+    """Return (user_id, role) from cookie JWT or Bearer token, or None.
+
+    If auth_middleware already resolved the user for this request (e.g. via
+    HA ingress trust, which only mints a cookie on the *response* -- the
+    incoming request the middleware and this dependency both see has none
+    yet), reuse that instead of re-parsing cookies/headers that won't be
+    there until the next request.
+    """
+    state_user = getattr(request.state, "user", None)
+    if state_user is not None:
+        return state_user
     if myhome_access:
         payload = _decode_access(myhome_access)
         if payload:

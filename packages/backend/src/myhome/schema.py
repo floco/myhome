@@ -37,6 +37,7 @@ users = Table(
     Column("created_at", String, nullable=False),
     Column("auth_provider", String, nullable=False),
     Column("oidc_sub", String),
+    Column("ha_user_id", String),
     Column("order_index", Integer, nullable=False),
 )
 
