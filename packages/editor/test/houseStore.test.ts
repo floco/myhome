@@ -35,11 +35,12 @@ describe("houseStore — initial state (no saved doc)", () => {
     vi.stubGlobal("fetch", makeFetchStub(404));
   });
 
-  it("starts with the sample floor and detects rooms", async () => {
+  it("starts with a single empty floor", async () => {
     const store = createHouseStore(getHomeId);
     await tick();
     expect(store.floors.length).toBe(1);
-    expect(store.floor.rooms.length).toBe(2);
+    expect(store.floor.walls.length).toBe(0);
+    expect(store.floor.rooms.length).toBe(0);
   });
 
   it("currentFloorId matches the single floor id", async () => {
@@ -281,7 +282,12 @@ describe("houseStore — dirty tracking", () => {
     vi.stubGlobal("fetch", makeFetchStub(404));
     const store = createHouseStore(getHomeId);
     await tick();
+    store.addWall({ id: "w1", start: { x: 0, y: 0 }, end: { x: 4, y: 0 }, type: "wall" });
+    store.addWall({ id: "w2", start: { x: 4, y: 0 }, end: { x: 4, y: 3 }, type: "wall" });
+    store.addWall({ id: "w3", start: { x: 4, y: 3 }, end: { x: 0, y: 3 }, type: "wall" });
+    store.addWall({ id: "w4", start: { x: 0, y: 3 }, end: { x: 0, y: 0 }, type: "wall" });
     const roomId = store.floor.rooms[0]?.id;
+    expect(roomId).toBeDefined();
     if (roomId) store.updateRoom(roomId, { label: "Kitchen" });
     expect(store.isDirty).toBe(true);
   });

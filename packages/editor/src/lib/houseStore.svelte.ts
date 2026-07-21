@@ -1,6 +1,6 @@
 import { detectRooms, matchRooms, pointsEqual } from "@myhome/geometry";
 import type { Floor, Wall, Opening, Room, Point, House, HouseDocument, FurnitureObject } from "@myhome/geometry";
-import { createSampleHouse } from "./sampleFloor";
+import { createEmptyHouse } from "./emptyFloor";
 
 const MAX_HISTORY = 50;
 
@@ -20,9 +20,9 @@ function genId(): string {
 }
 
 export function createHouseStore(getHomeId: () => string | null = () => null) {
-  const sample = createSampleHouse();
-  const floors = $state<Floor[]>(sample.floors);
-  let currentFloorId = $state<string>(sample.currentFloorId);
+  const initial = createEmptyHouse();
+  const floors = $state<Floor[]>(initial.floors);
+  let currentFloorId = $state<string>(initial.currentFloorId);
   let house = $state<House>(DEFAULT_HOUSE);
   let loaded = $state(false);
   let loadError = $state<string | null>(null);
@@ -273,8 +273,8 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
     try {
       const resp = await fetch(`/api/homes/${homeId}/house`);
       if (resp.status === 404) {
-        // No saved document for this home — reset to a fresh sample
-        const fresh = createSampleHouse();
+        // No saved document for this home — reset to a fresh, empty floor
+        const fresh = createEmptyHouse();
         house = { ...DEFAULT_HOUSE };
         applyState({ floors: fresh.floors, currentFloorId: fresh.currentFloorId });
         for (const f of floors) {

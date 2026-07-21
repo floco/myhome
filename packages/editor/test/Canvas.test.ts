@@ -1,10 +1,29 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { mount, unmount, flushSync, tick } from "svelte";
 import Canvas from "../src/lib/components/Canvas.svelte";
-import { createSampleFloor } from "../src/lib/sampleFloor";
 import { detectRooms, matchRooms } from "@myhome/geometry";
 import type { Point, Wall, Opening, Floor } from "@myhome/geometry";
 import { DEFAULT_VIEWPORT } from "../src/lib/viewportStore.svelte";
+
+/** A 4x3 rectangle split by a divider, used as fixture geometry for
+ *  exercising wall/room/divider rendering. */
+function createSampleFloor(): Floor {
+  return {
+    id: "floor-1",
+    name: "Ground Floor",
+    order: 0,
+    walls: [
+      { id: "wall-1", type: "wall", start: { x: 0, y: 0 }, end: { x: 4, y: 0 }, thickness: 0.1 },
+      { id: "wall-2", type: "wall", start: { x: 4, y: 0 }, end: { x: 4, y: 3 }, thickness: 0.1 },
+      { id: "wall-3", type: "wall", start: { x: 4, y: 3 }, end: { x: 0, y: 3 }, thickness: 0.1 },
+      { id: "wall-4", type: "wall", start: { x: 0, y: 3 }, end: { x: 0, y: 0 }, thickness: 0.1 },
+      { id: "divider-1", type: "divider", start: { x: 2, y: 0 }, end: { x: 2, y: 3 } },
+    ],
+    openings: [],
+    rooms: [],
+    furnitureObjects: [],
+  };
+}
 
 describe("Canvas", () => {
   let target: HTMLElement;
