@@ -65,15 +65,21 @@
 
 <style>
   .room-panel {
+    position: absolute;
+    right: 120px;
+    top: 50%;
+    transform: translateY(-50%);
     width: 200px;
     background: var(--surface);
-    border-left: 1px solid var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
     padding: var(--space-3);
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
-    flex-shrink: 0;
     overflow-y: auto;
+    z-index: 20;
   }
   h2 {
     margin: 0;

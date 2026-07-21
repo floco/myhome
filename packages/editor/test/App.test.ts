@@ -37,6 +37,38 @@ function toolbarBtn(target: HTMLElement, title: string): HTMLButtonElement {
   ) as HTMLButtonElement;
 }
 
+/** Draw a closed wall loop through the given world-space corners (repeat the
+ *  first corner at the end to close it), then switch back to the Select tool.
+ *  Screen = world*100 + (400,300), matching the rest of this file's mapping. */
+function drawWalls(target: HTMLElement, worldCorners: { x: number; y: number }[]): void {
+  toolbarBtn(target, "Wall").click();
+  flushSync();
+  const svg = target.querySelector("svg.canvas")!;
+  for (const corner of worldCorners) {
+    const screen = { x: corner.x * 100 + 400, y: corner.y * 100 + 300 };
+    svg.dispatchEvent(
+      new MouseEvent("mousemove", { bubbles: true, clientX: screen.x, clientY: screen.y }),
+    );
+    flushSync();
+    svg.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, clientX: screen.x, clientY: screen.y }),
+    );
+    flushSync();
+  }
+  toolbarBtn(target, "Select").click();
+  flushSync();
+}
+
+/** The rectangle the old hardcoded sample floor used, replicated in tests
+ *  that need pre-existing wall geometry to interact with. */
+const SAMPLE_RECT_CORNERS = [
+  { x: 0, y: 0 },
+  { x: 4, y: 0 },
+  { x: 4, y: 3 },
+  { x: 0, y: 3 },
+  { x: 0, y: 0 },
+];
+
 /** Mount the app and wait for the houseStore async init to complete so the
  *  loaded guard resolves and Toolbar/Canvas are in the DOM. */
 async function mountAndLoad(target: HTMLElement, route = "#/plan"): Promise<ReturnType<typeof mount>> {
@@ -90,6 +122,7 @@ describe("App", () => {
     document.body.appendChild(target);
 
     app = await mountAndLoad(target);
+    drawWalls(target, SAMPLE_RECT_CORNERS);
 
     const wall = target.querySelector("polygon.wall")!;
     wall.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -120,8 +153,7 @@ describe("App", () => {
     const svg = target.querySelector("svg.canvas")!;
     const wallsBefore = target.querySelectorAll("polygon.wall").length;
 
-    // Place 4 corners of a new 2x2 square far from the sample floor so it
-    // doesn't snap to existing geometry. Screen = world*100 + (400,300).
+    // Place 4 corners of a new 2x2 square. Screen = world*100 + (400,300).
     const corners = [
       { x: 10, y: 10 },
       { x: 12, y: 10 },
@@ -145,12 +177,12 @@ describe("App", () => {
     expect(target.querySelectorAll("polygon.wall").length).toBe(wallsBefore + 4);
 
     const rooms = target.querySelectorAll("polygon.room");
-    expect(rooms.length).toBe(3);
+    expect(rooms.length).toBe(1);
     // RoomShape now shows room.label when set; newly-detected rooms get auto-labels "Room N"
     const labels = Array.from(target.querySelectorAll("text.room-label")).map((el) =>
       el.textContent?.trim(),
     );
-    expect(labels).toHaveLength(3);
+    expect(labels).toHaveLength(1);
     expect(labels.every((l) => l?.startsWith("Room "))).toBe(true);
   });
 
@@ -221,6 +253,7 @@ describe("App", () => {
     document.body.appendChild(target);
 
     app = await mountAndLoad(target);
+    drawWalls(target, SAMPLE_RECT_CORNERS);
 
     // Record the original polygon points for wall-1 and wall-4 before dragging
     const wall1Poly = target.querySelectorAll("polygon.wall")[0]!;
@@ -252,6 +285,7 @@ describe("App", () => {
     document.body.appendChild(target);
 
     app = await mountAndLoad(target);
+    drawWalls(target, SAMPLE_RECT_CORNERS);
 
     // Record wall-1's polygon points before the attempted drag
     const wall1PolyBefore = target.querySelectorAll("polygon.wall")[0]!.getAttribute("points");
@@ -282,6 +316,7 @@ describe("App", () => {
     target = document.createElement("div");
     document.body.appendChild(target);
     app = await mountAndLoad(target);
+    drawWalls(target, SAMPLE_RECT_CORNERS);
 
     const svg = target.querySelector("svg.canvas")!;
     const wallBefore = target.querySelector("polygon.wall")!.getAttribute("points");
@@ -306,6 +341,7 @@ describe("App", () => {
     target = document.createElement("div");
     document.body.appendChild(target);
     app = await mountAndLoad(target);
+    drawWalls(target, SAMPLE_RECT_CORNERS);
 
     const svg = target.querySelector("svg.canvas")!;
     const wallBefore = target.querySelector("polygon.wall")!.getAttribute("points");
