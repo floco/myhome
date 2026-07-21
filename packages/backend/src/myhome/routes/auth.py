@@ -17,9 +17,9 @@ from ..deps import (
     ROLE_ORDER,
     _decode_refresh,
     create_access_token,
-    create_refresh_token,
     pwd_ctx,
     require_auth,
+    set_auth_cookies,
 )
 from ..models_auth import ApiToken, OidcConfig, TokenDocument, User, UserDocument
 from ..persistence_auth import (
@@ -117,7 +117,7 @@ def login(body: LoginRequest, response: Response) -> UserInfo:
     if user is None or user.password_hash is None or not pwd_ctx.verify(body.password, user.password_hash):
         raise HTTPException(401, "Invalid username or password")
     clear_initial_admin_password()
-    _set_auth_cookies(response, user.id, user.role)
+    set_auth_cookies(response, user.id, user.role)
     return UserInfo(id=user.id, username=user.username, role=user.role)
 
 
@@ -423,13 +423,6 @@ async def oidc_callback(
         save_users(doc)
 
     response = RedirectResponse("/")
-    _set_auth_cookies(response, user.id, user.role)
+    set_auth_cookies(response, user.id, user.role)
     response.delete_cookie(_OIDC_FLOW_COOKIE)
     return response
-
-
-# ── Helper ─────────────────────────────────────────────────────────────────
-
-def _set_auth_cookies(response: Response, user_id: str, role: str) -> None:
-    response.set_cookie("myhome_access", create_access_token(user_id, role), httponly=True, samesite="lax")
-    response.set_cookie("myhome_refresh", create_refresh_token(user_id), httponly=True, samesite="lax")

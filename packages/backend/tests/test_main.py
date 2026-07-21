@@ -57,3 +57,73 @@ def test_api_paths_still_require_auth(tmp_path, monkeypatch):
     resp = tc.get("/api/homes")
     assert resp.status_code == 401
     assert resp.json() == {"detail": "Authentication required"}
+
+
+def test_ingress_trust_silently_authenticates_and_sets_cookies(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("SECRET_KEY", "test-secret-key-for-tests-only")
+    monkeypatch.setenv("SUPERVISOR_TOKEN", "test-token")
+    _first_boot()
+    tc = TestClient(app, client=("172.30.32.2", 12345))
+
+    resp = tc.get("/api/auth/me", headers={
+        "X-Remote-User-Id": "ha-1",
+        "X-Remote-User-Name": "jane",
+        "X-Remote-User-Display-Name": "Jane Doe",
+    })
+
+    assert resp.status_code == 200
+    assert resp.json()["username"] == "jane"
+    assert resp.json()["role"] == "admin"  # first-ever ingress login
+    assert "myhome_access" in resp.cookies
+    assert "myhome_refresh" in resp.cookies
+
+
+def test_ingress_trust_does_not_apply_without_supervisor_token(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("SECRET_KEY", "test-secret-key-for-tests-only")
+    monkeypatch.delenv("SUPERVISOR_TOKEN", raising=False)
+    tc = TestClient(app, client=("172.30.32.2", 12345))
+
+    resp = tc.get("/api/auth/me", headers={
+        "X-Remote-User-Id": "ha-1",
+        "X-Remote-User-Name": "jane",
+        "X-Remote-User-Display-Name": "Jane Doe",
+    })
+
+    assert resp.status_code == 401
+
+
+def test_ingress_trust_does_not_apply_from_wrong_source_ip(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("SECRET_KEY", "test-secret-key-for-tests-only")
+    monkeypatch.setenv("SUPERVISOR_TOKEN", "test-token")
+    tc = TestClient(app, client=("10.0.0.5", 12345))
+
+    resp = tc.get("/api/auth/me", headers={
+        "X-Remote-User-Id": "ha-1",
+        "X-Remote-User-Name": "jane",
+        "X-Remote-User-Display-Name": "Jane Doe",
+    })
+
+    assert resp.status_code == 401
+
+
+def test_ingress_trust_session_persists_via_cookie_on_next_request(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("SECRET_KEY", "test-secret-key-for-tests-only")
+    monkeypatch.setenv("SUPERVISOR_TOKEN", "test-token")
+    tc = TestClient(app, client=("172.30.32.2", 12345))
+
+    first = tc.get("/api/auth/me", headers={
+        "X-Remote-User-Id": "ha-1",
+        "X-Remote-User-Name": "jane",
+        "X-Remote-User-Display-Name": "Jane Doe",
+    })
+    assert first.status_code == 200
+
+    # No ingress headers this time -- must still work purely off the cookie
+    # the first request set.
+    second = tc.get("/api/auth/me")
+    assert second.status_code == 200
+    assert second.json()["username"] == "jane"
