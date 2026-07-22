@@ -228,6 +228,48 @@
       "done": "Done"
     }
   },
+  "inventory": {
+    "pinPopup": {
+      "expired": "Expired",
+      "expiresToday": "Expires today",
+      "daysRemaining": "{days}d remaining",
+      "warranty": "Warranty",
+      "remove": "Remove"
+    },
+    "page": {
+      "expired": "expired",
+      "uncategorized": "Uncategorized",
+      "emptyCharts": "No items yet — click ＋ Add item to get started.",
+      "byCategory": "By category",
+      "items": "Items",
+      "totalValue": "Total value",
+      "searchItems": "🔍 Search items…",
+      "addItem": "Add item",
+      "purchased": "Purchased",
+      "cost": "Cost",
+      "emptyNoItems": "No items yet — click ＋ Add item to get started.",
+      "emptyNoMatch": "No items match your filters.",
+      "itemCount": "{n, plural, one {# item} other {# items}}",
+      "totalValueSuffix": "· total value: {amount} €"
+    },
+    "modal": {
+      "newItem": "New item",
+      "editItem": "Edit item",
+      "namePlaceholder": "e.g. Samsung TV 65\"",
+      "categoryPlaceholder": "Electronics, Furniture…",
+      "brand": "Brand",
+      "model": "Model",
+      "serialNumber": "Serial #",
+      "priceEur": "Price (€)",
+      "warrantyExpiry": "Warranty expiry",
+      "notesPlaceholder": "Additional notes…",
+      "deleteThisItem": "Delete this item?",
+      "nameRequired": "Name is required",
+      "saveFailed": "Save failed",
+      "deleteFailed": "Delete failed",
+      "uploadFailed": "Upload failed"
+    }
+  },
   "costs": {
     "entryFallbackTitle": "Cost entry",
     "open": "📊 Open",

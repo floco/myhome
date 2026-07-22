@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { InventoryItem } from "../inventoryStore.svelte";
 
   interface Props {
@@ -16,9 +17,9 @@
     const expiry = new Date(item.warrantyExpiryDate).getTime();
     const now = Date.now();
     const days = Math.round((expiry - now) / 86400000);
-    if (days < 0) return "Expired";
-    if (days === 0) return "Expires today";
-    return `${days}d remaining`;
+    if (days < 0) return $_('inventory.pinPopup.expired');
+    if (days === 0) return $_('inventory.pinPopup.expiresToday');
+    return $_('inventory.pinPopup.daysRemaining', { values: { days } });
   }
 
   function warrantyColor(): string {
@@ -42,12 +43,12 @@
     <div class="popup-row">{item.category}</div>
   {/if}
   <div class="popup-row" style="color:{warrantyColor()}">
-    Warranty: {warrantyLabel()}
+    {$_('inventory.pinPopup.warranty')}: {warrantyLabel()}
   </div>
   <div class="popup-actions">
-    <button onclick={onedit}>✏️ Edit</button>
-    <button onclick={onremove}>✕ Remove</button>
-    <button onclick={onclose}>Close</button>
+    <button onclick={onedit}>✏️ {$_('common.edit')}</button>
+    <button onclick={onremove}>✕ {$_('inventory.pinPopup.remove')}</button>
+    <button onclick={onclose}>{$_('common.close')}</button>
   </div>
 </div>
 

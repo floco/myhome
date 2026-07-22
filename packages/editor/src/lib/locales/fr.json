@@ -228,6 +228,48 @@
       "done": "Terminé"
     }
   },
+  "inventory": {
+    "pinPopup": {
+      "expired": "Expirée",
+      "expiresToday": "Expire aujourd'hui",
+      "daysRemaining": "{days}j restants",
+      "warranty": "Garantie",
+      "remove": "Supprimer"
+    },
+    "page": {
+      "expired": "expirée",
+      "uncategorized": "Sans catégorie",
+      "emptyCharts": "Aucun article pour l'instant — cliquez sur ＋ Ajouter un article pour commencer.",
+      "byCategory": "Par catégorie",
+      "items": "Articles",
+      "totalValue": "Valeur totale",
+      "searchItems": "🔍 Rechercher des articles…",
+      "addItem": "Ajouter un article",
+      "purchased": "Acheté",
+      "cost": "Coût",
+      "emptyNoItems": "Aucun article pour l'instant — cliquez sur ＋ Ajouter un article pour commencer.",
+      "emptyNoMatch": "Aucun article ne correspond à vos filtres.",
+      "itemCount": "{n, plural, one {# article} other {# articles}}",
+      "totalValueSuffix": "· valeur totale : {amount} €"
+    },
+    "modal": {
+      "newItem": "Nouvel article",
+      "editItem": "Modifier l'article",
+      "namePlaceholder": "ex. TV Samsung 65\"",
+      "categoryPlaceholder": "Électronique, Meubles…",
+      "brand": "Marque",
+      "model": "Modèle",
+      "serialNumber": "N° de série",
+      "priceEur": "Prix (€)",
+      "warrantyExpiry": "Fin de garantie",
+      "notesPlaceholder": "Notes complémentaires…",
+      "deleteThisItem": "Supprimer cet article ?",
+      "nameRequired": "Le nom est requis",
+      "saveFailed": "Échec de l'enregistrement",
+      "deleteFailed": "Échec de la suppression",
+      "uploadFailed": "Échec de l'envoi"
+    }
+  },
   "costs": {
     "entryFallbackTitle": "Entrée de coût",
     "open": "📊 Ouvrir",
