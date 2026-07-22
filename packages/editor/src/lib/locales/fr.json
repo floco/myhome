@@ -112,6 +112,113 @@
       "today": "Aujourd'hui",
       "tomorrow": "Demain",
       "inDays": "Dans {n}j"
+    },
+    "row": {
+      "notePlaceholder": "Remarque (facultatif)",
+      "markDone": "Marquer comme fait"
+    },
+    "schedule": {
+      "monthlyOnDay": "Mensuel le {n}",
+      "dayAbbrev": {
+        "mon": "Lun", "tue": "Mar", "wed": "Mer", "thu": "Jeu", "fri": "Ven", "sat": "Sam", "sun": "Dim"
+      },
+      "weeklyOn": "Hebdomadaire le {days}",
+      "weekly": "Hebdomadaire",
+      "everyNWeeks": "Toutes les {n} semaines",
+      "monthly": "Mensuel",
+      "everyNMonths": "Tous les {n} mois",
+      "yearly": "Annuel",
+      "everyNYears": "Tous les {n} ans",
+      "daily": "Quotidien",
+      "quarterly": "Trimestriel",
+      "everyNDays": "Tous les {n} jours"
+    },
+    "badgePopup": {
+      "overdueSince": "En retard depuis",
+      "due": "Échéance",
+      "allDone": "Tout fait",
+      "thisRoom": "Cette pièce",
+      "remove": "Retirer"
+    },
+    "list": {
+      "wholeHouse": "Toute la maison",
+      "roomInFloor": "Pièce ({floor})",
+      "unknownRoom": "Pièce inconnue",
+      "title": "Liste des corvées",
+      "assignmentCount": "{n} affectations",
+      "needsAttention": "À traiter ({n})",
+      "onTrack": "En bonne voie ({n})",
+      "emptyState": "Aucune corvée assignée pour l'instant. Rendez-vous dans Gestion pour créer des corvées et les assigner à des pièces."
+    },
+    "editModal": {
+      "info": "Infos",
+      "media": "Médias",
+      "mediaCount": "Médias ({n})",
+      "history": "Historique",
+      "historyCount": "Historique ({n})",
+      "name": "Nom",
+      "choreName": "Nom de la corvée",
+      "emoji": "Emoji",
+      "periodDays": "Période (jours)",
+      "defaultDue": "Échéance par défaut",
+      "scheduleFromDueTitle": "Prochaine échéance = date prévue + période",
+      "scheduleFromDue": "Planifier depuis la date d'échéance",
+      "notes": "Notes",
+      "notesPlaceholder": "Instructions, astuces ou rappels…",
+      "noCompletions": "Aucune réalisation pour l'instant",
+      "dueOn": "échéance {date}",
+      "deleteRecord": "Supprimer l'entrée",
+      "deleteThisChore": "Supprimer cette corvée ?",
+      "confirmDelete": "Confirmer la suppression",
+      "placeOnMap": "Placer sur le plan",
+      "nameEmpty": "Le nom ne peut pas être vide",
+      "saveFailed": "Échec de l'enregistrement",
+      "deleteFailed": "Échec de la suppression",
+      "uploadFailed": "Échec de l'envoi"
+    },
+    "page": {
+      "emptyCharts": "Aucune corvée assignée pour l'instant — cliquez sur ＋ Ajouter une corvée pour commencer.",
+      "scheduleHealth": "État du planning",
+      "atAGlance": "En un coup d'œil",
+      "active": "Actives",
+      "overdue": "En retard",
+      "onTrack": "En bonne voie",
+      "search": "🔍 Rechercher…",
+      "allRooms": "Toutes les pièces",
+      "allSchedules": "Tous les plannings",
+      "allChores": "Toutes les corvées",
+      "needsAttentionTitle": "À traiter",
+      "addChore": "Ajouter une corvée",
+      "schedulesFromDueDate": "Planifié depuis la date d'échéance",
+      "markAllDone": "Tout marquer comme fait",
+      "delayAllByWeek": "Reporter toutes les affectations d'une semaine",
+      "delayByWeek": "Reporter d'une semaine",
+      "notAssigned": "Non assignée à une pièce",
+      "schedule": "Planning",
+      "rooms": "Pièces",
+      "nextDue": "Prochaine échéance",
+      "roomCount": "{n} pièces",
+      "emptyNoChores": "Aucune corvée pour l'instant — cliquez sur ＋ Ajouter une corvée pour commencer.",
+      "emptyNoneNeedAttention": "Aucune corvée à traiter pour le moment.",
+      "emptyNoMatch": "Aucune corvée ne correspond à vos filtres.",
+      "choreCount": "{n, plural, one {# corvée} other {# corvées}}",
+      "health": {
+        "onTrack": "En bonne voie",
+        "dueSoon": "Bientôt dû",
+        "overdue": "En retard"
+      }
+    },
+    "newModal": {
+      "title": "Nouvelle corvée",
+      "repeatEvery": "Répéter tous les",
+      "unitDays": "jours",
+      "unitWeeks": "semaines",
+      "unitMonths": "mois",
+      "unitYears": "ans",
+      "firstDue": "Première échéance",
+      "scheduleFromDueTitle": "Prochaine échéance = date prévue + période (pas date de réalisation + période)",
+      "creating": "Création…",
+      "failedToCreate": "Échec de la création"
     }
   },
   "works": {

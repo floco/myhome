@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
+
   interface Props {
     emoji: string;
     name: string;
@@ -44,14 +46,14 @@
     <input
       class="note-input"
       bind:value={notes}
-      placeholder="Note (optional)"
+      placeholder={$_('chores.row.notePlaceholder')}
       onclick={(e) => e.stopPropagation()}
       onkeydown={handleKeydown}
     />
     <button class="done-btn confirm" onclick={confirm}>✓</button>
     <button class="cancel-btn" onclick={cancel}>✕</button>
   {:else}
-    <button class="done-btn" onclick={start} title="Mark done">✓</button>
+    <button class="done-btn" onclick={start} title={$_('chores.row.markDone')}>✓</button>
   {/if}
 </div>
 

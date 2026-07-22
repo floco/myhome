@@ -112,6 +112,113 @@
       "today": "Today",
       "tomorrow": "Tomorrow",
       "inDays": "In {n}d"
+    },
+    "row": {
+      "notePlaceholder": "Note (optional)",
+      "markDone": "Mark done"
+    },
+    "schedule": {
+      "monthlyOnDay": "Monthly on day {n}",
+      "dayAbbrev": {
+        "mon": "Mon", "tue": "Tue", "wed": "Wed", "thu": "Thu", "fri": "Fri", "sat": "Sat", "sun": "Sun"
+      },
+      "weeklyOn": "Weekly on {days}",
+      "weekly": "Weekly",
+      "everyNWeeks": "Every {n} weeks",
+      "monthly": "Monthly",
+      "everyNMonths": "Every {n} months",
+      "yearly": "Yearly",
+      "everyNYears": "Every {n} years",
+      "daily": "Daily",
+      "quarterly": "Quarterly",
+      "everyNDays": "Every {n} days"
+    },
+    "badgePopup": {
+      "overdueSince": "Overdue since",
+      "due": "Due",
+      "allDone": "All done",
+      "thisRoom": "This room",
+      "remove": "Remove"
+    },
+    "list": {
+      "wholeHouse": "Whole house",
+      "roomInFloor": "Room ({floor})",
+      "unknownRoom": "Unknown room",
+      "title": "Chore List",
+      "assignmentCount": "{n} assignments",
+      "needsAttention": "Needs attention ({n})",
+      "onTrack": "On track ({n})",
+      "emptyState": "No chore assignments yet. Go to Management to create chores and assign them to rooms."
+    },
+    "editModal": {
+      "info": "Info",
+      "media": "Media",
+      "mediaCount": "Media ({n})",
+      "history": "History",
+      "historyCount": "History ({n})",
+      "name": "Name",
+      "choreName": "Chore name",
+      "emoji": "Emoji",
+      "periodDays": "Period (days)",
+      "defaultDue": "Default due",
+      "scheduleFromDueTitle": "Next due = planned date + period",
+      "scheduleFromDue": "Schedule from due date",
+      "notes": "Notes",
+      "notesPlaceholder": "Instructions, tips, or reminders…",
+      "noCompletions": "No completions yet",
+      "dueOn": "due {date}",
+      "deleteRecord": "Delete record",
+      "deleteThisChore": "Delete this chore?",
+      "confirmDelete": "Confirm delete",
+      "placeOnMap": "Place on map",
+      "nameEmpty": "Name cannot be empty",
+      "saveFailed": "Save failed",
+      "deleteFailed": "Delete failed",
+      "uploadFailed": "Upload failed"
+    },
+    "page": {
+      "emptyCharts": "No chore assignments yet — click ＋ Add chore to get started.",
+      "scheduleHealth": "Schedule health",
+      "atAGlance": "At a glance",
+      "active": "Active",
+      "overdue": "Overdue",
+      "onTrack": "On track",
+      "search": "🔍 Search…",
+      "allRooms": "All rooms",
+      "allSchedules": "All schedules",
+      "allChores": "All chores",
+      "needsAttentionTitle": "Needs attention",
+      "addChore": "Add chore",
+      "schedulesFromDueDate": "Schedules from due date",
+      "markAllDone": "Mark all done",
+      "delayAllByWeek": "Delay all assignments by 1 week",
+      "delayByWeek": "Delay by 1 week",
+      "notAssigned": "Not assigned to any room",
+      "schedule": "Schedule",
+      "rooms": "Rooms",
+      "nextDue": "Next due",
+      "roomCount": "{n} rooms",
+      "emptyNoChores": "No chores yet — click ＋ Add chore to get started.",
+      "emptyNoneNeedAttention": "No chores need attention right now.",
+      "emptyNoMatch": "No chores match your filters.",
+      "choreCount": "{n, plural, one {# chore} other {# chores}}",
+      "health": {
+        "onTrack": "On track",
+        "dueSoon": "Due soon",
+        "overdue": "Overdue"
+      }
+    },
+    "newModal": {
+      "title": "New Chore",
+      "repeatEvery": "Repeat every",
+      "unitDays": "days",
+      "unitWeeks": "weeks",
+      "unitMonths": "months",
+      "unitYears": "years",
+      "firstDue": "First due",
+      "scheduleFromDueTitle": "Next due = planned date + period (not completion date + period)",
+      "creating": "Creating…",
+      "failedToCreate": "Failed to create"
     }
   },
   "works": {

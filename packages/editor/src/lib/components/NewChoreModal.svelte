@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createChoreStore } from "../choreStore.svelte";
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
@@ -45,7 +46,7 @@
       reset();
       onclose();
     } catch (e) {
-      error = e instanceof Error ? e.message : "Failed to create";
+      error = e instanceof Error ? e.message : $_('chores.newModal.failedToCreate');
     } finally {
       saving = false;
     }
@@ -67,42 +68,42 @@
   }
 </script>
 
-<Modal {open} title="New Chore" onclose={handleClose} width="360px">
+<Modal {open} title={$_('chores.newModal.title')} onclose={handleClose} width="360px">
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="chore-form" onkeydown={handleFormKeydown} role="presentation">
     <div class="field">
-      <label for="chore-name">Name</label>
+      <label for="chore-name">{$_('chores.editModal.name')}</label>
       <!-- svelte-ignore a11y_autofocus -->
-      <input id="chore-name" class="native-input" bind:value={name} placeholder="Chore name" autofocus />
+      <input id="chore-name" class="native-input" bind:value={name} placeholder={$_('chores.editModal.choreName')} autofocus />
     </div>
 
     <div class="field">
-      <label for="chore-emoji">Emoji</label>
+      <label for="chore-emoji">{$_('chores.editModal.emoji')}</label>
       <EmojiPicker bind:value={emoji} />
     </div>
 
     <div class="field">
-      <label>Repeat every</label>
+      <label>{$_('chores.newModal.repeatEvery')}</label>
       <div class="freq-row">
         <input type="number" class="native-input freq-n" bind:value={freqN} min="1" />
         <select class="native-input" bind:value={freqUnit}>
-          <option value="days">days</option>
-          <option value="weeks">weeks</option>
-          <option value="months">months</option>
-          <option value="years">years</option>
+          <option value="days">{$_('chores.newModal.unitDays')}</option>
+          <option value="weeks">{$_('chores.newModal.unitWeeks')}</option>
+          <option value="months">{$_('chores.newModal.unitMonths')}</option>
+          <option value="years">{$_('chores.newModal.unitYears')}</option>
         </select>
       </div>
     </div>
 
     <div class="field">
-      <label for="chore-due">First due</label>
+      <label for="chore-due">{$_('chores.newModal.firstDue')}</label>
       <input id="chore-due" type="date" class="native-input" bind:value={nextDue} />
     </div>
 
     <div class="field-row">
       <input type="checkbox" id="sfd" bind:checked={scheduleFromDue} />
-      <label for="sfd" class="checkbox-label" title="Next due = planned date + period (not completion date + period)">
-        Schedule from due date
+      <label for="sfd" class="checkbox-label" title={$_('chores.newModal.scheduleFromDueTitle')}>
+        {$_('chores.editModal.scheduleFromDue')}
       </label>
     </div>
 
@@ -110,9 +111,9 @@
   </div>
 
   {#snippet footer()}
-    <Button variant="secondary" onclick={handleClose}>Cancel</Button>
+    <Button variant="secondary" onclick={handleClose}>{$_('common.cancel')}</Button>
     <Button variant="primary" disabled={!name.trim() || saving} onclick={handleCreate}>
-      {saving ? "Creating…" : "Create"}
+      {saving ? $_('chores.newModal.creating') : $_('settings.security.create')}
     </Button>
   {/snippet}
 </Modal>

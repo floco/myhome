@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { Chore, Assignment } from "../choreStore.svelte";
 
   interface Props {
@@ -30,12 +31,12 @@
 >
   <div class="popup-name">{chore.name}</div>
   <div class="popup-due" class:overdue>
-    {overdue ? "Overdue since" : "Due"}: {formatDate(assignment.nextDueDate)}
+    {overdue ? $_('chores.badgePopup.overdueSince') : $_('chores.badgePopup.due')}: {formatDate(assignment.nextDueDate)}
   </div>
   <div class="popup-actions">
-    <button onclick={oncompleteall}>✓ All done</button>
-    <button onclick={oncomplete}>✓ This room</button>
-    <button onclick={onremove}>✕ Remove</button>
+    <button onclick={oncompleteall}>✓ {$_('chores.badgePopup.allDone')}</button>
+    <button onclick={oncomplete}>✓ {$_('chores.badgePopup.thisRoom')}</button>
+    <button onclick={onremove}>✕ {$_('chores.badgePopup.remove')}</button>
     <button class="close-btn" onclick={onclose}>✕</button>
   </div>
 </div>

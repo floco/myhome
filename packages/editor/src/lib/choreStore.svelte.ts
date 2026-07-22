@@ -1,3 +1,6 @@
+import { _ } from "svelte-i18n";
+import { get } from "svelte/store";
+
 export interface Chore {
   id: string;
   donetickId: number | null;
@@ -25,28 +28,29 @@ export interface CompletionRecord {
 export function scheduleLabel(chore: Chore): string {
   const { frequencyType: ft, frequency: n, frequencyMetadata: meta } = chore;
   const unit = (meta as Record<string, string>)?.unit ?? "days";
-  if (ft === "day_of_the_month") return `Monthly on day ${n}`;
+  const t = get(_);
+  if (ft === "day_of_the_month") return t("chores.schedule.monthlyOnDay", { values: { n } });
   if (ft === "days_of_the_week") {
-    const names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const days = ((meta as Record<string, number[]>)?.days ?? []).map((d) => names[(d - 1) % 7]);
-    return days.length ? `Weekly on ${days.join(", ")}` : "Weekly";
+    const dayKeys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+    const days = ((meta as Record<string, number[]>)?.days ?? []).map((d) => t(`chores.schedule.dayAbbrev.${dayKeys[(d - 1) % 7]}`));
+    return days.length ? t("chores.schedule.weeklyOn", { values: { days: days.join(", ") } }) : t("chores.schedule.weekly");
   }
-  if (ft === "weekly") return n === 1 ? "Weekly" : `Every ${n} weeks`;
-  if (ft === "monthly") return n === 1 ? "Monthly" : `Every ${n} months`;
-  if (ft === "yearly") return n === 1 ? "Yearly" : `Every ${n} years`;
+  if (ft === "weekly") return n === 1 ? t("chores.schedule.weekly") : t("chores.schedule.everyNWeeks", { values: { n } });
+  if (ft === "monthly") return n === 1 ? t("chores.schedule.monthly") : t("chores.schedule.everyNMonths", { values: { n } });
+  if (ft === "yearly") return n === 1 ? t("chores.schedule.yearly") : t("chores.schedule.everyNYears", { values: { n } });
   if (ft === "interval") {
-    if (unit === "years") return n === 1 ? "Yearly" : `Every ${n} years`;
-    if (unit === "months") return n === 1 ? "Monthly" : `Every ${n} months`;
-    if (unit === "weeks") return n === 1 ? "Weekly" : `Every ${n} weeks`;
-    if (n === 1) return "Daily";
-    if (n === 7) return "Weekly";
-    if (n === 14) return "Every 2 weeks";
-    if (n === 30) return "Monthly";
-    if (n === 90) return "Quarterly";
-    if (n === 180) return "Every 6 months";
-    if (n === 365) return "Yearly";
-    if (n === 730) return "Every 2 years";
-    return `Every ${n} days`;
+    if (unit === "years") return n === 1 ? t("chores.schedule.yearly") : t("chores.schedule.everyNYears", { values: { n } });
+    if (unit === "months") return n === 1 ? t("chores.schedule.monthly") : t("chores.schedule.everyNMonths", { values: { n } });
+    if (unit === "weeks") return n === 1 ? t("chores.schedule.weekly") : t("chores.schedule.everyNWeeks", { values: { n } });
+    if (n === 1) return t("chores.schedule.daily");
+    if (n === 7) return t("chores.schedule.weekly");
+    if (n === 14) return t("chores.schedule.everyNWeeks", { values: { n: 2 } });
+    if (n === 30) return t("chores.schedule.monthly");
+    if (n === 90) return t("chores.schedule.quarterly");
+    if (n === 180) return t("chores.schedule.everyNMonths", { values: { n: 6 } });
+    if (n === 365) return t("chores.schedule.yearly");
+    if (n === 730) return t("chores.schedule.everyNYears", { values: { n: 2 } });
+    return t("chores.schedule.everyNDays", { values: { n } });
   }
   return `${chore.periodDays}d`;
 }

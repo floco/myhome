@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createChoreStore } from "../choreStore.svelte";
   import type { Chore } from "../choreStore.svelte";
   import { scheduleLabel } from "../choreStore.svelte";
@@ -55,10 +56,10 @@
 
   type HealthBucket = "on-track" | "due-soon" | "overdue";
 
-  const HEALTH_META: Record<HealthBucket, { label: string; emoji: string; color: string }> = {
-    "on-track": { label: "On track", emoji: "🟢", color: "#4caf50" },
-    "due-soon": { label: "Due soon", emoji: "🟠", color: "#ff9800" },
-    overdue: { label: "Overdue", emoji: "🔴", color: "#f44336" },
+  const HEALTH_META: Record<HealthBucket, { emoji: string; color: string }> = {
+    "on-track": { emoji: "🟢", color: "#4caf50" },
+    "due-soon": { emoji: "🟠", color: "#ff9800" },
+    overdue: { emoji: "🔴", color: "#f44336" },
   };
 
   function healthBucket(pct: number): HealthBucket {
@@ -81,6 +82,12 @@
   const onTrackCount = $derived(assignmentHealth.filter((h) => h === "on-track").length);
   const onTrackPct = $derived(totalAssignments > 0 ? Math.round((onTrackCount / totalAssignments) * 100) : 0);
 
+  const HEALTH_LABEL_KEY: Record<HealthBucket, string> = {
+    "on-track": "onTrack",
+    "due-soon": "dueSoon",
+    overdue: "overdue",
+  };
+
   const healthBreakdown = $derived(
     (["on-track", "due-soon", "overdue"] as HealthBucket[])
       .map((bucket) => {
@@ -88,7 +95,7 @@
         const meta = HEALTH_META[bucket];
         return {
           id: bucket,
-          label: meta.label,
+          label: $_(`chores.page.health.${HEALTH_LABEL_KEY[bucket]}`),
           emoji: meta.emoji,
           color: meta.color,
           valueLabel: `${count}`,
@@ -131,9 +138,9 @@
   function getRoomName(roomId: string): string {
     for (const floor of floorStore.floors) {
       const room = floor.rooms.find((r) => r.id === roomId);
-      if (room) return room.label || `Room (${floor.name})`;
+      if (room) return room.label || $_('chores.list.roomInFloor', { values: { floor: floor.name } });
     }
-    return "Unknown room";
+    return $_('chores.list.unknownRoom');
   }
 
   function assignmentsForChore(choreId: string): Assignment[] {
@@ -165,9 +172,9 @@
     if (assignments.length === 0) return "—";
     if (assignments.length === 1) {
       const a = assignments[0];
-      return a.roomId ? getRoomName(a.roomId) : "🏠 Whole house";
+      return a.roomId ? getRoomName(a.roomId) : `🏠 ${$_('chores.list.wholeHouse')}`;
     }
-    return `${assignments.length} rooms`;
+    return $_('chores.page.roomCount', { values: { n: assignments.length } });
   }
 
   async function confirmComplete(): Promise<void> {
@@ -184,32 +191,32 @@
   {#if totalAssignments === 0}
     <div class="empty-charts">
       <span class="empty-icon">✅</span>
-      <p>No chore assignments yet — click ＋ Add chore to get started.</p>
+      <p>{$_('chores.page.emptyCharts')}</p>
     </div>
   {:else}
     <div class="chart-card-wrap">
       <Card>
         <div class="chart-inner">
           <div class="bar-area">
-            <div class="chart-label">Schedule health</div>
+            <div class="chart-label">{$_('chores.page.scheduleHealth')}</div>
             <HorizontalBarChart segments={healthBreakdown} />
           </div>
 
           <div class="chart-divider"></div>
 
           <div class="stats-area">
-            <div class="chart-label">At a glance</div>
+            <div class="chart-label">{$_('chores.page.atAGlance')}</div>
             <div class="stat-chips-col">
               <div class="stat-chip">
-                <div class="stat-title">Active</div>
+                <div class="stat-title">{$_('chores.page.active')}</div>
                 <div class="stat-value">{totalAssignments}</div>
               </div>
               <div class="stat-chip">
-                <div class="stat-title">Overdue</div>
+                <div class="stat-title">{$_('chores.page.overdue')}</div>
                 <div class="stat-value overdue">{overdueCount}</div>
               </div>
               <div class="stat-chip">
-                <div class="stat-title">On track</div>
+                <div class="stat-title">{$_('chores.page.onTrack')}</div>
                 <div class="stat-value ontrack">{onTrackPct}%</div>
               </div>
             </div>
@@ -222,25 +229,25 @@
   <div class="table-card-wrap">
     <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
     <div class="toolbar">
-      <Input placeholder="🔍 Search…" bind:value={searchQuery} />
+      <Input placeholder={$_('chores.page.search')} bind:value={searchQuery} />
       <select class="native-input" bind:value={roomFilter}>
-        <option value="">All rooms</option>
+        <option value="">{$_('chores.page.allRooms')}</option>
         {#each allRooms as room}
           <option value={room.id}>{room.label}</option>
         {/each}
       </select>
       <select class="native-input" bind:value={scheduleFilter}>
-        <option value="">All schedules</option>
-        <option value="daily">Daily</option>
-        <option value="weekly">Weekly</option>
-        <option value="monthly">Monthly</option>
-        <option value="yearly">Yearly</option>
+        <option value="">{$_('chores.page.allSchedules')}</option>
+        <option value="daily">{$_('chores.schedule.daily')}</option>
+        <option value="weekly">{$_('chores.schedule.weekly')}</option>
+        <option value="monthly">{$_('chores.schedule.monthly')}</option>
+        <option value="yearly">{$_('chores.schedule.yearly')}</option>
       </select>
       <div class="filter-toggle">
-        <button class="toggle-btn" class:active={dueFilter === "all"} title="All chores" onclick={() => { dueFilter = "all"; }}>☰</button>
-        <button class="toggle-btn" class:active={dueFilter === "attention"} title="Needs attention" onclick={() => { dueFilter = "attention"; }}>⚠</button>
+        <button class="toggle-btn" class:active={dueFilter === "all"} title={$_('chores.page.allChores')} onclick={() => { dueFilter = "all"; }}>☰</button>
+        <button class="toggle-btn" class:active={dueFilter === "attention"} title={$_('chores.page.needsAttentionTitle')} onclick={() => { dueFilter = "attention"; }}>⚠</button>
       </div>
-      <Button onclick={() => onnewchore?.()}>＋ Add chore</Button>
+      <Button onclick={() => onnewchore?.()}>＋ {$_('chores.page.addChore')}</Button>
     </div>
 
     <div class="table-wrapper">
@@ -254,7 +261,7 @@
         {chore.emoji}
       {/snippet}
       {#snippet nameCell(chore: Chore)}
-        {displayName(chore)}{#if chore.scheduleFromDue}&nbsp;<span class="sfd-badge" title="Schedules from due date">📅</span>{/if}
+        {displayName(chore)}{#if chore.scheduleFromDue}&nbsp;<span class="sfd-badge" title={$_('chores.page.schedulesFromDueDate')}>📅</span>{/if}
       {/snippet}
       {#snippet scheduleCell(chore: Chore)}
         {scheduleLabel(chore)}
@@ -272,15 +279,15 @@
           <input
             class="note-input"
             bind:value={completingChore.notes}
-            placeholder="Note (optional)"
+            placeholder={$_('chores.row.notePlaceholder')}
             onkeydown={(e) => { if (e.key === "Enter") confirmComplete(); if (e.key === "Escape") completing = null; }}
           />
           <button class="icon-btn confirm-btn" onclick={confirmComplete}>✓</button>
           <button class="icon-btn" onclick={() => { completing = null; }}>✕</button>
         {:else}
-          <button class="icon-btn" title="Mark all done" onclick={() => { completing = { kind: "chore", id: chore.id, notes: "" }; }}>✓</button>
+          <button class="icon-btn" title={$_('chores.page.markAllDone')} onclick={() => { completing = { kind: "chore", id: chore.id, notes: "" }; }}>✓</button>
         {/if}
-        <button class="icon-btn" title="Delay all assignments by 1 week" onclick={() => store.delayChore(chore.id, 7)}>⏭</button>
+        <button class="icon-btn" title={$_('chores.page.delayAllByWeek')} onclick={() => store.delayChore(chore.id, 7)}>⏭</button>
       {/snippet}
       {#snippet assignmentsExpanded(chore: Chore)}
         {@const assignments = assignmentsForChore(chore.id)}
@@ -289,13 +296,13 @@
             {#each assignments as a (a.id)}
               {@const completingAssign = completing?.kind === "assignment" && completing.id === a.id ? completing : null}
               <div class="assign-row">
-                <span class="assign-where">{a.roomId ? getRoomName(a.roomId) : "🏠 Whole house"}</span>
-                <span class="assign-due">Due: {formatDate(a.nextDueDate)}</span>
+                <span class="assign-where">{a.roomId ? getRoomName(a.roomId) : `🏠 ${$_('chores.list.wholeHouse')}`}</span>
+                <span class="assign-due">{$_('chores.badgePopup.due')}: {formatDate(a.nextDueDate)}</span>
                 {#if completingAssign}
                   <input
                     class="note-input"
                     bind:value={completingAssign.notes}
-                    placeholder="Note (optional)"
+                    placeholder={$_('chores.row.notePlaceholder')}
                     onkeydown={(e) => { if (e.key === "Enter") confirmComplete(); if (e.key === "Escape") completing = null; }}
                   />
                   <button class="icon-btn confirm-btn" onclick={confirmComplete}>✓</button>
@@ -304,11 +311,11 @@
                   <button class="icon-btn" onclick={() => { completing = { kind: "assignment", id: a.id, notes: "" }; }}>✓</button>
                 {/if}
                 <button class="icon-btn danger" onclick={() => store.deleteAssignment(a.id)}>✕</button>
-                <button class="icon-btn" title="Delay by 1 week" onclick={() => store.delayAssignment(a.id, 7)}>⏭</button>
+                <button class="icon-btn" title={$_('chores.page.delayByWeek')} onclick={() => store.delayAssignment(a.id, 7)}>⏭</button>
               </div>
             {/each}
           {:else}
-            <div class="no-assign">Not assigned to any room</div>
+            <div class="no-assign">{$_('chores.page.notAssigned')}</div>
           {/if}
         </div>
       {/snippet}
@@ -317,10 +324,10 @@
         columns={[
           { key: "expand", label: "", sortable: false, cellClass: "expand-cell", cell: expandCell },
           { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
-          { key: "name", label: "Name", sortValue: (c) => displayName(c), cellClass: "name-cell", cell: nameCell },
-          { key: "schedule", label: "Schedule", sortValue: (c) => scheduleLabel(c), cell: scheduleCell },
-          { key: "rooms", label: "Rooms", sortValue: (c) => roomsSummary(assignmentsForChore(c.id)), cell: roomsCell },
-          { key: "nextDue", label: "Next due", sortValue: (c) => { const d = earliestDue(assignmentsForChore(c.id)); return d ? new Date(d) : null; }, cell: nextDueCell },
+          { key: "name", label: $_('chores.editModal.name'), sortValue: (c) => displayName(c), cellClass: "name-cell", cell: nameCell },
+          { key: "schedule", label: $_('chores.page.schedule'), sortValue: (c) => scheduleLabel(c), cell: scheduleCell },
+          { key: "rooms", label: $_('chores.page.rooms'), sortValue: (c) => roomsSummary(assignmentsForChore(c.id)), cell: roomsCell },
+          { key: "nextDue", label: $_('chores.page.nextDue'), sortValue: (c) => { const d = earliestDue(assignmentsForChore(c.id)); return d ? new Date(d) : null; }, cell: nextDueCell },
           { key: "actions", label: "", sortable: false, cellClass: "actions-cell", stopRowClick: true, cell: actionsCell },
         ] as Column<Chore>[]}
         rows={filteredChores}
@@ -329,14 +336,14 @@
         isRowExpanded={(chore) => expandedHistory === chore.id}
         expandedRow={assignmentsExpanded}
         emptyMessage={store.chores.length === 0
-          ? "No chores yet — click ＋ Add chore to get started."
+          ? $_('chores.page.emptyNoChores')
           : dueFilter === "attention"
-            ? "No chores need attention right now."
-            : "No chores match your filters."}
+            ? $_('chores.page.emptyNoneNeedAttention')
+            : $_('chores.page.emptyNoMatch')}
       />
     </div>
 
-    <div class="footer">{filteredChores.length} chore{filteredChores.length !== 1 ? "s" : ""}</div>
+    <div class="footer">{$_('chores.page.choreCount', { values: { n: filteredChores.length } })}</div>
     </Card>
   </div>
 </div>
