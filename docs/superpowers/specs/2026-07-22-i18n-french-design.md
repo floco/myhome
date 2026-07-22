@@ -95,6 +95,28 @@ MessageFormat syntax, which svelte-i18n parses natively via
 - Every static string identified during migration gets a catalog key in
   both `en.json` and `fr.json` — no partial/placeholder translations.
 
+## 5a. Special Cases Found During Survey
+
+- **`DatePicker.svelte`** hardcodes `MONTH_NAMES`/`DAY_HEADERS` English
+  arrays. Instead of maintaining a parallel French array, switch to
+  `Intl.DateTimeFormat(locale, { month: 'long' })` / `{ weekday: 'short' }`
+  driven off the active svelte-i18n locale — correct for both languages
+  with no catalog entries needed for the calendar grid itself (the
+  "Pick a date…" placeholder still gets a catalog key).
+- **Status-label derivation via `.charAt(0).toUpperCase()`** on raw status
+  codes (found in `PropertiesPage.svelte`, `HomePropertiesWidget.svelte`,
+  `WorksPage.svelte`, `WorksPinPopup.svelte`, `HomeWorksWidget.svelte`,
+  `lib/searchIndex.ts`'s `statusLabel()`) can't be translated as-is since
+  it capitalizes the internal English status code at render time. Each
+  site is converted to an explicit label map (status code → catalog key)
+  before a translation is applied, as part of that file's migration task.
+- **`lib/choreFormat.ts`**'s `formatDue()` (shared by `ChoreRow` and
+  dashboard widgets) returns literal English (`"Yesterday"`, `"Today"`,
+  `"Tomorrow"`, `` `In ${n}d` ``, `` `${n}d overdue` ``) — migrated once
+  since it's a single shared function, fixing all call sites together.
+- **`lib/searchIndex.ts`**'s `MODULE_LABELS` and fallback subtitles are
+  migrated alongside `CommandPalette.svelte`, which is their only consumer.
+
 ## 6. Testing & Rollout
 
 - Default locale stays `en`; the English catalog is an exact copy of the
@@ -132,3 +154,8 @@ MessageFormat syntax, which svelte-i18n parses natively via
   more later (`register('xx', ...)` + a new JSON file), but only `en`/`fr`
   ship now.
 - Right-to-left layout support (not needed for French).
+- Translating the ~170 country names in `lib/countryFlags.ts` (Locations
+  emoji-picker flags tab) — stays English-only data for now.
+- Translating the ~37 furniture item labels / 7 category labels in
+  `lib/furnitureLibrary.ts` (furniture library panel) — stays English-only
+  data for now.
