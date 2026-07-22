@@ -115,6 +115,19 @@
   "costs": {
     "entryFallbackTitle": "Cost entry"
   },
+  "auth": {
+    "signInToContinue": "Sign in to continue",
+    "signInWith": "Sign in with {provider}",
+    "or": "or",
+    "username": "Username",
+    "password": "Password",
+    "signingIn": "Signing in…",
+    "signIn": "Sign in",
+    "contactAdmin": "Contact your admin to create an account",
+    "oidcFailed": "Sign-in failed, please try again",
+    "oidcAccountConflict": "An account with this username already exists. Contact your administrator to link accounts.",
+    "invalidCredentials": "Invalid username or password"
+  },
   "settings": {
     "nav": {
       "general": "General",

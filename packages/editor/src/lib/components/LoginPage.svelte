@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import { apiUrl } from "../apiUrl";
 
   interface Props {
@@ -31,9 +32,9 @@
     const params = new URLSearchParams(window.location.search);
     const errParam = params.get("error");
     if (errParam === "oidc_failed") {
-      error = "Sign-in failed, please try again";
+      error = $_('auth.oidcFailed');
     } else if (errParam === "oidc_account_conflict") {
-      error = "An account with this username already exists. Contact your administrator to link accounts.";
+      error = $_('auth.oidcAccountConflict');
     } else {
       return;
     }
@@ -57,7 +58,7 @@
       await login(username, password);
       onlogin();
     } catch {
-      error = "Invalid username or password";
+      error = $_('auth.invalidCredentials');
     } finally {
       loading = false;
     }
@@ -69,7 +70,7 @@
     <div class="login-header">
       <span class="login-logo">🏠</span>
       <h1 class="login-title">My Home</h1>
-      <p class="login-subtitle">Sign in to continue</p>
+      <p class="login-subtitle">{$_('auth.signInToContinue')}</p>
     </div>
 
     {#if error}
@@ -78,14 +79,14 @@
 
     {#if oidcEnabled}
       <button type="button" class="oidc-btn" onclick={signInWithOidc}>
-        Sign in with {oidcProviderName}
+        {$_('auth.signInWith', { values: { provider: oidcProviderName } })}
       </button>
-      <div class="oidc-divider"><span>or</span></div>
+      <div class="oidc-divider"><span>{$_('auth.or')}</span></div>
     {/if}
 
     <form class="login-form" onsubmit={handleSubmit}>
       <div class="form-field">
-        <label for="login-username">Username</label>
+        <label for="login-username">{$_('auth.username')}</label>
         <input
           id="login-username"
           type="text"
@@ -95,7 +96,7 @@
         />
       </div>
       <div class="form-field">
-        <label for="login-password">Password</label>
+        <label for="login-password">{$_('auth.password')}</label>
         <input
           id="login-password"
           type="password"
@@ -106,11 +107,11 @@
       </div>
 
       <button type="submit" class="login-btn" disabled={loading}>
-        {loading ? "Signing in…" : "Sign in"}
+        {loading ? $_('auth.signingIn') : $_('auth.signIn')}
       </button>
     </form>
 
-    <p class="login-footer">Contact your admin to create an account</p>
+    <p class="login-footer">{$_('auth.contactAdmin')}</p>
   </div>
 </div>
 

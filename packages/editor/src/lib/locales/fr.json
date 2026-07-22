@@ -115,6 +115,19 @@
   "costs": {
     "entryFallbackTitle": "Entrée de coût"
   },
+  "auth": {
+    "signInToContinue": "Connectez-vous pour continuer",
+    "signInWith": "Se connecter avec {provider}",
+    "or": "ou",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "signingIn": "Connexion…",
+    "signIn": "Se connecter",
+    "contactAdmin": "Contactez votre administrateur pour créer un compte",
+    "oidcFailed": "Échec de la connexion, veuillez réessayer",
+    "oidcAccountConflict": "Un compte avec ce nom d'utilisateur existe déjà. Contactez votre administrateur pour lier les comptes.",
+    "invalidCredentials": "Nom d'utilisateur ou mot de passe invalide"
+  },
   "settings": {
     "nav": {
       "general": "Général",
