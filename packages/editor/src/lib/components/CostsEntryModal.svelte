@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createCostsStore, CostEntry } from "../costsStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
   import type { createHouseStore } from "../houseStore.svelte";
@@ -98,10 +99,10 @@
   }
 
   async function handleSave(): Promise<void> {
-    if (!categoryId) { error = "Category is required"; return; }
-    if (!date) { error = "Date is required"; return; }
+    if (!categoryId) { error = $_('costs.entryModal.categoryRequired'); return; }
+    if (!date) { error = $_('costs.entryModal.dateRequired'); return; }
     const parsedTotal = parseFloat(totalAmount);
-    if (isNaN(parsedTotal) || parsedTotal <= 0) { error = "Total amount is required"; return; }
+    if (isNaN(parsedTotal) || parsedTotal <= 0) { error = $_('costs.entryModal.totalRequired'); return; }
     saving = true; error = null;
     const patch = {
       categoryId, date, totalAmount: parsedTotal,
@@ -115,7 +116,7 @@
       if (isCreate) { await costsStore.createEntry(patch); } else { await costsStore.updateEntry(entry!.id, patch); }
       onclose();
     } catch (e) {
-      error = e instanceof Error ? e.message : "Save failed";
+      error = e instanceof Error ? e.message : $_('costs.entryModal.saveFailed');
     } finally {
       saving = false;
     }
@@ -125,31 +126,31 @@
     if (!entry) return;
     deleting = true;
     try { await costsStore.deleteEntry(entry.id); onclose(); }
-    catch (e) { error = e instanceof Error ? e.message : "Delete failed"; deleting = false; }
+    catch (e) { error = e instanceof Error ? e.message : $_('costs.entryModal.deleteFailed'); deleting = false; }
   }
 
   async function handleUpload(files: File[]): Promise<void> {
     if (!entry) return;
     uploading = true; uploadError = null;
     try { for (const file of files) await costsStore.uploadAttachment(entry.id, file); }
-    catch (err) { uploadError = err instanceof Error ? err.message : "Upload failed"; }
+    catch (err) { uploadError = err instanceof Error ? err.message : $_('costs.entryModal.uploadFailed'); }
     finally { uploading = false; }
   }
 
   async function handleDeleteAttachment(id: string): Promise<void> {
     if (!entry) return;
     try { await costsStore.deleteAttachment(entry.id, id); }
-    catch (err) { uploadError = err instanceof Error ? err.message : "Delete failed"; }
+    catch (err) { uploadError = err instanceof Error ? err.message : $_('costs.entryModal.deleteFailed'); }
   }
 
   function handleItemClick(index: number): void { lightboxIndex = index; lightboxOpen = true; }
 </script>
 
-<Modal open={true} title={isCreate ? "＋ New entry" : "Edit entry"} {onclose} width="520px">
+<Modal open={true} title={isCreate ? `＋ ${$_('costs.entryModal.newEntry')}` : $_('costs.entryModal.editEntry')} {onclose} width="520px">
   <Tabs
     tabs={[
-      { id: "info", label: "Info" },
-      { id: "media", label: attachmentCount > 0 ? `Media (${attachmentCount})` : "Media", disabled: isCreate },
+      { id: "info", label: $_('chores.editModal.info') },
+      { id: "media", label: attachmentCount > 0 ? $_('chores.editModal.mediaCount', { values: { n: attachmentCount } }) : $_('chores.editModal.media'), disabled: isCreate },
     ]}
     active={activeTab}
     onchange={(id) => { activeTab = id as "info" | "media"; }}
@@ -157,7 +158,7 @@
 
   {#if activeTab === "info"}
     <div class="row">
-      <label>Category *</label>
+      <label>{$_('costs.entryModal.category')} *</label>
       <select class="native-input flex-grow" bind:value={categoryId}>
         {#each settingsStore.costCategories as cat}
           <option value={cat.id}>{cat.emoji} {cat.name}</option>
@@ -166,43 +167,43 @@
     </div>
 
     <div class="row">
-      <label>Date *</label>
+      <label>{$_('costs.entryModal.date')} *</label>
       <DatePicker bind:value={date} />
     </div>
 
     {#if hasUnit}
       <div class="row">
-        <label>Quantity ({selectedCategory!.unit})</label>
+        <label>{$_('costs.entryModal.quantity', { values: { unit: selectedCategory!.unit } })}</label>
         <input class="native-input num-input" bind:value={quantity} type="number" min="0" step="any" placeholder="0" oninput={() => autoCalc("qty")} />
-        <label style="margin-left:12px">Unit price (€/{selectedCategory!.unit})</label>
+        <label style="margin-left:12px">{$_('costs.entryModal.unitPrice', { values: { unit: selectedCategory!.unit } })}</label>
         <input class="native-input num-input" bind:value={unitPrice} type="number" min="0" step="any" placeholder="0.00" oninput={() => autoCalc("price")} />
       </div>
     {/if}
 
     <div class="row">
-      <label>Total amount (€) *</label>
+      <label>{$_('costs.entryModal.totalAmount')} *</label>
       <input class="native-input num-input" bind:value={totalAmount} type="number" min="0" step="any" placeholder="0.00" oninput={() => autoCalc("total")} />
     </div>
 
     <div class="row">
-      <label>Supplier</label>
+      <label>{$_('costs.entryModal.supplier')}</label>
       <select class="native-input flex-grow" bind:value={supplierId}>
-        <option value="">— No supplier —</option>
+        <option value="">{$_('costs.entryModal.noSupplier')}</option>
         {#each settingsStore.suppliers as s}<option value={s.id}>{s.name}</option>{/each}
       </select>
     </div>
 
     <div class="row">
-      <label>Room</label>
+      <label>{$_('costs.page.room')}</label>
       <select class="native-input flex-grow" bind:value={roomId}>
-        <option value="">No room</option>
+        <option value="">{$_('costs.entryModal.noRoom')}</option>
         {#each allRooms as room}<option value={room.id}>{room.label}</option>{/each}
       </select>
     </div>
 
     <div class="row col">
-      <label>Notes</label>
-      <textarea class="native-input" bind:value={notes} rows="2" placeholder="Optional notes…"></textarea>
+      <label>{$_('chores.editModal.notes')}</label>
+      <textarea class="native-input" bind:value={notes} rows="2" placeholder={$_('costs.entryModal.notesPlaceholder')}></textarea>
     </div>
 
     {#if error}<div class="error">{error}</div>{/if}
@@ -221,16 +222,16 @@
     <span class="spacer"></span>
     {#if !isCreate}
       {#if confirmDelete}
-        <span class="confirm-text">Delete this entry?</span>
-        <Button variant="danger" disabled={deleting} onclick={handleDelete}>{deleting ? "…" : "Confirm delete"}</Button>
-        <Button variant="ghost" onclick={() => { confirmDelete = false; }}>Cancel</Button>
+        <span class="confirm-text">{$_('costs.entryModal.deleteThisEntry')}</span>
+        <Button variant="danger" disabled={deleting} onclick={handleDelete}>{deleting ? "…" : $_('chores.editModal.confirmDelete')}</Button>
+        <Button variant="ghost" onclick={() => { confirmDelete = false; }}>{$_('common.cancel')}</Button>
       {:else}
-        <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 Delete</Button>
+        <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 {$_('common.delete')}</Button>
       {/if}
     {/if}
     {#if activeTab === "info"}
       <Button variant="primary" disabled={saving} onclick={handleSave}>
-        {saving ? "Saving…" : isCreate ? "Create" : "Save"}
+        {saving ? $_('settings.security.saving') : isCreate ? $_('settings.security.create') : $_('common.save')}
       </Button>
     {/if}
   {/snippet}

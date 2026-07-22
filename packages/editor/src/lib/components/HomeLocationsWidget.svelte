@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createLocationsStore } from "../locationsStore.svelte";
   import { weightedScore } from "../locationsStore.svelte";
   import Card from "./ui/Card.svelte";
@@ -35,7 +36,7 @@
     }}
   >
     <Card>
-      <div class="header"><h3>🌍 Locations</h3></div>
+      <div class="header"><h3>🌍 {$_('common.modules.locations')}</h3></div>
       {#if top}
         <div class="top-pick">
           <span class="crown">👑</span>

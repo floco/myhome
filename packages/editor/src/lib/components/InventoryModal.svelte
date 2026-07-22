@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createInventoryStore, InventoryItem } from "../inventoryStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
   import { apiUrl } from "../apiUrl";
@@ -62,7 +63,7 @@
   );
 
   async function handleSave(): Promise<void> {
-    if (!name.trim()) { error = "Name is required"; return; }
+    if (!name.trim()) { error = $_('inventory.modal.nameRequired'); return; }
     saving = true; error = null;
     const parsedPrice = purchasePrice ? parseFloat(purchasePrice) : null;
     const patch = {
@@ -85,7 +86,7 @@
       }
       onclose();
     } catch (e) {
-      error = e instanceof Error ? e.message : "Save failed";
+      error = e instanceof Error ? e.message : $_('inventory.modal.saveFailed');
     } finally {
       saving = false;
     }
@@ -98,7 +99,7 @@
       await store.deleteItem(item.id);
       onclose();
     } catch (e) {
-      error = e instanceof Error ? e.message : "Delete failed";
+      error = e instanceof Error ? e.message : $_('inventory.modal.deleteFailed');
       deleting = false;
     }
   }
@@ -109,7 +110,7 @@
     try {
       for (const file of files) await store.uploadAttachment(item.id, file);
     } catch (err) {
-      uploadError = err instanceof Error ? err.message : "Upload failed";
+      uploadError = err instanceof Error ? err.message : $_('inventory.modal.uploadFailed');
     } finally {
       uploading = false;
     }
@@ -120,7 +121,7 @@
     try {
       await store.deleteAttachment(item.id, id);
     } catch (err) {
-      uploadError = err instanceof Error ? err.message : "Delete failed";
+      uploadError = err instanceof Error ? err.message : $_('inventory.modal.deleteFailed');
     }
   }
 
@@ -130,11 +131,11 @@
   }
 </script>
 
-<Modal open={true} title={isCreate ? "＋ New item" : "Edit item"} {onclose} width="560px">
+<Modal open={true} title={isCreate ? `＋ ${$_('inventory.modal.newItem')}` : $_('inventory.modal.editItem')} {onclose} width="560px">
   <Tabs
     tabs={[
-      { id: "info", label: "Info" },
-      { id: "media", label: attachmentCount > 0 ? `Media (${attachmentCount})` : "Media", disabled: isCreate },
+      { id: "info", label: $_('chores.editModal.info') },
+      { id: "media", label: attachmentCount > 0 ? $_('chores.editModal.mediaCount', { values: { n: attachmentCount } }) : $_('chores.editModal.media'), disabled: isCreate },
     ]}
     active={activeTab}
     onchange={(id) => { activeTab = id as "info" | "media"; }}
@@ -142,37 +143,37 @@
 
   {#if activeTab === "info"}
     <div class="row">
-      <label>Emoji</label>
+      <label>{$_('chores.editModal.emoji')}</label>
       <EmojiPicker bind:value={emoji} />
-      <label style="margin-left:16px">Name *</label>
-      <div class="flex-grow"><Input bind:value={name} placeholder='e.g. Samsung TV 65"' /></div>
+      <label style="margin-left:16px">{$_('chores.editModal.name')} *</label>
+      <div class="flex-grow"><Input bind:value={name} placeholder={$_('inventory.modal.namePlaceholder')} /></div>
     </div>
     <div class="row">
-      <label>Category</label>
+      <label>{$_('costs.page.category')}</label>
       <input
         class="native-input flex-grow"
         bind:value={category}
         list="inv-cat-list"
-        placeholder="Electronics, Furniture…"
+        placeholder={$_('inventory.modal.categoryPlaceholder')}
       />
       <datalist id="inv-cat-list">
         {#each inventoryCategories as s}<option value={s} />{/each}
       </datalist>
     </div>
     <div class="row">
-      <label>Brand</label>
+      <label>{$_('inventory.modal.brand')}</label>
       <div class="flex-grow"><Input bind:value={brand} placeholder="Samsung" /></div>
-      <label style="margin-left:12px">Model</label>
+      <label style="margin-left:12px">{$_('inventory.modal.model')}</label>
       <div class="flex-grow"><Input bind:value={model} placeholder="QE65Q80C" /></div>
     </div>
     <div class="row">
-      <label>Serial #</label>
+      <label>{$_('inventory.modal.serialNumber')}</label>
       <div class="flex-grow"><Input bind:value={serialNumber} placeholder="XYZ123" /></div>
     </div>
     <div class="row">
-      <label>Purchased</label>
+      <label>{$_('inventory.page.purchased')}</label>
       <DatePicker bind:value={purchaseDate} />
-      <label style="margin-left:12px">Price (€)</label>
+      <label style="margin-left:12px">{$_('inventory.modal.priceEur')}</label>
       <input
         class="native-input price-input"
         bind:value={purchasePrice}
@@ -183,12 +184,12 @@
       />
     </div>
     <div class="row">
-      <label>Warranty expiry</label>
+      <label>{$_('inventory.modal.warrantyExpiry')}</label>
       <DatePicker bind:value={warrantyExpiryDate} />
     </div>
     <div class="row col">
-      <label>Notes</label>
-      <textarea class="native-input" bind:value={notes} rows="3" placeholder="Additional notes…"></textarea>
+      <label>{$_('chores.editModal.notes')}</label>
+      <textarea class="native-input" bind:value={notes} rows="3" placeholder={$_('inventory.modal.notesPlaceholder')}></textarea>
     </div>
     {#if error}<div class="error">{error}</div>{/if}
   {:else}
@@ -204,23 +205,23 @@
 
   {#snippet footer()}
     {#if !isCreate && onplaceonmap}
-      <Button variant="secondary" onclick={() => onplaceonmap!(item!.id)}>📍 Place on map</Button>
+      <Button variant="secondary" onclick={() => onplaceonmap!(item!.id)}>📍 {$_('chores.editModal.placeOnMap')}</Button>
     {/if}
     <span class="spacer"></span>
     {#if !isCreate}
       {#if confirmDelete}
-        <span class="confirm-text">Delete this item?</span>
+        <span class="confirm-text">{$_('inventory.modal.deleteThisItem')}</span>
         <Button variant="danger" disabled={deleting} onclick={handleDelete}>
-          {deleting ? "…" : "Confirm delete"}
+          {deleting ? "…" : $_('chores.editModal.confirmDelete')}
         </Button>
-        <Button variant="ghost" onclick={() => { confirmDelete = false; }}>Cancel</Button>
+        <Button variant="ghost" onclick={() => { confirmDelete = false; }}>{$_('common.cancel')}</Button>
       {:else}
-        <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 Delete</Button>
+        <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 {$_('common.delete')}</Button>
       {/if}
     {/if}
     {#if activeTab === "info"}
       <Button variant="primary" disabled={saving} onclick={handleSave}>
-        {saving ? "Saving…" : isCreate ? "Create" : "Save"}
+        {saving ? $_('settings.security.saving') : isCreate ? $_('settings.security.create') : $_('common.save')}
       </Button>
     {/if}
   {/snippet}

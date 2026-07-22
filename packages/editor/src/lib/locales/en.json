@@ -1,0 +1,812 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "add": "Add",
+    "loading": "Loading…",
+    "confirm": "Confirm",
+    "openPdf": "Open PDF ↗",
+    "comingSoonBadge": "Coming soon",
+    "modules": {
+      "home": "Home", "plan": "Floor Plan", "chores": "Chores", "inventory": "Inventory",
+      "consumables": "Consumables", "works": "Works", "kb": "Knowledge Base", "costs": "Costs",
+      "locations": "Locations", "properties": "Properties", "budget": "Budget",
+      "visits": "Visits", "contacts": "Contacts", "checklist": "Checklist"
+    },
+    "search": {
+      "placeholder": "Search chores, inventory, works, costs…",
+      "noResults": "No results for '{query}'",
+      "ariaLabel": "Global search"
+    }
+  },
+  "nav": {
+    "settings": "Settings",
+    "soon": "Soon",
+    "comingSoon": "{label} — coming soon",
+    "selectHome": "Select home",
+    "newHome": "New home",
+    "newHomeModal": {
+      "title": "New home",
+      "nameLabel": "Name",
+      "namePlaceholder": "Rue des Lilas",
+      "typeLabel": "Type",
+      "existingTitle": "Existing home",
+      "existingDesc": "A property you already own or live in — full module set.",
+      "projectTitle": "Project home",
+      "projectDesc": "Scouting locations, searching for land, or managing a build.",
+      "demoTitle": "Demo home",
+      "demoDesc": "Pre-filled with sample data across every module — great for exploring the app.",
+      "nameRequired": "Name is required",
+      "failedToCreate": "Failed to create home",
+      "creating": "Creating…",
+      "createHome": "Create home"
+    }
+  },
+  "floorPlan": {
+    "tools": {
+      "undo": "Undo (Ctrl+Z)",
+      "redo": "Redo (Ctrl+Y)",
+      "select": "Select",
+      "wall": "Wall",
+      "divider": "Divider",
+      "door": "Door",
+      "window": "Window",
+      "delete": "Delete selected (Del)"
+    },
+    "switcher": {
+      "all": "All",
+      "switchFloor": "Switch floor",
+      "houseWide": "House-wide assignments — drag chores here",
+      "addFloor": "Add floor",
+      "doubleClickToRename": "Double-click to rename",
+      "switchToThisFloor": "Switch to this floor",
+      "deleteFloor": "Delete floor",
+      "deleteFloorAriaLabel": "Delete {name}",
+      "floor": "Floor",
+      "groundFloor": "Ground Floor",
+      "firstFloor": "First Floor",
+      "secondFloor": "Second Floor",
+      "thirdFloor": "Third Floor",
+      "basement": "Basement",
+      "defaultFloorName": "Floor {n}"
+    },
+    "layers": {
+      "toggle": "Toggle map layers",
+      "title": "Layers"
+    },
+    "roomPanel": {
+      "title": "Room",
+      "label": "Label",
+      "haArea": "HA Area",
+      "none": "(none)",
+      "unknownSuffix": "{id} (unknown)"
+    },
+    "itemPicker": {
+      "dragToReposition": "Drag to reposition",
+      "search": "Search…",
+      "unplaced": "Unplaced",
+      "placed": "Placed",
+      "noItemsMatch": "No items match"
+    },
+    "furnitureLibrary": {
+      "searchPlaceholder": "Search objects..."
+    },
+    "rotate": "Rotate"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "group": {
+      "chore": "Chores",
+      "low_stock": "Low Stock",
+      "warranty": "Warranty"
+    }
+  },
+  "chores": {
+    "dueLabel": {
+      "overdue": "{n}d overdue",
+      "yesterday": "Yesterday",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "inDays": "In {n}d"
+    },
+    "row": {
+      "notePlaceholder": "Note (optional)",
+      "markDone": "Mark done"
+    },
+    "schedule": {
+      "monthlyOnDay": "Monthly on day {n}",
+      "dayAbbrev": {
+        "mon": "Mon", "tue": "Tue", "wed": "Wed", "thu": "Thu", "fri": "Fri", "sat": "Sat", "sun": "Sun"
+      },
+      "weeklyOn": "Weekly on {days}",
+      "weekly": "Weekly",
+      "everyNWeeks": "Every {n} weeks",
+      "monthly": "Monthly",
+      "everyNMonths": "Every {n} months",
+      "yearly": "Yearly",
+      "everyNYears": "Every {n} years",
+      "daily": "Daily",
+      "quarterly": "Quarterly",
+      "everyNDays": "Every {n} days"
+    },
+    "badgePopup": {
+      "overdueSince": "Overdue since",
+      "due": "Due",
+      "allDone": "All done",
+      "thisRoom": "This room",
+      "remove": "Remove"
+    },
+    "list": {
+      "wholeHouse": "Whole house",
+      "roomInFloor": "Room ({floor})",
+      "unknownRoom": "Unknown room",
+      "title": "Chore List",
+      "assignmentCount": "{n} assignments",
+      "needsAttention": "Needs attention ({n})",
+      "onTrack": "On track ({n})",
+      "emptyState": "No chore assignments yet. Go to Management to create chores and assign them to rooms."
+    },
+    "editModal": {
+      "info": "Info",
+      "media": "Media",
+      "mediaCount": "Media ({n})",
+      "history": "History",
+      "historyCount": "History ({n})",
+      "name": "Name",
+      "choreName": "Chore name",
+      "emoji": "Emoji",
+      "periodDays": "Period (days)",
+      "defaultDue": "Default due",
+      "scheduleFromDueTitle": "Next due = planned date + period",
+      "scheduleFromDue": "Schedule from due date",
+      "notes": "Notes",
+      "notesPlaceholder": "Instructions, tips, or reminders…",
+      "noCompletions": "No completions yet",
+      "dueOn": "due {date}",
+      "deleteRecord": "Delete record",
+      "deleteThisChore": "Delete this chore?",
+      "confirmDelete": "Confirm delete",
+      "placeOnMap": "Place on map",
+      "nameEmpty": "Name cannot be empty",
+      "saveFailed": "Save failed",
+      "deleteFailed": "Delete failed",
+      "uploadFailed": "Upload failed"
+    },
+    "page": {
+      "emptyCharts": "No chore assignments yet — click ＋ Add chore to get started.",
+      "scheduleHealth": "Schedule health",
+      "atAGlance": "At a glance",
+      "active": "Active",
+      "overdue": "Overdue",
+      "onTrack": "On track",
+      "search": "🔍 Search…",
+      "allRooms": "All rooms",
+      "allSchedules": "All schedules",
+      "allChores": "All chores",
+      "needsAttentionTitle": "Needs attention",
+      "addChore": "Add chore",
+      "schedulesFromDueDate": "Schedules from due date",
+      "markAllDone": "Mark all done",
+      "delayAllByWeek": "Delay all assignments by 1 week",
+      "delayByWeek": "Delay by 1 week",
+      "notAssigned": "Not assigned to any room",
+      "schedule": "Schedule",
+      "rooms": "Rooms",
+      "nextDue": "Next due",
+      "roomCount": "{n} rooms",
+      "emptyNoChores": "No chores yet — click ＋ Add chore to get started.",
+      "emptyNoneNeedAttention": "No chores need attention right now.",
+      "emptyNoMatch": "No chores match your filters.",
+      "choreCount": "{n, plural, one {# chore} other {# chores}}",
+      "health": {
+        "onTrack": "On track",
+        "dueSoon": "Due soon",
+        "overdue": "Overdue"
+      }
+    },
+    "newModal": {
+      "title": "New Chore",
+      "repeatEvery": "Repeat every",
+      "unitDays": "days",
+      "unitWeeks": "weeks",
+      "unitMonths": "months",
+      "unitYears": "years",
+      "firstDue": "First due",
+      "scheduleFromDueTitle": "Next due = planned date + period (not completion date + period)",
+      "creating": "Creating…",
+      "failedToCreate": "Failed to create"
+    }
+  },
+  "works": {
+    "status": {
+      "planned": "Planned",
+      "inProgress": "In progress",
+      "done": "Done"
+    },
+    "open": "Open",
+    "remove": "Remove",
+    "page": {
+      "emptyCharts": "No works yet — click ＋ Add work to get started.",
+      "houseTimeline": "House timeline",
+      "totalCost": "Total cost",
+      "allStatuses": "All statuses",
+      "addWork": "Add work",
+      "pinned": "Pinned",
+      "title": "Title",
+      "status": "Status",
+      "emptyNoWorks": "No works yet — click ＋ Add work to get started.",
+      "emptyNoMatch": "No works match your filters.",
+      "footer": "{n} works · total: {total} €"
+    },
+    "modal": {
+      "newWork": "New work",
+      "editWork": "Edit work",
+      "notes": "Notes",
+      "workTitlePlaceholder": "Work title",
+      "noneOption": "— None —",
+      "totalCostEur": "Total cost (€)",
+      "description": "Description",
+      "descriptionPlaceholder": "Short summary of the work…",
+      "notesPlaceholder": "Click to add markdown notes…",
+      "doneEditing": "Done editing",
+      "confirm": "Confirm",
+      "titleRequired": "Title is required",
+      "saveFailed": "Save failed",
+      "deleteFailed": "Delete failed",
+      "uploadFailed": "Upload failed"
+    }
+  },
+  "inventory": {
+    "pinPopup": {
+      "expired": "Expired",
+      "expiresToday": "Expires today",
+      "daysRemaining": "{days}d remaining",
+      "warranty": "Warranty",
+      "remove": "Remove"
+    },
+    "page": {
+      "expired": "expired",
+      "uncategorized": "Uncategorized",
+      "emptyCharts": "No items yet — click ＋ Add item to get started.",
+      "byCategory": "By category",
+      "items": "Items",
+      "totalValue": "Total value",
+      "searchItems": "🔍 Search items…",
+      "addItem": "Add item",
+      "purchased": "Purchased",
+      "cost": "Cost",
+      "emptyNoItems": "No items yet — click ＋ Add item to get started.",
+      "emptyNoMatch": "No items match your filters.",
+      "itemCount": "{n, plural, one {# item} other {# items}}",
+      "totalValueSuffix": "· total value: {amount} €"
+    },
+    "modal": {
+      "newItem": "New item",
+      "editItem": "Edit item",
+      "namePlaceholder": "e.g. Samsung TV 65\"",
+      "categoryPlaceholder": "Electronics, Furniture…",
+      "brand": "Brand",
+      "model": "Model",
+      "serialNumber": "Serial #",
+      "priceEur": "Price (€)",
+      "warrantyExpiry": "Warranty expiry",
+      "notesPlaceholder": "Additional notes…",
+      "deleteThisItem": "Delete this item?",
+      "nameRequired": "Name is required",
+      "saveFailed": "Save failed",
+      "deleteFailed": "Delete failed",
+      "uploadFailed": "Upload failed"
+    }
+  },
+  "consumables": {
+    "pinPopup": {
+      "inStock": "In stock",
+      "lowStock": "Low stock",
+      "empty": "Empty",
+      "notePlaceholder": "note…",
+      "removePin": "Remove pin",
+      "invalidQuantity": "Invalid quantity",
+      "updateFailed": "Update failed"
+    },
+    "page": {
+      "statusOk": "OK",
+      "statusLow": "LOW",
+      "statusEmpty": "EMPTY",
+      "low": "Low",
+      "empty": "Empty",
+      "all": "All",
+      "emptyCharts": "No consumables yet — click ＋ Add consumable to get started.",
+      "stockStatus": "Stock status — {n} items",
+      "addConsumable": "Add consumable",
+      "placeOnMap": "Place on map",
+      "quantity": "Quantity",
+      "min": "Min",
+      "stock": "Stock",
+      "emptyNoConsumables": "No consumables yet — click ＋ Add consumable to get started.",
+      "emptyNoMatch": "No consumables match your filters."
+    },
+    "modal": {
+      "details": "Details",
+      "namePlaceholder": "e.g. AA Batteries",
+      "unit": "Unit",
+      "minQty": "Min qty",
+      "descriptionPlaceholder": "Optional notes…",
+      "currentStock": "Current stock:",
+      "setNewQuantity": "Set new quantity ({unit})",
+      "noteOptional": "Note (optional)",
+      "restockedExample": "e.g. restocked",
+      "updating": "Updating…",
+      "updateStock": "Update stock",
+      "history": "History",
+      "noTransactions": "No transactions yet",
+      "sure": "Sure?",
+      "deleting": "Deleting…",
+      "yesDelete": "Yes, delete"
+    }
+  },
+  "locations": {
+    "ratingPopup": {
+      "notePlaceholder": "Note…",
+      "clear": "Clear"
+    },
+    "page": {
+      "emptyState": "No locations yet — add candidates below to start comparing.",
+      "noRatingsYet": "No ratings yet",
+      "ranking": "Ranking — weighted overall score"
+    },
+    "modal": {
+      "addLocation": "Add location",
+      "editLocation": "Edit location",
+      "flag": "Flag",
+      "namePlaceholder": "e.g. Nantes, France"
+    },
+    "criterionModal": {
+      "addCriterion": "Add criterion",
+      "editCriterion": "Edit criterion",
+      "namePlaceholder": "e.g. Cost of Living",
+      "weight": "Weight",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "matrix": {
+      "view": "View",
+      "criteria": "Criteria",
+      "weightMed": "Med",
+      "deleteLocationConfirm": "Delete {name}?",
+      "confirmDelete": "Confirm delete",
+      "moveLeft": "Move left",
+      "moveRight": "Move right",
+      "addLocationTitle": "Add location",
+      "deleteCriterionConfirm": "Delete {name}?",
+      "moveUp": "Move up",
+      "moveDown": "Move down"
+    }
+  },
+  "properties": {
+    "status": {
+      "watching": "Watching",
+      "visited": "Visited",
+      "proposalMade": "Proposal made",
+      "purchased": "Purchased",
+      "rejected": "Rejected"
+    },
+    "type": {
+      "land": "Land",
+      "house": "House",
+      "newBuild": "New build"
+    },
+    "page": {
+      "emptyCharts": "No properties yet — click ＋ Add property to get started.",
+      "searchPipeline": "Search pipeline",
+      "total": "Total",
+      "allTypes": "All types",
+      "addProperty": "Add property",
+      "type": "Type",
+      "location": "Location",
+      "price": "Price",
+      "size": "Size",
+      "emptyNoProperties": "No properties yet — click ＋ Add property to get started.",
+      "emptyNoMatch": "No properties match your filters.",
+      "footer": "{n, plural, one {# property} other {# properties}}",
+      "builtSize": "{size} m² built",
+      "landSize": "{size} m² land"
+    },
+    "modal": {
+      "newProperty": "New property",
+      "editProperty": "Edit property",
+      "prosCons": "Pros / Cons",
+      "namePlaceholder": "Casa da Rua das Flores",
+      "landOnly": "Land only",
+      "existingHouse": "Existing house",
+      "newBuildOffPlan": "New-build (off-plan)",
+      "address": "Address",
+      "priceEur": "Price (€)",
+      "listingUrl": "Listing URL",
+      "landSizeM2": "Land size (m²)",
+      "builtSizeM2": "Built size (m²)",
+      "bedrooms": "Bedrooms",
+      "bathrooms": "Bathrooms",
+      "agentContact": "Agent / contact",
+      "pros": "Pros",
+      "cons": "Cons",
+      "addAPro": "Add a pro…",
+      "addACon": "Add a con…"
+    }
+  },
+  "costs": {
+    "entryFallbackTitle": "Cost entry",
+    "open": "📊 Open",
+    "remove": "✕ Remove",
+    "pinPopup": {
+      "unit": "Unit: {unit}"
+    },
+    "page": {
+      "unknown": "Unknown",
+      "emptyCharts": "No entries yet — click ＋ Add entry to get started.",
+      "breakdownByCategory": "{year} — breakdown by category",
+      "total": "Total",
+      "totalHouseCosts": "Total house costs — last 10 years (€)",
+      "tenYearAvg": "10-year avg",
+      "perYear": "{amount} €/yr",
+      "lastCompleteYr": "Last complete yr",
+      "searchEntries": "🔍 Search entries…",
+      "allCategories": "All categories",
+      "allYears": "All years",
+      "addEntry": "Add entry",
+      "category": "Category",
+      "date": "Date",
+      "supplier": "Supplier",
+      "qty": "Qty",
+      "unitPrice": "Unit price",
+      "room": "Room",
+      "emptyNoEntries": "No entries yet — click ＋ Add entry to get started.",
+      "emptyNoMatch": "No entries match your filters.",
+      "entryCount": "{n, plural, one {# entry} other {# entries}}",
+      "totalSuffix": "· total: {amount} €"
+    },
+    "entryModal": {
+      "newEntry": "New entry",
+      "editEntry": "Edit entry",
+      "category": "Category",
+      "date": "Date",
+      "quantity": "Quantity ({unit})",
+      "unitPrice": "Unit price (€/{unit})",
+      "totalAmount": "Total amount (€)",
+      "supplier": "Supplier",
+      "noSupplier": "— No supplier —",
+      "noRoom": "No room",
+      "notesPlaceholder": "Optional notes…",
+      "deleteThisEntry": "Delete this entry?",
+      "categoryRequired": "Category is required",
+      "dateRequired": "Date is required",
+      "totalRequired": "Total amount is required",
+      "saveFailed": "Save failed",
+      "deleteFailed": "Delete failed",
+      "uploadFailed": "Upload failed"
+    },
+    "categoryModal": {
+      "title": "{emoji} {name} — per year",
+      "noEntries": "No entries for this category yet.",
+      "chartTitle": "Cost (€) per year",
+      "chartTitleWithVolume": "Cost (€) and volume ({unit}) per year",
+      "costEur": "Cost (€)",
+      "volume": "Volume ({unit})",
+      "partialNote": "* current year, partial",
+      "avgCostPerYear": "Avg cost / year",
+      "avgUnitPerYear": "Avg {unit} / year",
+      "avgPricePer": "Avg price / {unit}"
+    }
+  },
+  "home": {
+    "chores": {
+      "active": "active",
+      "onTrack": "on track",
+      "emptyState": "No chore assignments yet."
+    },
+    "consumables": {
+      "emptyPill": "{n} empty",
+      "lowPill": "{n} low"
+    },
+    "costs": {
+      "emptyState": "No cost entries yet."
+    },
+    "inventory": {
+      "itemsSub": "{n} items",
+      "emptyState": "No inventory items yet."
+    },
+    "map": {
+      "noFloors": "No floors yet."
+    },
+    "properties": {
+      "statusProposal": "Proposal"
+    },
+    "works": {
+      "totalSub": "{amount} € total",
+      "emptyState": "No works logged yet."
+    }
+  },
+  "auth": {
+    "signInToContinue": "Sign in to continue",
+    "signInWith": "Sign in with {provider}",
+    "or": "or",
+    "username": "Username",
+    "password": "Password",
+    "signingIn": "Signing in…",
+    "signIn": "Sign in",
+    "contactAdmin": "Contact your admin to create an account",
+    "oidcFailed": "Sign-in failed, please try again",
+    "oidcAccountConflict": "An account with this username already exists. Contact your administrator to link accounts.",
+    "invalidCredentials": "Invalid username or password"
+  },
+  "settings": {
+    "nav": {
+      "general": "General",
+      "categories": "Categories",
+      "notifications": "Notifications",
+      "security": "Security & Access",
+      "integrations": "Integrations",
+      "backup": "Backup & Restore",
+      "activity": "Activity Log"
+    },
+    "general": {
+      "home": "Home",
+      "name": "Name",
+      "homeNamePlaceholder": "Home name",
+      "type": "Type",
+      "projectHome": "🏗 Project home",
+      "existingHome": "🏠 Existing home",
+      "change": "Change",
+      "cannotDeleteOnlyHome": "Cannot delete the only home",
+      "deleteThisHome": "Delete this home",
+      "language": "Language",
+      "modules": "Modules",
+      "modulesDesc": "Choose which modules are visible in the nav for this home.",
+      "coreModules": "Core modules",
+      "projectModules": "Project modules",
+      "placeholderTag": "Placeholder",
+      "deleteHomeTitle": "Delete home",
+      "deleteHomePrefix": "Delete",
+      "deleteHomeSuffix": "? This permanently removes all data for this home and cannot be undone.",
+      "nameRequired": "Name required",
+      "failedToSave": "Failed to save",
+      "failedToUpdateType": "Failed to update type",
+      "failedToDelete": "Failed to delete home",
+      "moduleHideWarning": "This hides {label} but does not delete your data."
+    },
+    "security": {
+      "apiTokens": "API Tokens",
+      "newToken": "New token",
+      "tokensDesc": "Tokens for automation, MCP, and API access. A token's scope cannot exceed your own role.",
+      "noTokensYet": "No tokens yet.",
+      "confirmRevoke": "Confirm revoke",
+      "revoke": "Revoke",
+      "name": "Name",
+      "scope": "Scope",
+      "created": "Created",
+      "lastUsed": "Last used",
+      "users": "Users",
+      "newUser": "New user",
+      "editRole": "Edit role",
+      "newPasswordPlaceholder": "New password (min 8)",
+      "set": "Set",
+      "resetPw": "Reset pw",
+      "confirmDelete": "Confirm delete",
+      "username": "Username",
+      "role": "Role",
+      "actions": "Actions",
+      "sso": "Single Sign-On",
+      "ssoDesc": "Let users sign in via an external OIDC provider (Keycloak, Authentik, Google Workspace, etc.) alongside local username/password login.",
+      "enableSso": "Enable Single Sign-On",
+      "providerName": "Provider name",
+      "providerNamePlaceholder": "e.g. Keycloak",
+      "issuerUrl": "Issuer URL",
+      "clientId": "Client ID",
+      "clientSecret": "Client secret",
+      "notSet": "Not set",
+      "defaultRole": "Default role for new sign-ins",
+      "redirectUri": "Redirect URI",
+      "saving": "Saving…",
+      "newApiToken": "New API Token",
+      "tokenName": "Token name",
+      "tokenNamePlaceholder": "e.g. Home Assistant MCP",
+      "create": "Create",
+      "tokenCreated": "Token Created",
+      "copyTokenNow": "Copy this token now. It will not be shown again.",
+      "copyToClipboard": "Copy to clipboard",
+      "done": "Done",
+      "newUserTitle": "New User",
+      "usernamePlaceholder": "username",
+      "passwordMin8": "Password (min 8 chars)",
+      "createUser": "Create user",
+      "usernameRequired": "Username required",
+      "passwordTooShort": "Password must be at least 8 characters"
+    },
+    "integrations": {
+      "mcpServer": "MCP Server",
+      "mcpDesc": "Lets an MCP client (Claude Desktop, claude.ai, Claude Code, or Home Assistant's Assist) query and act on this home's data. Create an API token above with the access level you want the assistant to have, then use it as the Bearer token when connecting.",
+      "enableMcp": "Enable MCP Server",
+      "connectionUrl": "Connection URL:",
+      "donetick": "Donetick",
+      "donetickDesc": "Imports chores from your Donetick instance into this home. Paste an API token from Donetick and click Import.",
+      "apiTokenPlaceholder": "API token",
+      "importing": "Importing…",
+      "import": "Import",
+      "failed": "Failed",
+      "imported": "{n} imported"
+    },
+    "categories": {
+      "tabs": {
+        "cost": "Cost categories",
+        "inventory": "Inventory categories",
+        "work": "Work categories",
+        "suppliers": "Suppliers",
+        "consumables": "Consumables"
+      },
+      "deleteConfirm": "Delete?",
+      "name": "Name",
+      "nameRequiredPlaceholder": "Name *",
+      "emoji": "Emoji",
+      "unit": "Unit",
+      "color": "Color",
+      "unitPlaceholder": "L, kWh…",
+      "unitOptionalPlaceholder": "L, kWh… (optional)",
+      "units": "Units",
+      "unitInputPlaceholder": "e.g. tablets",
+      "addUnit": "Add unit",
+      "categoriesHeading": "Categories",
+      "addCategory": "Add category",
+      "unitAlreadyExists": "Unit already exists"
+    },
+    "backup": {
+      "backupFailed": "Backup failed. Please try again.",
+      "restoreFailed": "Restore failed.",
+      "downloadDesc": "Download a zip archive of all your data.",
+      "downloading": "Downloading…",
+      "downloadBackup": "Download Backup",
+      "restoreDesc": "Replace all current data from a previously downloaded backup.",
+      "restoreFromBackup": "Restore from Backup",
+      "restoreComplete": "Restore complete. Reload the page to see updated data.",
+      "scheduledBackups": "Scheduled Backups",
+      "enableScheduled": "Enable scheduled backups",
+      "frequency": "Frequency",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "dayOfWeek": "Day of week",
+      "weekday": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+      },
+      "dayOfMonth": "Day of month",
+      "timeUtc": "Time (UTC, HH:MM)",
+      "keepLastN": "Keep last N backups",
+      "running": "Running…",
+      "runBackupNow": "Run backup now",
+      "download": "Download",
+      "size": "Size",
+      "restoreBackupTitle": "Restore Backup",
+      "restoreWarning": "This will replace all current data with the contents of the backup. This cannot be undone.",
+      "restoring": "Restoring…",
+      "restore": "Restore"
+    },
+    "activityLog": {
+      "module": "Module",
+      "allModules": "All modules",
+      "from": "From",
+      "to": "To",
+      "filter": "Filter",
+      "noActivity": "No activity recorded yet.",
+      "when": "When",
+      "who": "Who",
+      "what": "What",
+      "loadMore": "Load more"
+    },
+    "notifications": {
+      "desc": "Surface chores due soon, low-stock consumables, and expiring warranties in one place, with an optional daily summary pushed to Home Assistant.",
+      "enable": "Enable notification center",
+      "choresThreshold": "Chores \"due soon\" threshold (fraction of period remaining)",
+      "warrantyWindow": "Warranty \"expiring soon\" window (days)",
+      "haDigest": "Send a daily digest via Home Assistant",
+      "haNotifyService": "HA notify service",
+      "haNotifyServicePlaceholder": "e.g. notify.mobile_app_pixel",
+      "digestTime": "Digest time (UTC, HH:MM)"
+    }
+  },
+  "datePicker": {
+    "placeholder": "Pick a date…"
+  },
+  "mediaGallery": {
+    "itemCount": "{n, plural, one {# item} other {# items}}",
+    "gridView": "Grid view",
+    "listView": "List view",
+    "emptyState": "No media yet. Drop files here or use the button below.",
+    "pdfBadge": "PDF",
+    "uploading": "Uploading…",
+    "uploadButton": "＋ Upload"
+  },
+  "emojiPicker": {
+    "pickEmoji": "Pick emoji",
+    "objects": "Objects",
+    "flags": "Flags",
+    "filterCountries": "Filter countries…",
+    "custom": "Custom…"
+  },
+  "kb": {
+    "tree": {
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "pageActions": "Page actions",
+      "addChildPage": "Add child page",
+      "rename": "Rename",
+      "noMatchingPages": "No matching pages.",
+      "noPagesYet": "No pages yet."
+    },
+    "trash": {
+      "title": "Trash",
+      "emptyTrash": "Empty Trash",
+      "trashIsEmpty": "Trash is empty.",
+      "deletedOn": "Deleted {date}",
+      "restore": "Restore",
+      "deleteForeverTitle": "Delete forever",
+      "deleteForeverButton": "Delete Forever",
+      "confirmEmptyBody": "Permanently delete all {n, plural, one {# page} other {# pages}} in Trash? This cannot be undone.",
+      "confirmDeletePrefix": "Permanently delete",
+      "confirmDeleteSuffix": "? This cannot be undone."
+    },
+    "page": {
+      "newPage": "New Page",
+      "newPageTitle": "New page",
+      "createFailed": "Create failed",
+      "titleEmpty": "Title cannot be empty",
+      "saveFailed": "Save failed",
+      "iconUpdateFailed": "Icon update failed",
+      "renameFailed": "Rename failed",
+      "moveFailed": "Move failed",
+      "loadTrashFailed": "Failed to load trash",
+      "restoreFailed": "Restore failed",
+      "emptyTrashFailed": "Empty trash failed",
+      "selectOrCreate": "Select a page or create one",
+      "pageTitlePlaceholder": "Page title",
+      "contentTab": "Content",
+      "deletePage": "Delete page",
+      "startWritingPlaceholder": "Start writing in Markdown… (type /page to create a linked child page)",
+      "deletePageTitle": "Delete page",
+      "deletePrefix": "Delete",
+      "andSubPages": "and {n, plural, one {# sub-page} other {# sub-pages}}",
+      "restoreThemNote": "You can restore them from Trash afterward.",
+      "restoreItNote": "You can restore it from Trash afterward."
+    }
+  },
+  "markdownEditor": {
+    "defaultPlaceholder": "Click to add markdown content…",
+    "pageDeleted": "Page deleted",
+    "toolbarLabel": "Markdown formatting",
+    "heading1": "Heading 1",
+    "heading2": "Heading 2",
+    "heading3": "Heading 3",
+    "bold": "Bold",
+    "italic": "Italic",
+    "strikethrough": "Strikethrough",
+    "bulletList": "Bullet list",
+    "numberedList": "Numbered list",
+    "blockquote": "Blockquote",
+    "inlineCode": "Inline code",
+    "codeBlock": "Code block",
+    "link": "Link",
+    "horizontalRule": "Horizontal rule",
+    "insertMedia": "Insert media",
+    "insertMediaAttachment": "Insert media attachment",
+    "writeInMarkdown": "Write in Markdown…",
+    "clickToEdit": "Click to edit"
+  }
+}

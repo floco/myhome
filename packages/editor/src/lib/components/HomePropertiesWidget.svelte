@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createPropertiesStore } from "../propertiesStore.svelte";
   import Card from "./ui/Card.svelte";
 
@@ -17,8 +18,14 @@
   }
 
   function statusLabel(status: string): string {
-    if (status === "proposal_made") return "Proposal";
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    const map: Record<string, string> = {
+      watching: "properties.status.watching",
+      visited: "properties.status.visited",
+      proposal_made: "home.properties.statusProposal",
+      purchased: "properties.status.purchased",
+      rejected: "properties.status.rejected",
+    };
+    return $_(map[status] ?? status);
   }
 
   function statusColor(status: string): string {
@@ -51,7 +58,7 @@
     }}
   >
     <Card>
-      <div class="header"><h3>🏘 Properties</h3></div>
+      <div class="header"><h3>🏘 {$_('common.modules.properties')}</h3></div>
       <div class="status-counts">
         {#each STATUSES as s}
           <span class="status-count" style="color:{statusColor(s)}">{statusLabel(s)} {countByStatus(s)}</span>

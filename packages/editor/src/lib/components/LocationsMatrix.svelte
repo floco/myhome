@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createLocationsStore, Location, LocationCriterion, Weight } from "../locationsStore.svelte";
   import { ratingFor, bestScoreForCriterion } from "../locationsStore.svelte";
   import LocationRatingPopup from "./LocationRatingPopup.svelte";
@@ -10,7 +11,11 @@
   interface Props { store: LocationsStore; }
   let { store }: Props = $props();
 
-  const WEIGHT_LABEL: Record<Weight, string> = { low: "Low", medium: "Med", high: "High" };
+  function weightLabel(w: Weight): string {
+    if (w === "low") return $_('locations.criterionModal.low');
+    if (w === "high") return $_('locations.criterionModal.high');
+    return $_('locations.matrix.weightMed');
+  }
 
   let mode = $state<"view" | "edit">("view");
 
@@ -84,8 +89,8 @@
 
 <div class="mode-bar">
   <div class="mode-toggle">
-    <button type="button" class="mode-btn" class:active={mode === "view"} onclick={() => { mode = "view"; }}>👁 View</button>
-    <button type="button" class="mode-btn" class:active={mode === "edit"} onclick={() => { mode = "edit"; }}>✏️ Edit</button>
+    <button type="button" class="mode-btn" class:active={mode === "view"} onclick={() => { mode = "view"; }}>👁 {$_('locations.matrix.view')}</button>
+    <button type="button" class="mode-btn" class:active={mode === "edit"} onclick={() => { mode = "edit"; }}>✏️ {$_('common.edit')}</button>
   </div>
 </div>
 
@@ -94,19 +99,19 @@
     <thead>
       <tr>
         <th class="corner">
-          Criteria
+          {$_('locations.matrix.criteria')}
           {#if mode === "edit"}
-            <button class="add-btn" onclick={() => { showCriterionModal = "new"; }} title="Add criterion">＋</button>
+            <button class="add-btn" onclick={() => { showCriterionModal = "new"; }} title={$_('locations.criterionModal.addCriterion')}>＋</button>
           {/if}
         </th>
         {#each store.locations as loc (loc.id)}
           <th class="location-header">
             {#if confirmDeleteLocationId === loc.id}
               <div class="header-content">
-                <span class="confirm-text">Delete {loc.name}?</span>
+                <span class="confirm-text">{$_('locations.matrix.deleteLocationConfirm', { values: { name: loc.name } })}</span>
                 <div class="header-actions">
-                  <button class="icon-btn" onclick={() => { store.deleteLocation(loc.id); confirmDeleteLocationId = null; }} title="Confirm delete">✓</button>
-                  <button class="icon-btn" onclick={() => { confirmDeleteLocationId = null; }} title="Cancel">✕</button>
+                  <button class="icon-btn" onclick={() => { store.deleteLocation(loc.id); confirmDeleteLocationId = null; }} title={$_('locations.matrix.confirmDelete')}>✓</button>
+                  <button class="icon-btn" onclick={() => { confirmDeleteLocationId = null; }} title={$_('common.cancel')}>✕</button>
                 </div>
               </div>
             {:else}
@@ -115,10 +120,10 @@
                 <span class="loc-name">{loc.name}</span>
                 {#if mode === "edit"}
                   <div class="header-actions">
-                    <button class="icon-btn" onclick={() => moveLocation(loc.id, -1)} title="Move left">◀</button>
-                    <button class="icon-btn" onclick={() => moveLocation(loc.id, 1)} title="Move right">▶</button>
-                    <button class="icon-btn" onclick={() => { showLocationModal = loc; }} title="Edit">✏️</button>
-                    <button class="icon-btn" onclick={() => { confirmDeleteLocationId = loc.id; }} title="Delete">🗑</button>
+                    <button class="icon-btn" onclick={() => moveLocation(loc.id, -1)} title={$_('locations.matrix.moveLeft')}>◀</button>
+                    <button class="icon-btn" onclick={() => moveLocation(loc.id, 1)} title={$_('locations.matrix.moveRight')}>▶</button>
+                    <button class="icon-btn" onclick={() => { showLocationModal = loc; }} title={$_('common.edit')}>✏️</button>
+                    <button class="icon-btn" onclick={() => { confirmDeleteLocationId = loc.id; }} title={$_('common.delete')}>🗑</button>
                   </div>
                 {/if}
               </div>
@@ -127,7 +132,7 @@
         {/each}
         {#if mode === "edit"}
           <th class="add-header">
-            <button class="add-btn" onclick={() => { showLocationModal = "new"; }} title="Add location">＋</button>
+            <button class="add-btn" onclick={() => { showLocationModal = "new"; }} title={$_('locations.matrix.addLocationTitle')}>＋</button>
           </th>
         {/if}
       </tr>
@@ -139,25 +144,25 @@
           <td class="criterion-cell">
             {#if confirmDeleteCriterionId === criterion.id}
               <div class="criterion-content">
-                <span class="confirm-text">Delete {criterion.name}?</span>
+                <span class="confirm-text">{$_('locations.matrix.deleteCriterionConfirm', { values: { name: criterion.name } })}</span>
                 <div class="row-actions">
-                  <button class="icon-btn" onclick={() => { store.deleteCriterion(criterion.id); confirmDeleteCriterionId = null; }} title="Confirm delete">✓</button>
-                  <button class="icon-btn" onclick={() => { confirmDeleteCriterionId = null; }} title="Cancel">✕</button>
+                  <button class="icon-btn" onclick={() => { store.deleteCriterion(criterion.id); confirmDeleteCriterionId = null; }} title={$_('locations.matrix.confirmDelete')}>✓</button>
+                  <button class="icon-btn" onclick={() => { confirmDeleteCriterionId = null; }} title={$_('common.cancel')}>✕</button>
                 </div>
               </div>
             {:else}
               <div class="criterion-content">
                 <div class="criterion-title-row">
                   <span class="criterion-name">{criterion.name}</span>
-                  <span class="weight-tag weight-{criterion.weight}">{WEIGHT_LABEL[criterion.weight]}</span>
+                  <span class="weight-tag weight-{criterion.weight}">{weightLabel(criterion.weight)}</span>
                 </div>
                 {#if criterion.description}<p class="criterion-desc">{criterion.description}</p>{/if}
                 {#if mode === "edit"}
                   <div class="row-actions">
-                    <button class="icon-btn" onclick={() => moveCriterion(criterion.id, -1)} title="Move up">▲</button>
-                    <button class="icon-btn" onclick={() => moveCriterion(criterion.id, 1)} title="Move down">▼</button>
-                    <button class="icon-btn" onclick={() => { showCriterionModal = criterion; }} title="Edit">✏️</button>
-                    <button class="icon-btn" onclick={() => { confirmDeleteCriterionId = criterion.id; }} title="Delete">🗑</button>
+                    <button class="icon-btn" onclick={() => moveCriterion(criterion.id, -1)} title={$_('locations.matrix.moveUp')}>▲</button>
+                    <button class="icon-btn" onclick={() => moveCriterion(criterion.id, 1)} title={$_('locations.matrix.moveDown')}>▼</button>
+                    <button class="icon-btn" onclick={() => { showCriterionModal = criterion; }} title={$_('common.edit')}>✏️</button>
+                    <button class="icon-btn" onclick={() => { confirmDeleteCriterionId = criterion.id; }} title={$_('common.delete')}>🗑</button>
                   </div>
                 {/if}
               </div>

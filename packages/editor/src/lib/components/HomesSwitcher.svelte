@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import { homesStore } from "../homesStore.svelte";
   import NewHomeModal from "./NewHomeModal.svelte";
 
@@ -45,7 +46,7 @@
     <button
       class="topbar-current"
       onclick={handleClick}
-      title={homesStore.activeHome?.name ?? "Select home"}
+      title={homesStore.activeHome?.name ?? $_('nav.selectHome')}
     >
       <span class="topbar-icon">⌂</span>
       <span class="topbar-name">{homesStore.activeHome?.name ?? "—"}</span>
@@ -67,7 +68,7 @@
         <hr class="separator" />
         <button class="home-item add" onclick={() => { dropdownOpen = false; showNewModal = true; }}>
           <span class="icon">＋</span>
-          <span class="home-name">New home</span>
+          <span class="home-name">{$_('nav.newHome')}</span>
         </button>
       </div>
     {/if}
@@ -77,7 +78,7 @@
     <button
       class="current"
       onclick={handleClick}
-      title={homesStore.activeHome?.name ?? "Select home"}
+      title={homesStore.activeHome?.name ?? $_('nav.selectHome')}
     >
       <span class="icon">⌂</span>
       {#if expanded}
@@ -101,7 +102,7 @@
         <hr class="separator" />
         <button class="home-item add" onclick={() => { dropdownOpen = false; showNewModal = true; }}>
           <span class="icon">＋</span>
-          <span class="home-name">New home</span>
+          <span class="home-name">{$_('nav.newHome')}</span>
         </button>
       </div>
     {/if}

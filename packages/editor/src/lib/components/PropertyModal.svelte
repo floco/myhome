@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createPropertiesStore, Property, PropertyType, PropertyStatus } from "../propertiesStore.svelte";
   import type { createLocationsStore } from "../locationsStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
@@ -86,7 +87,7 @@
   }
 
   async function handleSave(): Promise<void> {
-    if (!name.trim()) { error = "Name is required"; return; }
+    if (!name.trim()) { error = $_('inventory.modal.nameRequired'); return; }
     saving = true; error = null;
     const patch = {
       name: name.trim(),
@@ -114,7 +115,7 @@
       }
       onclose();
     } catch (e) {
-      error = e instanceof Error ? e.message : "Save failed";
+      error = e instanceof Error ? e.message : $_('inventory.modal.saveFailed');
     } finally {
       saving = false;
     }
@@ -127,7 +128,7 @@
       await store.deleteProperty(property.id);
       onclose();
     } catch (e) {
-      error = e instanceof Error ? e.message : "Delete failed";
+      error = e instanceof Error ? e.message : $_('inventory.modal.deleteFailed');
       deleting = false;
     }
   }
@@ -138,7 +139,7 @@
     try {
       for (const file of files) await store.uploadAttachment(property.id, file);
     } catch (err) {
-      uploadError = err instanceof Error ? err.message : "Upload failed";
+      uploadError = err instanceof Error ? err.message : $_('inventory.modal.uploadFailed');
     } finally {
       uploading = false;
     }
@@ -149,7 +150,7 @@
     try {
       await store.deleteAttachment(property.id, id);
     } catch (err) {
-      uploadError = err instanceof Error ? err.message : "Delete failed";
+      uploadError = err instanceof Error ? err.message : $_('inventory.modal.deleteFailed');
     }
   }
 
@@ -173,13 +174,13 @@
   );
 </script>
 
-<Modal open={true} title={isCreate ? "＋ New property" : "Edit property"} {onclose} width="min(92vw, 820px)">
+<Modal open={true} title={isCreate ? `＋ ${$_('properties.modal.newProperty')}` : $_('properties.modal.editProperty')} {onclose} width="min(92vw, 820px)">
   <Tabs
     tabs={[
-      { id: "info", label: "Info" },
-      { id: "pros_cons", label: "Pros / Cons" },
-      { id: "notes", label: "Notes" },
-      { id: "media", label: attachmentCount > 0 ? `Media (${attachmentCount})` : "Media", disabled: isCreate },
+      { id: "info", label: $_('chores.editModal.info') },
+      { id: "pros_cons", label: $_('properties.modal.prosCons') },
+      { id: "notes", label: $_('works.modal.notes') },
+      { id: "media", label: attachmentCount > 0 ? $_('chores.editModal.mediaCount', { values: { n: attachmentCount } }) : $_('chores.editModal.media'), disabled: isCreate },
     ]}
     active={activeTab}
     onchange={(id) => { activeTab = id as typeof activeTab; }}
@@ -187,83 +188,83 @@
 
   {#if activeTab === "info"}
     <div class="row">
-      <label>Emoji</label>
+      <label>{$_('chores.editModal.emoji')}</label>
       <EmojiPicker bind:value={emoji} />
-      <label style="margin-left:16px">Name *</label>
-      <div class="flex-grow"><Input bind:value={name} placeholder="Casa da Rua das Flores" /></div>
+      <label style="margin-left:16px">{$_('chores.editModal.name')} *</label>
+      <div class="flex-grow"><Input bind:value={name} placeholder={$_('properties.modal.namePlaceholder')} /></div>
     </div>
     <div class="row-pair">
       <div class="row">
-        <label>Type</label>
+        <label>{$_('properties.page.type')}</label>
         <select class="native-input" bind:value={type}>
-          <option value="land">Land only</option>
-          <option value="house">Existing house</option>
-          <option value="new_build">New-build (off-plan)</option>
+          <option value="land">{$_('properties.modal.landOnly')}</option>
+          <option value="house">{$_('properties.modal.existingHouse')}</option>
+          <option value="new_build">{$_('properties.modal.newBuildOffPlan')}</option>
         </select>
       </div>
       <div class="row">
-        <label>Status</label>
+        <label>{$_('works.page.status')}</label>
         <select class="native-input" bind:value={status}>
-          <option value="watching">Watching</option>
-          <option value="visited">Visited</option>
-          <option value="proposal_made">Proposal made</option>
-          <option value="purchased">Purchased</option>
-          <option value="rejected">Rejected</option>
+          <option value="watching">{$_('properties.status.watching')}</option>
+          <option value="visited">{$_('properties.status.visited')}</option>
+          <option value="proposal_made">{$_('properties.status.proposalMade')}</option>
+          <option value="purchased">{$_('properties.status.purchased')}</option>
+          <option value="rejected">{$_('properties.status.rejected')}</option>
         </select>
       </div>
     </div>
     <div class="row">
-      <label>Location</label>
+      <label>{$_('properties.page.location')}</label>
       <select class="native-input" bind:value={locationId}>
-        <option value="">— None —</option>
+        <option value="">{$_('works.modal.noneOption')}</option>
         {#each locationsStore.locations as loc}
           <option value={loc.id}>{loc.emoji} {loc.name}</option>
         {/each}
       </select>
     </div>
     <div class="row">
-      <label>Address</label>
+      <label>{$_('properties.modal.address')}</label>
       <div class="flex-grow"><Input bind:value={address} placeholder="Rua das Flores 12" /></div>
     </div>
     <div class="row-pair">
       <div class="row">
-        <label>Price (€)</label>
+        <label>{$_('properties.modal.priceEur')}</label>
         <input class="native-input" type="number" min="0" step="0.01" bind:value={price} placeholder="0.00" />
       </div>
       <div class="row">
-        <label>Listing URL</label>
+        <label>{$_('properties.modal.listingUrl')}</label>
         <input class="native-input" type="url" bind:value={listingUrl} placeholder="https://…" />
       </div>
     </div>
     <div class="row-pair">
       <div class="row">
-        <label>Land size (m²)</label>
+        <label>{$_('properties.modal.landSizeM2')}</label>
         <input class="native-input" type="number" min="0" step="1" bind:value={landSize} placeholder="0" />
       </div>
       <div class="row">
-        <label>Built size (m²)</label>
+        <label>{$_('properties.modal.builtSizeM2')}</label>
         <input class="native-input" type="number" min="0" step="1" bind:value={builtSize} placeholder="0" />
       </div>
     </div>
     <div class="row-pair">
       <div class="row">
-        <label>Bedrooms</label>
+        <label>{$_('properties.modal.bedrooms')}</label>
         <input class="native-input" type="number" min="0" step="1" bind:value={bedrooms} placeholder="0" />
       </div>
       <div class="row">
-        <label>Bathrooms</label>
+        <label>{$_('properties.modal.bathrooms')}</label>
         <input class="native-input" type="number" min="0" step="1" bind:value={bathrooms} placeholder="0" />
       </div>
     </div>
     <div class="row">
-      <label>Agent / contact</label>
+      <label>{$_('properties.modal.agentContact')}</label>
       <div class="flex-grow"><Input bind:value={contact} placeholder="Maria Silva, Century21, +351 912 345 678" /></div>
     </div>
     {#if error}<div class="modal-error">{error}</div>{/if}
   {:else if activeTab === "pros_cons"}
     <div class="pros-cons-grid">
       <div class="pc-col">
-        <div class="pc-label">Pros</div>
+        <div class="pc-label">{$_('properties.modal.pros')}</div>
         <ul class="pc-list">
           {#each pros as pro, i}
             <li><span>{pro}</span><button type="button" class="pc-remove" onclick={() => removePro(i)}>✕</button></li>
@@ -273,14 +274,14 @@
           <input
             class="native-input"
             bind:value={newPro}
-            placeholder="Add a pro…"
+            placeholder={$_('properties.modal.addAPro')}
             onkeydown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPro(); } }}
           />
-          <Button variant="secondary" onclick={addPro}>Add</Button>
+          <Button variant="secondary" onclick={addPro}>{$_('common.add')}</Button>
         </div>
       </div>
       <div class="pc-col">
-        <div class="pc-label">Cons</div>
+        <div class="pc-label">{$_('properties.modal.cons')}</div>
         <ul class="pc-list">
           {#each cons as con, i}
             <li><span>{con}</span><button type="button" class="pc-remove" onclick={() => removeCon(i)}>✕</button></li>
@@ -290,15 +291,15 @@
           <input
             class="native-input"
             bind:value={newCon}
-            placeholder="Add a con…"
+            placeholder={$_('properties.modal.addACon')}
             onkeydown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCon(); } }}
           />
-          <Button variant="secondary" onclick={addCon}>Add</Button>
+          <Button variant="secondary" onclick={addCon}>{$_('common.add')}</Button>
         </div>
       </div>
     </div>
   {:else if activeTab === "notes"}
-    <textarea class="native-input notes-area" bind:value={notes} placeholder="Additional notes…" rows="10"></textarea>
+    <textarea class="native-input notes-area" bind:value={notes} placeholder={$_('inventory.modal.notesPlaceholder')} rows="10"></textarea>
   {:else}
     <MediaGallery
       items={mediaItems}
@@ -313,16 +314,16 @@
   {#snippet footer()}
     {#if !isCreate}
       {#if confirmDelete}
-        <span class="confirm-text">Delete?</span>
-        <Button variant="danger" disabled={deleting} onclick={handleDelete}>✓ Confirm</Button>
+        <span class="confirm-text">{$_('settings.categories.deleteConfirm')}</span>
+        <Button variant="danger" disabled={deleting} onclick={handleDelete}>✓ {$_('works.modal.confirm')}</Button>
         <Button variant="ghost" onclick={() => { confirmDelete = false; }}>✕</Button>
       {:else}
-        <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 Delete</Button>
+        <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 {$_('common.delete')}</Button>
       {/if}
     {/if}
     <span class="spacer"></span>
     <Button variant="primary" disabled={saving} onclick={handleSave}>
-      {saving ? "Saving…" : isCreate ? "Create" : "Save"}
+      {saving ? $_('settings.security.saving') : isCreate ? $_('settings.security.create') : $_('common.save')}
     </Button>
   {/snippet}
 </Modal>

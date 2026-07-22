@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
+
   interface Props {
     icon: string;
     label: string;
@@ -11,7 +13,7 @@
   <div class="icon">{icon}</div>
   <h2 class="label">{label}</h2>
   <p class="desc">{description}</p>
-  <span class="badge">Coming soon</span>
+  <span class="badge">{$_('common.comingSoonBadge')}</span>
 </div>
 
 <style>

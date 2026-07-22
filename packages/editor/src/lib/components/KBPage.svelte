@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createKBStore, KBEntry } from "../kbStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
   import { apiUrl } from "../apiUrl";
@@ -114,11 +115,11 @@
 
   async function handleNewPage(): Promise<void> {
     try {
-      const entry = await store.createEntry({ title: "New page", content: "" });
+      const entry = await store.createEntry({ title: $_('kb.page.newPageTitle'), content: "" });
       navigate(entry);
       editing = true;
     } catch (e) {
-      error = e instanceof Error ? e.message : "Create failed";
+      error = e instanceof Error ? e.message : $_('kb.page.createFailed');
     }
   }
 
@@ -131,7 +132,7 @@
 
   async function handleCreateChild(parentId: string): Promise<void> {
     try {
-      const entry = await store.createEntry({ title: "New page", content: "", parentId });
+      const entry = await store.createEntry({ title: $_('kb.page.newPageTitle'), content: "", parentId });
       await appendChildLink(parentId, entry);
       const next = new Set(collapsedIds);
       next.delete(parentId);
@@ -139,27 +140,27 @@
       navigate(entry);
       editing = true;
     } catch (e) {
-      error = e instanceof Error ? e.message : "Create failed";
+      error = e instanceof Error ? e.message : $_('kb.page.createFailed');
     }
   }
 
   async function handleSlashPage(): Promise<{ id: string; title: string } | null> {
     if (!selectedId) return null;
     try {
-      const entry = await store.createEntry({ title: "New page", content: "", parentId: selectedId });
+      const entry = await store.createEntry({ title: $_('kb.page.newPageTitle'), content: "", parentId: selectedId });
       const next = new Set(collapsedIds);
       next.delete(selectedId);
       collapsedIds = next;
       return { id: entry.id, title: entry.title };
     } catch (e) {
-      error = e instanceof Error ? e.message : "Create failed";
+      error = e instanceof Error ? e.message : $_('kb.page.createFailed');
       return null;
     }
   }
 
   async function handleSave(): Promise<void> {
     if (!selectedId) return;
-    if (!draftTitle.trim()) { error = "Title cannot be empty"; return; }
+    if (!draftTitle.trim()) { error = $_('kb.page.titleEmpty'); return; }
     saving = true;
     error = null;
     try {
@@ -169,7 +170,7 @@
       });
       editing = false;
     } catch (e) {
-      error = e instanceof Error ? e.message : "Save failed";
+      error = e instanceof Error ? e.message : $_('kb.page.saveFailed');
     } finally {
       saving = false;
     }
@@ -189,7 +190,7 @@
     try {
       await store.updateEntry(selectedId, { icon });
     } catch (e) {
-      error = e instanceof Error ? e.message : "Icon update failed";
+      error = e instanceof Error ? e.message : $_('kb.page.iconUpdateFailed');
     }
   }
 
@@ -221,7 +222,7 @@
         editing = false;
       }
     } catch (e) {
-      error = e instanceof Error ? e.message : "Delete failed";
+      error = e instanceof Error ? e.message : $_('chores.editModal.deleteFailed');
     } finally {
       confirmDelete = null;
     }
@@ -231,14 +232,14 @@
     if (!selectedId) return;
     uploading = true; uploadError = null;
     try { for (const file of files) await store.uploadAttachment(selectedId, file); }
-    catch (err) { uploadError = err instanceof Error ? err.message : "Upload failed"; }
+    catch (err) { uploadError = err instanceof Error ? err.message : $_('chores.editModal.uploadFailed'); }
     finally { uploading = false; }
   }
 
   async function handleDeleteAttachment(id: string): Promise<void> {
     if (!selectedId) return;
     try { await store.deleteAttachment(selectedId, id); }
-    catch (err) { uploadError = err instanceof Error ? err.message : "Delete failed"; }
+    catch (err) { uploadError = err instanceof Error ? err.message : $_('chores.editModal.deleteFailed'); }
   }
 
   function handleItemClick(index: number): void { lightboxIndex = index; lightboxOpen = true; }
@@ -254,7 +255,7 @@
       await store.updateEntry(id, { title });
       if (id === selectedId) draftTitle = title;
     } catch (e) {
-      error = e instanceof Error ? e.message : "Rename failed";
+      error = e instanceof Error ? e.message : $_('kb.page.renameFailed');
     } finally {
       renamingId = null;
     }
@@ -287,7 +288,7 @@
         await store.reorderSiblings(targetParentId, orderedIds);
       }
     } catch (e) {
-      error = e instanceof Error ? e.message : "Move failed";
+      error = e instanceof Error ? e.message : $_('kb.page.moveFailed');
     }
   }
 
@@ -302,22 +303,22 @@
     contentMode = "trash";
     selectedId = null;
     try { await store.loadTrash(); }
-    catch (e) { error = e instanceof Error ? e.message : "Failed to load trash"; }
+    catch (e) { error = e instanceof Error ? e.message : $_('kb.page.loadTrashFailed'); }
   }
 
   async function handleRestore(id: string): Promise<void> {
     try { await store.restoreEntry(id); }
-    catch (e) { error = e instanceof Error ? e.message : "Restore failed"; }
+    catch (e) { error = e instanceof Error ? e.message : $_('kb.page.restoreFailed'); }
   }
 
   async function handlePermanentDelete(id: string): Promise<void> {
     try { await store.permanentlyDeleteEntry(id); }
-    catch (e) { error = e instanceof Error ? e.message : "Delete failed"; }
+    catch (e) { error = e instanceof Error ? e.message : $_('chores.editModal.deleteFailed'); }
   }
 
   async function handleEmptyTrash(): Promise<void> {
     try { await store.emptyTrash(); }
-    catch (e) { error = e instanceof Error ? e.message : "Empty trash failed"; }
+    catch (e) { error = e instanceof Error ? e.message : $_('kb.page.emptyTrashFailed'); }
   }
 </script>
 
@@ -325,8 +326,8 @@
 <Card style="display:flex; padding:0; overflow:hidden; flex:1; min-height:0; font-family: var(--font-sans);">
   <div class="kb-sidebar">
     <div class="sidebar-toolbar">
-      <Input placeholder="🔍 Search…" bind:value={searchQuery} />
-      <Button onclick={handleNewPage}>＋ New Page</Button>
+      <Input placeholder={$_('floorPlan.itemPicker.search')} bind:value={searchQuery} />
+      <Button onclick={handleNewPage}>＋ {$_('kb.page.newPage')}</Button>
     </div>
     <div class="entry-list">
       <KBTree
@@ -356,7 +357,7 @@
       ondragleave={() => { trashDragOver = false; }}
       ondrop={(e) => { e.preventDefault(); handleDropOnTrash(); }}
     >
-      🗑 Trash{store.trash.length > 0 ? ` (${store.trash.length})` : ""}
+      🗑 {$_('kb.trash.title')}{store.trash.length > 0 ? ` (${store.trash.length})` : ""}
     </button>
   </div>
 
@@ -369,32 +370,32 @@
         onemptytrash={handleEmptyTrash}
       />
     {:else if !selectedEntry}
-      <div class="content-empty">Select a page or create one</div>
+      <div class="content-empty">{$_('kb.page.selectOrCreate')}</div>
     {:else}
       <div class="content-header">
         <div class="content-header-left">
           <div class="title-row">
             <EmojiPicker bind:value={draftIcon} onchange={handleIconChange} />
             {#if editing}
-              <input class="title-input" bind:value={draftTitle} placeholder="Page title" />
+              <input class="title-input" bind:value={draftTitle} placeholder={$_('kb.page.pageTitlePlaceholder')} />
             {:else}
               <h1 class="content-title">{selectedEntry.title}</h1>
             {/if}
           </div>
           <div class="content-tab-bar">
             <button class="content-tab" class:active={contentTab === "content"}
-              onclick={() => { contentTab = "content"; }}>Content</button>
+              onclick={() => { contentTab = "content"; }}>{$_('kb.page.contentTab')}</button>
             <button class="content-tab" class:active={contentTab === "media"}
               onclick={() => { contentTab = "media"; editing = false; }}>
-              Media{(selectedEntry.attachments?.length ?? 0) > 0 ? ` (${selectedEntry.attachments.length})` : ""}
+              {$_('chores.editModal.media')}{(selectedEntry.attachments?.length ?? 0) > 0 ? ` (${selectedEntry.attachments.length})` : ""}
             </button>
           </div>
         </div>
         <div class="header-actions">
           {#if contentTab === "content" && !editing}
-            <Button variant="secondary" onclick={() => { editing = true; }}>Edit</Button>
+            <Button variant="secondary" onclick={() => { editing = true; }}>{$_('common.edit')}</Button>
           {/if}
-          <Button variant="ghost" onclick={() => handleAskDelete(selectedEntry.id)} title="Delete page">🗑</Button>
+          <Button variant="ghost" onclick={() => handleAskDelete(selectedEntry.id)} title={$_('kb.page.deletePage')}>🗑</Button>
         </div>
       </div>
 
@@ -405,7 +406,7 @@
             bind:editing
             mediaItems={contentTab === "content" ? mediaItems : []}
             clickToEdit={false}
-            placeholder="Start writing in Markdown… (type /page to create a linked child page)"
+            placeholder={$_('kb.page.startWritingPlaceholder')}
             {resolveKbLink}
             onSlashPage={handleSlashPage}
           />
@@ -428,9 +429,9 @@
       {#if editing && contentTab === "content"}
         <div class="content-footer">
           <Button variant="primary" disabled={saving} onclick={handleSave}>
-            {saving ? "Saving…" : "Save"}
+            {saving ? $_('settings.security.saving') : $_('common.save')}
           </Button>
-          <Button variant="secondary" onclick={handleCancel}>Cancel</Button>
+          <Button variant="secondary" onclick={handleCancel}>{$_('common.cancel')}</Button>
         </div>
       {/if}
     {/if}
@@ -442,14 +443,14 @@
   <Lightbox items={mediaItems} initialIndex={lightboxIndex} onclose={() => { lightboxOpen = false; }} />
 {/if}
 
-<Modal open={confirmDelete !== null} title="Delete page" onclose={() => { confirmDelete = null; }} width="420px">
+<Modal open={confirmDelete !== null} title={$_('kb.page.deletePageTitle')} onclose={() => { confirmDelete = null; }} width="420px">
   <p>
-    Delete <strong>{confirmDelete?.title}</strong>{confirmDelete && confirmDelete.count > 1 ? ` and ${confirmDelete.count - 1} sub-page${confirmDelete.count > 2 ? "s" : ""}` : ""}?
-    You can restore {confirmDelete && confirmDelete.count > 1 ? "them" : "it"} from Trash afterward.
+    {$_('kb.page.deletePrefix')} <strong>{confirmDelete?.title}</strong>{confirmDelete && confirmDelete.count > 1 ? ` ${$_('kb.page.andSubPages', { values: { n: confirmDelete.count - 1 } })}` : ""}?
+    {confirmDelete && confirmDelete.count > 1 ? $_('kb.page.restoreThemNote') : $_('kb.page.restoreItNote')}
   </p>
   {#snippet footer()}
-    <Button variant="ghost" onclick={() => { confirmDelete = null; }}>Cancel</Button>
-    <Button variant="danger" onclick={handleConfirmDelete}>Delete</Button>
+    <Button variant="ghost" onclick={() => { confirmDelete = null; }}>{$_('common.cancel')}</Button>
+    <Button variant="danger" onclick={handleConfirmDelete}>{$_('common.delete')}</Button>
   {/snippet}
 </Modal>
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createInventoryStore, InventoryItem } from "../inventoryStore.svelte";
   import type { createHouseStore } from "../houseStore.svelte";
   import InventoryModal from "./InventoryModal.svelte";
@@ -60,7 +61,7 @@
     const expiry = new Date(item.warrantyExpiryDate).getTime();
     const now = Date.now();
     const days = Math.round((expiry - now) / 86400000);
-    if (days < 0) return { label: "✕ expired", color: "#f44336" };
+    if (days < 0) return { label: `✕ ${$_('inventory.page.expired')}`, color: "#f44336" };
     if (days <= 30) return { label: `⚠ ${days}d`, color: "#ff9800" };
     return { label: "✓", color: "#4caf50" };
   }
@@ -88,7 +89,7 @@
   const categoryCounts = $derived((() => {
     const counts = new Map<string, number>();
     for (const item of store.items) {
-      const key = item.category || "Uncategorized";
+      const key = item.category || $_('inventory.page.uncategorized');
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
     return [...counts.entries()]
@@ -135,17 +136,17 @@
   {#if store.items.length === 0}
     <div class="empty-charts">
       <span class="empty-icon">📦</span>
-      <p>No items yet — click ＋ Add item to get started.</p>
+      <p>{$_('inventory.page.emptyCharts')}</p>
     </div>
   {:else}
     <div class="chart-card-wrap">
       <Card>
         <div class="chart-inner">
           <div class="pie-area">
-            <div class="chart-label">By category</div>
+            <div class="chart-label">{$_('inventory.page.byCategory')}</div>
             <DonutChart
               segments={categoryBreakdown}
-              centerLabel="Items"
+              centerLabel={$_('inventory.page.items')}
               centerValue={`${store.items.length}`}
               showLabels={true}
             />
@@ -154,14 +155,14 @@
           <div class="chart-divider"></div>
 
           <div class="stats-area">
-            <div class="chart-label">At a glance</div>
+            <div class="chart-label">{$_('chores.page.atAGlance')}</div>
             <div class="stat-chips-col">
               <div class="stat-chip">
-                <div class="stat-title">Items</div>
+                <div class="stat-title">{$_('inventory.page.items')}</div>
                 <div class="stat-value">{store.items.length}</div>
               </div>
               <div class="stat-chip">
-                <div class="stat-title">Total value</div>
+                <div class="stat-title">{$_('inventory.page.totalValue')}</div>
                 <div class="stat-value">{totalValue.toLocaleString()} €</div>
               </div>
             </div>
@@ -174,20 +175,20 @@
   <div class="table-card-wrap">
     <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
     <div class="toolbar">
-      <Input bind:value={searchQuery} placeholder="🔍 Search items…" />
+      <Input bind:value={searchQuery} placeholder={$_('inventory.page.searchItems')} />
       <select class="native-input" bind:value={roomFilter}>
-        <option value="">All rooms</option>
+        <option value="">{$_('chores.page.allRooms')}</option>
         {#each allRooms as room}
           <option value={room.id}>{room.label}</option>
         {/each}
       </select>
       <select class="native-input" bind:value={categoryFilter}>
-        <option value="">All categories</option>
+        <option value="">{$_('costs.page.allCategories')}</option>
         {#each allCategories as cat}
           <option value={cat}>{cat}</option>
         {/each}
       </select>
-      <Button onclick={() => { modalItem = "create"; }}>＋ Add item</Button>
+      <Button onclick={() => { modalItem = "create"; }}>＋ {$_('inventory.page.addItem')}</Button>
     </div>
 
     <div class="table-wrapper">
@@ -217,26 +218,26 @@
       <SortableTable
         columns={[
           { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
-          { key: "name", label: "Name", sortValue: (i) => i.name, cellClass: "name-cell", cell: nameCell },
-          { key: "category", label: "Category", sortValue: (i) => i.category || null, cell: categoryCell },
-          { key: "room", label: "Room", sortValue: (i) => roomName(i.placement?.roomId), cell: roomCell },
-          { key: "purchased", label: "Purchased", sortValue: (i) => (i.purchaseDate ? new Date(i.purchaseDate) : null), cell: purchasedCell },
-          { key: "cost", label: "Cost", sortValue: (i) => i.purchasePrice, cell: costCell },
-          { key: "warranty", label: "Warranty", sortable: false, cell: warrantyCell },
+          { key: "name", label: $_('chores.editModal.name'), sortValue: (i) => i.name, cellClass: "name-cell", cell: nameCell },
+          { key: "category", label: $_('costs.page.category'), sortValue: (i) => i.category || null, cell: categoryCell },
+          { key: "room", label: $_('costs.page.room'), sortValue: (i) => roomName(i.placement?.roomId), cell: roomCell },
+          { key: "purchased", label: $_('inventory.page.purchased'), sortValue: (i) => (i.purchaseDate ? new Date(i.purchaseDate) : null), cell: purchasedCell },
+          { key: "cost", label: $_('inventory.page.cost'), sortValue: (i) => i.purchasePrice, cell: costCell },
+          { key: "warranty", label: $_('inventory.pinPopup.warranty'), sortable: false, cell: warrantyCell },
         ] as Column<InventoryItem>[]}
         rows={filtered}
         rowKey={(item) => item.id}
         rowClick={(item) => { modalItem = item; }}
         emptyMessage={store.items.length === 0
-          ? "No items yet — click ＋ Add item to get started."
-          : "No items match your filters."}
+          ? $_('inventory.page.emptyNoItems')
+          : $_('inventory.page.emptyNoMatch')}
       />
     </div>
 
     <div class="footer">
-      {store.items.length} item{store.items.length !== 1 ? "s" : ""}
+      {$_('inventory.page.itemCount', { values: { n: store.items.length } })}
       {#if totalValue > 0}
-        · total value: {totalValue.toLocaleString()} €
+        {$_('inventory.page.totalValueSuffix', { values: { amount: totalValue.toLocaleString() } })}
       {/if}
     </div>
     </Card>

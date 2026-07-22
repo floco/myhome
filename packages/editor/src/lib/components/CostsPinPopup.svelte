@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { CostCategory } from "../settingsStore.svelte";
+  import { _ } from "svelte-i18n";
 
   interface Props {
     category: CostCategory;
@@ -17,12 +18,12 @@
 <div class="popup" style="left:{screenX}px;top:{screenY + 30}px" onclick={(e) => e.stopPropagation()}>
   <div class="popup-name">{category.emoji} {category.name}</div>
   {#if category.unit}
-    <div class="popup-row">Unit: {category.unit}</div>
+    <div class="popup-row">{$_('costs.pinPopup.unit', { values: { unit: category.unit } })}</div>
   {/if}
   <div class="popup-actions">
-    <button onclick={onopen}>📊 Open</button>
-    <button onclick={onremove}>✕ Remove</button>
-    <button onclick={onclose}>Close</button>
+    <button onclick={onopen}>{$_('costs.open')}</button>
+    <button onclick={onremove}>{$_('costs.remove')}</button>
+    <button onclick={onclose}>{$_('common.close')}</button>
   </div>
 </div>
 

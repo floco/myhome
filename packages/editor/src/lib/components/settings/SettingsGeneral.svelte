@@ -1,10 +1,19 @@
 <!-- packages/editor/src/lib/components/settings/SettingsGeneral.svelte -->
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import Button from "../ui/Button.svelte";
   import Input from "../ui/Input.svelte";
   import Card from "../ui/Card.svelte";
   import Modal from "../ui/Modal.svelte";
   import { homesStore } from "../../homesStore.svelte";
+  import { getStoredLocale, setLocale, type Locale } from "../../locale";
+
+  let currentLocale = $state<Locale>(getStoredLocale());
+
+  function changeLocale(next: Locale): void {
+    currentLocale = next;
+    setLocale(next);
+  }
 
   let editingHomeName = $state(false);
   let homeNameDraft = $state("");
@@ -19,14 +28,14 @@
   }
 
   async function saveHomeName(): Promise<void> {
-    if (!homeNameDraft.trim()) { homeNameError = "Name required"; return; }
+    if (!homeNameDraft.trim()) { homeNameError = $_('settings.general.nameRequired'); return; }
     const id = homesStore.activeHomeId;
     if (!id) return;
     try {
       await homesStore.patchHome(id, { name: homeNameDraft.trim() });
       editingHomeName = false;
     } catch (e) {
-      homeNameError = e instanceof Error ? e.message : "Failed to save";
+      homeNameError = e instanceof Error ? e.message : $_('settings.general.failedToSave');
     }
   }
 
@@ -40,7 +49,7 @@
       homeTypeError = null;
       await homesStore.patchHome(home.id, { type: next });
     } catch (e) {
-      homeTypeError = e instanceof Error ? e.message : "Failed to update type";
+      homeTypeError = e instanceof Error ? e.message : $_('settings.general.failedToUpdateType');
     }
   }
 
@@ -52,7 +61,7 @@
     const current = home.enabledModules;
     const isDisabling = current.includes(moduleId);
     if (isDisabling) {
-      moduleToggleWarning = `This hides ${CORE_MODULES.concat(PROJECT_MODULES).find(m => m.id === moduleId)?.label ?? moduleId} but does not delete your data.`;
+      moduleToggleWarning = $_('settings.general.moduleHideWarning', { values: { label: $_(`common.modules.${moduleId}`) } });
     }
     const next = isDisabling
       ? current.filter((m) => m !== moduleId)
@@ -67,55 +76,55 @@
       await homesStore.deleteHome(id);
       showDeleteConfirm = false;
     } catch (e) {
-      deleteError = e instanceof Error ? e.message : "Failed to delete home";
+      deleteError = e instanceof Error ? e.message : $_('settings.general.failedToDelete');
     }
   }
 
   const CORE_MODULES = [
-    { id: "home",        icon: "🏡", label: "Home"           },
-    { id: "plan",        icon: "📐", label: "Floor Plan"     },
-    { id: "chores",      icon: "✅", label: "Chores"         },
-    { id: "inventory",   icon: "📦", label: "Inventory"      },
-    { id: "consumables", icon: "🛒", label: "Consumables"    },
-    { id: "works",       icon: "🔧", label: "Works"          },
-    { id: "kb",          icon: "📖", label: "Knowledge Base" },
-    { id: "costs",       icon: "💶", label: "Costs"          },
+    { id: "home",        icon: "🏡" },
+    { id: "plan",        icon: "📐" },
+    { id: "chores",      icon: "✅" },
+    { id: "inventory",   icon: "📦" },
+    { id: "consumables", icon: "🛒" },
+    { id: "works",       icon: "🔧" },
+    { id: "kb",          icon: "📖" },
+    { id: "costs",       icon: "💶" },
   ];
 
   const PROJECT_MODULES = [
-    { id: "locations",  icon: "🌍", label: "Locations"  },
-    { id: "properties", icon: "🏘", label: "Properties" },
-    { id: "budget",     icon: "💰", label: "Budget"     },
-    { id: "visits",     icon: "📅", label: "Visits"     },
-    { id: "contacts",   icon: "👤", label: "Contacts"   },
-    { id: "checklist",  icon: "✅", label: "Checklist"  },
+    { id: "locations",  icon: "🌍" },
+    { id: "properties", icon: "🏘" },
+    { id: "budget",     icon: "💰" },
+    { id: "visits",     icon: "📅" },
+    { id: "contacts",   icon: "👤" },
+    { id: "checklist",  icon: "✅" },
   ];
 </script>
 
 <Card>
-  <h2 class="section-title">Home</h2>
+  <h2 class="section-title">{$_('settings.general.home')}</h2>
 
   <div class="home-row">
-    <span class="home-label">Name</span>
+    <span class="home-label">{$_('settings.general.name')}</span>
     {#if editingHomeName}
       <div class="home-edit-row">
-        <Input bind:value={homeNameDraft} placeholder="Home name" />
-        <Button onclick={saveHomeName}>Save</Button>
-        <Button variant="ghost" onclick={() => { editingHomeName = false; }}>Cancel</Button>
+        <Input bind:value={homeNameDraft} placeholder={$_('settings.general.homeNamePlaceholder')} />
+        <Button onclick={saveHomeName}>{$_('common.save')}</Button>
+        <Button variant="ghost" onclick={() => { editingHomeName = false; }}>{$_('common.cancel')}</Button>
       </div>
       {#if homeNameError}<p class="field-error">{homeNameError}</p>{/if}
     {:else}
       <span class="home-value">{homesStore.activeHome?.name ?? "—"}</span>
-      <Button variant="ghost" onclick={startEditHomeName}>Edit</Button>
+      <Button variant="ghost" onclick={startEditHomeName}>{$_('common.edit')}</Button>
     {/if}
   </div>
 
   <div class="home-row">
-    <span class="home-label">Type</span>
+    <span class="home-label">{$_('settings.general.type')}</span>
     <span class="home-value">
-      {homesStore.activeHome?.type === "project" ? "🏗 Project home" : "🏠 Existing home"}
+      {homesStore.activeHome?.type === "project" ? $_('settings.general.projectHome') : $_('settings.general.existingHome')}
     </span>
-    <Button variant="ghost" onclick={toggleHomeType}>Change</Button>
+    <Button variant="ghost" onclick={toggleHomeType}>{$_('settings.general.change')}</Button>
   </div>
   {#if homeTypeError}<p class="field-error">{homeTypeError}</p>{/if}
 
@@ -124,23 +133,34 @@
       variant="danger"
       disabled={homesStore.homes.length <= 1}
       onclick={() => { showDeleteConfirm = true; }}
-      title={homesStore.homes.length <= 1 ? "Cannot delete the only home" : undefined}
+      title={homesStore.homes.length <= 1 ? $_('settings.general.cannotDeleteOnlyHome') : undefined}
     >
-      Delete this home
+      {$_('settings.general.deleteThisHome')}
     </Button>
   </div>
 </Card>
 
 <Card>
-  <h2 class="section-title">Modules</h2>
-  <p class="section-desc">Choose which modules are visible in the nav for this home.</p>
+  <h2 class="section-title">{$_('settings.general.language')}</h2>
+  <div class="home-row">
+    <span class="home-label">{$_('settings.general.language')}</span>
+    <select class="lang-select" value={currentLocale} onchange={(e) => changeLocale((e.target as HTMLSelectElement).value as Locale)}>
+      <option value="en">English</option>
+      <option value="fr">Français</option>
+    </select>
+  </div>
+</Card>
+
+<Card>
+  <h2 class="section-title">{$_('settings.general.modules')}</h2>
+  <p class="section-desc">{$_('settings.general.modulesDesc')}</p>
 
   {#if moduleToggleWarning}
     <p class="module-warning">{moduleToggleWarning}</p>
   {/if}
 
   <div class="module-group">
-    <h3 class="group-label">Core modules</h3>
+    <h3 class="group-label">{$_('settings.general.coreModules')}</h3>
     {#each CORE_MODULES as mod (mod.id)}
       <label class="module-row">
         <input
@@ -149,13 +169,13 @@
           onchange={() => toggleModule(mod.id)}
         />
         <span class="mod-icon">{mod.icon}</span>
-        <span class="mod-label">{mod.label}</span>
+        <span class="mod-label">{$_(`common.modules.${mod.id}`)}</span>
       </label>
     {/each}
   </div>
 
   <div class="module-group">
-    <h3 class="group-label">Project modules <span class="soon-tag">Placeholder</span></h3>
+    <h3 class="group-label">{$_('settings.general.projectModules')} <span class="soon-tag">{$_('settings.general.placeholderTag')}</span></h3>
     {#each PROJECT_MODULES as mod (mod.id)}
       <label class="module-row">
         <input
@@ -164,18 +184,18 @@
           onchange={() => toggleModule(mod.id)}
         />
         <span class="mod-icon">{mod.icon}</span>
-        <span class="mod-label">{mod.label}</span>
+        <span class="mod-label">{$_(`common.modules.${mod.id}`)}</span>
       </label>
     {/each}
   </div>
 </Card>
 
-<Modal open={showDeleteConfirm} title="Delete home" onclose={() => { showDeleteConfirm = false; }}>
-  <p>Delete <strong>{homesStore.activeHome?.name}</strong>? This permanently removes all data for this home and cannot be undone.</p>
+<Modal open={showDeleteConfirm} title={$_('settings.general.deleteHomeTitle')} onclose={() => { showDeleteConfirm = false; }}>
+  <p>{$_('settings.general.deleteHomePrefix')} <strong>{homesStore.activeHome?.name}</strong>{$_('settings.general.deleteHomeSuffix')}</p>
   {#if deleteError}<p class="field-error">{deleteError}</p>{/if}
   {#snippet footer()}
-    <Button variant="ghost" onclick={() => { showDeleteConfirm = false; }}>Cancel</Button>
-    <Button variant="danger" onclick={confirmDeleteHome}>Delete</Button>
+    <Button variant="ghost" onclick={() => { showDeleteConfirm = false; }}>{$_('common.cancel')}</Button>
+    <Button variant="danger" onclick={confirmDeleteHome}>{$_('common.delete')}</Button>
   {/snippet}
 </Modal>
 
@@ -197,4 +217,5 @@
   .mod-label { font-size: 13px; color: var(--text); }
   .soon-tag { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: var(--surface-hover); color: var(--text-muted); border-radius: var(--radius-pill); padding: 1px 5px; }
   .module-warning { font-size: 12px; color: var(--text-muted); background: var(--surface-hover); border-radius: var(--radius); padding: 8px 10px; margin: 0 0 8px; }
+  .lang-select { font-size: 13px; padding: 4px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
 </style>

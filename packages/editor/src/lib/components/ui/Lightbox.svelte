@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import { _ } from "svelte-i18n";
   import type { MediaItem } from "./mediaTypes";
 
   interface Props {
@@ -48,7 +49,7 @@
           target="_blank"
           rel="noopener"
           onclick={(e) => e.stopPropagation()}
-        >Open PDF ↗</a>
+        >{$_('common.openPdf')}</a>
       {/if}
     </div>
 

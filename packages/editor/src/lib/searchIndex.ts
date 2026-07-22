@@ -1,3 +1,5 @@
+import { _ } from "svelte-i18n";
+import { get } from "svelte/store";
 import type { Chore } from "./choreStore.svelte";
 import type { InventoryItem } from "./inventoryStore.svelte";
 import type { Consumable } from "./consumableStore.svelte";
@@ -10,14 +12,9 @@ export type SearchModule = "chores" | "inventory" | "consumables" | "works" | "c
 
 export const MODULE_ORDER: SearchModule[] = ["chores", "inventory", "consumables", "works", "costs", "kb"];
 
-export const MODULE_LABELS: Record<SearchModule, string> = {
-  chores: "Chores",
-  inventory: "Inventory",
-  consumables: "Consumables",
-  works: "Works",
-  costs: "Costs",
-  kb: "Knowledge Base",
-};
+export function moduleLabel(m: SearchModule): string {
+  return get(_)(`common.modules.${m}`);
+}
 
 export interface SearchResult {
   module: SearchModule;
@@ -44,9 +41,9 @@ function fmtDate(iso: string): string {
 }
 
 function statusLabel(status: Work["status"]): string {
-  if (status === "in_progress") return "In progress";
-  if (status === "done") return "Done";
-  return "Planned";
+  if (status === "in_progress") return get(_)("works.status.inProgress");
+  if (status === "done") return get(_)("works.status.done");
+  return get(_)("works.status.planned");
 }
 
 function norm(...parts: (string | null | undefined)[]): string {
@@ -74,7 +71,7 @@ export function buildSearchIndex(stores: SearchStores): SearchResult[] {
       id: item.id,
       icon: item.emoji,
       title: item.name,
-      subtitle: item.category || "Inventory",
+      subtitle: item.category || moduleLabel("inventory"),
       searchText: norm(item.name, item.brand, item.model, item.serialNumber, item.notes),
       titleText: item.name.toLowerCase(),
     });
@@ -111,7 +108,7 @@ export function buildSearchIndex(stores: SearchStores): SearchResult[] {
   for (const entry of stores.costsStore.entries) {
     const category = costCategoryMap.get(entry.categoryId);
     const supplier = entry.supplierId ? supplierMap.get(entry.supplierId) : undefined;
-    const title = category?.name ?? "Cost entry";
+    const title = category?.name ?? get(_)("costs.entryFallbackTitle");
     results.push({
       module: "costs",
       id: entry.id,
@@ -129,7 +126,7 @@ export function buildSearchIndex(stores: SearchStores): SearchResult[] {
       id: entry.id,
       icon: entry.icon,
       title: entry.title,
-      subtitle: "Knowledge Base",
+      subtitle: moduleLabel("kb"),
       searchText: norm(entry.title, entry.content),
       titleText: entry.title.toLowerCase(),
     });

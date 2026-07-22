@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createCostsStore } from "../costsStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
   import Card from "./ui/Card.svelte";
@@ -33,16 +34,16 @@
 <div class="widget" role="button" tabindex="0" onclick={onnavigate} onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onnavigate(); } }}>
   <Card>
     <div class="header">
-      <h3>💶 Costs</h3>
+      <h3>💶 {$_('common.modules.costs')}</h3>
       <span class="sub">{lastCompleteYearNum}</span>
     </div>
     {#if breakdown.length === 0}
-      <p class="empty">No cost entries yet.</p>
+      <p class="empty">{$_('home.costs.emptyState')}</p>
     {:else}
       <div class="chart-wrap">
         <DonutChart
           {segments}
-          centerLabel="Total"
+          centerLabel={$_('costs.page.total')}
           centerValue={`${total.toLocaleString(undefined, { maximumFractionDigits: 0 })} €`}
           showLabels
           compact

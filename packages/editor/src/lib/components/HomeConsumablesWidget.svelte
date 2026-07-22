@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createConsumableStore } from "../consumableStore.svelte";
   import { stockStatus } from "../consumableStore.svelte";
   import Card from "./ui/Card.svelte";
@@ -49,14 +50,14 @@
   >
     <Card>
       <div class="header">
-        <h3>🛒 Consumables</h3>
+        <h3>🛒 {$_('common.modules.consumables')}</h3>
       </div>
       <div class="pills">
         {#if emptyCount > 0}
-          <span class="pill empty">{emptyCount} empty</span>
+          <span class="pill empty">{$_('home.consumables.emptyPill', { values: { n: emptyCount } })}</span>
         {/if}
         {#if lowCount > 0}
-          <span class="pill low">{lowCount} low</span>
+          <span class="pill low">{$_('home.consumables.lowPill', { values: { n: lowCount } })}</span>
         {/if}
       </div>
       <ul class="item-list">

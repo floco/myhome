@@ -1,5 +1,6 @@
 <!-- packages/editor/src/lib/components/settings/SettingsCategories.svelte -->
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createSettingsStore, CostCategory, ConsumableCategory, InventoryCategory, WorkCategory, Supplier } from "../../settingsStore.svelte";
   import Button from "../ui/Button.svelte";
   import Input from "../ui/Input.svelte";
@@ -40,7 +41,7 @@
   }
 
   async function saveEditCost(): Promise<void> {
-    if (!costDraft.name.trim()) { costError = "Name required"; return; }
+    if (!costDraft.name.trim()) { costError = $_('settings.general.nameRequired'); return; }
     const updated = store.costCategories.map(c =>
       c.id === editingCostId ? { ...costDraft, name: costDraft.name.trim(), unit: costDraftUnit.trim() || null } : c
     );
@@ -56,7 +57,7 @@
   }
 
   async function addCostCategory(): Promise<void> {
-    if (!newCostDraft.name.trim()) { costError = "Name required"; return; }
+    if (!newCostDraft.name.trim()) { costError = $_('settings.general.nameRequired'); return; }
     const newCat: CostCategory = {
       id: crypto.randomUUID(),
       name: newCostDraft.name.trim(),
@@ -87,7 +88,7 @@
   function cancelEditInv(): void { editingInvId = null; invError = null; }
 
   async function saveEditInv(): Promise<void> {
-    if (!invDraft.name.trim()) { invError = "Name required"; return; }
+    if (!invDraft.name.trim()) { invError = $_('settings.general.nameRequired'); return; }
     const updated = store.inventoryCategories.map(c =>
       c.id === editingInvId ? { ...invDraft, name: invDraft.name.trim() } : c
     );
@@ -101,7 +102,7 @@
   }
 
   async function addInventoryCategory(): Promise<void> {
-    if (!newInvDraft.name.trim()) { invError = "Name required"; return; }
+    if (!newInvDraft.name.trim()) { invError = $_('settings.general.nameRequired'); return; }
     const newCat: InventoryCategory = {
       id: crypto.randomUUID(),
       name: newInvDraft.name.trim(),
@@ -129,7 +130,7 @@
   function cancelEditWork(): void { editingWorkId = null; workError = null; }
 
   async function saveEditWork(): Promise<void> {
-    if (!workDraft.name.trim()) { workError = "Name required"; return; }
+    if (!workDraft.name.trim()) { workError = $_('settings.general.nameRequired'); return; }
     const updated = store.workCategories.map(c =>
       c.id === editingWorkId ? { ...workDraft, name: workDraft.name.trim() } : c
     );
@@ -143,7 +144,7 @@
   }
 
   async function addWorkCategory(): Promise<void> {
-    if (!newWorkDraft.name.trim()) { workError = "Name required"; return; }
+    if (!newWorkDraft.name.trim()) { workError = $_('settings.general.nameRequired'); return; }
     const newCat: WorkCategory = {
       id: crypto.randomUUID(),
       name: newWorkDraft.name.trim(),
@@ -171,7 +172,7 @@
   function cancelEditSupplier(): void { editingSupplierId = null; supplierError = null; }
 
   async function saveEditSupplier(): Promise<void> {
-    if (!supplierDraft.name.trim()) { supplierError = "Name required"; return; }
+    if (!supplierDraft.name.trim()) { supplierError = $_('settings.general.nameRequired'); return; }
     const updated = store.suppliers.map(s =>
       s.id === editingSupplierId ? { ...supplierDraft, name: supplierDraft.name.trim() } : s
     );
@@ -185,7 +186,7 @@
   }
 
   async function addSupplier(): Promise<void> {
-    if (!newSupplierDraft.name.trim()) { supplierError = "Name required"; return; }
+    if (!newSupplierDraft.name.trim()) { supplierError = $_('settings.general.nameRequired'); return; }
     const newS: Supplier = {
       id: crypto.randomUUID(),
       name: newSupplierDraft.name.trim(),
@@ -203,7 +204,7 @@
   async function addUnit(): Promise<void> {
     const u = newUnit.trim();
     if (!u) return;
-    if (store.consumableUnits.includes(u)) { unitError = "Unit already exists"; return; }
+    if (store.consumableUnits.includes(u)) { unitError = $_('settings.categories.unitAlreadyExists'); return; }
     await store.updateConsumableUnits([...store.consumableUnits, u]);
     newUnit = "";
     unitError = null;
@@ -230,7 +231,7 @@
   function cancelEditConsumableCat(): void { editingConsumableCatId = null; consumableCatError = null; }
 
   async function saveEditConsumableCat(): Promise<void> {
-    if (!consumableCatDraft.name.trim()) { consumableCatError = "Name required"; return; }
+    if (!consumableCatDraft.name.trim()) { consumableCatError = $_('settings.general.nameRequired'); return; }
     const updated = store.consumableCategories.map((c) =>
       c.id === editingConsumableCatId ? { ...consumableCatDraft, name: consumableCatDraft.name.trim() } : c,
     );
@@ -244,7 +245,7 @@
   }
 
   async function addConsumableCategory(): Promise<void> {
-    if (!newConsumableCatDraft.name.trim()) { consumableCatError = "Name required"; return; }
+    if (!newConsumableCatDraft.name.trim()) { consumableCatError = $_('settings.general.nameRequired'); return; }
     const newCat: ConsumableCategory = {
       id: crypto.randomUUID(),
       name: newConsumableCatDraft.name.trim(),
@@ -259,11 +260,11 @@
 
 <Tabs
   tabs={[
-    { id: "cost", label: "Cost categories" },
-    { id: "inventory", label: "Inventory categories" },
-    { id: "work", label: "Work categories" },
-    { id: "suppliers", label: "Suppliers" },
-    { id: "consumables", label: "Consumables" },
+    { id: "cost", label: $_('settings.categories.tabs.cost') },
+    { id: "inventory", label: $_('settings.categories.tabs.inventory') },
+    { id: "work", label: $_('settings.categories.tabs.work') },
+    { id: "suppliers", label: $_('settings.categories.tabs.suppliers') },
+    { id: "consumables", label: $_('settings.categories.tabs.consumables') },
   ]}
   active={activeTab}
   onchange={(id) => { activeTab = id as CategoryTab; }}
@@ -272,8 +273,8 @@
 {#if activeTab === "cost"}
   <Card>
     <div class="section-header">
-      <h2>Cost categories</h2>
-      <Button onclick={() => { showNewCostForm = true; costError = null; }}>＋ Add</Button>
+      <h2>{$_('settings.categories.tabs.cost')}</h2>
+      <Button onclick={() => { showNewCostForm = true; costError = null; }}>＋ {$_('common.add')}</Button>
     </div>
 
     <div class="table-wrapper">
@@ -293,47 +294,47 @@
       {/snippet}
       {#snippet costNameCell(cat: CostCategory)}
         {#if editingCostId === cat.id}
-          <Input bind:value={costDraft.name} placeholder="Name" />
+          <Input bind:value={costDraft.name} placeholder={$_('settings.categories.name')} />
         {:else}
           {cat.name}
         {/if}
       {/snippet}
       {#snippet costUnitCell(cat: CostCategory)}
         {#if editingCostId === cat.id}
-          <Input bind:value={costDraftUnit} placeholder="L, kWh…" />
+          <Input bind:value={costDraftUnit} placeholder={$_('settings.categories.unitPlaceholder')} />
         {:else}
           {cat.unit ?? "—"}
         {/if}
       {/snippet}
       {#snippet costActionsCell(cat: CostCategory)}
         {#if editingCostId === cat.id}
-          <button class="icon-action ok" onclick={saveEditCost} title="Save">✓</button>
-          <button class="icon-action" onclick={cancelEditCost} title="Cancel">✕</button>
+          <button class="icon-action ok" onclick={saveEditCost} title={$_('common.save')}>✓</button>
+          <button class="icon-action" onclick={cancelEditCost} title={$_('common.cancel')}>✕</button>
         {:else if confirmDeleteCostId === cat.id}
-          <span class="confirm-text">Delete?</span>
+          <span class="confirm-text">{$_('settings.categories.deleteConfirm')}</span>
           <button class="icon-action danger" onclick={() => deleteCostCategory(cat.id)}>✓</button>
           <button class="icon-action" onclick={() => { confirmDeleteCostId = null; }}>✕</button>
         {:else}
-          <button class="icon-action" onclick={() => startEditCost(cat)} title="Edit">✏</button>
-          <button class="icon-action danger" onclick={() => { confirmDeleteCostId = cat.id; }} title="Delete">🗑</button>
+          <button class="icon-action" onclick={() => startEditCost(cat)} title={$_('common.edit')}>✏</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteCostId = cat.id; }} title={$_('common.delete')}>🗑</button>
         {/if}
       {/snippet}
       {#snippet costNewRow()}
         <td><input type="color" bind:value={newCostDraft.color} class="color-input" /></td>
         <td><EmojiPicker bind:value={newCostDraft.emoji} /></td>
-        <td class="name-cell-input"><Input bind:value={newCostDraft.name} placeholder="Name *" /></td>
-        <td class="unit-cell-input"><Input bind:value={newCostDraft.unit} placeholder="L, kWh… (optional)" /></td>
+        <td class="name-cell-input"><Input bind:value={newCostDraft.name} placeholder={$_('settings.categories.nameRequiredPlaceholder')} /></td>
+        <td class="unit-cell-input"><Input bind:value={newCostDraft.unit} placeholder={$_('settings.categories.unitOptionalPlaceholder')} /></td>
         <td class="actions">
-          <button class="icon-action ok" onclick={addCostCategory} title="Add">✓</button>
-          <button class="icon-action" onclick={() => { showNewCostForm = false; costError = null; }} title="Cancel">✕</button>
+          <button class="icon-action ok" onclick={addCostCategory} title={$_('common.add')}>✓</button>
+          <button class="icon-action" onclick={() => { showNewCostForm = false; costError = null; }} title={$_('common.cancel')}>✕</button>
         </td>
       {/snippet}
       <SortableTable
         columns={[
-          { key: "color", label: "Color", sortable: false, cell: costColorCell },
-          { key: "emoji", label: "Emoji", sortable: false, cellClass: "emoji-cell", cell: costEmojiCell },
-          { key: "name", label: "Name", sortValue: (c) => c.name, cellClass: (c) => editingCostId === c.id ? "name-cell-input" : "", cell: costNameCell },
-          { key: "unit", label: "Unit", sortValue: (c) => c.unit, cellClass: (c) => editingCostId === c.id ? "unit-cell-input" : "unit-cell", cell: costUnitCell },
+          { key: "color", label: $_('settings.categories.color'), sortable: false, cell: costColorCell },
+          { key: "emoji", label: $_('settings.categories.emoji'), sortable: false, cellClass: "emoji-cell", cell: costEmojiCell },
+          { key: "name", label: $_('settings.categories.name'), sortValue: (c) => c.name, cellClass: (c) => editingCostId === c.id ? "name-cell-input" : "", cell: costNameCell },
+          { key: "unit", label: $_('settings.categories.unit'), sortValue: (c) => c.unit, cellClass: (c) => editingCostId === c.id ? "unit-cell-input" : "unit-cell", cell: costUnitCell },
           { key: "actions", label: "", sortable: false, cellClass: "actions", cell: costActionsCell },
         ] as Column<CostCategory>[]}
         rows={store.costCategories}
@@ -349,41 +350,41 @@
 {#if activeTab === "inventory"}
   <Card>
     <div class="section-header">
-      <h2>Inventory categories</h2>
-      <Button onclick={() => { showNewInvForm = true; invError = null; }}>＋ Add</Button>
+      <h2>{$_('settings.categories.tabs.inventory')}</h2>
+      <Button onclick={() => { showNewInvForm = true; invError = null; }}>＋ {$_('common.add')}</Button>
     </div>
 
     <div class="table-wrapper">
       {#snippet invNameCell(cat: InventoryCategory)}
         {#if editingInvId === cat.id}
-          <Input bind:value={invDraft.name} placeholder="Name" />
+          <Input bind:value={invDraft.name} placeholder={$_('settings.categories.name')} />
         {:else}
           {cat.name}
         {/if}
       {/snippet}
       {#snippet invActionsCell(cat: InventoryCategory)}
         {#if editingInvId === cat.id}
-          <button class="icon-action ok" onclick={saveEditInv} title="Save">✓</button>
-          <button class="icon-action" onclick={cancelEditInv} title="Cancel">✕</button>
+          <button class="icon-action ok" onclick={saveEditInv} title={$_('common.save')}>✓</button>
+          <button class="icon-action" onclick={cancelEditInv} title={$_('common.cancel')}>✕</button>
         {:else if confirmDeleteInvId === cat.id}
-          <span class="confirm-text">Delete?</span>
+          <span class="confirm-text">{$_('settings.categories.deleteConfirm')}</span>
           <button class="icon-action danger" onclick={() => deleteInventoryCategory(cat.id)}>✓</button>
           <button class="icon-action" onclick={() => { confirmDeleteInvId = null; }}>✕</button>
         {:else}
-          <button class="icon-action" onclick={() => startEditInv(cat)} title="Edit">✏</button>
-          <button class="icon-action danger" onclick={() => { confirmDeleteInvId = cat.id; }} title="Delete">🗑</button>
+          <button class="icon-action" onclick={() => startEditInv(cat)} title={$_('common.edit')}>✏</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteInvId = cat.id; }} title={$_('common.delete')}>🗑</button>
         {/if}
       {/snippet}
       {#snippet invNewRow()}
-        <td class="name-cell-input wide"><Input bind:value={newInvDraft.name} placeholder="Name *" /></td>
+        <td class="name-cell-input wide"><Input bind:value={newInvDraft.name} placeholder={$_('settings.categories.nameRequiredPlaceholder')} /></td>
         <td class="actions">
-          <button class="icon-action ok" onclick={addInventoryCategory} title="Add">✓</button>
-          <button class="icon-action" onclick={() => { showNewInvForm = false; invError = null; }} title="Cancel">✕</button>
+          <button class="icon-action ok" onclick={addInventoryCategory} title={$_('common.add')}>✓</button>
+          <button class="icon-action" onclick={() => { showNewInvForm = false; invError = null; }} title={$_('common.cancel')}>✕</button>
         </td>
       {/snippet}
       <SortableTable
         columns={[
-          { key: "name", label: "Name", sortValue: (c) => c.name, cellClass: (c) => editingInvId === c.id ? "name-cell-input wide" : "", cell: invNameCell },
+          { key: "name", label: $_('settings.categories.name'), sortValue: (c) => c.name, cellClass: (c) => editingInvId === c.id ? "name-cell-input wide" : "", cell: invNameCell },
           { key: "actions", label: "", sortable: false, cellClass: "actions", cell: invActionsCell },
         ] as Column<InventoryCategory>[]}
         rows={store.inventoryCategories}
@@ -399,8 +400,8 @@
 {#if activeTab === "work"}
   <Card>
     <div class="section-header">
-      <h2>Work categories</h2>
-      <Button onclick={() => { showNewWorkForm = true; workError = null; }}>＋ Add</Button>
+      <h2>{$_('settings.categories.tabs.work')}</h2>
+      <Button onclick={() => { showNewWorkForm = true; workError = null; }}>＋ {$_('common.add')}</Button>
     </div>
     <div class="table-wrapper">
       {#snippet workEmojiCell(cat: WorkCategory)}
@@ -412,36 +413,36 @@
       {/snippet}
       {#snippet workNameCell(cat: WorkCategory)}
         {#if editingWorkId === cat.id}
-          <Input bind:value={workDraft.name} placeholder="Name" />
+          <Input bind:value={workDraft.name} placeholder={$_('settings.categories.name')} />
         {:else}
           {cat.name}
         {/if}
       {/snippet}
       {#snippet workActionsCell(cat: WorkCategory)}
         {#if editingWorkId === cat.id}
-          <button class="icon-action ok" onclick={saveEditWork} title="Save">✓</button>
-          <button class="icon-action" onclick={cancelEditWork} title="Cancel">✕</button>
+          <button class="icon-action ok" onclick={saveEditWork} title={$_('common.save')}>✓</button>
+          <button class="icon-action" onclick={cancelEditWork} title={$_('common.cancel')}>✕</button>
         {:else if confirmDeleteWorkId === cat.id}
-          <span class="confirm-text">Delete?</span>
+          <span class="confirm-text">{$_('settings.categories.deleteConfirm')}</span>
           <button class="icon-action danger" onclick={() => deleteWorkCategory(cat.id)}>✓</button>
           <button class="icon-action" onclick={() => { confirmDeleteWorkId = null; }}>✕</button>
         {:else}
-          <button class="icon-action" onclick={() => startEditWork(cat)} title="Edit">✏</button>
-          <button class="icon-action danger" onclick={() => { confirmDeleteWorkId = cat.id; }} title="Delete">🗑</button>
+          <button class="icon-action" onclick={() => startEditWork(cat)} title={$_('common.edit')}>✏</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteWorkId = cat.id; }} title={$_('common.delete')}>🗑</button>
         {/if}
       {/snippet}
       {#snippet workNewRow()}
         <td><EmojiPicker bind:value={newWorkDraft.emoji} /></td>
-        <td class="name-cell-input"><Input bind:value={newWorkDraft.name} placeholder="Name *" /></td>
+        <td class="name-cell-input"><Input bind:value={newWorkDraft.name} placeholder={$_('settings.categories.nameRequiredPlaceholder')} /></td>
         <td class="actions">
-          <button class="icon-action ok" onclick={addWorkCategory} title="Add">✓</button>
-          <button class="icon-action" onclick={() => { showNewWorkForm = false; workError = null; }} title="Cancel">✕</button>
+          <button class="icon-action ok" onclick={addWorkCategory} title={$_('common.add')}>✓</button>
+          <button class="icon-action" onclick={() => { showNewWorkForm = false; workError = null; }} title={$_('common.cancel')}>✕</button>
         </td>
       {/snippet}
       <SortableTable
         columns={[
-          { key: "emoji", label: "Emoji", sortable: false, cellClass: "emoji-cell", cell: workEmojiCell },
-          { key: "name", label: "Name", sortValue: (c) => c.name, cellClass: (c) => editingWorkId === c.id ? "name-cell-input" : "", cell: workNameCell },
+          { key: "emoji", label: $_('settings.categories.emoji'), sortable: false, cellClass: "emoji-cell", cell: workEmojiCell },
+          { key: "name", label: $_('settings.categories.name'), sortValue: (c) => c.name, cellClass: (c) => editingWorkId === c.id ? "name-cell-input" : "", cell: workNameCell },
           { key: "actions", label: "", sortable: false, cellClass: "actions", cell: workActionsCell },
         ] as Column<WorkCategory>[]}
         rows={store.workCategories}
@@ -457,40 +458,40 @@
 {#if activeTab === "suppliers"}
   <Card>
     <div class="section-header">
-      <h2>Suppliers</h2>
-      <Button onclick={() => { showNewSupplierForm = true; supplierError = null; }}>＋ Add</Button>
+      <h2>{$_('settings.categories.tabs.suppliers')}</h2>
+      <Button onclick={() => { showNewSupplierForm = true; supplierError = null; }}>＋ {$_('common.add')}</Button>
     </div>
     <div class="table-wrapper">
       {#snippet supplierNameCell(s: Supplier)}
         {#if editingSupplierId === s.id}
-          <Input bind:value={supplierDraft.name} placeholder="Name" />
+          <Input bind:value={supplierDraft.name} placeholder={$_('settings.categories.name')} />
         {:else}
           {s.name}
         {/if}
       {/snippet}
       {#snippet supplierActionsCell(s: Supplier)}
         {#if editingSupplierId === s.id}
-          <button class="icon-action ok" onclick={saveEditSupplier} title="Save">✓</button>
-          <button class="icon-action" onclick={cancelEditSupplier} title="Cancel">✕</button>
+          <button class="icon-action ok" onclick={saveEditSupplier} title={$_('common.save')}>✓</button>
+          <button class="icon-action" onclick={cancelEditSupplier} title={$_('common.cancel')}>✕</button>
         {:else if confirmDeleteSupplierId === s.id}
-          <span class="confirm-text">Delete?</span>
+          <span class="confirm-text">{$_('settings.categories.deleteConfirm')}</span>
           <button class="icon-action danger" onclick={() => deleteSupplier(s.id)}>✓</button>
           <button class="icon-action" onclick={() => { confirmDeleteSupplierId = null; }}>✕</button>
         {:else}
-          <button class="icon-action" onclick={() => startEditSupplier(s)} title="Edit">✏</button>
-          <button class="icon-action danger" onclick={() => { confirmDeleteSupplierId = s.id; }} title="Delete">🗑</button>
+          <button class="icon-action" onclick={() => startEditSupplier(s)} title={$_('common.edit')}>✏</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteSupplierId = s.id; }} title={$_('common.delete')}>🗑</button>
         {/if}
       {/snippet}
       {#snippet supplierNewRow()}
-        <td class="name-cell-input wide"><Input bind:value={newSupplierDraft.name} placeholder="Name *" /></td>
+        <td class="name-cell-input wide"><Input bind:value={newSupplierDraft.name} placeholder={$_('settings.categories.nameRequiredPlaceholder')} /></td>
         <td class="actions">
-          <button class="icon-action ok" onclick={addSupplier} title="Add">✓</button>
-          <button class="icon-action" onclick={() => { showNewSupplierForm = false; supplierError = null; }} title="Cancel">✕</button>
+          <button class="icon-action ok" onclick={addSupplier} title={$_('common.add')}>✓</button>
+          <button class="icon-action" onclick={() => { showNewSupplierForm = false; supplierError = null; }} title={$_('common.cancel')}>✕</button>
         </td>
       {/snippet}
       <SortableTable
         columns={[
-          { key: "name", label: "Name", sortValue: (s) => s.name, cellClass: (s) => editingSupplierId === s.id ? "name-cell-input wide" : "", cell: supplierNameCell },
+          { key: "name", label: $_('settings.categories.name'), sortValue: (s) => s.name, cellClass: (s) => editingSupplierId === s.id ? "name-cell-input wide" : "", cell: supplierNameCell },
           { key: "actions", label: "", sortable: false, cellClass: "actions", cell: supplierActionsCell },
         ] as Column<Supplier>[]}
         rows={store.suppliers}
@@ -506,10 +507,10 @@
 {#if activeTab === "consumables"}
   <Card>
     <div class="section-header">
-      <h2>Consumables</h2>
+      <h2>{$_('settings.categories.tabs.consumables')}</h2>
     </div>
 
-    <h3 class="subsection-title">Units</h3>
+    <h3 class="subsection-title">{$_('settings.categories.units')}</h3>
     <div class="tag-list">
       {#each store.consumableUnits as u}
         <span class="tag">{u} <button class="tag-remove" onclick={() => removeUnit(u)}>✕</button></span>
@@ -518,14 +519,14 @@
     <div class="add-row">
       <Input
         bind:value={newUnit}
-        placeholder="e.g. tablets"
+        placeholder={$_('settings.categories.unitInputPlaceholder')}
         onkeydown={(e) => { if (e.key === "Enter") addUnit(); }}
       />
-      <Button onclick={addUnit}>Add unit</Button>
+      <Button onclick={addUnit}>{$_('settings.categories.addUnit')}</Button>
     </div>
     {#if unitError}<div class="error">{unitError}</div>{/if}
 
-    <h3 class="subsection-title" style="margin-top: var(--space-4)">Categories</h3>
+    <h3 class="subsection-title" style="margin-top: var(--space-4)">{$_('settings.categories.categoriesHeading')}</h3>
     <div class="table-wrapper">
       {#snippet consCatEmojiCell(cat: ConsumableCategory)}
         {#if editingConsumableCatId === cat.id}
@@ -536,36 +537,36 @@
       {/snippet}
       {#snippet consCatNameCell(cat: ConsumableCategory)}
         {#if editingConsumableCatId === cat.id}
-          <Input bind:value={consumableCatDraft.name} placeholder="Name" />
+          <Input bind:value={consumableCatDraft.name} placeholder={$_('settings.categories.name')} />
         {:else}
           {cat.name}
         {/if}
       {/snippet}
       {#snippet consCatActionsCell(cat: ConsumableCategory)}
         {#if editingConsumableCatId === cat.id}
-          <button class="icon-action ok" onclick={saveEditConsumableCat} title="Save">✓</button>
-          <button class="icon-action" onclick={cancelEditConsumableCat} title="Cancel">✕</button>
+          <button class="icon-action ok" onclick={saveEditConsumableCat} title={$_('common.save')}>✓</button>
+          <button class="icon-action" onclick={cancelEditConsumableCat} title={$_('common.cancel')}>✕</button>
         {:else if confirmDeleteConsumableCatId === cat.id}
-          <span class="confirm-text">Delete?</span>
+          <span class="confirm-text">{$_('settings.categories.deleteConfirm')}</span>
           <button class="icon-action danger" onclick={() => deleteConsumableCategory(cat.id)}>✓</button>
           <button class="icon-action" onclick={() => { confirmDeleteConsumableCatId = null; }}>✕</button>
         {:else}
-          <button class="icon-action" onclick={() => startEditConsumableCat(cat)} title="Edit">✏</button>
-          <button class="icon-action danger" onclick={() => { confirmDeleteConsumableCatId = cat.id; }} title="Delete">🗑</button>
+          <button class="icon-action" onclick={() => startEditConsumableCat(cat)} title={$_('common.edit')}>✏</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteConsumableCatId = cat.id; }} title={$_('common.delete')}>🗑</button>
         {/if}
       {/snippet}
       {#snippet consCatNewRow()}
         <td><EmojiPicker bind:value={newConsumableCatDraft.emoji} /></td>
-        <td class="name-cell-input"><Input bind:value={newConsumableCatDraft.name} placeholder="Name *" /></td>
+        <td class="name-cell-input"><Input bind:value={newConsumableCatDraft.name} placeholder={$_('settings.categories.nameRequiredPlaceholder')} /></td>
         <td class="actions">
-          <button class="icon-action ok" onclick={addConsumableCategory} title="Add">✓</button>
-          <button class="icon-action" onclick={() => { showNewConsumableCatForm = false; consumableCatError = null; }} title="Cancel">✕</button>
+          <button class="icon-action ok" onclick={addConsumableCategory} title={$_('common.add')}>✓</button>
+          <button class="icon-action" onclick={() => { showNewConsumableCatForm = false; consumableCatError = null; }} title={$_('common.cancel')}>✕</button>
         </td>
       {/snippet}
       <SortableTable
         columns={[
-          { key: "emoji", label: "Emoji", sortable: false, cellClass: "emoji-cell", cell: consCatEmojiCell },
-          { key: "name", label: "Name", sortValue: (c) => c.name, cellClass: (c) => editingConsumableCatId === c.id ? "name-cell-input" : "", cell: consCatNameCell },
+          { key: "emoji", label: $_('settings.categories.emoji'), sortable: false, cellClass: "emoji-cell", cell: consCatEmojiCell },
+          { key: "name", label: $_('settings.categories.name'), sortValue: (c) => c.name, cellClass: (c) => editingConsumableCatId === c.id ? "name-cell-input" : "", cell: consCatNameCell },
           { key: "actions", label: "", sortable: false, cellClass: "actions", cell: consCatActionsCell },
         ] as Column<ConsumableCategory>[]}
         rows={store.consumableCategories}
@@ -575,7 +576,7 @@
       />
     </div>
     <div class="add-row">
-      <Button onclick={() => { showNewConsumableCatForm = true; consumableCatError = null; }}>＋ Add category</Button>
+      <Button onclick={() => { showNewConsumableCatForm = true; consumableCatError = null; }}>＋ {$_('settings.categories.addCategory')}</Button>
     </div>
     {#if consumableCatError}<div class="error">{consumableCatError}</div>{/if}
   </Card>

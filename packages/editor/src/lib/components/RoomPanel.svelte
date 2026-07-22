@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { Room } from "@myhome/geometry";
 
   let {
@@ -30,10 +31,10 @@
 </script>
 
 <aside class="room-panel">
-  <h2>Room</h2>
+  <h2>{$_('floorPlan.roomPanel.title')}</h2>
 
   <label>
-    <span>Label</span>
+    <span>{$_('floorPlan.roomPanel.label')}</span>
     <input
       type="text"
       bind:value={labelDraft}
@@ -48,14 +49,14 @@
   </label>
 
   <label>
-    <span>HA Area</span>
+    <span>{$_('floorPlan.roomPanel.haArea')}</span>
     <select value={room.haAreaId ?? ""} onchange={handleAreaChange}>
-      <option value="">(none)</option>
+      <option value="">{$_('floorPlan.roomPanel.none')}</option>
       {#each haAreas as area (area.area_id)}
         <option value={area.area_id}>{area.name}</option>
       {/each}
       {#if room.haAreaId && !haAreas.some((a) => a.area_id === room.haAreaId)}
-        <option value={room.haAreaId}>{room.haAreaId} (unknown)</option>
+        <option value={room.haAreaId}>{$_('floorPlan.roomPanel.unknownSuffix', { values: { id: room.haAreaId } })}</option>
       {/if}
     </select>
   </label>

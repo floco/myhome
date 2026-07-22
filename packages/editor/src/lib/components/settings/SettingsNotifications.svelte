@@ -1,5 +1,6 @@
 <!-- packages/editor/src/lib/components/settings/SettingsNotifications.svelte -->
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createSettingsStore } from "../../settingsStore.svelte";
   import Button from "../ui/Button.svelte";
   import Input from "../ui/Input.svelte";
@@ -48,37 +49,36 @@
 
 <Card>
   <div class="section-header">
-    <h2>Notifications</h2>
+    <h2>{$_('settings.nav.notifications')}</h2>
   </div>
   <p class="section-desc">
-    Surface chores due soon, low-stock consumables, and expiring warranties in
-    one place, with an optional daily summary pushed to Home Assistant.
+    {$_('settings.notifications.desc')}
   </p>
   <label class="module-row">
     <input class="notif-enable-toggle" type="checkbox" bind:checked={notifDraft.enabled} />
-    <span class="mod-label">Enable notification center</span>
+    <span class="mod-label">{$_('settings.notifications.enable')}</span>
   </label>
   {#if notifDraft.enabled}
     <div class="modal-form" style="margin-top: var(--space-3)">
       <div class="modal-field">
-        <span class="modal-label">Chores "due soon" threshold (fraction of period remaining)</span>
+        <span class="modal-label">{$_('settings.notifications.choresThreshold')}</span>
         <Input type="number" bind:value={notifChoresThresholdStr} />
       </div>
       <div class="modal-field">
-        <span class="modal-label">Warranty "expiring soon" window (days)</span>
+        <span class="modal-label">{$_('settings.notifications.warrantyWindow')}</span>
         <Input type="number" bind:value={notifWarrantyDaysStr} />
       </div>
       <label class="module-row">
         <input type="checkbox" bind:checked={notifDraft.haPushEnabled} />
-        <span class="mod-label">Send a daily digest via Home Assistant</span>
+        <span class="mod-label">{$_('settings.notifications.haDigest')}</span>
       </label>
       {#if notifDraft.haPushEnabled}
         <div class="modal-field">
-          <span class="modal-label">HA notify service</span>
-          <Input bind:value={notifDraft.haNotifyService} placeholder="e.g. notify.mobile_app_pixel" />
+          <span class="modal-label">{$_('settings.notifications.haNotifyService')}</span>
+          <Input bind:value={notifDraft.haNotifyService} placeholder={$_('settings.notifications.haNotifyServicePlaceholder')} />
         </div>
         <div class="modal-field">
-          <span class="modal-label">Digest time (UTC, HH:MM)</span>
+          <span class="modal-label">{$_('settings.notifications.digestTime')}</span>
           <Input bind:value={notifDraft.haPushTime} placeholder="08:00" />
         </div>
       {/if}
@@ -86,7 +86,7 @@
   {/if}
   {#if notifError}<div class="error">{notifError}</div>{/if}
   <div class="modal-actions">
-    <Button onclick={saveNotificationSettings} disabled={notifSaving}>{notifSaving ? "Saving…" : "Save"}</Button>
+    <Button onclick={saveNotificationSettings} disabled={notifSaving}>{notifSaving ? $_('settings.security.saving') : $_('common.save')}</Button>
   </div>
 </Card>
 

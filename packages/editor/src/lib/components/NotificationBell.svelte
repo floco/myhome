@@ -1,5 +1,6 @@
 <!-- packages/editor/src/lib/components/NotificationBell.svelte -->
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createNotificationStore, Notification } from "../notificationStore.svelte";
 
   type NotificationStore = ReturnType<typeof createNotificationStore>;
@@ -12,11 +13,6 @@
 
   let dropdownOpen = $state(false);
 
-  const GROUP_LABELS: Record<Notification["type"], string> = {
-    chore: "Chores",
-    low_stock: "Low Stock",
-    warranty: "Warranty",
-  };
   const GROUP_ORDER: Notification["type"][] = ["chore", "low_stock", "warranty"];
 
   const groups = $derived.by(() => {
@@ -27,7 +23,7 @@
     }
     return GROUP_ORDER
       .filter((t) => byType.has(t))
-      .map((t) => ({ type: t, label: GROUP_LABELS[t], items: byType.get(t)! }));
+      .map((t) => ({ type: t, label: $_(`notifications.group.${t}`), items: byType.get(t)! }));
   });
 
   function handleClick(): void {
@@ -47,7 +43,7 @@
 <svelte:window onclick={handleClickOutside} />
 
 <div class="notif-bell-wrap">
-  <button class="icon-btn notif-bell" title="Notifications" onclick={handleClick}>
+  <button class="icon-btn notif-bell" title={$_('notifications.title')} onclick={handleClick}>
     🔔
     {#if store.notifications.length > 0}
       <span class="notif-badge">{store.notifications.length}</span>
@@ -57,7 +53,7 @@
   {#if dropdownOpen}
     <div class="notif-dropdown">
       {#if store.notifications.length === 0}
-        <div class="notif-empty">No notifications</div>
+        <div class="notif-empty">{$_('notifications.empty')}</div>
       {/if}
       {#each groups as group (group.type)}
         <div class="notif-group-label">{group.label}</div>

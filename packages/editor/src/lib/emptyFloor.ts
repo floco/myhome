@@ -1,9 +1,11 @@
+import { _ } from "svelte-i18n";
+import { get } from "svelte/store";
 import type { Floor } from "@myhome/geometry";
 
 export function createEmptyFloor(): Floor {
   return {
     id: "floor-1",
-    name: "Ground Floor",
+    name: get(_)("floorPlan.switcher.groundFloor"),
     order: 0,
     walls: [],
     openings: [],

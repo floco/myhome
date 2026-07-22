@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createChoreStore, Chore, Assignment } from "../choreStore.svelte";
   import { displayName, formatDue } from "../choreFormat";
   import ChoreRow from "./ChoreRow.svelte";
@@ -13,12 +14,12 @@
   let { store, floorStore }: Props = $props();
 
   function getRoomName(roomId: string | null): string {
-    if (!roomId) return "🏠 Whole house";
+    if (!roomId) return `🏠 ${$_('chores.list.wholeHouse')}`;
     for (const floor of floorStore.floors) {
       const room = floor.rooms.find((r) => r.id === roomId);
-      if (room) return room.label || `Room (${floor.name})`;
+      if (room) return room.label || $_('chores.list.roomInFloor', { values: { floor: floor.name } });
     }
-    return "Unknown room";
+    return $_('chores.list.unknownRoom');
   }
 
   type Row = { assignment: Assignment; chore: Chore; pct: number };
@@ -40,13 +41,13 @@
 
 <div class="page">
   <header class="page-header">
-    <h2>Chore List</h2>
-    <span class="count">{rows.length} assignments</span>
+    <h2>{$_('chores.list.title')}</h2>
+    <span class="count">{$_('chores.list.assignmentCount', { values: { n: rows.length } })}</span>
   </header>
 
   <div class="list">
     {#if overdue.length > 0}
-      <div class="group-header urgent">Needs attention ({overdue.length})</div>
+      <div class="group-header urgent">{$_('chores.list.needsAttention', { values: { n: overdue.length } })}</div>
       {#each overdue as { assignment, chore, pct } (assignment.id)}
         <ChoreRow
           emoji={chore.emoji}
@@ -61,7 +62,7 @@
 
     {#if ok.length > 0}
       {#if overdue.length > 0}<div class="group-divider"></div>{/if}
-      <div class="group-header">On track ({ok.length})</div>
+      <div class="group-header">{$_('chores.list.onTrack', { values: { n: ok.length } })}</div>
       {#each ok as { assignment, chore, pct } (assignment.id)}
         <ChoreRow
           emoji={chore.emoji}
@@ -75,7 +76,7 @@
     {/if}
 
     {#if rows.length === 0}
-      <div class="empty">No chore assignments yet. Go to Management to create chores and assign them to rooms.</div>
+      <div class="empty">{$_('chores.list.emptyState')}</div>
     {/if}
   </div>
 </div>

@@ -1,5 +1,6 @@
 <!-- packages/editor/src/lib/components/settings/SettingsBackup.svelte -->
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import Button from "../ui/Button.svelte";
   import Input from "../ui/Input.svelte";
   import Card from "../ui/Card.svelte";
@@ -36,7 +37,7 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
-      backupError = "Backup failed. Please try again.";
+      backupError = $_('settings.backup.backupFailed');
     } finally {
       downloadingBackup = false;
     }
@@ -68,7 +69,7 @@
       restoreSuccess = true;
       showRestoreConfirm = false;
     } catch (e) {
-      restoreError = e instanceof Error ? e.message : "Restore failed.";
+      restoreError = e instanceof Error ? e.message : $_('settings.backup.restoreFailed');
     } finally {
       restoringBackup = false;
       restoreFile = null;
@@ -102,9 +103,9 @@
   }
 
   const WEEKDAY_OPTIONS = [
-    { value: 1, label: "Monday" }, { value: 2, label: "Tuesday" }, { value: 3, label: "Wednesday" },
-    { value: 4, label: "Thursday" }, { value: 5, label: "Friday" }, { value: 6, label: "Saturday" },
-    { value: 7, label: "Sunday" },
+    { value: 1, key: "monday" }, { value: 2, key: "tuesday" }, { value: 3, key: "wednesday" },
+    { value: 4, key: "thursday" }, { value: 5, key: "friday" }, { value: 6, key: "saturday" },
+    { value: 7, key: "sunday" },
   ];
 
   let scheduledConfig = $state<ScheduledBackupConfig>(defaultBackupConfig());
@@ -202,18 +203,18 @@
 
 <Card>
   <div class="section-header">
-    <h2>Backup & Restore</h2>
+    <h2>{$_('settings.nav.backup')}</h2>
   </div>
   <div class="backup-actions">
     <div class="backup-action">
-      <p class="backup-desc">Download a zip archive of all your data.</p>
+      <p class="backup-desc">{$_('settings.backup.downloadDesc')}</p>
       <Button onclick={downloadBackup} disabled={downloadingBackup}>
-        {downloadingBackup ? "Downloading…" : "Download Backup"}
+        {downloadingBackup ? $_('settings.backup.downloading') : $_('settings.backup.downloadBackup')}
       </Button>
     </div>
     <div class="backup-action">
-      <p class="backup-desc">Replace all current data from a previously downloaded backup.</p>
-      <Button variant="secondary" onclick={() => fileInputEl?.click()}>Restore from Backup</Button>
+      <p class="backup-desc">{$_('settings.backup.restoreDesc')}</p>
+      <Button variant="secondary" onclick={() => fileInputEl?.click()}>{$_('settings.backup.restoreFromBackup')}</Button>
       <input
         bind:this={fileInputEl}
         type="file"
@@ -225,46 +226,46 @@
   </div>
   {#if backupError}<div class="error">{backupError}</div>{/if}
   {#if restoreError}<div class="error">{restoreError}</div>{/if}
-  {#if restoreSuccess}<div class="success-msg">Restore complete. Reload the page to see updated data.</div>{/if}
+  {#if restoreSuccess}<div class="success-msg">{$_('settings.backup.restoreComplete')}</div>{/if}
 
-  <h3 class="subsection-title" style="margin-top: var(--space-4)">Scheduled Backups</h3>
+  <h3 class="subsection-title" style="margin-top: var(--space-4)">{$_('settings.backup.scheduledBackups')}</h3>
   {#if scheduledConfigLoaded}
     <label class="module-row">
       <input class="backup-enable-toggle" type="checkbox" bind:checked={scheduledConfig.enabled} />
-      <span class="mod-label">Enable scheduled backups</span>
+      <span class="mod-label">{$_('settings.backup.enableScheduled')}</span>
     </label>
     {#if scheduledConfig.enabled}
       <div class="modal-form" style="margin-top: var(--space-3)">
         <div class="modal-field">
-          <span class="modal-label">Frequency</span>
+          <span class="modal-label">{$_('settings.backup.frequency')}</span>
           <select bind:value={scheduledConfig.frequency} class="modal-select">
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
+            <option value="daily">{$_('settings.backup.daily')}</option>
+            <option value="weekly">{$_('settings.backup.weekly')}</option>
+            <option value="monthly">{$_('settings.backup.monthly')}</option>
           </select>
         </div>
         {#if scheduledConfig.frequency === "weekly"}
           <div class="modal-field">
-            <span class="modal-label">Day of week</span>
+            <span class="modal-label">{$_('settings.backup.dayOfWeek')}</span>
             <select bind:value={scheduledConfig.dayOfWeek} class="modal-select">
               {#each WEEKDAY_OPTIONS as opt (opt.value)}
-                <option value={opt.value}>{opt.label}</option>
+                <option value={opt.value}>{$_(`settings.backup.weekday.${opt.key}`)}</option>
               {/each}
             </select>
           </div>
         {/if}
         {#if scheduledConfig.frequency === "monthly"}
           <div class="modal-field">
-            <span class="modal-label">Day of month</span>
+            <span class="modal-label">{$_('settings.backup.dayOfMonth')}</span>
             <Input type="number" bind:value={scheduledDayOfMonthStr} />
           </div>
         {/if}
         <div class="modal-field">
-          <span class="modal-label">Time (UTC, HH:MM)</span>
+          <span class="modal-label">{$_('settings.backup.timeUtc')}</span>
           <Input bind:value={scheduledConfig.time} placeholder="03:00" />
         </div>
         <div class="modal-field">
-          <span class="modal-label">Keep last N backups</span>
+          <span class="modal-label">{$_('settings.backup.keepLastN')}</span>
           <Input type="number" bind:value={scheduledRetentionCountStr} />
         </div>
       </div>
@@ -272,10 +273,10 @@
     {#if scheduledConfigError}<div class="error">{scheduledConfigError}</div>{/if}
     <div class="modal-actions">
       <Button onclick={saveScheduledBackupConfig} disabled={scheduledConfigSaving}>
-        {scheduledConfigSaving ? "Saving…" : "Save"}
+        {scheduledConfigSaving ? $_('settings.security.saving') : $_('common.save')}
       </Button>
       <Button variant="secondary" onclick={runBackupNow} disabled={runningBackupNow}>
-        {runningBackupNow ? "Running…" : "Run backup now"}
+        {runningBackupNow ? $_('settings.backup.running') : $_('settings.backup.runBackupNow')}
       </Button>
     </div>
   {/if}
@@ -290,18 +291,18 @@
       {/snippet}
       {#snippet actionsCell(backup: ScheduledBackupEntry)}
         {#if confirmDeleteBackupFilename === backup.filename}
-          <span class="confirm-text">Delete?</span>
+          <span class="confirm-text">{$_('settings.categories.deleteConfirm')}</span>
           <button class="icon-action danger" onclick={() => deleteScheduledBackup(backup.filename)}>✓</button>
           <button class="icon-action" onclick={() => { confirmDeleteBackupFilename = null; }}>✕</button>
         {:else}
-          <button class="icon-action" onclick={() => downloadScheduledBackup(backup.filename)} title="Download">⬇</button>
-          <button class="icon-action danger" onclick={() => { confirmDeleteBackupFilename = backup.filename; }} title="Delete">🗑</button>
+          <button class="icon-action" onclick={() => downloadScheduledBackup(backup.filename)} title={$_('settings.backup.download')}>⬇</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteBackupFilename = backup.filename; }} title={$_('common.delete')}>🗑</button>
         {/if}
       {/snippet}
       <SortableTable
         columns={[
-          { key: "created", label: "Created", sortValue: (b) => new Date(b.createdAt), cell: createdCell },
-          { key: "size", label: "Size", sortValue: (b) => b.sizeBytes, cell: sizeCell },
+          { key: "created", label: $_('settings.security.created'), sortValue: (b) => new Date(b.createdAt), cell: createdCell },
+          { key: "size", label: $_('settings.backup.size'), sortValue: (b) => b.sizeBytes, cell: sizeCell },
           { key: "actions", label: "", sortable: false, cellClass: "actions", cell: actionsCell },
         ] as Column<ScheduledBackupEntry>[]}
         rows={scheduledBackups}
@@ -312,14 +313,14 @@
   {/if}
 </Card>
 
-<Modal open={showRestoreConfirm} title="Restore Backup" onclose={cancelRestore} width="400px">
+<Modal open={showRestoreConfirm} title={$_('settings.backup.restoreBackupTitle')} onclose={cancelRestore} width="400px">
   {#snippet children()}
-    <p class="restore-warning">This will replace all current data with the contents of the backup. This cannot be undone.</p>
+    <p class="restore-warning">{$_('settings.backup.restoreWarning')}</p>
   {/snippet}
   {#snippet footer()}
-    <Button variant="secondary" onclick={cancelRestore}>Cancel</Button>
+    <Button variant="secondary" onclick={cancelRestore}>{$_('common.cancel')}</Button>
     <Button onclick={confirmRestore} disabled={restoringBackup}>
-      {restoringBackup ? "Restoring…" : "Restore"}
+      {restoringBackup ? $_('settings.backup.restoring') : $_('settings.backup.restore')}
     </Button>
   {/snippet}
 </Modal>

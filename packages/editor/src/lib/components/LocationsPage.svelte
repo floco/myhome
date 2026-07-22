@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createLocationsStore } from "../locationsStore.svelte";
   import { weightedScore } from "../locationsStore.svelte";
   import Card from "./ui/Card.svelte";
@@ -27,16 +28,16 @@
   {#if store.locations.length === 0}
     <div class="empty-state">
       <span class="empty-icon">🌍</span>
-      <p>No locations yet — add candidates below to start comparing.</p>
+      <p>{$_('locations.page.emptyState')}</p>
     </div>
   {:else}
     <div class="chart-card-wrap">
       <Card>
         <div class="chart-inner">
           <div class="stats-area">
-            <div class="chart-label">At a glance</div>
+            <div class="chart-label">{$_('chores.page.atAGlance')}</div>
             {#if leaders.length === 0}
-              <p class="no-leader">No ratings yet</p>
+              <p class="no-leader">{$_('locations.page.noRatingsYet')}</p>
             {:else}
               <div class="leaders-col">
                 {#each leaders as { loc, score } (loc.id)}
@@ -56,7 +57,7 @@
           <div class="chart-divider"></div>
 
           <div class="bar-area">
-            <div class="chart-label">Ranking — weighted overall score</div>
+            <div class="chart-label">{$_('locations.page.ranking')}</div>
             <LocationRankingChart locations={store.locations} criteria={store.criteria} ratings={store.ratings} />
           </div>
         </div>

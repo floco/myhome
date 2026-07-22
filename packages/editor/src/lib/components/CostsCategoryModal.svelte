@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createCostsStore, YearData } from "../costsStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
   import Modal from "./ui/Modal.svelte";
@@ -67,12 +68,12 @@
   }
 </script>
 
-<Modal open={true} title="{category?.emoji ?? ''} {category?.name ?? ''} — per year" {onclose} width="560px">
+<Modal open={true} title={$_('costs.categoryModal.title', { values: { emoji: category?.emoji ?? '', name: category?.name ?? '' } })} {onclose} width="560px">
   {#if years.length === 0}
-    <p class="empty">No entries for this category yet.</p>
+    <p class="empty">{$_('costs.categoryModal.noEntries')}</p>
   {:else}
     <div class="chart-title">
-      Cost (€){hasUnit ? ` and volume (${category!.unit})` : ""} per year
+      {hasUnit ? $_('costs.categoryModal.chartTitleWithVolume', { values: { unit: category!.unit } }) : $_('costs.categoryModal.chartTitle')}
     </div>
 
     <div class="bar-wrap">
@@ -104,25 +105,25 @@
     <div class="legend">
       <div class="legend-item">
         <span class="swatch" style="background:{category?.color ?? 'var(--accent)'}"></span>
-        <span>Cost (€)</span>
+        <span>{$_('costs.categoryModal.costEur')}</span>
       </div>
       {#if hasUnit}
         <div class="legend-item">
           <span class="swatch" style="background:{category?.color ?? 'var(--accent)'};opacity:.5"></span>
-          <span>Volume ({category!.unit})</span>
+          <span>{$_('costs.categoryModal.volume', { values: { unit: category!.unit } })}</span>
         </div>
       {/if}
       {#if years.some(y => y === currentYear)}
-        <span class="partial-note">* current year, partial</span>
+        <span class="partial-note">{$_('costs.categoryModal.partialNote')}</span>
       {/if}
     </div>
 
     <div class="stats">
-      <StatTile value="{fmt(avgAmount)} €" label="Avg cost / year" />
+      <StatTile value="{fmt(avgAmount)} €" label={$_('costs.categoryModal.avgCostPerYear')} />
       {#if hasUnit && avgQty !== null}
-        <StatTile value="{fmt(avgQty, 0)} {category!.unit}" label="Avg {category!.unit} / year" />
+        <StatTile value="{fmt(avgQty, 0)} {category!.unit}" label={$_('costs.categoryModal.avgUnitPerYear', { values: { unit: category!.unit } })} />
         {#if avgUnitPrice !== null}
-          <StatTile value="{fmt(avgUnitPrice, 2)} €/{category!.unit}" label="Avg price / {category!.unit}" />
+          <StatTile value="{fmt(avgUnitPrice, 2)} €/{category!.unit}" label={$_('costs.categoryModal.avgPricePer', { values: { unit: category!.unit } })} />
         {/if}
       {/if}
     </div>
@@ -130,10 +131,10 @@
 
   {#snippet footer()}
     {#if onplaceonmap}
-      <Button variant="secondary" onclick={() => { onplaceonmap(categoryId); onclose(); }}>📍 Place on map</Button>
+      <Button variant="secondary" onclick={() => { onplaceonmap(categoryId); onclose(); }}>📍 {$_('chores.editModal.placeOnMap')}</Button>
     {/if}
     <span class="spacer"></span>
-    <Button variant="secondary" onclick={onclose}>Close</Button>
+    <Button variant="secondary" onclick={onclose}>{$_('common.close')}</Button>
   {/snippet}
 </Modal>
 

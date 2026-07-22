@@ -1,0 +1,812 @@
+{
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "add": "Ajouter",
+    "loading": "Chargement…",
+    "confirm": "Confirmer",
+    "openPdf": "Ouvrir le PDF ↗",
+    "comingSoonBadge": "Bientôt disponible",
+    "modules": {
+      "home": "Accueil", "plan": "Plan", "chores": "Corvées", "inventory": "Inventaire",
+      "consumables": "Consommables", "works": "Travaux", "kb": "Base de connaissances", "costs": "Coûts",
+      "locations": "Emplacements", "properties": "Biens", "budget": "Budget",
+      "visits": "Visites", "contacts": "Contacts", "checklist": "Checklist"
+    },
+    "search": {
+      "placeholder": "Rechercher corvées, inventaire, travaux, coûts…",
+      "noResults": "Aucun résultat pour « {query} »",
+      "ariaLabel": "Recherche globale"
+    }
+  },
+  "nav": {
+    "settings": "Paramètres",
+    "soon": "Bientôt",
+    "comingSoon": "{label} — bientôt disponible",
+    "selectHome": "Choisir un logement",
+    "newHome": "Nouveau logement",
+    "newHomeModal": {
+      "title": "Nouveau logement",
+      "nameLabel": "Nom",
+      "namePlaceholder": "Rue des Lilas",
+      "typeLabel": "Type",
+      "existingTitle": "Logement existant",
+      "existingDesc": "Un bien que vous possédez ou occupez déjà — tous les modules.",
+      "projectTitle": "Logement en projet",
+      "projectDesc": "Recherche de terrain, prospection ou suivi d'une construction.",
+      "demoTitle": "Logement de démonstration",
+      "demoDesc": "Pré-rempli avec des données d'exemple dans chaque module — idéal pour découvrir l'application.",
+      "nameRequired": "Le nom est requis",
+      "failedToCreate": "Échec de la création du logement",
+      "creating": "Création…",
+      "createHome": "Créer le logement"
+    }
+  },
+  "floorPlan": {
+    "tools": {
+      "undo": "Annuler (Ctrl+Z)",
+      "redo": "Rétablir (Ctrl+Y)",
+      "select": "Sélectionner",
+      "wall": "Mur",
+      "divider": "Séparation",
+      "door": "Porte",
+      "window": "Fenêtre",
+      "delete": "Supprimer la sélection (Suppr)"
+    },
+    "switcher": {
+      "all": "Tous",
+      "switchFloor": "Changer d'étage",
+      "houseWide": "Affectations pour toute la maison — glissez les corvées ici",
+      "addFloor": "Ajouter un étage",
+      "doubleClickToRename": "Double-cliquer pour renommer",
+      "switchToThisFloor": "Passer à cet étage",
+      "deleteFloor": "Supprimer l'étage",
+      "deleteFloorAriaLabel": "Supprimer {name}",
+      "floor": "Étage",
+      "groundFloor": "Rez-de-chaussée",
+      "firstFloor": "1er étage",
+      "secondFloor": "2e étage",
+      "thirdFloor": "3e étage",
+      "basement": "Sous-sol",
+      "defaultFloorName": "Étage {n}"
+    },
+    "layers": {
+      "toggle": "Afficher/masquer les calques",
+      "title": "Calques"
+    },
+    "roomPanel": {
+      "title": "Pièce",
+      "label": "Nom",
+      "haArea": "Zone HA",
+      "none": "(aucune)",
+      "unknownSuffix": "{id} (inconnue)"
+    },
+    "itemPicker": {
+      "dragToReposition": "Glisser pour repositionner",
+      "search": "Rechercher…",
+      "unplaced": "Non placés",
+      "placed": "Placés",
+      "noItemsMatch": "Aucun élément ne correspond"
+    },
+    "furnitureLibrary": {
+      "searchPlaceholder": "Rechercher des objets..."
+    },
+    "rotate": "Rotation"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Aucune notification",
+    "group": {
+      "chore": "Corvées",
+      "low_stock": "Stock faible",
+      "warranty": "Garantie"
+    }
+  },
+  "chores": {
+    "dueLabel": {
+      "overdue": "{n}j de retard",
+      "yesterday": "Hier",
+      "today": "Aujourd'hui",
+      "tomorrow": "Demain",
+      "inDays": "Dans {n}j"
+    },
+    "row": {
+      "notePlaceholder": "Remarque (facultatif)",
+      "markDone": "Marquer comme fait"
+    },
+    "schedule": {
+      "monthlyOnDay": "Mensuel le {n}",
+      "dayAbbrev": {
+        "mon": "Lun", "tue": "Mar", "wed": "Mer", "thu": "Jeu", "fri": "Ven", "sat": "Sam", "sun": "Dim"
+      },
+      "weeklyOn": "Hebdomadaire le {days}",
+      "weekly": "Hebdomadaire",
+      "everyNWeeks": "Toutes les {n} semaines",
+      "monthly": "Mensuel",
+      "everyNMonths": "Tous les {n} mois",
+      "yearly": "Annuel",
+      "everyNYears": "Tous les {n} ans",
+      "daily": "Quotidien",
+      "quarterly": "Trimestriel",
+      "everyNDays": "Tous les {n} jours"
+    },
+    "badgePopup": {
+      "overdueSince": "En retard depuis",
+      "due": "Échéance",
+      "allDone": "Tout fait",
+      "thisRoom": "Cette pièce",
+      "remove": "Retirer"
+    },
+    "list": {
+      "wholeHouse": "Toute la maison",
+      "roomInFloor": "Pièce ({floor})",
+      "unknownRoom": "Pièce inconnue",
+      "title": "Liste des corvées",
+      "assignmentCount": "{n} affectations",
+      "needsAttention": "À traiter ({n})",
+      "onTrack": "En bonne voie ({n})",
+      "emptyState": "Aucune corvée assignée pour l'instant. Rendez-vous dans Gestion pour créer des corvées et les assigner à des pièces."
+    },
+    "editModal": {
+      "info": "Infos",
+      "media": "Médias",
+      "mediaCount": "Médias ({n})",
+      "history": "Historique",
+      "historyCount": "Historique ({n})",
+      "name": "Nom",
+      "choreName": "Nom de la corvée",
+      "emoji": "Emoji",
+      "periodDays": "Période (jours)",
+      "defaultDue": "Échéance par défaut",
+      "scheduleFromDueTitle": "Prochaine échéance = date prévue + période",
+      "scheduleFromDue": "Planifier depuis la date d'échéance",
+      "notes": "Notes",
+      "notesPlaceholder": "Instructions, astuces ou rappels…",
+      "noCompletions": "Aucune réalisation pour l'instant",
+      "dueOn": "échéance {date}",
+      "deleteRecord": "Supprimer l'entrée",
+      "deleteThisChore": "Supprimer cette corvée ?",
+      "confirmDelete": "Confirmer la suppression",
+      "placeOnMap": "Placer sur le plan",
+      "nameEmpty": "Le nom ne peut pas être vide",
+      "saveFailed": "Échec de l'enregistrement",
+      "deleteFailed": "Échec de la suppression",
+      "uploadFailed": "Échec de l'envoi"
+    },
+    "page": {
+      "emptyCharts": "Aucune corvée assignée pour l'instant — cliquez sur ＋ Ajouter une corvée pour commencer.",
+      "scheduleHealth": "État du planning",
+      "atAGlance": "En un coup d'œil",
+      "active": "Actives",
+      "overdue": "En retard",
+      "onTrack": "En bonne voie",
+      "search": "🔍 Rechercher…",
+      "allRooms": "Toutes les pièces",
+      "allSchedules": "Tous les plannings",
+      "allChores": "Toutes les corvées",
+      "needsAttentionTitle": "À traiter",
+      "addChore": "Ajouter une corvée",
+      "schedulesFromDueDate": "Planifié depuis la date d'échéance",
+      "markAllDone": "Tout marquer comme fait",
+      "delayAllByWeek": "Reporter toutes les affectations d'une semaine",
+      "delayByWeek": "Reporter d'une semaine",
+      "notAssigned": "Non assignée à une pièce",
+      "schedule": "Planning",
+      "rooms": "Pièces",
+      "nextDue": "Prochaine échéance",
+      "roomCount": "{n} pièces",
+      "emptyNoChores": "Aucune corvée pour l'instant — cliquez sur ＋ Ajouter une corvée pour commencer.",
+      "emptyNoneNeedAttention": "Aucune corvée à traiter pour le moment.",
+      "emptyNoMatch": "Aucune corvée ne correspond à vos filtres.",
+      "choreCount": "{n, plural, one {# corvée} other {# corvées}}",
+      "health": {
+        "onTrack": "En bonne voie",
+        "dueSoon": "Bientôt dû",
+        "overdue": "En retard"
+      }
+    },
+    "newModal": {
+      "title": "Nouvelle corvée",
+      "repeatEvery": "Répéter tous les",
+      "unitDays": "jours",
+      "unitWeeks": "semaines",
+      "unitMonths": "mois",
+      "unitYears": "ans",
+      "firstDue": "Première échéance",
+      "scheduleFromDueTitle": "Prochaine échéance = date prévue + période (pas date de réalisation + période)",
+      "creating": "Création…",
+      "failedToCreate": "Échec de la création"
+    }
+  },
+  "works": {
+    "status": {
+      "planned": "Prévu",
+      "inProgress": "En cours",
+      "done": "Terminé"
+    },
+    "open": "Ouvrir",
+    "remove": "Supprimer",
+    "page": {
+      "emptyCharts": "Aucun travail pour l'instant — cliquez sur ＋ Ajouter un travail pour commencer.",
+      "houseTimeline": "Chronologie de la maison",
+      "totalCost": "Coût total",
+      "allStatuses": "Tous les statuts",
+      "addWork": "Ajouter un travail",
+      "pinned": "Épinglé",
+      "title": "Titre",
+      "status": "Statut",
+      "emptyNoWorks": "Aucun travail pour l'instant — cliquez sur ＋ Ajouter un travail pour commencer.",
+      "emptyNoMatch": "Aucun travail ne correspond à vos filtres.",
+      "footer": "{n} travaux · total : {total} €"
+    },
+    "modal": {
+      "newWork": "Nouveau travail",
+      "editWork": "Modifier le travail",
+      "notes": "Notes",
+      "workTitlePlaceholder": "Titre du travail",
+      "noneOption": "— Aucun —",
+      "totalCostEur": "Coût total (€)",
+      "description": "Description",
+      "descriptionPlaceholder": "Résumé succinct du travail…",
+      "notesPlaceholder": "Cliquez pour ajouter des notes Markdown…",
+      "doneEditing": "Terminer l'édition",
+      "confirm": "Confirmer",
+      "titleRequired": "Le titre est requis",
+      "saveFailed": "Échec de l'enregistrement",
+      "deleteFailed": "Échec de la suppression",
+      "uploadFailed": "Échec de l'envoi"
+    }
+  },
+  "inventory": {
+    "pinPopup": {
+      "expired": "Expirée",
+      "expiresToday": "Expire aujourd'hui",
+      "daysRemaining": "{days}j restants",
+      "warranty": "Garantie",
+      "remove": "Supprimer"
+    },
+    "page": {
+      "expired": "expirée",
+      "uncategorized": "Sans catégorie",
+      "emptyCharts": "Aucun article pour l'instant — cliquez sur ＋ Ajouter un article pour commencer.",
+      "byCategory": "Par catégorie",
+      "items": "Articles",
+      "totalValue": "Valeur totale",
+      "searchItems": "🔍 Rechercher des articles…",
+      "addItem": "Ajouter un article",
+      "purchased": "Acheté",
+      "cost": "Coût",
+      "emptyNoItems": "Aucun article pour l'instant — cliquez sur ＋ Ajouter un article pour commencer.",
+      "emptyNoMatch": "Aucun article ne correspond à vos filtres.",
+      "itemCount": "{n, plural, one {# article} other {# articles}}",
+      "totalValueSuffix": "· valeur totale : {amount} €"
+    },
+    "modal": {
+      "newItem": "Nouvel article",
+      "editItem": "Modifier l'article",
+      "namePlaceholder": "ex. TV Samsung 65\"",
+      "categoryPlaceholder": "Électronique, Meubles…",
+      "brand": "Marque",
+      "model": "Modèle",
+      "serialNumber": "N° de série",
+      "priceEur": "Prix (€)",
+      "warrantyExpiry": "Fin de garantie",
+      "notesPlaceholder": "Notes complémentaires…",
+      "deleteThisItem": "Supprimer cet article ?",
+      "nameRequired": "Le nom est requis",
+      "saveFailed": "Échec de l'enregistrement",
+      "deleteFailed": "Échec de la suppression",
+      "uploadFailed": "Échec de l'envoi"
+    }
+  },
+  "consumables": {
+    "pinPopup": {
+      "inStock": "En stock",
+      "lowStock": "Stock faible",
+      "empty": "Épuisé",
+      "notePlaceholder": "note…",
+      "removePin": "Retirer l'épingle",
+      "invalidQuantity": "Quantité invalide",
+      "updateFailed": "Échec de la mise à jour"
+    },
+    "page": {
+      "statusOk": "OK",
+      "statusLow": "FAIBLE",
+      "statusEmpty": "ÉPUISÉ",
+      "low": "Faible",
+      "empty": "Épuisé",
+      "all": "Tous",
+      "emptyCharts": "Aucun consommable pour l'instant — cliquez sur ＋ Ajouter un consommable pour commencer.",
+      "stockStatus": "État du stock — {n} articles",
+      "addConsumable": "Ajouter un consommable",
+      "placeOnMap": "Placer sur le plan",
+      "quantity": "Quantité",
+      "min": "Min",
+      "stock": "Stock",
+      "emptyNoConsumables": "Aucun consommable pour l'instant — cliquez sur ＋ Ajouter un consommable pour commencer.",
+      "emptyNoMatch": "Aucun consommable ne correspond à vos filtres."
+    },
+    "modal": {
+      "details": "Détails",
+      "namePlaceholder": "ex. Piles AA",
+      "unit": "Unité",
+      "minQty": "Qté min",
+      "descriptionPlaceholder": "Notes facultatives…",
+      "currentStock": "Stock actuel :",
+      "setNewQuantity": "Définir la nouvelle quantité ({unit})",
+      "noteOptional": "Note (facultatif)",
+      "restockedExample": "ex. réapprovisionné",
+      "updating": "Mise à jour…",
+      "updateStock": "Mettre à jour le stock",
+      "history": "Historique",
+      "noTransactions": "Aucune transaction pour l'instant",
+      "sure": "Confirmer ?",
+      "deleting": "Suppression…",
+      "yesDelete": "Oui, supprimer"
+    }
+  },
+  "locations": {
+    "ratingPopup": {
+      "notePlaceholder": "Note…",
+      "clear": "Effacer"
+    },
+    "page": {
+      "emptyState": "Aucun emplacement pour l'instant — ajoutez des candidats ci-dessous pour commencer à comparer.",
+      "noRatingsYet": "Aucune évaluation pour l'instant",
+      "ranking": "Classement — score global pondéré"
+    },
+    "modal": {
+      "addLocation": "Ajouter un emplacement",
+      "editLocation": "Modifier l'emplacement",
+      "flag": "Drapeau",
+      "namePlaceholder": "ex. Nantes, France"
+    },
+    "criterionModal": {
+      "addCriterion": "Ajouter un critère",
+      "editCriterion": "Modifier le critère",
+      "namePlaceholder": "ex. Coût de la vie",
+      "weight": "Poids",
+      "low": "Faible",
+      "medium": "Moyen",
+      "high": "Élevé"
+    },
+    "matrix": {
+      "view": "Voir",
+      "criteria": "Critères",
+      "weightMed": "Moy",
+      "deleteLocationConfirm": "Supprimer {name} ?",
+      "confirmDelete": "Confirmer la suppression",
+      "moveLeft": "Déplacer à gauche",
+      "moveRight": "Déplacer à droite",
+      "addLocationTitle": "Ajouter un emplacement",
+      "deleteCriterionConfirm": "Supprimer {name} ?",
+      "moveUp": "Déplacer vers le haut",
+      "moveDown": "Déplacer vers le bas"
+    }
+  },
+  "properties": {
+    "status": {
+      "watching": "En veille",
+      "visited": "Visité",
+      "proposalMade": "Offre faite",
+      "purchased": "Acheté",
+      "rejected": "Rejeté"
+    },
+    "type": {
+      "land": "Terrain",
+      "house": "Maison",
+      "newBuild": "Neuf"
+    },
+    "page": {
+      "emptyCharts": "Aucun bien pour l'instant — cliquez sur ＋ Ajouter un bien pour commencer.",
+      "searchPipeline": "Suivi de recherche",
+      "total": "Total",
+      "allTypes": "Tous les types",
+      "addProperty": "Ajouter un bien",
+      "type": "Type",
+      "location": "Emplacement",
+      "price": "Prix",
+      "size": "Superficie",
+      "emptyNoProperties": "Aucun bien pour l'instant — cliquez sur ＋ Ajouter un bien pour commencer.",
+      "emptyNoMatch": "Aucun bien ne correspond à vos filtres.",
+      "footer": "{n, plural, one {# bien} other {# biens}}",
+      "builtSize": "{size} m² bâti",
+      "landSize": "{size} m² terrain"
+    },
+    "modal": {
+      "newProperty": "Nouveau bien",
+      "editProperty": "Modifier le bien",
+      "prosCons": "Avantages / Inconvénients",
+      "namePlaceholder": "Casa da Rua das Flores",
+      "landOnly": "Terrain seul",
+      "existingHouse": "Maison existante",
+      "newBuildOffPlan": "Neuf (sur plan)",
+      "address": "Adresse",
+      "priceEur": "Prix (€)",
+      "listingUrl": "URL de l'annonce",
+      "landSizeM2": "Superficie du terrain (m²)",
+      "builtSizeM2": "Surface bâtie (m²)",
+      "bedrooms": "Chambres",
+      "bathrooms": "Salles de bain",
+      "agentContact": "Agent / contact",
+      "pros": "Avantages",
+      "cons": "Inconvénients",
+      "addAPro": "Ajouter un avantage…",
+      "addACon": "Ajouter un inconvénient…"
+    }
+  },
+  "costs": {
+    "entryFallbackTitle": "Entrée de coût",
+    "open": "📊 Ouvrir",
+    "remove": "✕ Supprimer",
+    "pinPopup": {
+      "unit": "Unité : {unit}"
+    },
+    "page": {
+      "unknown": "Inconnu",
+      "emptyCharts": "Aucune entrée pour l'instant — cliquez sur ＋ Ajouter une entrée pour commencer.",
+      "breakdownByCategory": "{year} — répartition par catégorie",
+      "total": "Total",
+      "totalHouseCosts": "Coûts totaux de la maison — 10 dernières années (€)",
+      "tenYearAvg": "Moy. sur 10 ans",
+      "perYear": "{amount} €/an",
+      "lastCompleteYr": "Dernière année complète",
+      "searchEntries": "🔍 Rechercher des entrées…",
+      "allCategories": "Toutes les catégories",
+      "allYears": "Toutes les années",
+      "addEntry": "Ajouter une entrée",
+      "category": "Catégorie",
+      "date": "Date",
+      "supplier": "Fournisseur",
+      "qty": "Qté",
+      "unitPrice": "Prix unitaire",
+      "room": "Pièce",
+      "emptyNoEntries": "Aucune entrée pour l'instant — cliquez sur ＋ Ajouter une entrée pour commencer.",
+      "emptyNoMatch": "Aucune entrée ne correspond à vos filtres.",
+      "entryCount": "{n, plural, one {# entrée} other {# entrées}}",
+      "totalSuffix": "· total : {amount} €"
+    },
+    "entryModal": {
+      "newEntry": "Nouvelle entrée",
+      "editEntry": "Modifier l'entrée",
+      "category": "Catégorie",
+      "date": "Date",
+      "quantity": "Quantité ({unit})",
+      "unitPrice": "Prix unitaire (€/{unit})",
+      "totalAmount": "Montant total (€)",
+      "supplier": "Fournisseur",
+      "noSupplier": "— Aucun fournisseur —",
+      "noRoom": "Aucune pièce",
+      "notesPlaceholder": "Notes facultatives…",
+      "deleteThisEntry": "Supprimer cette entrée ?",
+      "categoryRequired": "La catégorie est requise",
+      "dateRequired": "La date est requise",
+      "totalRequired": "Le montant total est requis",
+      "saveFailed": "Échec de l'enregistrement",
+      "deleteFailed": "Échec de la suppression",
+      "uploadFailed": "Échec de l'envoi"
+    },
+    "categoryModal": {
+      "title": "{emoji} {name} — par année",
+      "noEntries": "Aucune entrée pour cette catégorie pour l'instant.",
+      "chartTitle": "Coût (€) par année",
+      "chartTitleWithVolume": "Coût (€) et volume ({unit}) par année",
+      "costEur": "Coût (€)",
+      "volume": "Volume ({unit})",
+      "partialNote": "* année en cours, partielle",
+      "avgCostPerYear": "Coût moyen / an",
+      "avgUnitPerYear": "{unit} moyen / an",
+      "avgPricePer": "Prix moyen / {unit}"
+    }
+  },
+  "home": {
+    "chores": {
+      "active": "actives",
+      "onTrack": "en bonne voie",
+      "emptyState": "Aucune corvée assignée pour l'instant."
+    },
+    "consumables": {
+      "emptyPill": "{n} épuisé(s)",
+      "lowPill": "{n} faible(s)"
+    },
+    "costs": {
+      "emptyState": "Aucune entrée de coût pour l'instant."
+    },
+    "inventory": {
+      "itemsSub": "{n} articles",
+      "emptyState": "Aucun article d'inventaire pour l'instant."
+    },
+    "map": {
+      "noFloors": "Aucun étage pour l'instant."
+    },
+    "properties": {
+      "statusProposal": "Offre"
+    },
+    "works": {
+      "totalSub": "{amount} € au total",
+      "emptyState": "Aucun travail enregistré pour l'instant."
+    }
+  },
+  "auth": {
+    "signInToContinue": "Connectez-vous pour continuer",
+    "signInWith": "Se connecter avec {provider}",
+    "or": "ou",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "signingIn": "Connexion…",
+    "signIn": "Se connecter",
+    "contactAdmin": "Contactez votre administrateur pour créer un compte",
+    "oidcFailed": "Échec de la connexion, veuillez réessayer",
+    "oidcAccountConflict": "Un compte avec ce nom d'utilisateur existe déjà. Contactez votre administrateur pour lier les comptes.",
+    "invalidCredentials": "Nom d'utilisateur ou mot de passe invalide"
+  },
+  "settings": {
+    "nav": {
+      "general": "Général",
+      "categories": "Catégories",
+      "notifications": "Notifications",
+      "security": "Sécurité et accès",
+      "integrations": "Intégrations",
+      "backup": "Sauvegarde et restauration",
+      "activity": "Journal d'activité"
+    },
+    "general": {
+      "home": "Logement",
+      "name": "Nom",
+      "homeNamePlaceholder": "Nom du logement",
+      "type": "Type",
+      "projectHome": "🏗 Logement en projet",
+      "existingHome": "🏠 Logement existant",
+      "change": "Modifier",
+      "cannotDeleteOnlyHome": "Impossible de supprimer le seul logement",
+      "deleteThisHome": "Supprimer ce logement",
+      "language": "Langue",
+      "modules": "Modules",
+      "modulesDesc": "Choisissez les modules visibles dans la navigation pour ce logement.",
+      "coreModules": "Modules principaux",
+      "projectModules": "Modules projet",
+      "placeholderTag": "Provisoire",
+      "deleteHomeTitle": "Supprimer le logement",
+      "deleteHomePrefix": "Supprimer",
+      "deleteHomeSuffix": " ? Cela supprime définitivement toutes les données de ce logement et est irréversible.",
+      "nameRequired": "Nom requis",
+      "failedToSave": "Échec de l'enregistrement",
+      "failedToUpdateType": "Échec de la mise à jour du type",
+      "failedToDelete": "Échec de la suppression du logement",
+      "moduleHideWarning": "Cela masque {label} mais ne supprime pas vos données."
+    },
+    "security": {
+      "apiTokens": "Jetons API",
+      "newToken": "Nouveau jeton",
+      "tokensDesc": "Jetons pour l'automatisation, le MCP et l'accès API. La portée d'un jeton ne peut pas dépasser votre propre rôle.",
+      "noTokensYet": "Aucun jeton pour l'instant.",
+      "confirmRevoke": "Confirmer la révocation",
+      "revoke": "Révoquer",
+      "name": "Nom",
+      "scope": "Portée",
+      "created": "Créé",
+      "lastUsed": "Dernière utilisation",
+      "users": "Utilisateurs",
+      "newUser": "Nouvel utilisateur",
+      "editRole": "Modifier le rôle",
+      "newPasswordPlaceholder": "Nouveau mot de passe (8 min.)",
+      "set": "Définir",
+      "resetPw": "Réinitialiser",
+      "confirmDelete": "Confirmer la suppression",
+      "username": "Nom d'utilisateur",
+      "role": "Rôle",
+      "actions": "Actions",
+      "sso": "Authentification unique",
+      "ssoDesc": "Permettre aux utilisateurs de se connecter via un fournisseur OIDC externe (Keycloak, Authentik, Google Workspace, etc.) en plus de la connexion locale par identifiant/mot de passe.",
+      "enableSso": "Activer l'authentification unique",
+      "providerName": "Nom du fournisseur",
+      "providerNamePlaceholder": "ex. Keycloak",
+      "issuerUrl": "URL de l'émetteur",
+      "clientId": "ID client",
+      "clientSecret": "Secret client",
+      "notSet": "Non défini",
+      "defaultRole": "Rôle par défaut pour les nouvelles connexions",
+      "redirectUri": "URI de redirection",
+      "saving": "Enregistrement…",
+      "newApiToken": "Nouveau jeton API",
+      "tokenName": "Nom du jeton",
+      "tokenNamePlaceholder": "ex. Home Assistant MCP",
+      "create": "Créer",
+      "tokenCreated": "Jeton créé",
+      "copyTokenNow": "Copiez ce jeton maintenant. Il ne sera plus affiché.",
+      "copyToClipboard": "Copier dans le presse-papiers",
+      "done": "Terminé",
+      "newUserTitle": "Nouvel utilisateur",
+      "usernamePlaceholder": "nom d'utilisateur",
+      "passwordMin8": "Mot de passe (8 car. min.)",
+      "createUser": "Créer l'utilisateur",
+      "usernameRequired": "Nom d'utilisateur requis",
+      "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères"
+    },
+    "integrations": {
+      "mcpServer": "Serveur MCP",
+      "mcpDesc": "Permet à un client MCP (Claude Desktop, claude.ai, Claude Code ou Assist de Home Assistant) de consulter et d'agir sur les données de ce logement. Créez un jeton API ci-dessus avec le niveau d'accès souhaité pour l'assistant, puis utilisez-le comme jeton Bearer lors de la connexion.",
+      "enableMcp": "Activer le serveur MCP",
+      "connectionUrl": "URL de connexion :",
+      "donetick": "Donetick",
+      "donetickDesc": "Importe les corvées depuis votre instance Donetick vers ce logement. Collez un jeton API Donetick et cliquez sur Importer.",
+      "apiTokenPlaceholder": "Jeton API",
+      "importing": "Importation…",
+      "import": "Importer",
+      "failed": "Échec",
+      "imported": "{n} importé(s)"
+    },
+    "categories": {
+      "tabs": {
+        "cost": "Catégories de coûts",
+        "inventory": "Catégories d'inventaire",
+        "work": "Catégories de travaux",
+        "suppliers": "Fournisseurs",
+        "consumables": "Consommables"
+      },
+      "deleteConfirm": "Supprimer ?",
+      "name": "Nom",
+      "nameRequiredPlaceholder": "Nom *",
+      "emoji": "Emoji",
+      "unit": "Unité",
+      "color": "Couleur",
+      "unitPlaceholder": "L, kWh…",
+      "unitOptionalPlaceholder": "L, kWh… (facultatif)",
+      "units": "Unités",
+      "unitInputPlaceholder": "ex. comprimés",
+      "addUnit": "Ajouter une unité",
+      "categoriesHeading": "Catégories",
+      "addCategory": "Ajouter une catégorie",
+      "unitAlreadyExists": "Cette unité existe déjà"
+    },
+    "backup": {
+      "backupFailed": "Échec de la sauvegarde. Veuillez réessayer.",
+      "restoreFailed": "Échec de la restauration.",
+      "downloadDesc": "Téléchargez une archive zip de toutes vos données.",
+      "downloading": "Téléchargement…",
+      "downloadBackup": "Télécharger la sauvegarde",
+      "restoreDesc": "Remplacez toutes les données actuelles à partir d'une sauvegarde téléchargée précédemment.",
+      "restoreFromBackup": "Restaurer depuis une sauvegarde",
+      "restoreComplete": "Restauration terminée. Rechargez la page pour voir les données mises à jour.",
+      "scheduledBackups": "Sauvegardes planifiées",
+      "enableScheduled": "Activer les sauvegardes planifiées",
+      "frequency": "Fréquence",
+      "daily": "Quotidienne",
+      "weekly": "Hebdomadaire",
+      "monthly": "Mensuelle",
+      "dayOfWeek": "Jour de la semaine",
+      "weekday": {
+        "monday": "Lundi",
+        "tuesday": "Mardi",
+        "wednesday": "Mercredi",
+        "thursday": "Jeudi",
+        "friday": "Vendredi",
+        "saturday": "Samedi",
+        "sunday": "Dimanche"
+      },
+      "dayOfMonth": "Jour du mois",
+      "timeUtc": "Heure (UTC, HH:MM)",
+      "keepLastN": "Conserver les N dernières sauvegardes",
+      "running": "En cours…",
+      "runBackupNow": "Lancer une sauvegarde maintenant",
+      "download": "Télécharger",
+      "size": "Taille",
+      "restoreBackupTitle": "Restaurer la sauvegarde",
+      "restoreWarning": "Cela remplacera toutes les données actuelles par le contenu de la sauvegarde. Cette action est irréversible.",
+      "restoring": "Restauration…",
+      "restore": "Restaurer"
+    },
+    "activityLog": {
+      "module": "Module",
+      "allModules": "Tous les modules",
+      "from": "Du",
+      "to": "Au",
+      "filter": "Filtrer",
+      "noActivity": "Aucune activité enregistrée pour l'instant.",
+      "when": "Quand",
+      "who": "Qui",
+      "what": "Quoi",
+      "loadMore": "Charger plus"
+    },
+    "notifications": {
+      "desc": "Regroupez les corvées bientôt dues, les consommables à stock faible et les garanties expirant, avec un résumé quotidien optionnel envoyé à Home Assistant.",
+      "enable": "Activer le centre de notifications",
+      "choresThreshold": "Seuil « bientôt dû » des corvées (fraction de la période restante)",
+      "warrantyWindow": "Fenêtre « expire bientôt » des garanties (jours)",
+      "haDigest": "Envoyer un résumé quotidien via Home Assistant",
+      "haNotifyService": "Service de notification HA",
+      "haNotifyServicePlaceholder": "ex. notify.mobile_app_pixel",
+      "digestTime": "Heure du résumé (UTC, HH:MM)"
+    }
+  },
+  "datePicker": {
+    "placeholder": "Choisir une date…"
+  },
+  "mediaGallery": {
+    "itemCount": "{n, plural, one {# élément} other {# éléments}}",
+    "gridView": "Vue grille",
+    "listView": "Vue liste",
+    "emptyState": "Aucun média pour l'instant. Déposez des fichiers ici ou utilisez le bouton ci-dessous.",
+    "pdfBadge": "PDF",
+    "uploading": "Envoi…",
+    "uploadButton": "＋ Ajouter"
+  },
+  "emojiPicker": {
+    "pickEmoji": "Choisir un emoji",
+    "objects": "Objets",
+    "flags": "Drapeaux",
+    "filterCountries": "Filtrer les pays…",
+    "custom": "Personnalisé…"
+  },
+  "kb": {
+    "tree": {
+      "collapse": "Réduire",
+      "expand": "Développer",
+      "pageActions": "Actions de la page",
+      "addChildPage": "Ajouter une sous-page",
+      "rename": "Renommer",
+      "noMatchingPages": "Aucune page correspondante.",
+      "noPagesYet": "Aucune page pour l'instant."
+    },
+    "trash": {
+      "title": "Corbeille",
+      "emptyTrash": "Vider la corbeille",
+      "trashIsEmpty": "La corbeille est vide.",
+      "deletedOn": "Supprimée le {date}",
+      "restore": "Restaurer",
+      "deleteForeverTitle": "Supprimer définitivement",
+      "deleteForeverButton": "Supprimer définitivement",
+      "confirmEmptyBody": "Supprimer définitivement {n, plural, one {# page} other {# pages}} de la corbeille ? Cette action est irréversible.",
+      "confirmDeletePrefix": "Supprimer définitivement",
+      "confirmDeleteSuffix": " ? Cette action est irréversible."
+    },
+    "page": {
+      "newPage": "Nouvelle page",
+      "newPageTitle": "Nouvelle page",
+      "createFailed": "Échec de la création",
+      "titleEmpty": "Le titre ne peut pas être vide",
+      "saveFailed": "Échec de l'enregistrement",
+      "iconUpdateFailed": "Échec de la mise à jour de l'icône",
+      "renameFailed": "Échec du renommage",
+      "moveFailed": "Échec du déplacement",
+      "loadTrashFailed": "Échec du chargement de la corbeille",
+      "restoreFailed": "Échec de la restauration",
+      "emptyTrashFailed": "Échec du vidage de la corbeille",
+      "selectOrCreate": "Sélectionnez une page ou créez-en une",
+      "pageTitlePlaceholder": "Titre de la page",
+      "contentTab": "Contenu",
+      "deletePage": "Supprimer la page",
+      "startWritingPlaceholder": "Commencez à écrire en Markdown… (tapez /page pour créer une sous-page liée)",
+      "deletePageTitle": "Supprimer la page",
+      "deletePrefix": "Supprimer",
+      "andSubPages": "et {n, plural, one {# sous-page} other {# sous-pages}}",
+      "restoreThemNote": "Vous pourrez les restaurer depuis la corbeille par la suite.",
+      "restoreItNote": "Vous pourrez la restaurer depuis la corbeille par la suite."
+    }
+  },
+  "markdownEditor": {
+    "defaultPlaceholder": "Cliquez pour ajouter du contenu Markdown…",
+    "pageDeleted": "Page supprimée",
+    "toolbarLabel": "Mise en forme Markdown",
+    "heading1": "Titre 1",
+    "heading2": "Titre 2",
+    "heading3": "Titre 3",
+    "bold": "Gras",
+    "italic": "Italique",
+    "strikethrough": "Barré",
+    "bulletList": "Liste à puces",
+    "numberedList": "Liste numérotée",
+    "blockquote": "Citation",
+    "inlineCode": "Code en ligne",
+    "codeBlock": "Bloc de code",
+    "link": "Lien",
+    "horizontalRule": "Ligne horizontale",
+    "insertMedia": "Insérer un média",
+    "insertMediaAttachment": "Insérer une pièce jointe média",
+    "writeInMarkdown": "Écrire en Markdown…",
+    "clickToEdit": "Cliquer pour modifier"
+  }
+}

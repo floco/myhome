@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createWorksStore, Work } from "../worksStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
   import WorkModal from "./WorkModal.svelte";
@@ -70,8 +71,9 @@
   }
 
   function statusLabel(status: Work["status"]): string {
-    if (status === "in_progress") return "In progress";
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    if (status === "in_progress") return $_("works.status.inProgress");
+    if (status === "done") return $_("works.status.done");
+    return $_("works.status.planned");
   }
 
   function statusColor(status: Work["status"]): string {
@@ -90,27 +92,27 @@
   {#if store.works.length === 0}
     <div class="empty-charts">
       <span class="empty-icon">🔧</span>
-      <p>No works yet — click ＋ Add work to get started.</p>
+      <p>{$_('works.page.emptyCharts')}</p>
     </div>
   {:else}
     <div class="chart-card-wrap">
       <Card>
-        <div class="chart-label">House timeline</div>
+        <div class="chart-label">{$_('works.page.houseTimeline')}</div>
         <div class="stat-chips-row">
           <div class="stat-chip">
-            <div class="stat-title">Planned</div>
+            <div class="stat-title">{$_('works.status.planned')}</div>
             <div class="stat-value">{plannedCount}</div>
           </div>
           <div class="stat-chip">
-            <div class="stat-title">In progress</div>
+            <div class="stat-title">{$_('works.status.inProgress')}</div>
             <div class="stat-value">{inProgressCount}</div>
           </div>
           <div class="stat-chip">
-            <div class="stat-title">Done</div>
+            <div class="stat-title">{$_('works.status.done')}</div>
             <div class="stat-value">{doneCount}</div>
           </div>
           <div class="stat-chip">
-            <div class="stat-title">Total cost</div>
+            <div class="stat-title">{$_('works.page.totalCost')}</div>
             <div class="stat-value">{fmt(allTimeCost)} €</div>
           </div>
         </div>
@@ -122,20 +124,20 @@
   <div class="table-card-wrap">
     <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
     <div class="toolbar">
-      <Input placeholder="🔍 Search…" bind:value={searchQuery} />
+      <Input placeholder={$_('chores.page.search')} bind:value={searchQuery} />
       <select class="native-input filter-sel" bind:value={statusFilter}>
-        <option value="">All statuses</option>
-        <option value="planned">Planned</option>
-        <option value="in_progress">In progress</option>
-        <option value="done">Done</option>
+        <option value="">{$_('works.page.allStatuses')}</option>
+        <option value="planned">{$_('works.status.planned')}</option>
+        <option value="in_progress">{$_('works.status.inProgress')}</option>
+        <option value="done">{$_('works.status.done')}</option>
       </select>
       <select class="native-input filter-sel" bind:value={categoryFilter}>
-        <option value="">All categories</option>
+        <option value="">{$_('costs.page.allCategories')}</option>
         {#each settingsStore.workCategories as cat}
           <option value={cat.id}>{cat.emoji} {cat.name}</option>
         {/each}
       </select>
-      <Button onclick={() => { modalWork = "create"; }}>＋ Add work</Button>
+      <Button onclick={() => { modalWork = "create"; }}>＋ {$_('works.page.addWork')}</Button>
     </div>
 
     <div class="table-wrapper">
@@ -163,27 +165,27 @@
           class="status-chip"
           style="background:{statusColor(work.status)}22;color:{statusColor(work.status)};border:1px solid {statusColor(work.status)}44"
         >{statusLabel(work.status)}</span>
-        {#if work.placement}<span class="pin-indicator" title="Pinned">📍</span>{/if}
+        {#if work.placement}<span class="pin-indicator" title={$_('works.page.pinned')}>📍</span>{/if}
       {/snippet}
 
       <SortableTable
         columns={[
           { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
-          { key: "title", label: "Title", sortValue: (w) => w.title, cellClass: "name-cell", cell: titleCell },
-          { key: "category", label: "Category", sortValue: (w) => categoryMap.get(w.categoryId ?? "")?.name ?? null, cell: categoryCell },
-          { key: "date", label: "Date", sortValue: (w) => (w.date ? new Date(w.date) : null), cell: dateCell },
-          { key: "supplier", label: "Supplier", sortValue: (w) => supplierMap.get(w.supplierId ?? "")?.name ?? null, cell: supplierCell },
-          { key: "cost", label: "Cost", sortValue: (w) => w.totalCost, cell: costCell },
-          { key: "status", label: "Status", sortValue: (w) => w.status, cell: statusCell },
+          { key: "title", label: $_('works.page.title'), sortValue: (w) => w.title, cellClass: "name-cell", cell: titleCell },
+          { key: "category", label: $_('costs.page.category'), sortValue: (w) => categoryMap.get(w.categoryId ?? "")?.name ?? null, cell: categoryCell },
+          { key: "date", label: $_('costs.page.date'), sortValue: (w) => (w.date ? new Date(w.date) : null), cell: dateCell },
+          { key: "supplier", label: $_('costs.page.supplier'), sortValue: (w) => supplierMap.get(w.supplierId ?? "")?.name ?? null, cell: supplierCell },
+          { key: "cost", label: $_('inventory.page.cost'), sortValue: (w) => w.totalCost, cell: costCell },
+          { key: "status", label: $_('works.page.status'), sortValue: (w) => w.status, cell: statusCell },
         ] as Column<Work>[]}
         rows={filteredWorks}
         rowKey={(work) => work.id}
         rowClick={(work) => { modalWork = work; }}
-        emptyMessage={store.works.length === 0 ? "No works yet — click ＋ Add work to get started." : "No works match your filters."}
+        emptyMessage={store.works.length === 0 ? $_('works.page.emptyNoWorks') : $_('works.page.emptyNoMatch')}
       />
     </div>
 
-    <div class="footer">{filteredWorks.length} works · total: {fmt(totalCost)} €</div>
+    <div class="footer">{$_('works.page.footer', { values: { n: filteredWorks.length, total: fmt(totalCost) } })}</div>
     </Card>
   </div>
 </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import { homesStore } from "../homesStore.svelte";
 
   interface Props {
@@ -9,27 +10,27 @@
   let { currentRoute, expanded, onclose }: Props = $props();
 
   const ALL_MODULES = [
-    { id: "home",        href: "#/",            icon: "🏡", label: "Home"             },
-    { id: "plan",        href: "#/plan",        icon: "📐", label: "Floor Plan"       },
-    { id: "chores",      href: "#/chores",      icon: "✅", label: "Chores"           },
-    { id: "inventory",   href: "#/inventory",   icon: "📦", label: "Inventory"        },
-    { id: "consumables", href: "#/consumables", icon: "🛒", label: "Consumables"      },
-    { id: "works",       href: "#/works",       icon: "🔧", label: "Works"            },
-    { id: "kb",          href: "#/kb",          icon: "📖", label: "Knowledge Base"   },
-    { id: "costs",       href: "#/costs",       icon: "💶", label: "Costs"            },
-    { id: "locations",   href: "#/locations",   icon: "🌍", label: "Locations"   },
-    { id: "properties",  href: "#/properties",  icon: "🏘", label: "Properties"   },
-    { id: "budget",      href: "#/budget",      icon: "💰", label: "Budget",      placeholder: true },
-    { id: "visits",      href: "#/visits",      icon: "📅", label: "Visits",      placeholder: true },
-    { id: "contacts",    href: "#/contacts",    icon: "👤", label: "Contacts",    placeholder: true },
-    { id: "checklist",   href: "#/checklist",   icon: "✅", label: "Checklist",   placeholder: true },
+    { id: "home",        href: "#/",            icon: "🏡" },
+    { id: "plan",        href: "#/plan",        icon: "📐" },
+    { id: "chores",      href: "#/chores",      icon: "✅" },
+    { id: "inventory",   href: "#/inventory",   icon: "📦" },
+    { id: "consumables", href: "#/consumables", icon: "🛒" },
+    { id: "works",       href: "#/works",       icon: "🔧" },
+    { id: "kb",          href: "#/kb",          icon: "📖" },
+    { id: "costs",       href: "#/costs",       icon: "💶" },
+    { id: "locations",   href: "#/locations",   icon: "🌍" },
+    { id: "properties",  href: "#/properties",  icon: "🏘" },
+    { id: "budget",      href: "#/budget",      icon: "💰", placeholder: true },
+    { id: "visits",      href: "#/visits",      icon: "📅", placeholder: true },
+    { id: "contacts",    href: "#/contacts",    icon: "👤", placeholder: true },
+    { id: "checklist",   href: "#/checklist",   icon: "✅", placeholder: true },
   ];
 
   const visibleModules = $derived(
     ALL_MODULES.filter((m) => homesStore.activeHome?.enabledModules.includes(m.id) ?? true)
   );
 
-  const settingsLink = { href: "#/settings", icon: "⚙️", label: "Settings" };
+  const settingsLink = { href: "#/settings", icon: "⚙️" };
 
   function isActive(href: string): boolean {
     if (href === "#/") return currentRoute === "#/" || currentRoute === "";
@@ -50,17 +51,17 @@
         class="nav-item"
         class:active={isActive(mod.href)}
         class:soon={mod.placeholder}
-        title={mod.placeholder ? `${mod.label} — coming soon` : mod.label}
+        title={mod.placeholder ? $_('nav.comingSoon', { values: { label: $_(`common.modules.${mod.id}`) } }) : $_(`common.modules.${mod.id}`)}
         onclick={onclose}
       >
         <span class="nav-icon">{mod.icon}</span>
-        <span class="nav-label">{mod.label}{#if mod.placeholder && expanded}<span class="soon-badge">Soon</span>{/if}</span>
+        <span class="nav-label">{$_(`common.modules.${mod.id}`)}{#if mod.placeholder && expanded}<span class="soon-badge">{$_('nav.soon')}</span>{/if}</span>
       </a>
     {/each}
     <hr class="nav-separator" />
-    <a href={settingsLink.href} class="nav-item" class:active={isActive(settingsLink.href)} title={settingsLink.label} onclick={onclose}>
+    <a href={settingsLink.href} class="nav-item" class:active={isActive(settingsLink.href)} title={$_('nav.settings')} onclick={onclose}>
       <span class="nav-icon">{settingsLink.icon}</span>
-      <span class="nav-label">{settingsLink.label}</span>
+      <span class="nav-label">{$_('nav.settings')}</span>
     </a>
   </div>
 </nav>

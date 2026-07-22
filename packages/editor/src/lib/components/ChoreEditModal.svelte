@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createChoreStore, Chore } from "../choreStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
   import { apiUrl } from "../apiUrl";
@@ -53,16 +54,16 @@
   }
 
   function getRoomName(assignmentId: string | null): string {
-    if (!assignmentId) return "🏠 Whole house";
+    if (!assignmentId) return `🏠 ${$_('chores.list.wholeHouse')}`;
     const assignment = store.assignments.find((a) => a.id === assignmentId);
-    if (!assignment?.roomId) return "🏠 Whole house";
-    return rooms.find((r) => r.id === assignment.roomId)?.label ?? "Unknown room";
+    if (!assignment?.roomId) return `🏠 ${$_('chores.list.wholeHouse')}`;
+    return rooms.find((r) => r.id === assignment.roomId)?.label ?? $_('chores.list.unknownRoom');
   }
 
   async function handleDeleteCompletion(id: string): Promise<void> {
     deletingCompletion = id;
     try { await store.deleteCompletion(id); }
-    catch (e) { error = e instanceof Error ? e.message : "Delete failed"; }
+    catch (e) { error = e instanceof Error ? e.message : $_('chores.editModal.deleteFailed'); }
     finally { deletingCompletion = null; }
   }
 
@@ -89,7 +90,7 @@
 
   async function handleSave(): Promise<void> {
     if (!chore) return;
-    if (!draftName.trim()) { error = "Name cannot be empty"; return; }
+    if (!draftName.trim()) { error = $_('chores.editModal.nameEmpty'); return; }
     saving = true; error = null;
     try {
       await store.updateChore(chore.id, {
@@ -102,7 +103,7 @@
       });
       onclose();
     } catch (e) {
-      error = e instanceof Error ? e.message : "Save failed";
+      error = e instanceof Error ? e.message : $_('chores.editModal.saveFailed');
     } finally {
       saving = false;
     }
@@ -112,21 +113,21 @@
     if (!chore) return;
     deleting = true;
     try { await store.deleteChore(chore.id); onclose(); }
-    catch (e) { error = e instanceof Error ? e.message : "Delete failed"; deleting = false; }
+    catch (e) { error = e instanceof Error ? e.message : $_('chores.editModal.deleteFailed'); deleting = false; }
   }
 
   async function handleUpload(files: File[]): Promise<void> {
     if (!chore) return;
     uploading = true; uploadError = null;
     try { for (const file of files) await store.uploadAttachment(chore.id, file); }
-    catch (err) { uploadError = err instanceof Error ? err.message : "Upload failed"; }
+    catch (err) { uploadError = err instanceof Error ? err.message : $_('chores.editModal.uploadFailed'); }
     finally { uploading = false; }
   }
 
   async function handleDeleteAttachment(id: string): Promise<void> {
     if (!chore) return;
     try { await store.deleteAttachment(chore.id, id); }
-    catch (err) { uploadError = err instanceof Error ? err.message : "Delete failed"; }
+    catch (err) { uploadError = err instanceof Error ? err.message : $_('chores.editModal.deleteFailed'); }
   }
 
   function handleItemClick(index: number): void { lightboxIndex = index; lightboxOpen = true; }
@@ -136,9 +137,9 @@
   <Modal open={true} title={chore.emoji + " " + chore.name} onclose={onclose}>
     <Tabs
       tabs={[
-        { id: "info", label: "Info" },
-        { id: "media", label: (chore.attachments?.length ?? 0) > 0 ? `Media (${chore.attachments.length})` : "Media" },
-        { id: "history", label: history.length > 0 ? `History (${history.length})` : "History" },
+        { id: "info", label: $_('chores.editModal.info') },
+        { id: "media", label: (chore.attachments?.length ?? 0) > 0 ? $_('chores.editModal.mediaCount', { values: { n: chore.attachments.length } }) : $_('chores.editModal.media') },
+        { id: "history", label: history.length > 0 ? $_('chores.editModal.historyCount', { values: { n: history.length } }) : $_('chores.editModal.history') },
       ]}
       active={activeTab}
       onchange={(id) => { activeTab = id as "info" | "media" | "history"; }}
@@ -146,24 +147,24 @@
 
     {#if activeTab === "info"}
       <div class="edit-form">
-        <label>Name
-          <Input bind:value={draftName} placeholder="Chore name" />
+        <label>{$_('chores.editModal.name')}
+          <Input bind:value={draftName} placeholder={$_('chores.editModal.choreName')} />
         </label>
-        <label>Emoji
+        <label>{$_('chores.editModal.emoji')}
           <EmojiPicker bind:value={draftEmoji} />
         </label>
-        <label>Period (days)
+        <label>{$_('chores.editModal.periodDays')}
           <input class="native-input" type="number" bind:value={draftPeriodDays} min="1" />
         </label>
-        <label>Default due
+        <label>{$_('chores.editModal.defaultDue')}
           <DatePicker bind:value={draftNextDue} />
         </label>
         <div class="sfd-row">
           <input type="checkbox" id="sfd-modal" bind:checked={draftScheduleFromDue} />
-          <label for="sfd-modal" title="Next due = planned date + period">Schedule from due date</label>
+          <label for="sfd-modal" title={$_('chores.editModal.scheduleFromDueTitle')}>{$_('chores.editModal.scheduleFromDue')}</label>
         </div>
-        <label>Notes
-          <textarea class="native-input notes-field" bind:value={draftDescription} placeholder="Instructions, tips, or reminders…" rows="4"></textarea>
+        <label>{$_('chores.editModal.notes')}
+          <textarea class="native-input notes-field" bind:value={draftDescription} placeholder={$_('chores.editModal.notesPlaceholder')} rows="4"></textarea>
         </label>
         {#if error}<div class="form-error">{error}</div>{/if}
       </div>
@@ -182,15 +183,15 @@
     {:else if activeTab === "history"}
       <div class="history-pane">
         {#if history.length === 0}
-          <div class="no-history">No completions yet</div>
+          <div class="no-history">{$_('chores.editModal.noCompletions')}</div>
         {:else}
           {#each history as rec (rec.id)}
             <div class="history-row">
               <span class="hist-room">{getRoomName(rec.assignmentId)}</span>
               <span class="hist-date">{formatDateTime(rec.completedAt)}</span>
-              {#if rec.scheduledDue}<span class="hist-due">due {formatDate(rec.scheduledDue)}</span>{/if}
+              {#if rec.scheduledDue}<span class="hist-due">{$_('chores.editModal.dueOn', { values: { date: formatDate(rec.scheduledDue) } })}</span>{/if}
               {#if rec.notes}<span class="hist-notes">{rec.notes}</span>{/if}
-              <button class="hist-del" disabled={deletingCompletion === rec.id} title="Delete record" onclick={() => handleDeleteCompletion(rec.id)}>🗑</button>
+              <button class="hist-del" disabled={deletingCompletion === rec.id} title={$_('chores.editModal.deleteRecord')} onclick={() => handleDeleteCompletion(rec.id)}>🗑</button>
             </div>
           {/each}
         {/if}
@@ -200,21 +201,21 @@
     {#snippet footer()}
       <span class="spacer"></span>
       {#if confirmDelete}
-        <span class="confirm-text">Delete this chore?</span>
-        <Button variant="danger" disabled={deleting} onclick={handleDelete}>{deleting ? "…" : "Confirm delete"}</Button>
-        <Button variant="ghost" onclick={() => { confirmDelete = false; }}>Cancel</Button>
+        <span class="confirm-text">{$_('chores.editModal.deleteThisChore')}</span>
+        <Button variant="danger" disabled={deleting} onclick={handleDelete}>{deleting ? "…" : $_('chores.editModal.confirmDelete')}</Button>
+        <Button variant="ghost" onclick={() => { confirmDelete = false; }}>{$_('common.cancel')}</Button>
       {:else}
-        <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 Delete</Button>
+        <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 {$_('common.delete')}</Button>
       {/if}
       {#if onplaceonmap && activeTab === "info"}
-        <Button variant="secondary" onclick={() => { onplaceonmap!(chore!.id); }}>📍 Place on map</Button>
+        <Button variant="secondary" onclick={() => { onplaceonmap!(chore!.id); }}>📍 {$_('chores.editModal.placeOnMap')}</Button>
       {/if}
       {#if activeTab === "info"}
         <Button variant="primary" disabled={saving} onclick={handleSave}>
-          {saving ? "Saving…" : "Save"}
+          {saving ? $_('settings.security.saving') : $_('common.save')}
         </Button>
       {/if}
-      <Button variant="secondary" onclick={onclose}>Cancel</Button>
+      <Button variant="secondary" onclick={onclose}>{$_('common.cancel')}</Button>
     {/snippet}
   </Modal>
 {/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createWorksStore, Work } from "../worksStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
@@ -48,8 +49,8 @@
   let lightboxIndex = $state(0);
 
   async function handleSave(): Promise<void> {
-    if (!title.trim()) { error = "Title is required"; return; }
-    if (!date) { error = "Date is required"; return; }
+    if (!title.trim()) { error = $_('works.modal.titleRequired'); return; }
+    if (!date) { error = $_('costs.entryModal.dateRequired'); return; }
     saving = true; error = null;
     const patch = {
       title: title.trim(),
@@ -71,7 +72,7 @@
         onclose();
       }
     } catch (e) {
-      error = e instanceof Error ? e.message : "Save failed";
+      error = e instanceof Error ? e.message : $_('works.modal.saveFailed');
     } finally {
       saving = false;
     }
@@ -84,7 +85,7 @@
       await store.deleteWork(work.id);
       onclose();
     } catch (e) {
-      error = e instanceof Error ? e.message : "Delete failed";
+      error = e instanceof Error ? e.message : $_('works.modal.deleteFailed');
       deleting = false;
     }
   }
@@ -97,7 +98,7 @@
         await store.uploadAttachment(work.id, file);
       }
     } catch (err) {
-      uploadError = err instanceof Error ? err.message : "Upload failed";
+      uploadError = err instanceof Error ? err.message : $_('works.modal.uploadFailed');
     } finally {
       uploading = false;
     }
@@ -108,7 +109,7 @@
     try {
       await store.deleteAttachment(work.id, id);
     } catch (err) {
-      uploadError = err instanceof Error ? err.message : "Delete failed";
+      uploadError = err instanceof Error ? err.message : $_('works.modal.deleteFailed');
     }
   }
 
@@ -137,74 +138,74 @@
   );
 </script>
 
-<Modal open={true} title={isCreate ? "＋ New work" : "Edit work"} {onclose} width="min(92vw, 820px)">
+<Modal open={true} title={isCreate ? `＋ ${$_('works.modal.newWork')}` : $_('works.modal.editWork')} {onclose} width="min(92vw, 820px)">
   <div class="tabs">
-    <button class="tab" class:active={activeTab === "info"} onclick={() => { activeTab = "info"; }}>Info</button>
-    <button class="tab" class:active={activeTab === "notes"} onclick={() => { activeTab = "notes"; }}>Notes</button>
+    <button class="tab" class:active={activeTab === "info"} onclick={() => { activeTab = "info"; }}>{$_('chores.editModal.info')}</button>
+    <button class="tab" class:active={activeTab === "notes"} onclick={() => { activeTab = "notes"; }}>{$_('works.modal.notes')}</button>
     <button
       class="tab"
       class:active={activeTab === "media"}
       disabled={isCreate}
       onclick={() => { activeTab = "media"; }}
-    >Media{attachmentCount > 0 ? ` (${attachmentCount})` : ""}</button>
+    >{$_('chores.editModal.media')}{attachmentCount > 0 ? ` (${attachmentCount})` : ""}</button>
   </div>
 
   {#if activeTab === "info"}
     <div class="row">
-      <label>Title *</label>
-      <Input bind:value={title} placeholder="Work title" />
+      <label>{$_('works.page.title')} *</label>
+      <Input bind:value={title} placeholder={$_('works.modal.workTitlePlaceholder')} />
     </div>
     <div class="row-pair">
       <div class="row">
-        <label>Category</label>
+        <label>{$_('costs.page.category')}</label>
         <select class="native-input" bind:value={categoryId}>
-          <option value="">— None —</option>
+          <option value="">{$_('works.modal.noneOption')}</option>
           {#each settingsStore.workCategories as cat}
             <option value={cat.id}>{cat.emoji} {cat.name}</option>
           {/each}
         </select>
       </div>
       <div class="row">
-        <label>Status</label>
+        <label>{$_('works.page.status')}</label>
         <select class="native-input" bind:value={status}>
-          <option value="planned">Planned</option>
-          <option value="in_progress">In progress</option>
-          <option value="done">Done</option>
+          <option value="planned">{$_('works.status.planned')}</option>
+          <option value="in_progress">{$_('works.status.inProgress')}</option>
+          <option value="done">{$_('works.status.done')}</option>
         </select>
       </div>
     </div>
     <div class="row-pair">
       <div class="row">
-        <label>Date *</label>
+        <label>{$_('costs.entryModal.date')} *</label>
         <DatePicker bind:value={date} />
       </div>
       <div class="row">
-        <label>Total cost (€)</label>
+        <label>{$_('works.modal.totalCostEur')}</label>
         <input class="native-input" type="number" min="0" step="0.01" bind:value={totalCost} placeholder="0.00" />
       </div>
     </div>
     <div class="row">
-      <label>Supplier</label>
+      <label>{$_('costs.entryModal.supplier')}</label>
       <select class="native-input" bind:value={supplierId}>
-        <option value="">— None —</option>
+        <option value="">{$_('works.modal.noneOption')}</option>
         {#each settingsStore.suppliers as s}
           <option value={s.id}>{s.name}</option>
         {/each}
       </select>
     </div>
     <div class="row">
-      <label>Description</label>
-      <textarea class="native-input desc-area" bind:value={description} placeholder="Short summary of the work…" rows="2"></textarea>
+      <label>{$_('works.modal.description')}</label>
+      <textarea class="native-input desc-area" bind:value={description} placeholder={$_('works.modal.descriptionPlaceholder')} rows="2"></textarea>
     </div>
   {:else if activeTab === "notes"}
     <MarkdownEditor
       bind:value={notes}
       bind:editing={editingNotes}
-      placeholder="Click to add markdown notes…"
+      placeholder={$_('works.modal.notesPlaceholder')}
       minHeight="260px"
     />
     {#if editingNotes && !isCreate}
-      <Button variant="secondary" onclick={() => { editingNotes = false; }}>Done editing</Button>
+      <Button variant="secondary" onclick={() => { editingNotes = false; }}>{$_('works.modal.doneEditing')}</Button>
     {/if}
   {:else}
     <MediaGallery
@@ -222,19 +223,19 @@
   {#snippet footer()}
     {#if !isCreate}
       {#if confirmDelete}
-        <span class="confirm-text">Delete?</span>
-        <Button variant="danger" disabled={deleting} onclick={handleDelete}>✓ Confirm</Button>
+        <span class="confirm-text">{$_('settings.categories.deleteConfirm')}</span>
+        <Button variant="danger" disabled={deleting} onclick={handleDelete}>✓ {$_('works.modal.confirm')}</Button>
         <Button variant="ghost" onclick={() => { confirmDelete = false; }}>✕</Button>
       {:else}
-        <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 Delete</Button>
+        <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 {$_('common.delete')}</Button>
       {/if}
     {/if}
     <span class="spacer"></span>
     {#if onplaceonmap && !isCreate}
-      <Button variant="secondary" onclick={() => { onplaceonmap(work!.id); onclose(); }}>📍 Place on map</Button>
+      <Button variant="secondary" onclick={() => { onplaceonmap(work!.id); onclose(); }}>📍 {$_('chores.editModal.placeOnMap')}</Button>
     {/if}
     <Button variant="primary" disabled={saving} onclick={handleSave}>
-      {saving ? "Saving…" : isCreate ? "Create" : "Save"}
+      {saving ? $_('settings.security.saving') : isCreate ? $_('settings.security.create') : $_('common.save')}
     </Button>
   {/snippet}
 </Modal>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { Location } from "../locationsStore.svelte";
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
@@ -25,25 +26,25 @@
   }
 </script>
 
-<Modal open={true} title={isCreate ? "Add location" : "Edit location"} {onclose} width="360px">
+<Modal open={true} title={isCreate ? $_('locations.modal.addLocation') : $_('locations.modal.editLocation')} {onclose} width="360px">
   {#snippet children()}
     <div class="form">
       <div class="row">
         <div class="field short">
-          <label>Flag</label>
+          <label>{$_('locations.modal.flag')}</label>
           <EmojiPicker bind:value={emoji} flags={true} />
         </div>
         <div class="field grow">
-          <label>Name *</label>
-          <Input bind:value={name} placeholder="e.g. Nantes, France" />
+          <label>{$_('chores.editModal.name')} *</label>
+          <Input bind:value={name} placeholder={$_('locations.modal.namePlaceholder')} />
         </div>
       </div>
     </div>
   {/snippet}
 
   {#snippet footer()}
-    <Button variant="ghost" onclick={onclose}>Cancel</Button>
-    <Button onclick={handleSave} disabled={!name.trim()}>{isCreate ? "Add" : "Save"}</Button>
+    <Button variant="ghost" onclick={onclose}>{$_('common.cancel')}</Button>
+    <Button onclick={handleSave} disabled={!name.trim()}>{isCreate ? $_('common.add') : $_('common.save')}</Button>
   {/snippet}
 </Modal>
 

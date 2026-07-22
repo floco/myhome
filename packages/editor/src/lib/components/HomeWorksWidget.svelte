@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createWorksStore, Work } from "../worksStore.svelte";
   import Card from "./ui/Card.svelte";
 
@@ -25,25 +26,25 @@
   }
 
   function statusLabel(status: Work["status"]): string {
-    if (status === "planned") return "Planned";
-    if (status === "in_progress") return "In progress";
-    return "Done";
+    if (status === "in_progress") return $_("works.status.inProgress");
+    if (status === "done") return $_("works.status.done");
+    return $_("works.status.planned");
   }
 </script>
 
 <div class="widget" role="button" tabindex="0" onclick={onnavigate} onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onnavigate(); } }}>
   <Card>
     <div class="header">
-      <h3>🔧 Works</h3>
-      <span class="sub">{totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })} € total</span>
+      <h3>🔧 {$_('common.modules.works')}</h3>
+      <span class="sub">{$_('home.works.totalSub', { values: { amount: totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 }) } })}</span>
     </div>
     <div class="stats">
-      <div class="stat"><div class="stat-value">{plannedCount}</div><div class="stat-label">Planned</div></div>
-      <div class="stat"><div class="stat-value">{inProgressCount}</div><div class="stat-label">In progress</div></div>
-      <div class="stat"><div class="stat-value">{doneCount}</div><div class="stat-label">Done</div></div>
+      <div class="stat"><div class="stat-value">{plannedCount}</div><div class="stat-label">{$_('works.status.planned')}</div></div>
+      <div class="stat"><div class="stat-value">{inProgressCount}</div><div class="stat-label">{$_('works.status.inProgress')}</div></div>
+      <div class="stat"><div class="stat-value">{doneCount}</div><div class="stat-label">{$_('works.status.done')}</div></div>
     </div>
     {#if recentWorks.length === 0}
-      <p class="empty">No works logged yet.</p>
+      <p class="empty">{$_('home.works.emptyState')}</p>
     {:else}
       <ul class="list">
         {#each recentWorks as work (work.id)}

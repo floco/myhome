@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import Modal from "./ui/Modal.svelte";
   import Input from "./ui/Input.svelte";
   import Button from "./ui/Button.svelte";
@@ -18,7 +19,7 @@
   let error = $state<string | null>(null);
 
   async function submit(): Promise<void> {
-    if (!name.trim()) { error = "Name is required"; return; }
+    if (!name.trim()) { error = $_('nav.newHomeModal.nameRequired'); return; }
     saving = true;
     error = null;
     try {
@@ -27,41 +28,41 @@
       type = "existing";
       onclose();
     } catch (e) {
-      error = e instanceof Error ? e.message : "Failed to create home";
+      error = e instanceof Error ? e.message : $_('nav.newHomeModal.failedToCreate');
     } finally {
       saving = false;
     }
   }
 </script>
 
-<Modal {open} title="New home" onclose={required ? undefined : onclose}>
+<Modal {open} title={$_('nav.newHomeModal.title')} onclose={required ? undefined : onclose}>
   <div class="form">
-    <Input label="Name" bind:value={name} placeholder="Rue des Lilas" />
+    <Input label={$_('nav.newHomeModal.nameLabel')} bind:value={name} placeholder={$_('nav.newHomeModal.namePlaceholder')} />
 
     <fieldset class="type-group">
-      <legend>Type</legend>
+      <legend>{$_('nav.newHomeModal.typeLabel')}</legend>
       <label class="type-option" class:selected={type === "existing"}>
         <input type="radio" bind:group={type} value="existing" />
         <span class="type-icon">🏠</span>
         <span class="type-body">
-          <strong>Existing home</strong>
-          <small>A property you already own or live in — full module set.</small>
+          <strong>{$_('nav.newHomeModal.existingTitle')}</strong>
+          <small>{$_('nav.newHomeModal.existingDesc')}</small>
         </span>
       </label>
       <label class="type-option" class:selected={type === "project"}>
         <input type="radio" bind:group={type} value="project" />
         <span class="type-icon">🏗</span>
         <span class="type-body">
-          <strong>Project home</strong>
-          <small>Scouting locations, searching for land, or managing a build.</small>
+          <strong>{$_('nav.newHomeModal.projectTitle')}</strong>
+          <small>{$_('nav.newHomeModal.projectDesc')}</small>
         </span>
       </label>
       <label class="type-option" class:selected={type === "demo"}>
         <input type="radio" bind:group={type} value="demo" />
         <span class="type-icon">🧪</span>
         <span class="type-body">
-          <strong>Demo home</strong>
-          <small>Pre-filled with sample data across every module — great for exploring the app.</small>
+          <strong>{$_('nav.newHomeModal.demoTitle')}</strong>
+          <small>{$_('nav.newHomeModal.demoDesc')}</small>
         </span>
       </label>
     </fieldset>
@@ -73,10 +74,10 @@
 
   {#snippet footer()}
     {#if !required}
-      <Button variant="ghost" onclick={onclose} disabled={saving}>Cancel</Button>
+      <Button variant="ghost" onclick={onclose} disabled={saving}>{$_('common.cancel')}</Button>
     {/if}
     <Button onclick={submit} disabled={saving || !name.trim()}>
-      {saving ? "Creating…" : "Create home"}
+      {saving ? $_('nav.newHomeModal.creating') : $_('nav.newHomeModal.createHome')}
     </Button>
   {/snippet}
 </Modal>

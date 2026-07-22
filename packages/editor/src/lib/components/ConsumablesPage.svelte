@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createConsumableStore, Consumable } from "../consumableStore.svelte";
   import { stockStatus, barFill } from "../consumableStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
@@ -44,13 +45,24 @@
     low: "#ff9800",
     empty: "var(--danger)",
   };
-  const STATUS_LABEL: Record<string, string> = { ok: "OK", low: "LOW", empty: "EMPTY" };
 
-  const STOCK_META: Record<"ok" | "low" | "empty", { label: string; emoji: string; color: string }> = {
-    ok: { label: "OK", emoji: "🟢", color: "#4caf50" },
-    low: { label: "Low", emoji: "🟠", color: "#ff9800" },
-    empty: { label: "Empty", emoji: "🔴", color: "#f44336" },
+  function statusLabel(status: string): string {
+    if (status === "low") return $_('consumables.page.statusLow');
+    if (status === "empty") return $_('consumables.page.statusEmpty');
+    return $_('consumables.page.statusOk');
+  }
+
+  const STOCK_META: Record<"ok" | "low" | "empty", { emoji: string; color: string }> = {
+    ok: { emoji: "🟢", color: "#4caf50" },
+    low: { emoji: "🟠", color: "#ff9800" },
+    empty: { emoji: "🔴", color: "#f44336" },
   };
+
+  function stockLabel(status: "ok" | "low" | "empty"): string {
+    if (status === "low") return $_('consumables.page.low');
+    if (status === "empty") return $_('consumables.page.empty');
+    return $_('consumables.page.statusOk');
+  }
 
   const stockBreakdown = $derived(
     (["ok", "low", "empty"] as const)
@@ -59,7 +71,7 @@
         const meta = STOCK_META[status];
         return {
           id: status,
-          label: meta.label,
+          label: stockLabel(status),
           emoji: meta.emoji,
           color: meta.color,
           valueLabel: `${count}`,
@@ -97,28 +109,28 @@
   {#if store.consumables.length === 0}
     <div class="empty-charts">
       <span class="empty-icon">🛒</span>
-      <p>No consumables yet — click ＋ Add consumable to get started.</p>
+      <p>{$_('consumables.page.emptyCharts')}</p>
     </div>
   {:else}
     <div class="chart-card-wrap">
       <Card>
         <div class="chart-inner">
           <div class="bar-area">
-            <div class="chart-label">Stock status — {store.consumables.length} items</div>
+            <div class="chart-label">{$_('consumables.page.stockStatus', { values: { n: store.consumables.length } })}</div>
             <HorizontalBarChart segments={stockBreakdown} />
           </div>
 
           <div class="chart-divider"></div>
 
           <div class="stats-area">
-            <div class="chart-label">At a glance</div>
+            <div class="chart-label">{$_('chores.page.atAGlance')}</div>
             <div class="stat-chips-col">
               <div class="stat-chip">
-                <div class="stat-title">Low</div>
+                <div class="stat-title">{$_('consumables.page.low')}</div>
                 <div class="stat-value low">{lowStockCount}</div>
               </div>
               <div class="stat-chip">
-                <div class="stat-title">Empty</div>
+                <div class="stat-title">{$_('consumables.page.empty')}</div>
                 <div class="stat-value empty">{emptyStockCount}</div>
               </div>
             </div>
@@ -131,9 +143,9 @@
   <div class="table-card-wrap">
     <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
     <div class="toolbar">
-      <Input placeholder="🔍 Search…" bind:value={searchQuery} />
+      <Input placeholder={$_('chores.page.search')} bind:value={searchQuery} />
       <select class="native-select" bind:value={categoryFilter}>
-        <option value="">All categories</option>
+        <option value="">{$_('costs.page.allCategories')}</option>
         {#each settingsStore.consumableCategories as cat}
           <option value={cat.id}>{cat.emoji} {cat.name}</option>
         {/each}
@@ -143,16 +155,16 @@
           class="toggle-btn"
           class:active={!attentionFilter}
           onclick={() => { attentionFilter = false; }}
-          title="All"
+          title={$_('consumables.page.all')}
         >☰</button>
         <button
           class="toggle-btn"
           class:active={attentionFilter}
           onclick={() => { attentionFilter = true; }}
-          title="Needs attention"
+          title={$_('chores.page.needsAttentionTitle')}
         >⚠</button>
       </div>
-      <Button onclick={() => { showCreate = true; }}>＋ Add consumable</Button>
+      <Button onclick={() => { showCreate = true; }}>＋ {$_('consumables.page.addConsumable')}</Button>
     </div>
 
     <div class="table-wrapper">
@@ -182,24 +194,24 @@
       {#snippet statusCell(c: Consumable)}
         {@const st = stockStatus(c)}
         <span class="status-badge" style="color:{STATUS_COLOR[st]};background:{STATUS_COLOR[st]}22">
-          {STATUS_LABEL[st]}
+          {statusLabel(st)}
         </span>
       {/snippet}
       {#snippet actionsCell(c: Consumable)}
         {#if onplaceonmap && !c.placement}
-          <button class="icon-btn" title="Place on map" onclick={() => onplaceonmap?.(c.id)}>📌</button>
+          <button class="icon-btn" title={$_('consumables.page.placeOnMap')} onclick={() => onplaceonmap?.(c.id)}>📌</button>
         {/if}
       {/snippet}
 
       <SortableTable
         columns={[
           { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
-          { key: "name", label: "Name", sortValue: (c) => c.name, cellClass: "name-cell", cell: nameCell },
-          { key: "category", label: "Category", sortValue: (c) => categoryName(c.categoryId), cell: categoryCell },
-          { key: "quantity", label: "Quantity", sortValue: (c) => c.quantity, cell: quantityCell },
-          { key: "min", label: "Min", cellClass: "faint", sortValue: (c) => c.minQuantity, cell: minCell },
-          { key: "stock", label: "Stock", sortable: false, cellClass: "bar-cell", cell: stockCell },
-          { key: "status", label: "Status", sortValue: (c) => stockStatus(c), cell: statusCell },
+          { key: "name", label: $_('chores.editModal.name'), sortValue: (c) => c.name, cellClass: "name-cell", cell: nameCell },
+          { key: "category", label: $_('costs.page.category'), sortValue: (c) => categoryName(c.categoryId), cell: categoryCell },
+          { key: "quantity", label: $_('consumables.page.quantity'), sortValue: (c) => c.quantity, cell: quantityCell },
+          { key: "min", label: $_('consumables.page.min'), cellClass: "faint", sortValue: (c) => c.minQuantity, cell: minCell },
+          { key: "stock", label: $_('consumables.page.stock'), sortable: false, cellClass: "bar-cell", cell: stockCell },
+          { key: "status", label: $_('works.page.status'), sortValue: (c) => stockStatus(c), cell: statusCell },
           { key: "actions", label: "", sortable: false, cellClass: "actions-cell", stopRowClick: true, cell: actionsCell },
         ] as Column<Consumable>[]}
         rows={filtered}
@@ -210,12 +222,12 @@
           return st === "low" ? "row-low" : st === "empty" ? "row-empty" : "";
         }}
         emptyMessage={store.consumables.length === 0
-          ? "No consumables yet — click ＋ Add consumable to get started."
-          : "No consumables match your filters."}
+          ? $_('consumables.page.emptyNoConsumables')
+          : $_('consumables.page.emptyNoMatch')}
       />
     </div>
 
-    <div class="footer">{filtered.length} item{filtered.length !== 1 ? "s" : ""}</div>
+    <div class="footer">{$_('inventory.page.itemCount', { values: { n: filtered.length } })}</div>
     </Card>
   </div>
 </div>

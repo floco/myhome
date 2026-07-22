@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { Floor } from "@myhome/geometry";
 
   let {
@@ -27,7 +28,7 @@
 
   const currentFloorName = $derived(
     currentFloorId === ALL_FLOOR_ID
-      ? "All"
+      ? $_('floorPlan.switcher.all')
       : (floors.find((f) => f.id === currentFloorId)?.name ?? "—")
   );
 
@@ -56,8 +57,8 @@
 
   function handleAddFloor(): void {
     const n = floors.length + 1;
-    const names = ["Ground Floor", "First Floor", "Second Floor", "Third Floor", "Basement"];
-    const name = names[n - 1] ?? `Floor ${n}`;
+    const keys = ["groundFloor", "firstFloor", "secondFloor", "thirdFloor", "basement"];
+    const name = keys[n - 1] ? $_(`floorPlan.switcher.${keys[n - 1]}`) : $_('floorPlan.switcher.defaultFloorName', { values: { n } });
     onaddfloor?.(name);
   }
 
@@ -72,7 +73,7 @@
     <button
       class="compact-btn"
       onclick={() => { compactOpen = !compactOpen; }}
-      title="Switch floor"
+      title={$_('floorPlan.switcher.switchFloor')}
     >
       <span class="compact-label">{currentFloorName}</span>
       <span class="compact-chevron">{compactOpen ? "▴" : "▾"}</span>
@@ -83,9 +84,9 @@
         <button
           class="compact-floor-item"
           class:active={currentFloorId === ALL_FLOOR_ID}
-          title="House-wide assignments — drag chores here"
+          title={$_('floorPlan.switcher.houseWide')}
           onclick={() => selectCompact(ALL_FLOOR_ID)}
-        >🏠 All</button>
+        >🏠 {$_('floorPlan.switcher.all')}</button>
         {#each floors as floor (floor.id)}
           <button
             class="compact-floor-item"
@@ -95,7 +96,7 @@
         {/each}
         {#if onaddfloor}
           <hr class="compact-sep" />
-          <button class="compact-floor-item add" onclick={() => { handleAddFloor(); compactOpen = false; }}>＋ Add floor</button>
+          <button class="compact-floor-item add" onclick={() => { handleAddFloor(); compactOpen = false; }}>＋ {$_('floorPlan.switcher.addFloor')}</button>
         {/if}
       </div>
     {/if}
@@ -106,8 +107,8 @@
       <button
         class="floor-label"
         onclick={() => onswitchfloor(ALL_FLOOR_ID)}
-        title="House-wide assignments — drag chores here"
-      >🏠 All</button>
+        title={$_('floorPlan.switcher.houseWide')}
+      >🏠 {$_('floorPlan.switcher.all')}</button>
     </div>
     {#each floors as floor (floor.id)}
       <div class="floor-btn" class:active={floor.id === currentFloorId}>
@@ -123,7 +124,7 @@
           <button
             class="floor-label"
             onclick={(e) => handleFloorClick(floor, e)}
-            title={floor.id === currentFloorId ? "Double-click to rename" : "Switch to this floor"}
+            title={floor.id === currentFloorId ? $_('floorPlan.switcher.doubleClickToRename') : $_('floorPlan.switcher.switchToThisFloor')}
           >
             {floor.name}
           </button>
@@ -132,14 +133,14 @@
           <button
             class="remove-btn"
             onclick={() => onremovefloor(floor.id)}
-            title="Delete floor"
-            aria-label="Delete {floor.name}"
+            title={$_('floorPlan.switcher.deleteFloor')}
+            aria-label={$_('floorPlan.switcher.deleteFloorAriaLabel', { values: { name: floor.name } })}
           >×</button>
         {/if}
       </div>
     {/each}
     {#if onaddfloor}
-      <button class="add-btn" onclick={handleAddFloor}>+ Floor</button>
+      <button class="add-btn" onclick={handleAddFloor}>+ {$_('floorPlan.switcher.floor')}</button>
     {/if}
   </div>
 {/if}

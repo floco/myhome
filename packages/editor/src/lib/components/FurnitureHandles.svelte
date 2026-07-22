@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { FurnitureObject } from "@myhome/geometry";
   import type { ViewportState } from "../viewportStore.svelte.ts";
   import { worldToScreen } from "../viewportStore.svelte.ts";
@@ -80,7 +81,7 @@
   cy={rotHandle.y}
   r={HANDLE_SIZE / 2 + 2}
   onmousedown={handleRotateDown}
-><title>Rotate</title></circle>
+><title>{$_('floorPlan.rotate')}</title></circle>
 
 <style>
   .corner-handle {
