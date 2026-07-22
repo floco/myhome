@@ -11,8 +11,7 @@ initTheme();
 
 register("en", () => import("./lib/locales/en.json"));
 register("fr", () => import("./lib/locales/fr.json"));
-init({ fallbackLocale: "en", initialLocale: getStoredLocale() });
-
+await init({ fallbackLocale: "en", initialLocale: getStoredLocale() });
 await waitLocale();
 
 const target = document.getElementById("app");

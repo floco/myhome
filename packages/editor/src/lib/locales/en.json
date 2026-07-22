@@ -105,6 +105,15 @@
       "warranty": "Warranty"
     }
   },
+  "chores": {
+    "dueLabel": {
+      "overdue": "{n}d overdue",
+      "yesterday": "Yesterday",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "inDays": "In {n}d"
+    }
+  },
   "works": {
     "status": {
       "planned": "Planned",

@@ -1,3 +1,5 @@
+import { _ } from "svelte-i18n";
+import { get } from "svelte/store";
 import type { Chore } from "./choreStore.svelte";
 
 export function displayName(chore: Chore): string {
@@ -11,10 +13,11 @@ export function formatDue(iso: string): string {
   const d = new Date(iso);
   const now = new Date();
   const diffDays = Math.round((d.getTime() - now.getTime()) / 86400000);
-  if (diffDays < -1) return `${Math.abs(diffDays)}d overdue`;
-  if (diffDays === -1) return "Yesterday";
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Tomorrow";
-  if (diffDays <= 7) return `In ${diffDays}d`;
+  const t = get(_);
+  if (diffDays < -1) return t("chores.dueLabel.overdue", { values: { n: Math.abs(diffDays) } });
+  if (diffDays === -1) return t("chores.dueLabel.yesterday");
+  if (diffDays === 0) return t("chores.dueLabel.today");
+  if (diffDays === 1) return t("chores.dueLabel.tomorrow");
+  if (diffDays <= 7) return t("chores.dueLabel.inDays", { values: { n: diffDays } });
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
