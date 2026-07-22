@@ -598,6 +598,29 @@
       "confirmEmptyBody": "Supprimer définitivement {n, plural, one {# page} other {# pages}} de la corbeille ? Cette action est irréversible.",
       "confirmDeletePrefix": "Supprimer définitivement",
       "confirmDeleteSuffix": " ? Cette action est irréversible."
+    },
+    "page": {
+      "newPage": "Nouvelle page",
+      "newPageTitle": "Nouvelle page",
+      "createFailed": "Échec de la création",
+      "titleEmpty": "Le titre ne peut pas être vide",
+      "saveFailed": "Échec de l'enregistrement",
+      "iconUpdateFailed": "Échec de la mise à jour de l'icône",
+      "renameFailed": "Échec du renommage",
+      "moveFailed": "Échec du déplacement",
+      "loadTrashFailed": "Échec du chargement de la corbeille",
+      "restoreFailed": "Échec de la restauration",
+      "emptyTrashFailed": "Échec du vidage de la corbeille",
+      "selectOrCreate": "Sélectionnez une page ou créez-en une",
+      "pageTitlePlaceholder": "Titre de la page",
+      "contentTab": "Contenu",
+      "deletePage": "Supprimer la page",
+      "startWritingPlaceholder": "Commencez à écrire en Markdown… (tapez /page pour créer une sous-page liée)",
+      "deletePageTitle": "Supprimer la page",
+      "deletePrefix": "Supprimer",
+      "andSubPages": "et {n, plural, one {# sous-page} other {# sous-pages}}",
+      "restoreThemNote": "Vous pourrez les restaurer depuis la corbeille par la suite.",
+      "restoreItNote": "Vous pourrez la restaurer depuis la corbeille par la suite."
     }
   },
   "markdownEditor": {

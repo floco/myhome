@@ -598,6 +598,29 @@
       "confirmEmptyBody": "Permanently delete all {n, plural, one {# page} other {# pages}} in Trash? This cannot be undone.",
       "confirmDeletePrefix": "Permanently delete",
       "confirmDeleteSuffix": "? This cannot be undone."
+    },
+    "page": {
+      "newPage": "New Page",
+      "newPageTitle": "New page",
+      "createFailed": "Create failed",
+      "titleEmpty": "Title cannot be empty",
+      "saveFailed": "Save failed",
+      "iconUpdateFailed": "Icon update failed",
+      "renameFailed": "Rename failed",
+      "moveFailed": "Move failed",
+      "loadTrashFailed": "Failed to load trash",
+      "restoreFailed": "Restore failed",
+      "emptyTrashFailed": "Empty trash failed",
+      "selectOrCreate": "Select a page or create one",
+      "pageTitlePlaceholder": "Page title",
+      "contentTab": "Content",
+      "deletePage": "Delete page",
+      "startWritingPlaceholder": "Start writing in Markdown… (type /page to create a linked child page)",
+      "deletePageTitle": "Delete page",
+      "deletePrefix": "Delete",
+      "andSubPages": "and {n, plural, one {# sub-page} other {# sub-pages}}",
+      "restoreThemNote": "You can restore them from Trash afterward.",
+      "restoreItNote": "You can restore it from Trash afterward."
     }
   },
   "markdownEditor": {
