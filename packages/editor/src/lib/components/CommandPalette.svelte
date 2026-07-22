@@ -1,6 +1,7 @@
 <!-- packages/editor/src/lib/components/CommandPalette.svelte -->
 <script lang="ts">
-  import { filterResults, MODULE_LABELS, MODULE_ORDER, type SearchResult } from "../searchIndex";
+  import { _ } from "svelte-i18n";
+  import { filterResults, MODULE_ORDER, type SearchResult } from "../searchIndex";
 
   interface Props {
     open: boolean;
@@ -24,7 +25,7 @@
     }
     return MODULE_ORDER
       .filter((m) => byModule.has(m))
-      .map((m) => ({ module: m, label: MODULE_LABELS[m], items: byModule.get(m)! }));
+      .map((m) => ({ module: m, label: $_(`common.modules.${m}`), items: byModule.get(m)! }));
   });
 
   $effect(() => {
@@ -66,18 +67,18 @@
 {#if open}
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div class="cmdk-backdrop" role="presentation" onclick={onclose}></div>
-  <div class="cmdk" role="dialog" aria-modal="true" aria-label="Global search">
+  <div class="cmdk" role="dialog" aria-modal="true" aria-label={$_('common.search.ariaLabel')}>
     <input
       bind:this={inputEl}
       class="cmdk-input"
       type="text"
-      placeholder="Search chores, inventory, works, costs…"
+      placeholder={$_('common.search.placeholder')}
       bind:value={query}
       onkeydown={handleKeydown}
     />
     <div class="cmdk-results">
       {#if query.trim().length >= 2 && results.length === 0}
-        <div class="cmdk-empty">No results for '{query}'</div>
+        <div class="cmdk-empty">{$_('common.search.noResults', { values: { query } })}</div>
       {/if}
       {#each groups as group (group.module)}
         <div class="cmdk-group-label">{group.label}</div>

@@ -8,7 +8,72 @@
     "add": "Add",
     "loading": "Loading…",
     "confirm": "Confirm",
-    "openPdf": "Open PDF ↗"
+    "openPdf": "Open PDF ↗",
+    "modules": {
+      "home": "Home", "plan": "Floor Plan", "chores": "Chores", "inventory": "Inventory",
+      "consumables": "Consumables", "works": "Works", "kb": "Knowledge Base", "costs": "Costs",
+      "locations": "Locations", "properties": "Properties", "budget": "Budget",
+      "visits": "Visits", "contacts": "Contacts", "checklist": "Checklist"
+    },
+    "search": {
+      "placeholder": "Search chores, inventory, works, costs…",
+      "noResults": "No results for '{query}'",
+      "ariaLabel": "Global search"
+    }
+  },
+  "nav": {
+    "settings": "Settings",
+    "soon": "Soon",
+    "comingSoon": "{label} — coming soon",
+    "selectHome": "Select home",
+    "newHome": "New home",
+    "newHomeModal": {
+      "title": "New home",
+      "nameLabel": "Name",
+      "namePlaceholder": "Rue des Lilas",
+      "typeLabel": "Type",
+      "existingTitle": "Existing home",
+      "existingDesc": "A property you already own or live in — full module set.",
+      "projectTitle": "Project home",
+      "projectDesc": "Scouting locations, searching for land, or managing a build.",
+      "demoTitle": "Demo home",
+      "demoDesc": "Pre-filled with sample data across every module — great for exploring the app.",
+      "nameRequired": "Name is required",
+      "failedToCreate": "Failed to create home",
+      "creating": "Creating…",
+      "createHome": "Create home"
+    }
+  },
+  "floorPlan": {
+    "tools": {
+      "undo": "Undo (Ctrl+Z)",
+      "redo": "Redo (Ctrl+Y)",
+      "select": "Select",
+      "wall": "Wall",
+      "divider": "Divider",
+      "door": "Door",
+      "window": "Window",
+      "delete": "Delete selected (Del)"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "group": {
+      "chore": "Chores",
+      "low_stock": "Low Stock",
+      "warranty": "Warranty"
+    }
+  },
+  "works": {
+    "status": {
+      "planned": "Planned",
+      "inProgress": "In progress",
+      "done": "Done"
+    }
+  },
+  "costs": {
+    "entryFallbackTitle": "Cost entry"
   },
   "datePicker": {
     "placeholder": "Pick a date…"

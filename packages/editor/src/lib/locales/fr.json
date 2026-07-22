@@ -8,7 +8,72 @@
     "add": "Ajouter",
     "loading": "Chargement…",
     "confirm": "Confirmer",
-    "openPdf": "Ouvrir le PDF ↗"
+    "openPdf": "Ouvrir le PDF ↗",
+    "modules": {
+      "home": "Accueil", "plan": "Plan", "chores": "Corvées", "inventory": "Inventaire",
+      "consumables": "Consommables", "works": "Travaux", "kb": "Base de connaissances", "costs": "Coûts",
+      "locations": "Emplacements", "properties": "Biens", "budget": "Budget",
+      "visits": "Visites", "contacts": "Contacts", "checklist": "Checklist"
+    },
+    "search": {
+      "placeholder": "Rechercher corvées, inventaire, travaux, coûts…",
+      "noResults": "Aucun résultat pour « {query} »",
+      "ariaLabel": "Recherche globale"
+    }
+  },
+  "nav": {
+    "settings": "Paramètres",
+    "soon": "Bientôt",
+    "comingSoon": "{label} — bientôt disponible",
+    "selectHome": "Choisir un logement",
+    "newHome": "Nouveau logement",
+    "newHomeModal": {
+      "title": "Nouveau logement",
+      "nameLabel": "Nom",
+      "namePlaceholder": "Rue des Lilas",
+      "typeLabel": "Type",
+      "existingTitle": "Logement existant",
+      "existingDesc": "Un bien que vous possédez ou occupez déjà — tous les modules.",
+      "projectTitle": "Logement en projet",
+      "projectDesc": "Recherche de terrain, prospection ou suivi d'une construction.",
+      "demoTitle": "Logement de démonstration",
+      "demoDesc": "Pré-rempli avec des données d'exemple dans chaque module — idéal pour découvrir l'application.",
+      "nameRequired": "Le nom est requis",
+      "failedToCreate": "Échec de la création du logement",
+      "creating": "Création…",
+      "createHome": "Créer le logement"
+    }
+  },
+  "floorPlan": {
+    "tools": {
+      "undo": "Annuler (Ctrl+Z)",
+      "redo": "Rétablir (Ctrl+Y)",
+      "select": "Sélectionner",
+      "wall": "Mur",
+      "divider": "Séparation",
+      "door": "Porte",
+      "window": "Fenêtre",
+      "delete": "Supprimer la sélection (Suppr)"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Aucune notification",
+    "group": {
+      "chore": "Corvées",
+      "low_stock": "Stock faible",
+      "warranty": "Garantie"
+    }
+  },
+  "works": {
+    "status": {
+      "planned": "Prévu",
+      "inProgress": "En cours",
+      "done": "Terminé"
+    }
+  },
+  "costs": {
+    "entryFallbackTitle": "Entrée de coût"
   },
   "datePicker": {
     "placeholder": "Choisir une date…"

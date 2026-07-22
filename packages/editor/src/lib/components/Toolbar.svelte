@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { ToolType } from "../toolStore.svelte";
 
   let {
@@ -23,16 +24,16 @@
 </script>
 
 <nav class="toolbar">
-  <button title="Undo (Ctrl+Z)" disabled={!hasUndo} onclick={() => onundo?.()}>↩</button>
-  <button title="Redo (Ctrl+Y)" disabled={!hasRedo} onclick={() => onredo?.()}>↪</button>
+  <button title={$_('floorPlan.tools.undo')} disabled={!hasUndo} onclick={() => onundo?.()}>↩</button>
+  <button title={$_('floorPlan.tools.redo')} disabled={!hasRedo} onclick={() => onredo?.()}>↪</button>
   <div class="sep"></div>
-  <button title="Select" class:active={tool === "select"} onclick={() => onselecttool("select")}>↖</button>
-  <button title="Wall" class:active={tool === "wall"} onclick={() => onselecttool("wall")}>▬</button>
-  <button title="Divider" class:active={tool === "divider"} onclick={() => onselecttool("divider")}>┅</button>
-  <button title="Door" class:active={tool === "door"} onclick={() => onselecttool("door")}>⊓</button>
-  <button title="Window" class:active={tool === "window"} onclick={() => onselecttool("window")}>⊡</button>
+  <button title={$_('floorPlan.tools.select')} class:active={tool === "select"} onclick={() => onselecttool("select")}>↖</button>
+  <button title={$_('floorPlan.tools.wall')} class:active={tool === "wall"} onclick={() => onselecttool("wall")}>▬</button>
+  <button title={$_('floorPlan.tools.divider')} class:active={tool === "divider"} onclick={() => onselecttool("divider")}>┅</button>
+  <button title={$_('floorPlan.tools.door')} class:active={tool === "door"} onclick={() => onselecttool("door")}>⊓</button>
+  <button title={$_('floorPlan.tools.window')} class:active={tool === "window"} onclick={() => onselecttool("window")}>⊡</button>
   <div class="sep"></div>
-  <button class="delete" title="Delete selected (Del)" disabled={!hasSelection} onclick={ondelete}>✕</button>
+  <button class="delete" title={$_('floorPlan.tools.delete')} disabled={!hasSelection} onclick={ondelete}>✕</button>
 </nav>
 
 <style>
