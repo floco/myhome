@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createChoreStore } from "../choreStore.svelte.ts";
   import { displayName, formatDue } from "../choreFormat";
   import Card from "./ui/Card.svelte";
@@ -50,15 +51,15 @@
 <div class="widget" role="button" tabindex="0" onclick={onnavigate} onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onnavigate(); } }}>
   <Card>
     <div class="header">
-      <h3>✅ Chores</h3>
+      <h3>✅ {$_('common.modules.chores')}</h3>
     </div>
     <div class="stats">
-      <div class="stat-item"><b>{rows.length}</b> active</div>
-      <div class="stat-item overdue"><b>{overdueCount}</b> overdue</div>
-      <div class="stat-item ontrack"><b>{onTrackPct}%</b> on track</div>
+      <div class="stat-item"><b>{rows.length}</b> {$_('home.chores.active')}</div>
+      <div class="stat-item overdue"><b>{overdueCount}</b> {$_('chores.page.overdue')}</div>
+      <div class="stat-item ontrack"><b>{onTrackPct}%</b> {$_('home.chores.onTrack')}</div>
     </div>
     {#if topFive.length === 0}
-      <p class="empty">No chore assignments yet.</p>
+      <p class="empty">{$_('home.chores.emptyState')}</p>
     {:else}
       <div class="rows">
         {#each topFive as row (row.id)}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createHouseStore } from "../houseStore.svelte";
   import type { createChoreStore } from "../choreStore.svelte";
   import type { createInventoryStore } from "../inventoryStore.svelte";
@@ -151,7 +152,7 @@
           />
         {/if}
       {:else}
-        <div class="empty">No floors yet.</div>
+        <div class="empty">{$_('home.map.noFloors')}</div>
       {/if}
     </div>
   </div>

@@ -502,6 +502,34 @@
       "avgPricePer": "Avg price / {unit}"
     }
   },
+  "home": {
+    "chores": {
+      "active": "active",
+      "onTrack": "on track",
+      "emptyState": "No chore assignments yet."
+    },
+    "consumables": {
+      "emptyPill": "{n} empty",
+      "lowPill": "{n} low"
+    },
+    "costs": {
+      "emptyState": "No cost entries yet."
+    },
+    "inventory": {
+      "itemsSub": "{n} items",
+      "emptyState": "No inventory items yet."
+    },
+    "map": {
+      "noFloors": "No floors yet."
+    },
+    "properties": {
+      "statusProposal": "Proposal"
+    },
+    "works": {
+      "totalSub": "{amount} € total",
+      "emptyState": "No works logged yet."
+    }
+  },
   "auth": {
     "signInToContinue": "Sign in to continue",
     "signInWith": "Sign in with {provider}",

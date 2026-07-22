@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createInventoryStore } from "../inventoryStore.svelte";
   import Card from "./ui/Card.svelte";
   import DonutChart from "./DonutChart.svelte";
@@ -20,7 +21,7 @@
   const categoryCounts = $derived((() => {
     const counts = new Map<string, number>();
     for (const item of inventoryStore.items) {
-      const key = item.category || "Uncategorized";
+      const key = item.category || $_('inventory.page.uncategorized');
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
     return [...counts.entries()]
@@ -47,14 +48,14 @@
 <div class="widget" role="button" tabindex="0" onclick={onnavigate} onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onnavigate(); } }}>
   <Card>
     <div class="header">
-      <h3>📦 Inventory</h3>
-      <span class="sub">{total} items</span>
+      <h3>📦 {$_('common.modules.inventory')}</h3>
+      <span class="sub">{$_('home.inventory.itemsSub', { values: { n: total } })}</span>
     </div>
     {#if categoryCounts.length === 0}
-      <p class="empty">No inventory items yet.</p>
+      <p class="empty">{$_('home.inventory.emptyState')}</p>
     {:else}
       <div class="chart-wrap">
-        <DonutChart {segments} centerLabel="Items" centerValue={`${total}`} showLabels compact />
+        <DonutChart {segments} centerLabel={$_('inventory.page.items')} centerValue={`${total}`} showLabels compact />
       </div>
     {/if}
   </Card>

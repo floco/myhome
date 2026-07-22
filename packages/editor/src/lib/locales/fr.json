@@ -502,6 +502,34 @@
       "avgPricePer": "Prix moyen / {unit}"
     }
   },
+  "home": {
+    "chores": {
+      "active": "actives",
+      "onTrack": "en bonne voie",
+      "emptyState": "Aucune corvée assignée pour l'instant."
+    },
+    "consumables": {
+      "emptyPill": "{n} épuisé(s)",
+      "lowPill": "{n} faible(s)"
+    },
+    "costs": {
+      "emptyState": "Aucune entrée de coût pour l'instant."
+    },
+    "inventory": {
+      "itemsSub": "{n} articles",
+      "emptyState": "Aucun article d'inventaire pour l'instant."
+    },
+    "map": {
+      "noFloors": "Aucun étage pour l'instant."
+    },
+    "properties": {
+      "statusProposal": "Offre"
+    },
+    "works": {
+      "totalSub": "{amount} € au total",
+      "emptyState": "Aucun travail enregistré pour l'instant."
+    }
+  },
   "auth": {
     "signInToContinue": "Connectez-vous pour continuer",
     "signInWith": "Se connecter avec {provider}",
