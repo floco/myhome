@@ -229,7 +229,68 @@
     }
   },
   "costs": {
-    "entryFallbackTitle": "Entrée de coût"
+    "entryFallbackTitle": "Entrée de coût",
+    "open": "📊 Ouvrir",
+    "remove": "✕ Supprimer",
+    "pinPopup": {
+      "unit": "Unité : {unit}"
+    },
+    "page": {
+      "unknown": "Inconnu",
+      "emptyCharts": "Aucune entrée pour l'instant — cliquez sur ＋ Ajouter une entrée pour commencer.",
+      "breakdownByCategory": "{year} — répartition par catégorie",
+      "total": "Total",
+      "totalHouseCosts": "Coûts totaux de la maison — 10 dernières années (€)",
+      "tenYearAvg": "Moy. sur 10 ans",
+      "perYear": "{amount} €/an",
+      "lastCompleteYr": "Dernière année complète",
+      "searchEntries": "🔍 Rechercher des entrées…",
+      "allCategories": "Toutes les catégories",
+      "allYears": "Toutes les années",
+      "addEntry": "Ajouter une entrée",
+      "category": "Catégorie",
+      "date": "Date",
+      "supplier": "Fournisseur",
+      "qty": "Qté",
+      "unitPrice": "Prix unitaire",
+      "room": "Pièce",
+      "emptyNoEntries": "Aucune entrée pour l'instant — cliquez sur ＋ Ajouter une entrée pour commencer.",
+      "emptyNoMatch": "Aucune entrée ne correspond à vos filtres.",
+      "entryCount": "{n, plural, one {# entrée} other {# entrées}}",
+      "totalSuffix": "· total : {amount} €"
+    },
+    "entryModal": {
+      "newEntry": "Nouvelle entrée",
+      "editEntry": "Modifier l'entrée",
+      "category": "Catégorie",
+      "date": "Date",
+      "quantity": "Quantité ({unit})",
+      "unitPrice": "Prix unitaire (€/{unit})",
+      "totalAmount": "Montant total (€)",
+      "supplier": "Fournisseur",
+      "noSupplier": "— Aucun fournisseur —",
+      "noRoom": "Aucune pièce",
+      "notesPlaceholder": "Notes facultatives…",
+      "deleteThisEntry": "Supprimer cette entrée ?",
+      "categoryRequired": "La catégorie est requise",
+      "dateRequired": "La date est requise",
+      "totalRequired": "Le montant total est requis",
+      "saveFailed": "Échec de l'enregistrement",
+      "deleteFailed": "Échec de la suppression",
+      "uploadFailed": "Échec de l'envoi"
+    },
+    "categoryModal": {
+      "title": "{emoji} {name} — par année",
+      "noEntries": "Aucune entrée pour cette catégorie pour l'instant.",
+      "chartTitle": "Coût (€) par année",
+      "chartTitleWithVolume": "Coût (€) et volume ({unit}) par année",
+      "costEur": "Coût (€)",
+      "volume": "Volume ({unit})",
+      "partialNote": "* année en cours, partielle",
+      "avgCostPerYear": "Coût moyen / an",
+      "avgUnitPerYear": "{unit} moyen / an",
+      "avgPricePer": "Prix moyen / {unit}"
+    }
   },
   "auth": {
     "signInToContinue": "Connectez-vous pour continuer",

@@ -1,5 +1,6 @@
 <!-- packages/editor/src/lib/components/CostsPage.svelte -->
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createCostsStore, CostEntry } from "../costsStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
   import type { createHouseStore } from "../houseStore.svelte";
@@ -52,7 +53,7 @@
   );
 
   function categoryName(categoryId: string): string {
-    return categoryMap.get(categoryId)?.name ?? "Unknown";
+    return categoryMap.get(categoryId)?.name ?? $_('costs.page.unknown');
   }
 
   function categoryEmoji(categoryId: string): string {
@@ -154,7 +155,7 @@
   {#if !hasEntries}
     <div class="empty-charts">
       <span class="empty-icon">💶</span>
-      <p>No entries yet — click ＋ Add entry to get started.</p>
+      <p>{$_('costs.page.emptyCharts')}</p>
     </div>
   {:else}
     <div class="chart-card-wrap">
@@ -164,7 +165,7 @@
           <!-- Pie chart with connector labels -->
           <div class="pie-area">
             <div class="chart-label">
-              {lastCompleteYearNum} — breakdown by category
+              {$_('costs.page.breakdownByCategory', { values: { year: lastCompleteYearNum } })}
             </div>
             <DonutChart
               segments={breakdown.map((b) => ({
@@ -175,7 +176,7 @@
                 valueLabel: `${b.totalAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })} €`,
                 pct: b.pct,
               }))}
-              centerLabel="Total"
+              centerLabel={$_('costs.page.total')}
               centerValue={`${breakdown.reduce((a, b) => a + b.totalAmount, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} €`}
               showLabels={true}
               insideLabels={true}
@@ -187,7 +188,7 @@
 
           <!-- 10-year total bar chart -->
           <div class="bar-area">
-            <div class="chart-label">Total house costs — last 10 years (€)</div>
+            <div class="chart-label">{$_('costs.page.totalHouseCosts')}</div>
             <div class="bar-chart-wrap">
               <div class="y-axis">
                 <span>{formatK(maxBarAmount)}</span>
@@ -216,11 +217,11 @@
             </div>
             <div class="stat-chips">
               <div class="stat-chip">
-                <div class="stat-title">10-year avg</div>
-                <div class="stat-value">{tenYearAvg.toLocaleString(undefined, { maximumFractionDigits: 0 })} €/yr</div>
+                <div class="stat-title">{$_('costs.page.tenYearAvg')}</div>
+                <div class="stat-value">{$_('costs.page.perYear', { values: { amount: tenYearAvg.toLocaleString(undefined, { maximumFractionDigits: 0 }) } })}</div>
               </div>
               <div class="stat-chip">
-                <div class="stat-title">Last complete yr</div>
+                <div class="stat-title">{$_('costs.page.lastCompleteYr')}</div>
                 <div class="stat-value">
                   {lastCompleteTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} €
                   {#if yoyPct !== null}
@@ -243,20 +244,20 @@
     <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
     <!-- Toolbar -->
     <div class="toolbar">
-      <Input bind:value={searchQuery} placeholder="🔍 Search entries…" />
+      <Input bind:value={searchQuery} placeholder={$_('costs.page.searchEntries')} />
       <select class="native-input" bind:value={categoryFilter}>
-        <option value="">All categories</option>
+        <option value="">{$_('costs.page.allCategories')}</option>
         {#each settingsStore.costCategories as cat}
           <option value={cat.id}>{cat.emoji} {cat.name}</option>
         {/each}
       </select>
       <select class="native-input" bind:value={yearFilter}>
-        <option value="">All years</option>
+        <option value="">{$_('costs.page.allYears')}</option>
         {#each allYears as y}
           <option value={String(y)}>{y}</option>
         {/each}
       </select>
-      <Button onclick={() => { modalEntry = "create"; }}>＋ Add entry</Button>
+      <Button onclick={() => { modalEntry = "create"; }}>＋ {$_('costs.page.addEntry')}</Button>
     </div>
 
     <div class="table-wrapper">
@@ -288,27 +289,27 @@
     <SortableTable
       columns={[
         { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
-        { key: "category", label: "Category", sortValue: (e) => categoryName(e.categoryId), cellClass: "name-cell", cell: categoryCell },
-        { key: "date", label: "Date", sortValue: (e) => new Date(e.date), cell: dateCell },
-        { key: "supplier", label: "Supplier", sortValue: (e) => (e.supplierId ? supplierMap.get(e.supplierId)?.name ?? null : null), cell: supplierCell },
-        { key: "qty", label: "Qty", headerClass: "num-col", cellClass: "num-col", sortValue: (e) => e.quantity, cell: qtyCell },
-        { key: "unitPrice", label: "Unit price", headerClass: "num-col", cellClass: "num-col", sortValue: (e) => e.unitPrice, cell: unitPriceCell },
-        { key: "total", label: "Total", headerClass: "num-col", cellClass: "num-col amount-cell", sortValue: (e) => e.totalAmount, cell: totalCell },
-        { key: "room", label: "Room", sortValue: (e) => roomName(e.roomId), cell: roomCell },
+        { key: "category", label: $_('costs.page.category'), sortValue: (e) => categoryName(e.categoryId), cellClass: "name-cell", cell: categoryCell },
+        { key: "date", label: $_('costs.page.date'), sortValue: (e) => new Date(e.date), cell: dateCell },
+        { key: "supplier", label: $_('costs.page.supplier'), sortValue: (e) => (e.supplierId ? supplierMap.get(e.supplierId)?.name ?? null : null), cell: supplierCell },
+        { key: "qty", label: $_('costs.page.qty'), headerClass: "num-col", cellClass: "num-col", sortValue: (e) => e.quantity, cell: qtyCell },
+        { key: "unitPrice", label: $_('costs.page.unitPrice'), headerClass: "num-col", cellClass: "num-col", sortValue: (e) => e.unitPrice, cell: unitPriceCell },
+        { key: "total", label: $_('costs.page.total'), headerClass: "num-col", cellClass: "num-col amount-cell", sortValue: (e) => e.totalAmount, cell: totalCell },
+        { key: "room", label: $_('costs.page.room'), sortValue: (e) => roomName(e.roomId), cell: roomCell },
       ] as Column<CostEntry>[]}
       rows={filtered}
       rowKey={(entry) => entry.id}
       rowClick={(entry) => { modalEntry = entry; }}
       emptyMessage={costsStore.entries.length === 0
-        ? "No entries yet — click ＋ Add entry to get started."
-        : "No entries match your filters."}
+        ? $_('costs.page.emptyNoEntries')
+        : $_('costs.page.emptyNoMatch')}
     />
     </div>
 
     <div class="footer">
-      {filtered.length} entr{filtered.length !== 1 ? "ies" : "y"}
+      {$_('costs.page.entryCount', { values: { n: filtered.length } })}
       {#if filteredTotal > 0}
-        · total: {filteredTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} €
+        {$_('costs.page.totalSuffix', { values: { amount: filteredTotal.toLocaleString(undefined, { maximumFractionDigits: 0 }) } })}
       {/if}
     </div>
     </Card>

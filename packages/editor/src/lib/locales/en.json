@@ -229,7 +229,68 @@
     }
   },
   "costs": {
-    "entryFallbackTitle": "Cost entry"
+    "entryFallbackTitle": "Cost entry",
+    "open": "📊 Open",
+    "remove": "✕ Remove",
+    "pinPopup": {
+      "unit": "Unit: {unit}"
+    },
+    "page": {
+      "unknown": "Unknown",
+      "emptyCharts": "No entries yet — click ＋ Add entry to get started.",
+      "breakdownByCategory": "{year} — breakdown by category",
+      "total": "Total",
+      "totalHouseCosts": "Total house costs — last 10 years (€)",
+      "tenYearAvg": "10-year avg",
+      "perYear": "{amount} €/yr",
+      "lastCompleteYr": "Last complete yr",
+      "searchEntries": "🔍 Search entries…",
+      "allCategories": "All categories",
+      "allYears": "All years",
+      "addEntry": "Add entry",
+      "category": "Category",
+      "date": "Date",
+      "supplier": "Supplier",
+      "qty": "Qty",
+      "unitPrice": "Unit price",
+      "room": "Room",
+      "emptyNoEntries": "No entries yet — click ＋ Add entry to get started.",
+      "emptyNoMatch": "No entries match your filters.",
+      "entryCount": "{n, plural, one {# entry} other {# entries}}",
+      "totalSuffix": "· total: {amount} €"
+    },
+    "entryModal": {
+      "newEntry": "New entry",
+      "editEntry": "Edit entry",
+      "category": "Category",
+      "date": "Date",
+      "quantity": "Quantity ({unit})",
+      "unitPrice": "Unit price (€/{unit})",
+      "totalAmount": "Total amount (€)",
+      "supplier": "Supplier",
+      "noSupplier": "— No supplier —",
+      "noRoom": "No room",
+      "notesPlaceholder": "Optional notes…",
+      "deleteThisEntry": "Delete this entry?",
+      "categoryRequired": "Category is required",
+      "dateRequired": "Date is required",
+      "totalRequired": "Total amount is required",
+      "saveFailed": "Save failed",
+      "deleteFailed": "Delete failed",
+      "uploadFailed": "Upload failed"
+    },
+    "categoryModal": {
+      "title": "{emoji} {name} — per year",
+      "noEntries": "No entries for this category yet.",
+      "chartTitle": "Cost (€) per year",
+      "chartTitleWithVolume": "Cost (€) and volume ({unit}) per year",
+      "costEur": "Cost (€)",
+      "volume": "Volume ({unit})",
+      "partialNote": "* current year, partial",
+      "avgCostPerYear": "Avg cost / year",
+      "avgUnitPerYear": "Avg {unit} / year",
+      "avgPricePer": "Avg price / {unit}"
+    }
   },
   "auth": {
     "signInToContinue": "Sign in to continue",
