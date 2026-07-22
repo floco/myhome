@@ -226,6 +226,38 @@
       "planned": "Prévu",
       "inProgress": "En cours",
       "done": "Terminé"
+    },
+    "open": "Ouvrir",
+    "remove": "Supprimer",
+    "page": {
+      "emptyCharts": "Aucun travail pour l'instant — cliquez sur ＋ Ajouter un travail pour commencer.",
+      "houseTimeline": "Chronologie de la maison",
+      "totalCost": "Coût total",
+      "allStatuses": "Tous les statuts",
+      "addWork": "Ajouter un travail",
+      "pinned": "Épinglé",
+      "title": "Titre",
+      "status": "Statut",
+      "emptyNoWorks": "Aucun travail pour l'instant — cliquez sur ＋ Ajouter un travail pour commencer.",
+      "emptyNoMatch": "Aucun travail ne correspond à vos filtres.",
+      "footer": "{n} travaux · total : {total} €"
+    },
+    "modal": {
+      "newWork": "Nouveau travail",
+      "editWork": "Modifier le travail",
+      "notes": "Notes",
+      "workTitlePlaceholder": "Titre du travail",
+      "noneOption": "— Aucun —",
+      "totalCostEur": "Coût total (€)",
+      "description": "Description",
+      "descriptionPlaceholder": "Résumé succinct du travail…",
+      "notesPlaceholder": "Cliquez pour ajouter des notes Markdown…",
+      "doneEditing": "Terminer l'édition",
+      "confirm": "Confirmer",
+      "titleRequired": "Le titre est requis",
+      "saveFailed": "Échec de l'enregistrement",
+      "deleteFailed": "Échec de la suppression",
+      "uploadFailed": "Échec de l'envoi"
     }
   },
   "inventory": {

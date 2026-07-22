@@ -226,6 +226,38 @@
       "planned": "Planned",
       "inProgress": "In progress",
       "done": "Done"
+    },
+    "open": "Open",
+    "remove": "Remove",
+    "page": {
+      "emptyCharts": "No works yet — click ＋ Add work to get started.",
+      "houseTimeline": "House timeline",
+      "totalCost": "Total cost",
+      "allStatuses": "All statuses",
+      "addWork": "Add work",
+      "pinned": "Pinned",
+      "title": "Title",
+      "status": "Status",
+      "emptyNoWorks": "No works yet — click ＋ Add work to get started.",
+      "emptyNoMatch": "No works match your filters.",
+      "footer": "{n} works · total: {total} €"
+    },
+    "modal": {
+      "newWork": "New work",
+      "editWork": "Edit work",
+      "notes": "Notes",
+      "workTitlePlaceholder": "Work title",
+      "noneOption": "— None —",
+      "totalCostEur": "Total cost (€)",
+      "description": "Description",
+      "descriptionPlaceholder": "Short summary of the work…",
+      "notesPlaceholder": "Click to add markdown notes…",
+      "doneEditing": "Done editing",
+      "confirm": "Confirm",
+      "titleRequired": "Title is required",
+      "saveFailed": "Save failed",
+      "deleteFailed": "Delete failed",
+      "uploadFailed": "Upload failed"
     }
   },
   "inventory": {

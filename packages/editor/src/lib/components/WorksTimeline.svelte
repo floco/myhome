@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { Work } from "../worksStore.svelte";
 
   interface Props {
@@ -23,11 +24,11 @@
     in_progress: "#3388cc",
     planned: "#cc8833",
   };
-  const STATUS_LABEL: Record<Work["status"], string> = {
-    done: "Done",
-    in_progress: "In progress",
-    planned: "Planned",
-  };
+  function statusLabel(status: Work["status"]): string {
+    if (status === "in_progress") return $_("works.status.inProgress");
+    if (status === "done") return $_("works.status.done");
+    return $_("works.status.planned");
+  }
 
   const timeRange = $derived((() => {
     if (works.length === 0) {
@@ -132,15 +133,15 @@
         style="cursor:{onworkclick ? 'pointer' : 'default'}"
         onclick={() => onworkclick?.(d.work.id)}
       >
-        <title>{d.work.title} — {STATUS_LABEL[d.work.status]} — {formatDate(d.work.date)}{d.work.totalCost != null ? ` — ${d.work.totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })} €` : ""}</title>
+        <title>{d.work.title} — {statusLabel(d.work.status)} — {formatDate(d.work.date)}{d.work.totalCost != null ? ` — ${d.work.totalCost.toLocaleString(undefined, { maximumFractionDigits: 0 })} €` : ""}</title>
       </circle>
     {/each}
   </svg>
 
   <div class="legend">
-    <span class="legend-item"><span class="dot" style="background:{STATUS_COLOR.done}"></span>Done</span>
-    <span class="legend-item"><span class="dot" style="background:{STATUS_COLOR.in_progress}"></span>In progress</span>
-    <span class="legend-item"><span class="dot" style="background:{STATUS_COLOR.planned}"></span>Planned</span>
+    <span class="legend-item"><span class="dot" style="background:{STATUS_COLOR.done}"></span>{$_('works.status.done')}</span>
+    <span class="legend-item"><span class="dot" style="background:{STATUS_COLOR.in_progress}"></span>{$_('works.status.inProgress')}</span>
+    <span class="legend-item"><span class="dot" style="background:{STATUS_COLOR.planned}"></span>{$_('works.status.planned')}</span>
   </div>
 </div>
 

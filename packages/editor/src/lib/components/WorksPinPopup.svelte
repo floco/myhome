@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { Work } from "../worksStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
 
@@ -23,8 +24,9 @@
   );
 
   function statusLabel(status: Work["status"]): string {
-    if (status === "in_progress") return "In progress";
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    if (status === "in_progress") return $_("works.status.inProgress");
+    if (status === "done") return $_("works.status.done");
+    return $_("works.status.planned");
   }
 
   function statusColor(status: Work["status"]): string {
@@ -46,9 +48,9 @@
     <div class="popup-row">{supplier.name}</div>
   {/if}
   <div class="popup-actions">
-    <button onclick={onopen}>📂 Open</button>
-    <button onclick={onremove}>✕ Remove</button>
-    <button onclick={onclose}>Close</button>
+    <button onclick={onopen}>📂 {$_('works.open')}</button>
+    <button onclick={onremove}>✕ {$_('works.remove')}</button>
+    <button onclick={onclose}>{$_('common.close')}</button>
   </div>
 </div>
 
