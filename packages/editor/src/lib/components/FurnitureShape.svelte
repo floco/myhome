@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { FurnitureObject } from "@myhome/geometry";
   import type { ViewportState } from "../viewportStore.svelte.ts";
   import type { FurnitureTemplate } from "../furnitureLibrary";
@@ -45,7 +46,7 @@
   onmousedown={handleMousedown}
   role="button"
   tabindex="-1"
-  aria-label={template.label}
+  aria-label={$_(`floorPlan.furnitureLibrary.items.${template.id}`)}
 >
   {@html template.svgContent}
 </g>
