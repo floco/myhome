@@ -9,6 +9,7 @@
     "loading": "Loading…",
     "confirm": "Confirm",
     "openPdf": "Open PDF ↗",
+    "comingSoonBadge": "Coming soon",
     "modules": {
       "home": "Home", "plan": "Floor Plan", "chores": "Chores", "inventory": "Inventory",
       "consumables": "Consumables", "works": "Works", "kb": "Knowledge Base", "costs": "Costs",
@@ -54,7 +55,46 @@
       "door": "Door",
       "window": "Window",
       "delete": "Delete selected (Del)"
-    }
+    },
+    "switcher": {
+      "all": "All",
+      "switchFloor": "Switch floor",
+      "houseWide": "House-wide assignments — drag chores here",
+      "addFloor": "Add floor",
+      "doubleClickToRename": "Double-click to rename",
+      "switchToThisFloor": "Switch to this floor",
+      "deleteFloor": "Delete floor",
+      "deleteFloorAriaLabel": "Delete {name}",
+      "floor": "Floor",
+      "groundFloor": "Ground Floor",
+      "firstFloor": "First Floor",
+      "secondFloor": "Second Floor",
+      "thirdFloor": "Third Floor",
+      "basement": "Basement",
+      "defaultFloorName": "Floor {n}"
+    },
+    "layers": {
+      "toggle": "Toggle map layers",
+      "title": "Layers"
+    },
+    "roomPanel": {
+      "title": "Room",
+      "label": "Label",
+      "haArea": "HA Area",
+      "none": "(none)",
+      "unknownSuffix": "{id} (unknown)"
+    },
+    "itemPicker": {
+      "dragToReposition": "Drag to reposition",
+      "search": "Search…",
+      "unplaced": "Unplaced",
+      "placed": "Placed",
+      "noItemsMatch": "No items match"
+    },
+    "furnitureLibrary": {
+      "searchPlaceholder": "Search objects..."
+    },
+    "rotate": "Rotate"
   },
   "notifications": {
     "title": "Notifications",

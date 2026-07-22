@@ -9,6 +9,7 @@
     "loading": "Chargement…",
     "confirm": "Confirmer",
     "openPdf": "Ouvrir le PDF ↗",
+    "comingSoonBadge": "Bientôt disponible",
     "modules": {
       "home": "Accueil", "plan": "Plan", "chores": "Corvées", "inventory": "Inventaire",
       "consumables": "Consommables", "works": "Travaux", "kb": "Base de connaissances", "costs": "Coûts",
@@ -54,7 +55,46 @@
       "door": "Porte",
       "window": "Fenêtre",
       "delete": "Supprimer la sélection (Suppr)"
-    }
+    },
+    "switcher": {
+      "all": "Tous",
+      "switchFloor": "Changer d'étage",
+      "houseWide": "Affectations pour toute la maison — glissez les corvées ici",
+      "addFloor": "Ajouter un étage",
+      "doubleClickToRename": "Double-cliquer pour renommer",
+      "switchToThisFloor": "Passer à cet étage",
+      "deleteFloor": "Supprimer l'étage",
+      "deleteFloorAriaLabel": "Supprimer {name}",
+      "floor": "Étage",
+      "groundFloor": "Rez-de-chaussée",
+      "firstFloor": "1er étage",
+      "secondFloor": "2e étage",
+      "thirdFloor": "3e étage",
+      "basement": "Sous-sol",
+      "defaultFloorName": "Étage {n}"
+    },
+    "layers": {
+      "toggle": "Afficher/masquer les calques",
+      "title": "Calques"
+    },
+    "roomPanel": {
+      "title": "Pièce",
+      "label": "Nom",
+      "haArea": "Zone HA",
+      "none": "(aucune)",
+      "unknownSuffix": "{id} (inconnue)"
+    },
+    "itemPicker": {
+      "dragToReposition": "Glisser pour repositionner",
+      "search": "Rechercher…",
+      "unplaced": "Non placés",
+      "placed": "Placés",
+      "noItemsMatch": "Aucun élément ne correspond"
+    },
+    "furnitureLibrary": {
+      "searchPlaceholder": "Rechercher des objets..."
+    },
+    "rotate": "Rotation"
   },
   "notifications": {
     "title": "Notifications",

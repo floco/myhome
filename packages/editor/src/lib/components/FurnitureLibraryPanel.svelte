@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import {
     FURNITURE_TEMPLATES,
     FURNITURE_CATEGORIES,
@@ -33,11 +34,11 @@
   <div class="panel-header">
     {#if onstartdrag}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="drag-handle" onmousedown={onstartdrag} title="Drag to reposition">⠿</div>
+      <div class="drag-handle" onmousedown={onstartdrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
     {/if}
     <input
       type="search"
-      placeholder="Search objects..."
+      placeholder={$_('floorPlan.furnitureLibrary.searchPlaceholder')}
       bind:value={search}
       oninput={() => {}}
     />

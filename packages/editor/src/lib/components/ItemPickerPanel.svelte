@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
+
   export interface PickerItem {
     id: string;
     name: string;
@@ -74,9 +76,9 @@
   <div class="panel-header">
     {#if onstartdrag}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="drag-handle" onmousedown={onstartdrag} title="Drag to reposition">⠿</div>
+      <div class="drag-handle" onmousedown={onstartdrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
     {/if}
-    <input class="search" placeholder="Search…" bind:value={query} />
+    <input class="search" placeholder={$_('floorPlan.itemPicker.search')} bind:value={query} />
   </div>
   {#each layers as layer (layer.id)}
     {@const filtered = filteredItems(layer.items)}
@@ -93,7 +95,7 @@
       {#if open}
         <div class="section-body">
           {#if unplaced.length > 0}
-            <div class="group-title">Unplaced</div>
+            <div class="group-title">{$_('floorPlan.itemPicker.unplaced')}</div>
             {#each unplaced as item (item.id)}
               <div
                 class="item-row"
@@ -112,7 +114,7 @@
             {/each}
           {/if}
           {#if placed.length > 0}
-            <div class="group-title">Placed</div>
+            <div class="group-title">{$_('floorPlan.itemPicker.placed')}</div>
             {#each placed as item (item.id)}
               <div
                 class="item-row placed"
@@ -131,7 +133,7 @@
             {/each}
           {/if}
           {#if filtered.length === 0}
-            <div class="empty">No items match</div>
+            <div class="empty">{$_('floorPlan.itemPicker.noItemsMatch')}</div>
           {/if}
         </div>
       {/if}

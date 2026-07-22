@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
+
   interface Props {
     activeLayers: Set<string>;
     ontoggle: (layer: string) => void;
@@ -9,11 +11,11 @@
   let open = $state(false);
 
   const layers = [
-    { id: "chores",      icon: "✅", label: "Chores"      },
-    { id: "inventory",   icon: "📦", label: "Inventory"   },
-    { id: "consumables", icon: "🛒", label: "Consumables" },
-    { id: "costs",       icon: "💶", label: "Costs"       },
-    { id: "works",       icon: "🔧", label: "Works"       },
+    { id: "chores",      icon: "✅" },
+    { id: "inventory",   icon: "📦" },
+    { id: "consumables", icon: "🛒" },
+    { id: "costs",       icon: "💶" },
+    { id: "works",       icon: "🔧" },
   ];
 
   function handleClickOutside(e: MouseEvent) {
@@ -28,9 +30,9 @@
     class="layers-btn"
     class:active={activeLayers.size > 0}
     onclick={() => { open = !open; }}
-    title="Toggle map layers"
+    title={$_('floorPlan.layers.toggle')}
   >
-    Layers <span class="caret">▾</span>
+    {$_('floorPlan.layers.title')} <span class="caret">▾</span>
   </button>
 
   {#if open}
@@ -44,7 +46,7 @@
             onchange={() => ontoggle(layer.id)}
           />
           <span class="layer-icon">{layer.icon}</span>
-          <span>{layer.label}</span>
+          <span>{$_(`common.modules.${layer.id}`)}</span>
         </label>
       {/each}
     </div>
