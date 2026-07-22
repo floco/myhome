@@ -302,6 +302,57 @@
       "uploadFailed": "Échec de l'envoi"
     }
   },
+  "properties": {
+    "status": {
+      "watching": "En veille",
+      "visited": "Visité",
+      "proposalMade": "Offre faite",
+      "purchased": "Acheté",
+      "rejected": "Rejeté"
+    },
+    "type": {
+      "land": "Terrain",
+      "house": "Maison",
+      "newBuild": "Neuf"
+    },
+    "page": {
+      "emptyCharts": "Aucun bien pour l'instant — cliquez sur ＋ Ajouter un bien pour commencer.",
+      "searchPipeline": "Suivi de recherche",
+      "total": "Total",
+      "allTypes": "Tous les types",
+      "addProperty": "Ajouter un bien",
+      "type": "Type",
+      "location": "Emplacement",
+      "price": "Prix",
+      "size": "Superficie",
+      "emptyNoProperties": "Aucun bien pour l'instant — cliquez sur ＋ Ajouter un bien pour commencer.",
+      "emptyNoMatch": "Aucun bien ne correspond à vos filtres.",
+      "footer": "{n, plural, one {# bien} other {# biens}}",
+      "builtSize": "{size} m² bâti",
+      "landSize": "{size} m² terrain"
+    },
+    "modal": {
+      "newProperty": "Nouveau bien",
+      "editProperty": "Modifier le bien",
+      "prosCons": "Avantages / Inconvénients",
+      "namePlaceholder": "Casa da Rua das Flores",
+      "landOnly": "Terrain seul",
+      "existingHouse": "Maison existante",
+      "newBuildOffPlan": "Neuf (sur plan)",
+      "address": "Adresse",
+      "priceEur": "Prix (€)",
+      "listingUrl": "URL de l'annonce",
+      "landSizeM2": "Superficie du terrain (m²)",
+      "builtSizeM2": "Surface bâtie (m²)",
+      "bedrooms": "Chambres",
+      "bathrooms": "Salles de bain",
+      "agentContact": "Agent / contact",
+      "pros": "Avantages",
+      "cons": "Inconvénients",
+      "addAPro": "Ajouter un avantage…",
+      "addACon": "Ajouter un inconvénient…"
+    }
+  },
   "costs": {
     "entryFallbackTitle": "Entrée de coût",
     "open": "📊 Ouvrir",

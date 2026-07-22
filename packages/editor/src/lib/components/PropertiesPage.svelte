@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createPropertiesStore, Property } from "../propertiesStore.svelte";
   import type { createLocationsStore } from "../locationsStore.svelte";
   import PropertyModal from "./PropertyModal.svelte";
@@ -53,8 +54,14 @@
   }
 
   function statusLabel(status: Property["status"]): string {
-    if (status === "proposal_made") return "Proposal made";
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    const map: Record<Property["status"], string> = {
+      watching: "properties.status.watching",
+      visited: "properties.status.visited",
+      proposal_made: "properties.status.proposalMade",
+      purchased: "properties.status.purchased",
+      rejected: "properties.status.rejected",
+    };
+    return $_(map[status]);
   }
 
   function statusColor(status: Property["status"]): string {
@@ -66,9 +73,9 @@
   }
 
   function typeLabel(type: Property["type"]): string {
-    if (type === "land") return "Land";
-    if (type === "new_build") return "New build";
-    return "House";
+    if (type === "land") return $_('properties.type.land');
+    if (type === "new_build") return $_('properties.type.newBuild');
+    return $_('properties.type.house');
   }
 
   function fmt(n: number): string {
@@ -77,8 +84,8 @@
 
   function sizeLabel(p: Property): string {
     const parts: string[] = [];
-    if (p.builtSize != null) parts.push(`${fmt(p.builtSize)} m² built`);
-    if (p.landSize != null) parts.push(`${fmt(p.landSize)} m² land`);
+    if (p.builtSize != null) parts.push($_('properties.page.builtSize', { values: { size: fmt(p.builtSize) } }));
+    if (p.landSize != null) parts.push($_('properties.page.landSize', { values: { size: fmt(p.landSize) } }));
     return parts.length ? parts.join(" · ") : "—";
   }
 </script>
@@ -88,35 +95,35 @@
   {#if store.properties.length === 0}
     <div class="empty-charts">
       <span class="empty-icon">🏘</span>
-      <p>No properties yet — click ＋ Add property to get started.</p>
+      <p>{$_('properties.page.emptyCharts')}</p>
     </div>
   {:else}
     <div class="chart-card-wrap">
       <Card>
-        <div class="chart-label">Search pipeline</div>
+        <div class="chart-label">{$_('properties.page.searchPipeline')}</div>
         <div class="stat-chips-row">
           <div class="stat-chip">
-            <div class="stat-title">Watching</div>
+            <div class="stat-title">{$_('properties.status.watching')}</div>
             <div class="stat-value">{countByStatus("watching")}</div>
           </div>
           <div class="stat-chip">
-            <div class="stat-title">Visited</div>
+            <div class="stat-title">{$_('properties.status.visited')}</div>
             <div class="stat-value">{countByStatus("visited")}</div>
           </div>
           <div class="stat-chip">
-            <div class="stat-title">Proposal made</div>
+            <div class="stat-title">{$_('properties.status.proposalMade')}</div>
             <div class="stat-value">{countByStatus("proposal_made")}</div>
           </div>
           <div class="stat-chip">
-            <div class="stat-title">Purchased</div>
+            <div class="stat-title">{$_('properties.status.purchased')}</div>
             <div class="stat-value">{countByStatus("purchased")}</div>
           </div>
           <div class="stat-chip">
-            <div class="stat-title">Rejected</div>
+            <div class="stat-title">{$_('properties.status.rejected')}</div>
             <div class="stat-value">{countByStatus("rejected")}</div>
           </div>
           <div class="stat-chip">
-            <div class="stat-title">Total</div>
+            <div class="stat-title">{$_('properties.page.total')}</div>
             <div class="stat-value">{store.properties.length}</div>
           </div>
         </div>
@@ -127,22 +134,22 @@
   <div class="table-card-wrap">
     <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
     <div class="toolbar">
-      <Input placeholder="🔍 Search…" bind:value={searchQuery} />
+      <Input placeholder={$_('chores.page.search')} bind:value={searchQuery} />
       <select class="native-input filter-sel" bind:value={statusFilter}>
-        <option value="">All statuses</option>
-        <option value="watching">Watching</option>
-        <option value="visited">Visited</option>
-        <option value="proposal_made">Proposal made</option>
-        <option value="purchased">Purchased</option>
-        <option value="rejected">Rejected</option>
+        <option value="">{$_('works.page.allStatuses')}</option>
+        <option value="watching">{$_('properties.status.watching')}</option>
+        <option value="visited">{$_('properties.status.visited')}</option>
+        <option value="proposal_made">{$_('properties.status.proposalMade')}</option>
+        <option value="purchased">{$_('properties.status.purchased')}</option>
+        <option value="rejected">{$_('properties.status.rejected')}</option>
       </select>
       <select class="native-input filter-sel" bind:value={typeFilter}>
-        <option value="">All types</option>
-        <option value="land">Land</option>
-        <option value="house">House</option>
-        <option value="new_build">New build</option>
+        <option value="">{$_('properties.page.allTypes')}</option>
+        <option value="land">{$_('properties.type.land')}</option>
+        <option value="house">{$_('properties.type.house')}</option>
+        <option value="new_build">{$_('properties.type.newBuild')}</option>
       </select>
-      <Button onclick={() => { modalProperty = "create"; }}>＋ Add property</Button>
+      <Button onclick={() => { modalProperty = "create"; }}>＋ {$_('properties.page.addProperty')}</Button>
     </div>
 
     <div class="table-wrapper">
@@ -175,21 +182,21 @@
       <SortableTable
         columns={[
           { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
-          { key: "name", label: "Name", sortValue: (p) => p.name, cellClass: "name-cell", cell: nameCell },
-          { key: "type", label: "Type", sortValue: (p) => typeLabel(p.type), cell: typeCell },
-          { key: "location", label: "Location", sortValue: (p) => (p.locationId ? locationMap.get(p.locationId)?.name ?? null : null), cell: locationCell },
-          { key: "price", label: "Price", sortValue: (p) => p.price, cell: priceCell },
-          { key: "size", label: "Size", sortValue: (p) => p.builtSize ?? p.landSize, cell: sizeCell },
-          { key: "status", label: "Status", sortValue: (p) => p.status, cell: statusCell },
+          { key: "name", label: $_('chores.editModal.name'), sortValue: (p) => p.name, cellClass: "name-cell", cell: nameCell },
+          { key: "type", label: $_('properties.page.type'), sortValue: (p) => typeLabel(p.type), cell: typeCell },
+          { key: "location", label: $_('properties.page.location'), sortValue: (p) => (p.locationId ? locationMap.get(p.locationId)?.name ?? null : null), cell: locationCell },
+          { key: "price", label: $_('properties.page.price'), sortValue: (p) => p.price, cell: priceCell },
+          { key: "size", label: $_('properties.page.size'), sortValue: (p) => p.builtSize ?? p.landSize, cell: sizeCell },
+          { key: "status", label: $_('works.page.status'), sortValue: (p) => p.status, cell: statusCell },
         ] as Column<Property>[]}
         rows={filteredProperties}
         rowKey={(p) => p.id}
         rowClick={(p) => { modalProperty = p; }}
-        emptyMessage={store.properties.length === 0 ? "No properties yet — click ＋ Add property to get started." : "No properties match your filters."}
+        emptyMessage={store.properties.length === 0 ? $_('properties.page.emptyNoProperties') : $_('properties.page.emptyNoMatch')}
       />
     </div>
 
-    <div class="footer">{filteredProperties.length} properties</div>
+    <div class="footer">{$_('properties.page.footer', { values: { n: filteredProperties.length } })}</div>
     </Card>
   </div>
 </div>

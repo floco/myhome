@@ -302,6 +302,57 @@
       "uploadFailed": "Upload failed"
     }
   },
+  "properties": {
+    "status": {
+      "watching": "Watching",
+      "visited": "Visited",
+      "proposalMade": "Proposal made",
+      "purchased": "Purchased",
+      "rejected": "Rejected"
+    },
+    "type": {
+      "land": "Land",
+      "house": "House",
+      "newBuild": "New build"
+    },
+    "page": {
+      "emptyCharts": "No properties yet — click ＋ Add property to get started.",
+      "searchPipeline": "Search pipeline",
+      "total": "Total",
+      "allTypes": "All types",
+      "addProperty": "Add property",
+      "type": "Type",
+      "location": "Location",
+      "price": "Price",
+      "size": "Size",
+      "emptyNoProperties": "No properties yet — click ＋ Add property to get started.",
+      "emptyNoMatch": "No properties match your filters.",
+      "footer": "{n, plural, one {# property} other {# properties}}",
+      "builtSize": "{size} m² built",
+      "landSize": "{size} m² land"
+    },
+    "modal": {
+      "newProperty": "New property",
+      "editProperty": "Edit property",
+      "prosCons": "Pros / Cons",
+      "namePlaceholder": "Casa da Rua das Flores",
+      "landOnly": "Land only",
+      "existingHouse": "Existing house",
+      "newBuildOffPlan": "New-build (off-plan)",
+      "address": "Address",
+      "priceEur": "Price (€)",
+      "listingUrl": "Listing URL",
+      "landSizeM2": "Land size (m²)",
+      "builtSizeM2": "Built size (m²)",
+      "bedrooms": "Bedrooms",
+      "bathrooms": "Bathrooms",
+      "agentContact": "Agent / contact",
+      "pros": "Pros",
+      "cons": "Cons",
+      "addAPro": "Add a pro…",
+      "addACon": "Add a con…"
+    }
+  },
   "costs": {
     "entryFallbackTitle": "Cost entry",
     "open": "📊 Open",
