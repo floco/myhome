@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { LocationCriterion, Weight } from "../locationsStore.svelte";
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
@@ -25,31 +26,31 @@
   }
 </script>
 
-<Modal open={true} title={isCreate ? "Add criterion" : "Edit criterion"} {onclose} width="400px">
+<Modal open={true} title={isCreate ? $_('locations.criterionModal.addCriterion') : $_('locations.criterionModal.editCriterion')} {onclose} width="400px">
   {#snippet children()}
     <div class="form">
       <div class="field">
-        <label>Name *</label>
-        <Input bind:value={name} placeholder="e.g. Cost of Living" />
+        <label>{$_('chores.editModal.name')} *</label>
+        <Input bind:value={name} placeholder={$_('locations.criterionModal.namePlaceholder')} />
       </div>
       <div class="field">
-        <label>Description</label>
-        <textarea bind:value={description} rows="3" class="native-textarea" placeholder="Optional notes…"></textarea>
+        <label>{$_('works.modal.description')}</label>
+        <textarea bind:value={description} rows="3" class="native-textarea" placeholder={$_('inventory.modal.notesPlaceholder')}></textarea>
       </div>
       <div class="field">
-        <label>Weight</label>
+        <label>{$_('locations.criterionModal.weight')}</label>
         <select class="native-select" bind:value={weight}>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
+          <option value="low">{$_('locations.criterionModal.low')}</option>
+          <option value="medium">{$_('locations.criterionModal.medium')}</option>
+          <option value="high">{$_('locations.criterionModal.high')}</option>
         </select>
       </div>
     </div>
   {/snippet}
 
   {#snippet footer()}
-    <Button variant="ghost" onclick={onclose}>Cancel</Button>
-    <Button onclick={handleSave} disabled={!name.trim()}>{isCreate ? "Add" : "Save"}</Button>
+    <Button variant="ghost" onclick={onclose}>{$_('common.cancel')}</Button>
+    <Button onclick={handleSave} disabled={!name.trim()}>{isCreate ? $_('common.add') : $_('common.save')}</Button>
   {/snippet}
 </Modal>
 

@@ -348,6 +348,45 @@
       "yesDelete": "Yes, delete"
     }
   },
+  "locations": {
+    "ratingPopup": {
+      "notePlaceholder": "Note…",
+      "clear": "Clear"
+    },
+    "page": {
+      "emptyState": "No locations yet — add candidates below to start comparing.",
+      "noRatingsYet": "No ratings yet",
+      "ranking": "Ranking — weighted overall score"
+    },
+    "modal": {
+      "addLocation": "Add location",
+      "editLocation": "Edit location",
+      "flag": "Flag",
+      "namePlaceholder": "e.g. Nantes, France"
+    },
+    "criterionModal": {
+      "addCriterion": "Add criterion",
+      "editCriterion": "Edit criterion",
+      "namePlaceholder": "e.g. Cost of Living",
+      "weight": "Weight",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "matrix": {
+      "view": "View",
+      "criteria": "Criteria",
+      "weightMed": "Med",
+      "deleteLocationConfirm": "Delete {name}?",
+      "confirmDelete": "Confirm delete",
+      "moveLeft": "Move left",
+      "moveRight": "Move right",
+      "addLocationTitle": "Add location",
+      "deleteCriterionConfirm": "Delete {name}?",
+      "moveUp": "Move up",
+      "moveDown": "Move down"
+    }
+  },
   "properties": {
     "status": {
       "watching": "Watching",

@@ -348,6 +348,45 @@
       "yesDelete": "Oui, supprimer"
     }
   },
+  "locations": {
+    "ratingPopup": {
+      "notePlaceholder": "Note…",
+      "clear": "Effacer"
+    },
+    "page": {
+      "emptyState": "Aucun emplacement pour l'instant — ajoutez des candidats ci-dessous pour commencer à comparer.",
+      "noRatingsYet": "Aucune évaluation pour l'instant",
+      "ranking": "Classement — score global pondéré"
+    },
+    "modal": {
+      "addLocation": "Ajouter un emplacement",
+      "editLocation": "Modifier l'emplacement",
+      "flag": "Drapeau",
+      "namePlaceholder": "ex. Nantes, France"
+    },
+    "criterionModal": {
+      "addCriterion": "Ajouter un critère",
+      "editCriterion": "Modifier le critère",
+      "namePlaceholder": "ex. Coût de la vie",
+      "weight": "Poids",
+      "low": "Faible",
+      "medium": "Moyen",
+      "high": "Élevé"
+    },
+    "matrix": {
+      "view": "Voir",
+      "criteria": "Critères",
+      "weightMed": "Moy",
+      "deleteLocationConfirm": "Supprimer {name} ?",
+      "confirmDelete": "Confirmer la suppression",
+      "moveLeft": "Déplacer à gauche",
+      "moveRight": "Déplacer à droite",
+      "addLocationTitle": "Ajouter un emplacement",
+      "deleteCriterionConfirm": "Supprimer {name} ?",
+      "moveUp": "Déplacer vers le haut",
+      "moveDown": "Déplacer vers le bas"
+    }
+  },
   "properties": {
     "status": {
       "watching": "En veille",

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { Location, LocationCriterion, LocationRating } from "../locationsStore.svelte";
   import StarRating from "./ui/StarRating.svelte";
 
@@ -52,11 +53,11 @@
   <div class="score-picker">
     <StarRating {score} interactive size="md" onselect={selectScore} />
   </div>
-  <textarea class="note-textarea" placeholder="Note…" bind:value={note}></textarea>
+  <textarea class="note-textarea" placeholder={$_('locations.ratingPopup.notePlaceholder')} bind:value={note}></textarea>
   <div class="popup-actions">
-    <button type="button" class="save-btn" onclick={handleSave}>Save</button>
-    <button type="button" class="clear-btn" onclick={handleClear}>Clear</button>
-    <button type="button" class="close-btn" onclick={onclose}>Close</button>
+    <button type="button" class="save-btn" onclick={handleSave}>{$_('common.save')}</button>
+    <button type="button" class="clear-btn" onclick={handleClear}>{$_('locations.ratingPopup.clear')}</button>
+    <button type="button" class="close-btn" onclick={onclose}>{$_('common.close')}</button>
   </div>
 </div>
 
