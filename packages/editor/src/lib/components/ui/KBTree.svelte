@@ -1,5 +1,6 @@
 <!-- packages/editor/src/lib/components/ui/KBTree.svelte -->
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { KBEntry } from "../../kbStore.svelte";
   import Self from "./KBTree.svelte";
 
@@ -176,7 +177,7 @@
           <button
             class="disclosure"
             onclick={(e) => { e.stopPropagation(); ontoggle(entry.id); }}
-            aria-label={isOpen(entry.id) ? "Collapse" : "Expand"}
+            aria-label={isOpen(entry.id) ? $_('kb.tree.collapse') : $_('kb.tree.expand')}
           >{isOpen(entry.id) ? "▼" : "▶"}</button>
         {:else}
           <span class="disclosure-spacer"></span>
@@ -198,14 +199,14 @@
         {/if}
         <button
           class="menu-trigger"
-          title="Page actions"
+          title={$_('kb.tree.pageActions')}
           onclick={(e) => { e.stopPropagation(); menuOpenFor = menuOpenFor === entry.id ? null : entry.id; }}
         >⋯</button>
         {#if menuOpenFor === entry.id}
           <div class="page-menu" role="menu" onclick={(e) => e.stopPropagation()}>
-            <button role="menuitem" onclick={(e) => { e.stopPropagation(); oncreatechild(entry.id); menuOpenFor = null; }}>Add child page</button>
-            <button role="menuitem" onclick={(e) => { e.stopPropagation(); startRename(entry); }}>Rename</button>
-            <button role="menuitem" class="danger" onclick={(e) => { e.stopPropagation(); ondelete(entry.id); menuOpenFor = null; }}>Delete</button>
+            <button role="menuitem" onclick={(e) => { e.stopPropagation(); oncreatechild(entry.id); menuOpenFor = null; }}>{$_('kb.tree.addChildPage')}</button>
+            <button role="menuitem" onclick={(e) => { e.stopPropagation(); startRename(entry); }}>{$_('kb.tree.rename')}</button>
+            <button role="menuitem" class="danger" onclick={(e) => { e.stopPropagation(); ondelete(entry.id); menuOpenFor = null; }}>{$_('common.delete')}</button>
           </div>
         {/if}
       </div>
@@ -221,7 +222,7 @@
   {/each}
   {#if depth === 0 && childEntries.length === 0}
     <li class="list-empty">
-      {searchQuery.trim() ? "No matching pages." : "No pages yet."}
+      {searchQuery.trim() ? $_('kb.tree.noMatchingPages') : $_('kb.tree.noPagesYet')}
     </li>
   {/if}
 </ul>

@@ -1,6 +1,7 @@
 <!-- packages/editor/src/lib/components/ui/Modal.svelte -->
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import { _ } from "svelte-i18n";
 
   interface Props {
     open: boolean;
@@ -39,7 +40,7 @@
   >
     <div class="ui-modal-header">
       <h2 class="ui-modal-title">{title}</h2>
-      <button type="button" class="ui-modal-close" onclick={onclose} aria-label="Close">✕</button>
+      <button type="button" class="ui-modal-close" onclick={onclose} aria-label={$_('common.close')}>✕</button>
     </div>
     <div class="ui-modal-body">
       {@render children?.()}

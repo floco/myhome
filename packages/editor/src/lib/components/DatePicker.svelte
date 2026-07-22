@@ -1,20 +1,34 @@
 <!-- packages/editor/src/lib/components/DatePicker.svelte -->
 <script lang="ts">
+  import { _, locale } from "svelte-i18n";
+
   interface Props {
     value?: string;
     placeholder?: string;
   }
-  let { value = $bindable(""), placeholder = "Pick a date…" }: Props = $props();
+  let { value = $bindable(""), placeholder }: Props = $props();
 
   let open = $state(false);
   let viewYear = $state(new Date().getFullYear());
   let viewMonth = $state(new Date().getMonth());
 
-  const MONTH_NAMES = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
-  ];
-  const DAY_HEADERS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+  function monthNames(loc: string): string[] {
+    return Array.from({ length: 12 }, (_unused, i) =>
+      new Intl.DateTimeFormat(loc, { month: "long" }).format(new Date(2000, i, 1))
+    );
+  }
+
+  function dayHeaders(loc: string): string[] {
+    // Jan 7 2024 was a Sunday, matching Date#getDay()'s 0=Sunday convention
+    // used below to index into this array.
+    return Array.from({ length: 7 }, (_unused, i) =>
+      new Intl.DateTimeFormat(loc, { weekday: "short" }).format(new Date(2024, 0, 7 + i))
+    );
+  }
+
+  const MONTH_NAMES = $derived(monthNames($locale ?? "en"));
+  const DAY_HEADERS = $derived(dayHeaders($locale ?? "en"));
+  const effectivePlaceholder = $derived(placeholder ?? $_('datePicker.placeholder'));
 
   const monthGrid = $derived((() => {
     const firstDay = new Date(viewYear, viewMonth, 1).getDay();
@@ -78,7 +92,7 @@
 <div class="dp-wrap">
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div class="dp-field" onclick={() => { open = !open; }}>
-    <span class="dp-text">{displayValue() || placeholder}</span>
+    <span class="dp-text">{displayValue() || effectivePlaceholder}</span>
     <span class="dp-icon">📅</span>
   </div>
 

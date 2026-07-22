@@ -1,6 +1,7 @@
 <script lang="ts">
   import { marked } from "marked";
   import DOMPurify from "dompurify";
+  import { _ } from "svelte-i18n";
   import type { MediaItem } from "./mediaTypes";
 
   // Single newlines become <br>; GFM adds ~~strikethrough~~, tables, task lists.
@@ -20,13 +21,15 @@
   let {
     value = $bindable(),
     editing = $bindable(),
-    placeholder = "Click to add markdown content…",
+    placeholder,
     minHeight = "200px",
     mediaItems = [],
     clickToEdit = true,
     resolveKbLink,
     onSlashPage,
   }: Props = $props();
+
+  const effectivePlaceholder = $derived(placeholder ?? $_('markdownEditor.defaultPlaceholder'));
 
   let textareaEl: HTMLTextAreaElement | null = $state(null);
   let pickerOpen = $state(false);
@@ -56,7 +59,7 @@
         a.classList.add("kb-link");
       } else {
         a.removeAttribute("href");
-        a.textContent = "Page deleted";
+        a.textContent = $_("markdownEditor.pageDeleted");
         a.classList.add("kb-link-deleted");
       }
     });
@@ -131,24 +134,24 @@
 </script>
 
 {#if editing}
-  <div class="md-toolbar" role="toolbar" aria-label="Markdown formatting">
-    <button class="tb-btn" type="button" title="Heading 1" onclick={() => linePrefix("# ")}>H1</button>
-    <button class="tb-btn" type="button" title="Heading 2" onclick={() => linePrefix("## ")}>H2</button>
-    <button class="tb-btn" type="button" title="Heading 3" onclick={() => linePrefix("### ")}>H3</button>
+  <div class="md-toolbar" role="toolbar" aria-label={$_('markdownEditor.toolbarLabel')}>
+    <button class="tb-btn" type="button" title={$_('markdownEditor.heading1')} onclick={() => linePrefix("# ")}>H1</button>
+    <button class="tb-btn" type="button" title={$_('markdownEditor.heading2')} onclick={() => linePrefix("## ")}>H2</button>
+    <button class="tb-btn" type="button" title={$_('markdownEditor.heading3')} onclick={() => linePrefix("### ")}>H3</button>
     <span class="tb-sep" aria-hidden="true"></span>
-    <button class="tb-btn tb-bold" type="button" title="Bold" onclick={() => insert("**", "**", "bold")}>B</button>
-    <button class="tb-btn tb-italic" type="button" title="Italic" onclick={() => insert("_", "_", "italic")}>I</button>
-    <button class="tb-btn" type="button" title="Strikethrough" onclick={() => insert("~~", "~~", "text")}>S̶</button>
+    <button class="tb-btn tb-bold" type="button" title={$_('markdownEditor.bold')} onclick={() => insert("**", "**", "bold")}>B</button>
+    <button class="tb-btn tb-italic" type="button" title={$_('markdownEditor.italic')} onclick={() => insert("_", "_", "italic")}>I</button>
+    <button class="tb-btn" type="button" title={$_('markdownEditor.strikethrough')} onclick={() => insert("~~", "~~", "text")}>S̶</button>
     <span class="tb-sep" aria-hidden="true"></span>
-    <button class="tb-btn" type="button" title="Bullet list" onclick={() => linePrefix("- ")}>• List</button>
-    <button class="tb-btn" type="button" title="Numbered list" onclick={() => linePrefix("1. ")}>1. List</button>
-    <button class="tb-btn" type="button" title="Blockquote" onclick={() => linePrefix("> ")}>❝</button>
+    <button class="tb-btn" type="button" title={$_('markdownEditor.bulletList')} onclick={() => linePrefix("- ")}>• List</button>
+    <button class="tb-btn" type="button" title={$_('markdownEditor.numberedList')} onclick={() => linePrefix("1. ")}>1. List</button>
+    <button class="tb-btn" type="button" title={$_('markdownEditor.blockquote')} onclick={() => linePrefix("> ")}>❝</button>
     <span class="tb-sep" aria-hidden="true"></span>
-    <button class="tb-btn" type="button" title="Inline code" onclick={() => insert("`", "`", "code")}>`code`</button>
-    <button class="tb-btn" type="button" title="Code block" onclick={() => insert("```\n", "\n```", "code")}>```</button>
+    <button class="tb-btn" type="button" title={$_('markdownEditor.inlineCode')} onclick={() => insert("`", "`", "code")}>`code`</button>
+    <button class="tb-btn" type="button" title={$_('markdownEditor.codeBlock')} onclick={() => insert("```\n", "\n```", "code")}>```</button>
     <span class="tb-sep" aria-hidden="true"></span>
-    <button class="tb-btn" type="button" title="Link" onclick={() => insert("[", "](url)", "link text")}>🔗</button>
-    <button class="tb-btn" type="button" title="Horizontal rule" onclick={() => insert("\n---\n", "", "")}>—</button>
+    <button class="tb-btn" type="button" title={$_('markdownEditor.link')} onclick={() => insert("[", "](url)", "link text")}>🔗</button>
+    <button class="tb-btn" type="button" title={$_('markdownEditor.horizontalRule')} onclick={() => insert("\n---\n", "", "")}>—</button>
     {#if mediaItems.length > 0}
       <span class="tb-sep" aria-hidden="true"></span>
       <div
@@ -160,11 +163,11 @@
         <button
           class="tb-btn"
           type="button"
-          title="Insert media"
+          title={$_('markdownEditor.insertMedia')}
           onclick={() => { pickerOpen = !pickerOpen; }}
         >📷</button>
         {#if pickerOpen}
-          <div class="media-picker" role="listbox" aria-label="Insert media attachment">
+          <div class="media-picker" role="listbox" aria-label={$_('markdownEditor.insertMediaAttachment')}>
             {#each mediaItems as item (item.id)}
               <div class="media-tile" title={item.name}>
                 <img src={item.thumbnailUrl} alt={item.name} />
@@ -187,7 +190,7 @@
     bind:this={textareaEl}
     bind:value
     oninput={handleTextareaInput}
-    placeholder="Write in Markdown…"
+    placeholder={$_('markdownEditor.writeInMarkdown')}
   ></textarea>
 {:else}
   <div
@@ -199,12 +202,12 @@
     style:min-height={minHeight}
     onclick={clickToEdit ? () => { editing = true; } : undefined}
     onkeydown={clickToEdit ? (e) => { if (e.key === "Enter" || e.key === " ") editing = true; } : undefined}
-    title={clickToEdit ? "Click to edit" : undefined}
+    title={clickToEdit ? $_('markdownEditor.clickToEdit') : undefined}
   >
     {#if renderedHtml}
       {@html renderedHtml}
     {:else}
-      <span class="md-placeholder">{placeholder}</span>
+      <span class="md-placeholder">{effectivePlaceholder}</span>
     {/if}
   </div>
 {/if}

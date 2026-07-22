@@ -7,6 +7,71 @@
     "close": "Close",
     "add": "Add",
     "loading": "Loading…",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "openPdf": "Open PDF ↗"
+  },
+  "datePicker": {
+    "placeholder": "Pick a date…"
+  },
+  "mediaGallery": {
+    "itemCount": "{n, plural, one {# item} other {# items}}",
+    "gridView": "Grid view",
+    "listView": "List view",
+    "emptyState": "No media yet. Drop files here or use the button below.",
+    "pdfBadge": "PDF",
+    "uploading": "Uploading…",
+    "uploadButton": "＋ Upload"
+  },
+  "emojiPicker": {
+    "pickEmoji": "Pick emoji",
+    "objects": "Objects",
+    "flags": "Flags",
+    "filterCountries": "Filter countries…",
+    "custom": "Custom…"
+  },
+  "kb": {
+    "tree": {
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "pageActions": "Page actions",
+      "addChildPage": "Add child page",
+      "rename": "Rename",
+      "noMatchingPages": "No matching pages.",
+      "noPagesYet": "No pages yet."
+    },
+    "trash": {
+      "title": "Trash",
+      "emptyTrash": "Empty Trash",
+      "trashIsEmpty": "Trash is empty.",
+      "deletedOn": "Deleted {date}",
+      "restore": "Restore",
+      "deleteForeverTitle": "Delete forever",
+      "deleteForeverButton": "Delete Forever",
+      "confirmEmptyBody": "Permanently delete all {n, plural, one {# page} other {# pages}} in Trash? This cannot be undone.",
+      "confirmDeletePrefix": "Permanently delete",
+      "confirmDeleteSuffix": "? This cannot be undone."
+    }
+  },
+  "markdownEditor": {
+    "defaultPlaceholder": "Click to add markdown content…",
+    "pageDeleted": "Page deleted",
+    "toolbarLabel": "Markdown formatting",
+    "heading1": "Heading 1",
+    "heading2": "Heading 2",
+    "heading3": "Heading 3",
+    "bold": "Bold",
+    "italic": "Italic",
+    "strikethrough": "Strikethrough",
+    "bulletList": "Bullet list",
+    "numberedList": "Numbered list",
+    "blockquote": "Blockquote",
+    "inlineCode": "Inline code",
+    "codeBlock": "Code block",
+    "link": "Link",
+    "horizontalRule": "Horizontal rule",
+    "insertMedia": "Insert media",
+    "insertMediaAttachment": "Insert media attachment",
+    "writeInMarkdown": "Write in Markdown…",
+    "clickToEdit": "Click to edit"
   }
 }

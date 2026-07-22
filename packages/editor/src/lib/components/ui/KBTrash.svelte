@@ -1,5 +1,6 @@
 <!-- packages/editor/src/lib/components/ui/KBTrash.svelte -->
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { KBEntry } from "../../kbStore.svelte";
   import Button from "./Button.svelte";
   import Modal from "./Modal.svelte";
@@ -35,23 +36,23 @@
 
 <div class="kb-trash">
   <div class="trash-header">
-    <h2>Trash</h2>
+    <h2>{$_('kb.trash.title')}</h2>
     {#if entries.length > 0}
-      <Button variant="secondary" onclick={() => { confirmEmptyAll = true; }}>Empty Trash</Button>
+      <Button variant="secondary" onclick={() => { confirmEmptyAll = true; }}>{$_('kb.trash.emptyTrash')}</Button>
     {/if}
   </div>
   {#if entries.length === 0}
-    <div class="trash-empty">Trash is empty.</div>
+    <div class="trash-empty">{$_('kb.trash.trashIsEmpty')}</div>
   {:else}
     <ul class="trash-list">
       {#each entries as entry (entry.id)}
         <li class="trash-row">
           <span class="trash-icon">{entry.icon || "📄"}</span>
           <span class="trash-title">{entry.title}</span>
-          <span class="trash-date">Deleted {fmtDate(entry.deletedAt)}</span>
+          <span class="trash-date">{$_('kb.trash.deletedOn', { values: { date: fmtDate(entry.deletedAt) } })}</span>
           <div class="trash-actions">
-            <Button variant="secondary" onclick={() => onrestore(entry.id)}>Restore</Button>
-            <Button variant="ghost" onclick={() => { confirmDeleteId = entry.id; }} title="Delete forever">🗑</Button>
+            <Button variant="secondary" onclick={() => onrestore(entry.id)}>{$_('kb.trash.restore')}</Button>
+            <Button variant="ghost" onclick={() => { confirmDeleteId = entry.id; }} title={$_('kb.trash.deleteForeverTitle')}>🗑</Button>
           </div>
         </li>
       {/each}
@@ -59,19 +60,19 @@
   {/if}
 </div>
 
-<Modal open={confirmEmptyAll} title="Empty Trash" onclose={() => { confirmEmptyAll = false; }} width="420px">
-  <p>Permanently delete all {entries.length} page{entries.length > 1 ? "s" : ""} in Trash? This cannot be undone.</p>
+<Modal open={confirmEmptyAll} title={$_('kb.trash.emptyTrash')} onclose={() => { confirmEmptyAll = false; }} width="420px">
+  <p>{$_('kb.trash.confirmEmptyBody', { values: { n: entries.length } })}</p>
   {#snippet footer()}
-    <Button variant="ghost" onclick={() => { confirmEmptyAll = false; }}>Cancel</Button>
-    <Button variant="danger" onclick={handleConfirmEmpty}>Empty Trash</Button>
+    <Button variant="ghost" onclick={() => { confirmEmptyAll = false; }}>{$_('common.cancel')}</Button>
+    <Button variant="danger" onclick={handleConfirmEmpty}>{$_('kb.trash.emptyTrash')}</Button>
   {/snippet}
 </Modal>
 
-<Modal open={confirmDeleteId !== null} title="Delete forever" onclose={() => { confirmDeleteId = null; }} width="420px">
-  <p>Permanently delete <strong>{confirmDeleteEntry?.title}</strong>? This cannot be undone.</p>
+<Modal open={confirmDeleteId !== null} title={$_('kb.trash.deleteForeverTitle')} onclose={() => { confirmDeleteId = null; }} width="420px">
+  <p>{$_('kb.trash.confirmDeletePrefix')} <strong>{confirmDeleteEntry?.title}</strong>{$_('kb.trash.confirmDeleteSuffix')}</p>
   {#snippet footer()}
-    <Button variant="ghost" onclick={() => { confirmDeleteId = null; }}>Cancel</Button>
-    <Button variant="danger" onclick={handleConfirmDeleteForever}>Delete Forever</Button>
+    <Button variant="ghost" onclick={() => { confirmDeleteId = null; }}>{$_('common.cancel')}</Button>
+    <Button variant="danger" onclick={handleConfirmDeleteForever}>{$_('kb.trash.deleteForeverButton')}</Button>
   {/snippet}
 </Modal>
 

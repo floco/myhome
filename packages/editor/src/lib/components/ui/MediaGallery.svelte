@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { MediaItem } from "./mediaTypes";
 
   interface Props {
@@ -56,16 +57,16 @@
 >
   {#if items.length > 0}
     <div class="gallery-header">
-      <span class="item-count">{items.length} item{items.length !== 1 ? "s" : ""}</span>
+      <span class="item-count">{$_('mediaGallery.itemCount', { values: { n: items.length } })}</span>
       <div class="view-toggles">
-        <button class="toggle-grid" class:active={viewMode === "grid"} onclick={() => { viewMode = "grid"; }} title="Grid view">⊞</button>
-        <button class="toggle-list" class:active={viewMode === "list"} onclick={() => { viewMode = "list"; }} title="List view">☰</button>
+        <button class="toggle-grid" class:active={viewMode === "grid"} onclick={() => { viewMode = "grid"; }} title={$_('mediaGallery.gridView')}>⊞</button>
+        <button class="toggle-list" class:active={viewMode === "list"} onclick={() => { viewMode = "list"; }} title={$_('mediaGallery.listView')}>☰</button>
       </div>
     </div>
   {/if}
 
   {#if items.length === 0}
-    <div class="empty-state">No media yet. Drop files here or use the button below.</div>
+    <div class="empty-state">{$_('mediaGallery.emptyState')}</div>
   {:else if viewMode === "grid"}
     <div class="media-grid">
       {#each items as item, i}
@@ -86,12 +87,12 @@
             }}
           />
           {#if item.type === "document"}
-            <span class="pdf-badge">PDF</span>
+            <span class="pdf-badge">{$_('mediaGallery.pdfBadge')}</span>
           {/if}
           <button
             class="tile-delete"
             onclick={(e) => { e.stopPropagation(); onDelete(item.id); }}
-            title="Delete"
+            title={$_('common.delete')}
           >✕</button>
         </div>
       {/each}
@@ -102,7 +103,7 @@
         <div class="media-list-row">
           <span class="list-icon">{item.type === "document" ? "📄" : "🖼"}</span>
           <button class="list-name" onclick={() => onItemClick(i)}>{item.name}</button>
-          <button class="list-delete" onclick={() => onDelete(item.id)} title="Delete">✕</button>
+          <button class="list-delete" onclick={() => onDelete(item.id)} title={$_('common.delete')}>✕</button>
         </div>
       {/each}
     </div>
@@ -110,7 +111,7 @@
 
   <div class="upload-row">
     <label class="upload-btn" class:uploading>
-      {uploading ? "Uploading…" : "＋ Upload"}
+      {uploading ? $_('mediaGallery.uploading') : $_('mediaGallery.uploadButton')}
       <input type="file" {accept} multiple style="display:none" onchange={handleChange} />
     </label>
     {#if uploadError}<div class="upload-error">{uploadError}</div>{/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import { COUNTRY_FLAGS } from "../../countryFlags";
   import Tabs from "./Tabs.svelte";
 
@@ -117,7 +118,7 @@
     bind:this={triggerEl}
     onclick={openPicker}
     type="button"
-    title="Pick emoji"
+    title={$_('emojiPicker.pickEmoji')}
   >
     <span class="ep-current">{value || "?"}</span>
     <span class="ep-caret">▾</span>
@@ -127,7 +128,7 @@
     <div class="ep-panel" style="left:{panelLeft}px;top:{panelTop}px" bind:this={panelEl} use:portal>
       {#if flags}
         <Tabs
-          tabs={[{ id: "objects", label: "Objects" }, { id: "flags", label: "Flags" }]}
+          tabs={[{ id: "objects", label: $_('emojiPicker.objects') }, { id: "flags", label: $_('emojiPicker.flags') }]}
           active={activeTab}
           onchange={(id) => { activeTab = id as "objects" | "flags"; }}
         />
@@ -147,7 +148,7 @@
         <input
           class="ep-flag-filter"
           bind:value={flagFilter}
-          placeholder="Filter countries…"
+          placeholder={$_('emojiPicker.filterCountries')}
         />
         <div class="ep-grid ep-flag-grid">
           {#each filteredFlags as c (c.code)}
@@ -165,7 +166,7 @@
         <input
           class="ep-custom-input"
           bind:value={customValue}
-          placeholder="Custom…"
+          placeholder={$_('emojiPicker.custom')}
           maxlength="4"
           onkeydown={(ev) => { if (ev.key === "Enter") { ev.preventDefault(); applyCustom(); } }}
         />

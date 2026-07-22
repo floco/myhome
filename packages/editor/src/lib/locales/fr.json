@@ -7,6 +7,71 @@
     "close": "Fermer",
     "add": "Ajouter",
     "loading": "Chargement…",
-    "confirm": "Confirmer"
+    "confirm": "Confirmer",
+    "openPdf": "Ouvrir le PDF ↗"
+  },
+  "datePicker": {
+    "placeholder": "Choisir une date…"
+  },
+  "mediaGallery": {
+    "itemCount": "{n, plural, one {# élément} other {# éléments}}",
+    "gridView": "Vue grille",
+    "listView": "Vue liste",
+    "emptyState": "Aucun média pour l'instant. Déposez des fichiers ici ou utilisez le bouton ci-dessous.",
+    "pdfBadge": "PDF",
+    "uploading": "Envoi…",
+    "uploadButton": "＋ Ajouter"
+  },
+  "emojiPicker": {
+    "pickEmoji": "Choisir un emoji",
+    "objects": "Objets",
+    "flags": "Drapeaux",
+    "filterCountries": "Filtrer les pays…",
+    "custom": "Personnalisé…"
+  },
+  "kb": {
+    "tree": {
+      "collapse": "Réduire",
+      "expand": "Développer",
+      "pageActions": "Actions de la page",
+      "addChildPage": "Ajouter une sous-page",
+      "rename": "Renommer",
+      "noMatchingPages": "Aucune page correspondante.",
+      "noPagesYet": "Aucune page pour l'instant."
+    },
+    "trash": {
+      "title": "Corbeille",
+      "emptyTrash": "Vider la corbeille",
+      "trashIsEmpty": "La corbeille est vide.",
+      "deletedOn": "Supprimée le {date}",
+      "restore": "Restaurer",
+      "deleteForeverTitle": "Supprimer définitivement",
+      "deleteForeverButton": "Supprimer définitivement",
+      "confirmEmptyBody": "Supprimer définitivement {n, plural, one {# page} other {# pages}} de la corbeille ? Cette action est irréversible.",
+      "confirmDeletePrefix": "Supprimer définitivement",
+      "confirmDeleteSuffix": " ? Cette action est irréversible."
+    }
+  },
+  "markdownEditor": {
+    "defaultPlaceholder": "Cliquez pour ajouter du contenu Markdown…",
+    "pageDeleted": "Page supprimée",
+    "toolbarLabel": "Mise en forme Markdown",
+    "heading1": "Titre 1",
+    "heading2": "Titre 2",
+    "heading3": "Titre 3",
+    "bold": "Gras",
+    "italic": "Italique",
+    "strikethrough": "Barré",
+    "bulletList": "Liste à puces",
+    "numberedList": "Liste numérotée",
+    "blockquote": "Citation",
+    "inlineCode": "Code en ligne",
+    "codeBlock": "Bloc de code",
+    "link": "Lien",
+    "horizontalRule": "Ligne horizontale",
+    "insertMedia": "Insérer un média",
+    "insertMediaAttachment": "Insérer une pièce jointe média",
+    "writeInMarkdown": "Écrire en Markdown…",
+    "clickToEdit": "Cliquer pour modifier"
   }
 }
