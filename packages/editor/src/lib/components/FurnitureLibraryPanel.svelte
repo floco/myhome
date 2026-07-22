@@ -3,7 +3,6 @@
   import {
     FURNITURE_TEMPLATES,
     FURNITURE_CATEGORIES,
-    CATEGORY_LABELS,
     type FurnitureCategory,
     type FurnitureTemplate,
   } from "../furnitureLibrary";
@@ -12,10 +11,18 @@
 
   let search = $state("");
 
+  function templateLabel(id: string): string {
+    return $_(`floorPlan.furnitureLibrary.items.${id}`);
+  }
+
+  function categoryLabel(cat: FurnitureCategory): string {
+    return $_(`floorPlan.furnitureLibrary.categories.${cat}`);
+  }
+
   const filtered = $derived(
     search.trim()
       ? FURNITURE_TEMPLATES.filter((t) =>
-          t.label.toLowerCase().includes(search.toLowerCase()),
+          templateLabel(t.id).toLowerCase().includes(search.toLowerCase()),
         )
       : FURNITURE_TEMPLATES,
   );
@@ -49,7 +56,7 @@
       {@const items = templatesForCategory(cat)}
       {#if items.length > 0}
         <div class="category-section">
-          <div class="category-label">{CATEGORY_LABELS[cat]}</div>
+          <div class="category-label">{categoryLabel(cat)}</div>
           <div class="category-items">
             {#each items as template}
               <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -58,12 +65,12 @@
                 draggable="true"
                 data-template-id={template.id}
                 ondragstart={(e) => onDragStart(e, template.id)}
-                title={template.label}
+                title={templateLabel(template.id)}
               >
                 <svg viewBox="0 0 100 100" width="48" height="48">
                   {@html template.svgContent}
                 </svg>
-                <span class="item-label">{template.label}</span>
+                <span class="item-label">{templateLabel(template.id)}</span>
               </div>
             {/each}
           </div>

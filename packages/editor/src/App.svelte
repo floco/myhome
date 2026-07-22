@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { Point, WallType } from "@myhome/geometry";
   import { pointsEqual } from "@myhome/geometry";
   import { createHouseStore } from "./lib/houseStore.svelte";
@@ -178,7 +179,7 @@
   );
   const consumablesPickerLayer = $derived<PickerLayer>({
     id: "consumables",
-    label: "Consumables",
+    label: $_('common.modules.consumables'),
     emoji: "🛒",
     items: consumableStore.consumables.map(c => ({
       id: c.id,
@@ -192,7 +193,7 @@
   );
   const worksPickerLayer = $derived<PickerLayer>({
     id: "works",
-    label: "Works",
+    label: $_('common.modules.works'),
     emoji: "🔧",
     items: worksStore.works.map(w => ({
       id: w.id,
@@ -211,7 +212,7 @@
 
   const chorePickerLayer = $derived<PickerLayer>({
     id: "chores",
-    label: "Chores",
+    label: $_('common.modules.chores'),
     emoji: "✅",
     items: choreStore.chores.map(c => ({
       id: c.id,
@@ -223,7 +224,7 @@
 
   const inventoryPickerLayer = $derived<PickerLayer>({
     id: "inventory",
-    label: "Inventory",
+    label: $_('common.modules.inventory'),
     emoji: "📦",
     items: inventoryStore.items.map(i => ({
       id: i.id,
@@ -235,7 +236,7 @@
 
   const costsPickerLayer = $derived<PickerLayer>({
     id: "costs",
-    label: "Costs",
+    label: $_('common.modules.costs'),
     emoji: "💶",
     items: settingsStore.costCategories.map(c => ({
       id: c.id,
@@ -319,7 +320,7 @@
       cpCurrent = "";
       cpNew = "";
     } catch (e) {
-      cpError = e instanceof Error ? e.message : "Failed";
+      cpError = e instanceof Error ? e.message : $_('app.changePassword.failed');
     } finally {
       cpLoading = false;
     }
@@ -393,7 +394,7 @@
     saveStatus === "saving" ? "⋯" : saveStatus === "saved" ? "✓" : saveStatus === "error" ? "⚠" : "💾"
   );
   const saveTitle = $derived(
-    saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : saveStatus === "error" ? `Save error${saveError ? ": " + saveError : ""}` : "Save"
+    saveStatus === "saving" ? $_('settings.security.saving') : saveStatus === "saved" ? $_('app.floatingToolbar.saved') : saveStatus === "error" ? $_('app.floatingToolbar.saveError', { values: { detail: saveError ? ": " + saveError : "" } }) : $_('common.save')
   );
 
   let saveError = $state<string | null>(null);
@@ -778,7 +779,7 @@
 />
 
 {#if authStore.checking}
-  <div class="auth-loading">Loading…</div>
+  <div class="auth-loading">{$_('common.loading')}</div>
 {:else if !authStore.user}
   <LoginPage onlogin={() => {}} login={authStore.login} />
 {:else}
@@ -788,18 +789,18 @@
     <button
       class="hamburger"
       onclick={() => { navExpanded = !navExpanded; }}
-      title={navExpanded ? "Close menu" : "Open menu"}
+      title={navExpanded ? $_('app.topbar.closeMenu') : $_('app.topbar.openMenu')}
     >{navExpanded ? "✕" : "☰"}</button>
 
     <span class="app-title">My Home</span>
 
     <span class="spacer"></span>
     <HomesSwitcher topbar={true} />
-    <button class="icon-btn search-btn" title="Search (Ctrl+K)" onclick={() => { commandPaletteOpen = true; }}>🔍</button>
+    <button class="icon-btn search-btn" title={$_('app.topbar.searchShortcut')} onclick={() => { commandPaletteOpen = true; }}>🔍</button>
     <NotificationBell store={notificationStore} onnavigate={handleNotificationSelect} />
     <button
       class="icon-btn theme-toggle"
-      title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+      title={theme === "light" ? $_('app.topbar.switchToDark') : $_('app.topbar.switchToLight')}
       onclick={handleToggleTheme}
     >{theme === "light" ? "🌙" : "☀️"}</button>
     <span class="topbar-sep"></span>
@@ -808,7 +809,7 @@
       <button
         class="icon-btn user-chip"
         onclick={() => { userMenuOpen = !userMenuOpen; }}
-        title="User menu"
+        title={$_('app.topbar.userMenu')}
       >
         {authStore.user?.username.slice(0, 2).toUpperCase()}
       </button>
@@ -820,10 +821,10 @@
           </div>
           <hr class="user-dropdown-sep" />
           <button class="user-dropdown-item" onclick={() => { showChangePassword = true; userMenuOpen = false; }}>
-            Change password
+            {$_('app.topbar.changePassword')}
           </button>
           <button class="user-dropdown-item signout" onclick={handleSignOut}>
-            Sign out
+            {$_('app.topbar.signOut')}
           </button>
         </div>
       {/if}
@@ -837,20 +838,20 @@
     <div class="content">
       {#if homesStore.loaded && homesStore.homes.length === 0}
         <div class="no-homes">
-          <p>Create your first home to get started.</p>
+          <p>{$_('app.noHomes')}</p>
         </div>
         <NewHomeModal open={true} required={true} onclose={() => {}} />
 
       {:else if isFloorPlan}
         <div class="canvas-area" bind:clientWidth={canvasWidth} bind:clientHeight={canvasHeight} ondragover={handleDragOver} ondrop={handleDrop}>
           {#if !floorStore.loaded}
-            <div class="loading">Loading…</div>
+            <div class="loading">{$_('common.loading')}</div>
           {:else if allFloorsMode}
             <div class="all-floor-canvas">
               <div class="all-floor-hint">
                 <span class="all-floor-icon">🏠</span>
-                <span class="all-floor-title">House-wide</span>
-                <span class="all-floor-sub">Drag chores here to assign to the whole house</span>
+                <span class="all-floor-title">{$_('app.allFloor.title')}</span>
+                <span class="all-floor-sub">{$_('app.allFloor.sub')}</span>
               </div>
               {#each choreStore.houseAssignments() as a (a.id)}
                 {@const chore = choreStore.chores.find(c => c.id === a.choreId)}
@@ -861,7 +862,7 @@
                     <button
                       class="house-badge-remove"
                       onclick={() => choreStore.deleteAssignment(a.id)}
-                      title="Remove house-wide assignment"
+                      title={$_('app.allFloor.removeAssignment')}
                     >✕</button>
                   </div>
                 {/if}
@@ -1136,7 +1137,7 @@
               style={ftPos ? `left:${ftPos.x}px;top:${ftPos.y}px;right:auto;transform:none` : ''}
             >
               <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="ft-handle" onmousedown={startFtDrag} title="Drag to reposition">⠿</div>
+              <div class="ft-handle" onmousedown={startFtDrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
               <div class="ft-sep"></div>
               <FloorSwitcher
                 floors={floorStore.floors}
@@ -1159,15 +1160,15 @@
               <button
                 class="ft-btn"
                 class:active={pickerOpen}
-                title="Toggle item picker"
+                title={$_('app.floatingToolbar.togglePicker')}
                 onclick={() => { pickerOpen = !pickerOpen; }}
-              >📋 <span class="ft-label">Picker</span></button>
+              >📋 <span class="ft-label">{$_('app.floatingToolbar.picker')}</span></button>
               <button
                 class="ft-btn"
                 class:active={furnitureLibraryOpen}
-                title="Toggle furniture library"
+                title={$_('app.floatingToolbar.toggleFurniture')}
                 onclick={() => { furnitureLibraryOpen = !furnitureLibraryOpen; }}
-              >🪑 <span class="ft-label">Furniture</span></button>
+              >🪑 <span class="ft-label">{$_('app.floatingToolbar.furniture')}</span></button>
               <div class="ft-sep"></div>
               <button
                 class="ft-btn save-btn"
@@ -1177,20 +1178,20 @@
                 disabled={saveStatus === "saving"}
                 title={saveTitle}
                 onclick={handleSave}
-              >{saveIcon} <span class="ft-label">{saveStatus === 'error' ? 'Error!' : saveStatus === 'saving' ? 'Saving' : saveStatus === 'saved' ? 'Saved' : 'Save'}</span></button>
-              <button class="ft-btn" title="Reset view" onclick={() => viewportStore.reset(floorStore.floor, canvasWidth, canvasHeight)}>↺ <span class="ft-label">Reset</span></button>
+              >{saveIcon} <span class="ft-label">{saveStatus === 'error' ? $_('app.floatingToolbar.errorLabel') : saveStatus === 'saving' ? $_('settings.security.saving') : saveStatus === 'saved' ? $_('app.floatingToolbar.saved') : $_('common.save')}</span></button>
+              <button class="ft-btn" title={$_('app.floatingToolbar.resetView')} onclick={() => viewportStore.reset(floorStore.floor, canvasWidth, canvasHeight)}>↺ <span class="ft-label">{$_('app.floatingToolbar.reset')}</span></button>
               <div class="ft-sep"></div>
-              <button class="ft-btn" title="Undo (Ctrl+Z)" disabled={!floorStore.hasUndo} onclick={handleUndo}>↩ <span class="ft-label">Undo</span></button>
-              <button class="ft-btn" title="Redo (Ctrl+Y)" disabled={!floorStore.hasRedo} onclick={handleRedo}>↪ <span class="ft-label">Redo</span></button>
+              <button class="ft-btn" title={$_('floorPlan.tools.undo')} disabled={!floorStore.hasUndo} onclick={handleUndo}>↩ <span class="ft-label">{$_('app.floatingToolbar.undo')}</span></button>
+              <button class="ft-btn" title={$_('floorPlan.tools.redo')} disabled={!floorStore.hasRedo} onclick={handleRedo}>↪ <span class="ft-label">{$_('app.floatingToolbar.redo')}</span></button>
               {#if !choreLayerActive}
                 <div class="ft-sep"></div>
-                <button class="ft-btn" title="Select" class:active={toolStore.state.tool === "select"} onclick={() => toolStore.setTool("select")}>🖱 <span class="ft-label">Select</span></button>
-                <button class="ft-btn" title="Wall" class:active={toolStore.state.tool === "wall"} onclick={() => toolStore.setTool("wall")}>🧱 <span class="ft-label">Wall</span></button>
-                <button class="ft-btn" title="Divider" class:active={toolStore.state.tool === "divider"} onclick={() => toolStore.setTool("divider")}>╌ <span class="ft-label">Divider</span></button>
-                <button class="ft-btn" title="Door" class:active={toolStore.state.tool === "door"} onclick={() => toolStore.setTool("door")}>🚪 <span class="ft-label">Door</span></button>
-                <button class="ft-btn" title="Window" class:active={toolStore.state.tool === "window"} onclick={() => toolStore.setTool("window")}>🪟 <span class="ft-label">Window</span></button>
+                <button class="ft-btn" title={$_('floorPlan.tools.select')} class:active={toolStore.state.tool === "select"} onclick={() => toolStore.setTool("select")}>🖱 <span class="ft-label">{$_('floorPlan.tools.select')}</span></button>
+                <button class="ft-btn" title={$_('floorPlan.tools.wall')} class:active={toolStore.state.tool === "wall"} onclick={() => toolStore.setTool("wall")}>🧱 <span class="ft-label">{$_('floorPlan.tools.wall')}</span></button>
+                <button class="ft-btn" title={$_('floorPlan.tools.divider')} class:active={toolStore.state.tool === "divider"} onclick={() => toolStore.setTool("divider")}>╌ <span class="ft-label">{$_('floorPlan.tools.divider')}</span></button>
+                <button class="ft-btn" title={$_('floorPlan.tools.door')} class:active={toolStore.state.tool === "door"} onclick={() => toolStore.setTool("door")}>🚪 <span class="ft-label">{$_('floorPlan.tools.door')}</span></button>
+                <button class="ft-btn" title={$_('floorPlan.tools.window')} class:active={toolStore.state.tool === "window"} onclick={() => toolStore.setTool("window")}>🪟 <span class="ft-label">{$_('floorPlan.tools.window')}</span></button>
                 <div class="ft-sep"></div>
-                <button class="ft-btn delete" disabled={!hasSelection} onclick={handleDelete} title="Delete selected (Del)">🗑 <span class="ft-label">Delete</span></button>
+                <button class="ft-btn delete" disabled={!hasSelection} onclick={handleDelete} title={$_('floorPlan.tools.delete')}>🗑 <span class="ft-label">{$_('app.floatingToolbar.delete')}</span></button>
               {/if}
             </div>
           {/if}
@@ -1289,13 +1290,13 @@
       {:else if currentRoute === "#/properties"}
         <PropertiesPage store={propertiesStore} {locationsStore} />
       {:else if currentRoute === "#/budget"}
-        <PlaceholderPage icon="💰" label="Budget" description="Plan and track your acquisition or build budget." />
+        <PlaceholderPage icon="💰" label={$_('common.modules.budget')} description={$_('app.placeholder.budgetDescription')} />
       {:else if currentRoute === "#/visits"}
-        <PlaceholderPage icon="📅" label="Visits" description="Schedule and log site visits and viewings." />
+        <PlaceholderPage icon="📅" label={$_('common.modules.visits')} description={$_('app.placeholder.visitsDescription')} />
       {:else if currentRoute === "#/contacts"}
-        <PlaceholderPage icon="👤" label="Contacts" description="Manage agents, notaries, builders, and other contacts." />
+        <PlaceholderPage icon="👤" label={$_('common.modules.contacts')} description={$_('app.placeholder.contactsDescription')} />
       {:else if currentRoute === "#/checklist"}
-        <PlaceholderPage icon="✅" label="Checklist" description="Track tasks and due diligence items for your project." />
+        <PlaceholderPage icon="✅" label={$_('common.modules.checklist')} description={$_('app.placeholder.checklistDescription')} />
       {/if}
     </div>
   </div>
@@ -1304,15 +1305,15 @@
 <NewChoreModal open={showNewChoreModal} store={choreStore} onclose={() => { showNewChoreModal = false; }} />
 
   {#if showChangePassword}
-    <Modal title="Change Password" onclose={() => { showChangePassword = false; cpError = null; }}>
+    <Modal title={$_('app.changePassword.title')} onclose={() => { showChangePassword = false; cpError = null; }}>
       <div style="display:flex;flex-direction:column;gap:12px;padding:4px 0">
-        <Input label="Current password" type="password" bind:value={cpCurrent} />
-        <Input label="New password (min 8 chars)" type="password" bind:value={cpNew} />
+        <Input label={$_('app.changePassword.currentPassword')} type="password" bind:value={cpCurrent} />
+        <Input label={$_('app.changePassword.newPassword')} type="password" bind:value={cpNew} />
         {#if cpError}<div style="color:var(--danger);font-size:0.85rem">{cpError}</div>{/if}
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-          <Button variant="secondary" onclick={() => { showChangePassword = false; cpError = null; }}>Cancel</Button>
+          <Button variant="secondary" onclick={() => { showChangePassword = false; cpError = null; }}>{$_('common.cancel')}</Button>
           <Button onclick={handleChangePassword} disabled={cpLoading}>
-            {cpLoading ? "Saving…" : "Change password"}
+            {cpLoading ? $_('app.changePassword.saving') : $_('app.changePassword.submit')}
           </Button>
         </div>
       </div>
