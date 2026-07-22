@@ -11,10 +11,20 @@
     "openPdf": "Ouvrir le PDF ↗",
     "comingSoonBadge": "Bientôt disponible",
     "modules": {
-      "home": "Accueil", "plan": "Plan", "chores": "Corvées", "inventory": "Inventaire",
-      "consumables": "Consommables", "works": "Travaux", "kb": "Base de connaissances", "costs": "Coûts",
-      "locations": "Emplacements", "properties": "Biens", "budget": "Budget",
-      "visits": "Visites", "contacts": "Contacts", "checklist": "Checklist"
+      "home": "Accueil",
+      "plan": "Plan",
+      "chores": "Corvées",
+      "inventory": "Inventaire",
+      "consumables": "Consommables",
+      "works": "Travaux",
+      "kb": "Base de connaissances",
+      "costs": "Coûts",
+      "locations": "Emplacements",
+      "properties": "Biens",
+      "budget": "Budget",
+      "visits": "Visites",
+      "contacts": "Contacts",
+      "checklist": "Checklist"
     },
     "search": {
       "placeholder": "Rechercher corvées, inventaire, travaux, coûts…",
@@ -170,7 +180,13 @@
     "schedule": {
       "monthlyOnDay": "Mensuel le {n}",
       "dayAbbrev": {
-        "mon": "Lun", "tue": "Mar", "wed": "Mer", "thu": "Jeu", "fri": "Ven", "sat": "Sam", "sun": "Dim"
+        "mon": "Lun",
+        "tue": "Mar",
+        "wed": "Mer",
+        "thu": "Jeu",
+        "fri": "Ven",
+        "sat": "Sam",
+        "sun": "Dim"
       },
       "weeklyOn": "Hebdomadaire le {days}",
       "weekly": "Hebdomadaire",
@@ -858,5 +874,51 @@
     "insertMediaAttachment": "Insérer une pièce jointe média",
     "writeInMarkdown": "Écrire en Markdown…",
     "clickToEdit": "Cliquer pour modifier"
+  },
+  "app": {
+    "topbar": {
+      "closeMenu": "Fermer le menu",
+      "openMenu": "Ouvrir le menu",
+      "searchShortcut": "Rechercher (Ctrl+K)",
+      "switchToDark": "Passer en mode sombre",
+      "switchToLight": "Passer en mode clair",
+      "userMenu": "Menu utilisateur",
+      "changePassword": "Changer le mot de passe",
+      "signOut": "Se déconnecter"
+    },
+    "noHomes": "Créez votre première maison pour commencer.",
+    "allFloor": {
+      "title": "Toute la maison",
+      "sub": "Glissez les corvées ici pour les assigner à toute la maison",
+      "removeAssignment": "Retirer l'assignation à toute la maison"
+    },
+    "floatingToolbar": {
+      "togglePicker": "Afficher/masquer le sélecteur d'objets",
+      "picker": "Sélecteur",
+      "toggleFurniture": "Afficher/masquer la bibliothèque de meubles",
+      "furniture": "Meubles",
+      "errorLabel": "Erreur !",
+      "saved": "Enregistré",
+      "saveError": "Erreur d'enregistrement{detail}",
+      "resetView": "Réinitialiser la vue",
+      "reset": "Réinitialiser",
+      "undo": "Annuler",
+      "redo": "Rétablir",
+      "delete": "Supprimer"
+    },
+    "placeholder": {
+      "budgetDescription": "Planifiez et suivez votre budget d'acquisition ou de construction.",
+      "visitsDescription": "Planifiez et enregistrez les visites du site.",
+      "contactsDescription": "Gérez les agents, notaires, constructeurs et autres contacts.",
+      "checklistDescription": "Suivez les tâches et les éléments de diligence raisonnable de votre projet."
+    },
+    "changePassword": {
+      "title": "Changer le mot de passe",
+      "currentPassword": "Mot de passe actuel",
+      "newPassword": "Nouveau mot de passe (8 caractères min.)",
+      "failed": "Échec",
+      "saving": "Enregistrement…",
+      "submit": "Changer le mot de passe"
+    }
   }
 }

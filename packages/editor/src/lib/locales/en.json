@@ -11,10 +11,20 @@
     "openPdf": "Open PDF ↗",
     "comingSoonBadge": "Coming soon",
     "modules": {
-      "home": "Home", "plan": "Floor Plan", "chores": "Chores", "inventory": "Inventory",
-      "consumables": "Consumables", "works": "Works", "kb": "Knowledge Base", "costs": "Costs",
-      "locations": "Locations", "properties": "Properties", "budget": "Budget",
-      "visits": "Visits", "contacts": "Contacts", "checklist": "Checklist"
+      "home": "Home",
+      "plan": "Floor Plan",
+      "chores": "Chores",
+      "inventory": "Inventory",
+      "consumables": "Consumables",
+      "works": "Works",
+      "kb": "Knowledge Base",
+      "costs": "Costs",
+      "locations": "Locations",
+      "properties": "Properties",
+      "budget": "Budget",
+      "visits": "Visits",
+      "contacts": "Contacts",
+      "checklist": "Checklist"
     },
     "search": {
       "placeholder": "Search chores, inventory, works, costs…",
@@ -170,7 +180,13 @@
     "schedule": {
       "monthlyOnDay": "Monthly on day {n}",
       "dayAbbrev": {
-        "mon": "Mon", "tue": "Tue", "wed": "Wed", "thu": "Thu", "fri": "Fri", "sat": "Sat", "sun": "Sun"
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
       },
       "weeklyOn": "Weekly on {days}",
       "weekly": "Weekly",
@@ -858,5 +874,51 @@
     "insertMediaAttachment": "Insert media attachment",
     "writeInMarkdown": "Write in Markdown…",
     "clickToEdit": "Click to edit"
+  },
+  "app": {
+    "topbar": {
+      "closeMenu": "Close menu",
+      "openMenu": "Open menu",
+      "searchShortcut": "Search (Ctrl+K)",
+      "switchToDark": "Switch to dark mode",
+      "switchToLight": "Switch to light mode",
+      "userMenu": "User menu",
+      "changePassword": "Change password",
+      "signOut": "Sign out"
+    },
+    "noHomes": "Create your first home to get started.",
+    "allFloor": {
+      "title": "House-wide",
+      "sub": "Drag chores here to assign to the whole house",
+      "removeAssignment": "Remove house-wide assignment"
+    },
+    "floatingToolbar": {
+      "togglePicker": "Toggle item picker",
+      "picker": "Picker",
+      "toggleFurniture": "Toggle furniture library",
+      "furniture": "Furniture",
+      "errorLabel": "Error!",
+      "saved": "Saved",
+      "saveError": "Save error{detail}",
+      "resetView": "Reset view",
+      "reset": "Reset",
+      "undo": "Undo",
+      "redo": "Redo",
+      "delete": "Delete"
+    },
+    "placeholder": {
+      "budgetDescription": "Plan and track your acquisition or build budget.",
+      "visitsDescription": "Schedule and log site visits and viewings.",
+      "contactsDescription": "Manage agents, notaries, builders, and other contacts.",
+      "checklistDescription": "Track tasks and due diligence items for your project."
+    },
+    "changePassword": {
+      "title": "Change Password",
+      "currentPassword": "Current password",
+      "newPassword": "New password (min 8 chars)",
+      "failed": "Failed",
+      "saving": "Saving…",
+      "submit": "Change password"
+    }
   }
 }
