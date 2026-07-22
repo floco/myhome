@@ -302,6 +302,52 @@
       "uploadFailed": "Upload failed"
     }
   },
+  "consumables": {
+    "pinPopup": {
+      "inStock": "In stock",
+      "lowStock": "Low stock",
+      "empty": "Empty",
+      "notePlaceholder": "note…",
+      "removePin": "Remove pin",
+      "invalidQuantity": "Invalid quantity",
+      "updateFailed": "Update failed"
+    },
+    "page": {
+      "statusOk": "OK",
+      "statusLow": "LOW",
+      "statusEmpty": "EMPTY",
+      "low": "Low",
+      "empty": "Empty",
+      "all": "All",
+      "emptyCharts": "No consumables yet — click ＋ Add consumable to get started.",
+      "stockStatus": "Stock status — {n} items",
+      "addConsumable": "Add consumable",
+      "placeOnMap": "Place on map",
+      "quantity": "Quantity",
+      "min": "Min",
+      "stock": "Stock",
+      "emptyNoConsumables": "No consumables yet — click ＋ Add consumable to get started.",
+      "emptyNoMatch": "No consumables match your filters."
+    },
+    "modal": {
+      "details": "Details",
+      "namePlaceholder": "e.g. AA Batteries",
+      "unit": "Unit",
+      "minQty": "Min qty",
+      "descriptionPlaceholder": "Optional notes…",
+      "currentStock": "Current stock:",
+      "setNewQuantity": "Set new quantity ({unit})",
+      "noteOptional": "Note (optional)",
+      "restockedExample": "e.g. restocked",
+      "updating": "Updating…",
+      "updateStock": "Update stock",
+      "history": "History",
+      "noTransactions": "No transactions yet",
+      "sure": "Sure?",
+      "deleting": "Deleting…",
+      "yesDelete": "Yes, delete"
+    }
+  },
   "properties": {
     "status": {
       "watching": "Watching",

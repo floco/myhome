@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createConsumableStore, Consumable } from "../consumableStore.svelte";
   import { stockStatus } from "../consumableStore.svelte";
 
@@ -21,11 +22,12 @@
     low: "#ff9800",
     empty: "#f44336",
   };
-  const STATE_LABEL: Record<string, string> = {
-    ok: "In stock",
-    low: "Low stock",
-    empty: "Empty",
-  };
+
+  function stateLabel(state: string): string {
+    if (state === "ok") return $_('consumables.pinPopup.inStock');
+    if (state === "low") return $_('consumables.pinPopup.lowStock');
+    return $_('consumables.pinPopup.empty');
+  }
 
   let newQty = $state(String(consumable.quantity));
   let note = $state("");
@@ -38,7 +40,7 @@
   async function handleUpdate(): Promise<void> {
     const qty = parseFloat(newQty);
     if (isNaN(qty)) {
-      updateError = "Invalid quantity";
+      updateError = $_('consumables.pinPopup.invalidQuantity');
       return;
     }
     updating = true;
@@ -47,7 +49,7 @@
       await store.updateStock(consumable.id, qty, note);
       onclose();
     } catch {
-      updateError = "Update failed";
+      updateError = $_('consumables.pinPopup.updateFailed');
     } finally {
       updating = false;
     }
@@ -62,13 +64,13 @@
 >
   <div class="popup-name">{consumable.emoji} {consumable.name}</div>
   <div class="popup-status" style="color:{color}">
-    {STATE_LABEL[st]} — {consumable.quantity} {consumable.unit}
+    {stateLabel(st)} — {consumable.quantity} {consumable.unit}
   </div>
 
   <div class="quick-update">
     <input class="qty-input" type="number" bind:value={newQty} min="0" step="any" />
     <span class="unit-label">{consumable.unit}</span>
-    <input class="note-input" type="text" bind:value={note} placeholder="note…" />
+    <input class="note-input" type="text" bind:value={note} placeholder={$_('consumables.pinPopup.notePlaceholder')} />
     <button class="update-btn" onclick={handleUpdate} disabled={updating}>
       {updating ? "…" : "✓"}
     </button>
@@ -76,9 +78,9 @@
   {#if updateError}<div class="popup-error">{updateError}</div>{/if}
 
   <div class="popup-actions">
-    <button onclick={onedit}>✏️ Edit</button>
-    <button onclick={onremove}>✕ Remove pin</button>
-    <button onclick={onclose}>Close</button>
+    <button onclick={onedit}>✏️ {$_('common.edit')}</button>
+    <button onclick={onremove}>✕ {$_('consumables.pinPopup.removePin')}</button>
+    <button onclick={onclose}>{$_('common.close')}</button>
   </div>
 </div>
 

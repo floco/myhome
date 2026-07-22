@@ -302,6 +302,52 @@
       "uploadFailed": "Échec de l'envoi"
     }
   },
+  "consumables": {
+    "pinPopup": {
+      "inStock": "En stock",
+      "lowStock": "Stock faible",
+      "empty": "Épuisé",
+      "notePlaceholder": "note…",
+      "removePin": "Retirer l'épingle",
+      "invalidQuantity": "Quantité invalide",
+      "updateFailed": "Échec de la mise à jour"
+    },
+    "page": {
+      "statusOk": "OK",
+      "statusLow": "FAIBLE",
+      "statusEmpty": "ÉPUISÉ",
+      "low": "Faible",
+      "empty": "Épuisé",
+      "all": "Tous",
+      "emptyCharts": "Aucun consommable pour l'instant — cliquez sur ＋ Ajouter un consommable pour commencer.",
+      "stockStatus": "État du stock — {n} articles",
+      "addConsumable": "Ajouter un consommable",
+      "placeOnMap": "Placer sur le plan",
+      "quantity": "Quantité",
+      "min": "Min",
+      "stock": "Stock",
+      "emptyNoConsumables": "Aucun consommable pour l'instant — cliquez sur ＋ Ajouter un consommable pour commencer.",
+      "emptyNoMatch": "Aucun consommable ne correspond à vos filtres."
+    },
+    "modal": {
+      "details": "Détails",
+      "namePlaceholder": "ex. Piles AA",
+      "unit": "Unité",
+      "minQty": "Qté min",
+      "descriptionPlaceholder": "Notes facultatives…",
+      "currentStock": "Stock actuel :",
+      "setNewQuantity": "Définir la nouvelle quantité ({unit})",
+      "noteOptional": "Note (facultatif)",
+      "restockedExample": "ex. réapprovisionné",
+      "updating": "Mise à jour…",
+      "updateStock": "Mettre à jour le stock",
+      "history": "Historique",
+      "noTransactions": "Aucune transaction pour l'instant",
+      "sure": "Confirmer ?",
+      "deleting": "Suppression…",
+      "yesDelete": "Oui, supprimer"
+    }
+  },
   "properties": {
     "status": {
       "watching": "En veille",

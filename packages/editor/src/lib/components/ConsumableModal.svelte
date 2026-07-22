@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createConsumableStore, Consumable } from "../consumableStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
   import Modal from "./ui/Modal.svelte";
@@ -58,7 +59,7 @@
 
   async function handleSave(): Promise<void> {
     if (!name.trim()) {
-      error = "Name is required";
+      error = $_('inventory.modal.nameRequired');
       return;
     }
     saving = true;
@@ -79,7 +80,7 @@
       }
       onclose();
     } catch (e) {
-      error = e instanceof Error ? e.message : "Save failed";
+      error = e instanceof Error ? e.message : $_('inventory.modal.saveFailed');
     } finally {
       saving = false;
     }
@@ -95,7 +96,7 @@
       await store.deleteConsumable(consumable!.id);
       onclose();
     } catch (e) {
-      error = e instanceof Error ? e.message : "Delete failed";
+      error = e instanceof Error ? e.message : $_('inventory.modal.deleteFailed');
     } finally {
       deleting = false;
     }
@@ -104,7 +105,7 @@
   async function handleUpdateStock(): Promise<void> {
     const qty = parseFloat(newQuantity);
     if (isNaN(qty)) {
-      stockError = "Invalid quantity";
+      stockError = $_('consumables.pinPopup.invalidQuantity');
       return;
     }
     stockSaving = true;
@@ -113,7 +114,7 @@
       await store.updateStock(consumable!.id, qty, newNote);
       newNote = "";
     } catch (e) {
-      stockError = e instanceof Error ? e.message : "Update failed";
+      stockError = e instanceof Error ? e.message : $_('consumables.pinPopup.updateFailed');
     } finally {
       stockSaving = false;
     }
@@ -133,20 +134,20 @@
   }
 </script>
 
-<Modal open={true} title={isCreate ? "Add consumable" : (consumable?.name ?? "")} {onclose}>
+<Modal open={true} title={isCreate ? $_('consumables.page.addConsumable') : (consumable?.name ?? "")} {onclose}>
   {#snippet children()}
     <div class="tabs">
       <button
         class="tab-btn"
         class:active={activeTab === "details"}
         onclick={() => { activeTab = "details"; }}
-      >Details</button>
+      >{$_('consumables.modal.details')}</button>
       {#if !isCreate}
         <button
           class="tab-btn"
           class:active={activeTab === "stock"}
           onclick={() => { activeTab = "stock"; }}
-        >Stock</button>
+        >{$_('consumables.page.stock')}</button>
       {/if}
     </div>
 
@@ -154,18 +155,18 @@
       <div class="form">
         <div class="row">
           <div class="field short">
-            <label>Emoji</label>
+            <label>{$_('chores.editModal.emoji')}</label>
             <EmojiPicker bind:value={emoji} />
           </div>
           <div class="field grow">
-            <label>Name *</label>
-            <Input bind:value={name} placeholder="e.g. AA Batteries" />
+            <label>{$_('chores.editModal.name')} *</label>
+            <Input bind:value={name} placeholder={$_('consumables.modal.namePlaceholder')} />
           </div>
         </div>
 
         <div class="row">
           <div class="field grow">
-            <label>Unit</label>
+            <label>{$_('consumables.modal.unit')}</label>
             <select
               class="native-select"
               bind:value={unit}
@@ -173,22 +174,22 @@
               {#each availableUnits as u}
                 <option value={u}>{u}</option>
               {/each}
-              <option value={CUSTOM_SENTINEL}>Custom…</option>
+              <option value={CUSTOM_SENTINEL}>{$_('emojiPicker.custom')}</option>
             </select>
             {#if unit === CUSTOM_SENTINEL}
-              <Input bind:value={customUnit} placeholder="e.g. tablets" />
+              <Input bind:value={customUnit} placeholder={$_('settings.categories.unitInputPlaceholder')} />
             {/if}
           </div>
           <div class="field short">
-            <label>Min qty</label>
+            <label>{$_('consumables.modal.minQty')}</label>
             <Input type="number" bind:value={minQuantity} min="0" step="any" />
           </div>
         </div>
 
         <div class="field">
-          <label>Category</label>
+          <label>{$_('costs.page.category')}</label>
           <select class="native-select" bind:value={categoryId}>
-            <option value="">— None —</option>
+            <option value="">{$_('works.modal.noneOption')}</option>
             {#each settingsStore.consumableCategories as cat}
               <option value={cat.id}>{cat.emoji} {cat.name}</option>
             {/each}
@@ -196,8 +197,8 @@
         </div>
 
         <div class="field">
-          <label>Description</label>
-          <textarea bind:value={description} rows="2" class="native-textarea" placeholder="Optional notes…"></textarea>
+          <label>{$_('works.modal.description')}</label>
+          <textarea bind:value={description} rows="2" class="native-textarea" placeholder={$_('consumables.modal.descriptionPlaceholder')}></textarea>
         </div>
 
         {#if error}<div class="form-error">{error}</div>{/if}
@@ -206,29 +207,29 @@
     {:else if activeTab === "stock"}
       <div class="stock-section">
         <div class="current-qty">
-          Current stock: <strong>{consumable?.quantity} {consumable?.unit}</strong>
+          {$_('consumables.modal.currentStock')} <strong>{consumable?.quantity} {consumable?.unit}</strong>
         </div>
         <div class="update-form">
           <div class="row">
             <div class="field grow">
-              <label>Set new quantity ({consumable?.unit})</label>
+              <label>{$_('consumables.modal.setNewQuantity', { values: { unit: consumable?.unit ?? '' } })}</label>
               <Input type="number" bind:value={newQuantity} min="0" step="any" />
             </div>
             <div class="field grow">
-              <label>Note (optional)</label>
-              <Input bind:value={newNote} placeholder="e.g. restocked" />
+              <label>{$_('consumables.modal.noteOptional')}</label>
+              <Input bind:value={newNote} placeholder={$_('consumables.modal.restockedExample')} />
             </div>
           </div>
           <Button onclick={handleUpdateStock} disabled={stockSaving}>
-            {stockSaving ? "Updating…" : "Update stock"}
+            {stockSaving ? $_('consumables.modal.updating') : $_('consumables.modal.updateStock')}
           </Button>
           {#if stockError}<div class="form-error">{stockError}</div>{/if}
         </div>
 
         <div class="history">
-          <div class="history-title">History</div>
+          <div class="history-title">{$_('consumables.modal.history')}</div>
           {#if currentTransactions.length === 0}
-            <div class="history-empty">No transactions yet</div>
+            <div class="history-empty">{$_('consumables.modal.noTransactions')}</div>
           {:else}
             {#each currentTransactions as tx (tx.id)}
               <div class="tx-row">
@@ -238,7 +239,7 @@
                 <span class="tx-after">→ {tx.quantityAfter}</span>
                 <span class="tx-note">{tx.note || "—"}</span>
                 <span class="tx-ts">{formatTs(tx.timestamp)}</span>
-                <button class="tx-del" title="Delete" onclick={() => store.deleteTransaction(tx.id)}>✕</button>
+                <button class="tx-del" title={$_('common.delete')} onclick={() => store.deleteTransaction(tx.id)}>✕</button>
               </div>
             {/each}
           {/if}
@@ -250,23 +251,23 @@
   {#snippet footer()}
     {#if !isCreate}
       {#if confirmDelete}
-        <span class="delete-confirm">Sure?</span>
+        <span class="delete-confirm">{$_('consumables.modal.sure')}</span>
         <Button variant="danger" onclick={handleDelete} disabled={deleting}>
-          {deleting ? "Deleting…" : "Yes, delete"}
+          {deleting ? $_('consumables.modal.deleting') : $_('consumables.modal.yesDelete')}
         </Button>
-        <Button variant="ghost" onclick={() => { confirmDelete = false; }}>Cancel</Button>
+        <Button variant="ghost" onclick={() => { confirmDelete = false; }}>{$_('common.cancel')}</Button>
       {:else}
-        <Button variant="ghost" onclick={() => { confirmDelete = true; }}>Delete</Button>
+        <Button variant="ghost" onclick={() => { confirmDelete = true; }}>{$_('common.delete')}</Button>
       {/if}
       {#if onplaceonmap && !consumable?.placement}
-        <Button variant="secondary" onclick={() => { onplaceonmap!(consumable!.id); onclose(); }}>📌 Place on map</Button>
+        <Button variant="secondary" onclick={() => { onplaceonmap!(consumable!.id); onclose(); }}>📌 {$_('consumables.page.placeOnMap')}</Button>
       {/if}
     {/if}
     <span class="spacer"></span>
-    <Button variant="ghost" onclick={onclose}>Cancel</Button>
+    <Button variant="ghost" onclick={onclose}>{$_('common.cancel')}</Button>
     {#if activeTab === "details"}
       <Button onclick={handleSave} disabled={saving}>
-        {saving ? "Saving…" : isCreate ? "Add" : "Save"}
+        {saving ? $_('settings.security.saving') : isCreate ? $_('common.add') : $_('common.save')}
       </Button>
     {/if}
   {/snippet}
