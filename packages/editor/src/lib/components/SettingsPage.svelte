@@ -1,5 +1,6 @@
 <!-- packages/editor/src/lib/components/SettingsPage.svelte -->
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createSettingsStore } from "../settingsStore.svelte";
   import type { createAuthStore } from "../authStore.svelte";
   import SettingsNav from "./settings/SettingsNav.svelte";
@@ -24,22 +25,23 @@
   interface SettingsGroupDef {
     id: string;
     icon: string;
-    label: string;
     adminOnly?: boolean;
   }
 
   const ALL_GROUPS: SettingsGroupDef[] = [
-    { id: "general", icon: "⚙️", label: "General" },
-    { id: "categories", icon: "🏷️", label: "Categories" },
-    { id: "notifications", icon: "🔔", label: "Notifications" },
-    { id: "security", icon: "🔐", label: "Security & Access" },
-    { id: "integrations", icon: "🔌", label: "Integrations", adminOnly: true },
-    { id: "backup", icon: "💾", label: "Backup & Restore" },
-    { id: "activity", icon: "📜", label: "Activity Log" },
+    { id: "general", icon: "⚙️" },
+    { id: "categories", icon: "🏷️" },
+    { id: "notifications", icon: "🔔" },
+    { id: "security", icon: "🔐" },
+    { id: "integrations", icon: "🔌", adminOnly: true },
+    { id: "backup", icon: "💾" },
+    { id: "activity", icon: "📜" },
   ];
 
   const visibleGroups = $derived(
-    ALL_GROUPS.filter((g) => !g.adminOnly || authStore.user?.role === "admin"),
+    ALL_GROUPS
+      .filter((g) => !g.adminOnly || authStore.user?.role === "admin")
+      .map((g) => ({ ...g, label: $_(`settings.nav.${g.id}`) })),
   );
 
   let activeGroup = $state("general");
@@ -47,7 +49,7 @@
 
 <div class="page">
   <div class="page-header">
-    <h1>Settings</h1>
+    <h1>{$_('nav.settings')}</h1>
   </div>
 
   <div class="body">

@@ -1,5 +1,6 @@
 <!-- packages/editor/src/lib/components/settings/SettingsIntegrations.svelte -->
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createAuthStore } from "../../authStore.svelte";
   import Card from "../ui/Card.svelte";
   import Button from "../ui/Button.svelte";
@@ -62,21 +63,18 @@
 {#if authStore.user?.role === "admin"}
   <Card>
     <div class="section-header">
-      <h2>MCP Server</h2>
+      <h2>{$_('settings.integrations.mcpServer')}</h2>
     </div>
     <p class="section-desc">
-      Lets an MCP client (Claude Desktop, claude.ai, Claude Code, or Home Assistant's
-      Assist) query and act on this home's data. Create an API token above with the
-      access level you want the assistant to have, then use it as the Bearer token
-      when connecting.
+      {$_('settings.integrations.mcpDesc')}
     </p>
     {#if mcpConfigLoaded}
       <label class="module-row">
         <input type="checkbox" checked={mcpEnabled} onchange={toggleMcpEnabled} />
-        <span class="mod-label">Enable MCP Server</span>
+        <span class="mod-label">{$_('settings.integrations.enableMcp')}</span>
       </label>
       {#if mcpEnabled}
-        <p class="empty-hint">Connection URL: <code>{window.location.origin}/mcp</code></p>
+        <p class="empty-hint">{$_('settings.integrations.connectionUrl')} <code>{window.location.origin}/mcp</code></p>
       {/if}
     {/if}
     {#if mcpError}<div class="error">{mcpError}</div>{/if}
@@ -84,19 +82,18 @@
 
   <Card>
     <div class="section-header">
-      <h2>Donetick</h2>
+      <h2>{$_('settings.integrations.donetick')}</h2>
     </div>
     <p class="section-desc">
-      Imports chores from your Donetick instance into this home. Paste an API
-      token from Donetick and click Import.
+      {$_('settings.integrations.donetickDesc')}
     </p>
     <div class="import-row">
-      <Input type="password" placeholder="API token" bind:value={importToken} />
+      <Input type="password" placeholder={$_('settings.integrations.apiTokenPlaceholder')} bind:value={importToken} />
       <Button disabled={importStatus === "loading"} onclick={handleImport}>
-        {importStatus === "loading" ? "Importing…" : "Import"}
+        {importStatus === "loading" ? $_('settings.integrations.importing') : $_('settings.integrations.import')}
       </Button>
-      {#if importStatus === "error"}<span class="msg-error">Failed</span>{/if}
-      {#if importStatus === "done"}<span class="msg-success">{importCount} imported</span>{/if}
+      {#if importStatus === "error"}<span class="msg-error">{$_('settings.integrations.failed')}</span>{/if}
+      {#if importStatus === "done"}<span class="msg-success">{$_('settings.integrations.imported', { values: { n: importCount } })}</span>{/if}
     </div>
   </Card>
 {/if}

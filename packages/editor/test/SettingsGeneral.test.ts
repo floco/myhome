@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
+import { locale as i18nLocale, waitLocale } from "svelte-i18n";
 import SettingsGeneral from "../src/lib/components/settings/SettingsGeneral.svelte";
 import { homesStore } from "../src/lib/homesStore.svelte";
 
@@ -30,10 +31,12 @@ describe("SettingsGeneral", () => {
     document.body.appendChild(target);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.unstubAllGlobals();
     homesStore._reset();
     target.remove();
+    i18nLocale.set("en");
+    await waitLocale();
   });
 
   it("renders the home name and type", () => {
@@ -84,6 +87,20 @@ describe("SettingsGeneral", () => {
     saveBtn.click();
     await new Promise((r) => setTimeout(r, 0));
     expect(fetch).toHaveBeenCalledWith("/api/homes/h1", expect.objectContaining({ method: "PATCH" }));
+    unmount(app);
+  });
+
+  it("changing the language select persists the locale", () => {
+    seedHome();
+    localStorage.removeItem("myhome-locale");
+    const app = mount(SettingsGeneral, { target, props: {} });
+    flushSync();
+    const select = target.querySelector(".lang-select") as HTMLSelectElement;
+    expect(select.value).toBe("en");
+    select.value = "fr";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+    expect(localStorage.getItem("myhome-locale")).toBe("fr");
     unmount(app);
   });
 

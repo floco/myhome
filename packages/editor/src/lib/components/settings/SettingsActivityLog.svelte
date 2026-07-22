@@ -1,5 +1,6 @@
 <!-- packages/editor/src/lib/components/settings/SettingsActivityLog.svelte -->
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import Input from "../ui/Input.svelte";
   import Button from "../ui/Button.svelte";
   import Card from "../ui/Card.svelte";
@@ -66,42 +67,42 @@
 
 <Card>
     <div class="section-header">
-      <h2>Activity Log</h2>
+      <h2>{$_('settings.nav.activity')}</h2>
     </div>
     <div class="modal-form">
       <div class="modal-field">
-        <span class="modal-label">Module</span>
+        <span class="modal-label">{$_('settings.activityLog.module')}</span>
         <select class="activity-module-filter modal-select" bind:value={activityModuleFilter} onchange={applyActivityFilters}>
-          <option value="">All modules</option>
-          <option value="chores">Chores</option>
-          <option value="works">Works</option>
-          <option value="costs">Costs</option>
-          <option value="inventory">Inventory</option>
-          <option value="consumables">Consumables</option>
-          <option value="kb">Knowledge Base</option>
-          <option value="locations">Locations</option>
-          <option value="properties">Properties</option>
+          <option value="">{$_('settings.activityLog.allModules')}</option>
+          <option value="chores">{$_('common.modules.chores')}</option>
+          <option value="works">{$_('common.modules.works')}</option>
+          <option value="costs">{$_('common.modules.costs')}</option>
+          <option value="inventory">{$_('common.modules.inventory')}</option>
+          <option value="consumables">{$_('common.modules.consumables')}</option>
+          <option value="kb">{$_('common.modules.kb')}</option>
+          <option value="locations">{$_('common.modules.locations')}</option>
+          <option value="properties">{$_('common.modules.properties')}</option>
         </select>
       </div>
       <div class="modal-field">
-        <span class="modal-label">From</span>
+        <span class="modal-label">{$_('settings.activityLog.from')}</span>
         <Input type="date" bind:value={activitySinceFilter} />
       </div>
       <div class="modal-field">
-        <span class="modal-label">To</span>
+        <span class="modal-label">{$_('settings.activityLog.to')}</span>
         <Input type="date" bind:value={activityUntilFilter} />
       </div>
       <div class="modal-actions">
-        <Button variant="secondary" onclick={applyActivityFilters}>Filter</Button>
+        <Button variant="secondary" onclick={applyActivityFilters}>{$_('settings.activityLog.filter')}</Button>
       </div>
     </div>
     {#if activityLoaded}
       {#if activityEntries.length === 0}
-        <p class="empty-hint">No activity recorded yet.</p>
+        <p class="empty-hint">{$_('settings.activityLog.noActivity')}</p>
       {:else}
         <table class="token-table">
           <thead>
-            <tr><th>When</th><th>Who</th><th>What</th></tr>
+            <tr><th>{$_('settings.activityLog.when')}</th><th>{$_('settings.activityLog.who')}</th><th>{$_('settings.activityLog.what')}</th></tr>
           </thead>
           <tbody>
             {#each activityEntries as entry (entry.id)}
@@ -114,7 +115,7 @@
           </tbody>
         </table>
         {#if activityEntries.length < activityTotal}
-          <Button variant="secondary" onclick={loadMoreActivity}>Load more</Button>
+          <Button variant="secondary" onclick={loadMoreActivity}>{$_('settings.activityLog.loadMore')}</Button>
         {/if}
       {/if}
     {/if}

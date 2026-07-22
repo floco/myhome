@@ -1,5 +1,6 @@
 <!-- packages/editor/src/lib/components/settings/SettingsSecurity.svelte -->
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { createAuthStore } from "../../authStore.svelte";
   import Button from "../ui/Button.svelte";
   import Input from "../ui/Input.svelte";
@@ -50,7 +51,7 @@
   }
 
   async function createApiToken(): Promise<void> {
-    if (!newTokenName.trim()) { tokenError = "Name required"; return; }
+    if (!newTokenName.trim()) { tokenError = $_('settings.general.nameRequired'); return; }
     tokenError = null;
     const resp = await fetch("/api/auth/tokens", {
       method: "POST",
@@ -107,8 +108,8 @@
   }
 
   async function createUser(): Promise<void> {
-    if (!newUserName.trim()) { userError = "Username required"; return; }
-    if (newUserPassword.length < 8) { userError = "Password must be at least 8 characters"; return; }
+    if (!newUserName.trim()) { userError = $_('settings.security.usernameRequired'); return; }
+    if (newUserPassword.length < 8) { userError = $_('settings.security.passwordTooShort'); return; }
     userError = null;
     const resp = await fetch("/api/auth/users", {
       method: "POST",
@@ -222,13 +223,13 @@
 
 <Card>
   <div class="section-header">
-    <h2>API Tokens</h2>
-    <Button onclick={() => { showNewTokenModal = true; tokenError = null; }}>New token</Button>
+    <h2>{$_('settings.security.apiTokens')}</h2>
+    <Button onclick={() => { showNewTokenModal = true; tokenError = null; }}>{$_('settings.security.newToken')}</Button>
   </div>
-  <p class="section-desc">Tokens for automation, MCP, and API access. A token's scope cannot exceed your own role.</p>
+  <p class="section-desc">{$_('settings.security.tokensDesc')}</p>
   {#if tokensLoaded}
     {#if apiTokens.length === 0}
-      <p class="empty-hint">No tokens yet.</p>
+      <p class="empty-hint">{$_('settings.security.noTokensYet')}</p>
     {:else}
       {#snippet tokenNameCell(t: TokenInfo)}{t.name}{/snippet}
       {#snippet tokenScopeCell(t: TokenInfo)}<span class="role-badge">{t.role}</span>{/snippet}
@@ -236,19 +237,19 @@
       {#snippet tokenLastUsedCell(t: TokenInfo)}{t.last_used_at ? t.last_used_at.slice(0, 10) : "—"}{/snippet}
       {#snippet tokenActionsCell(t: TokenInfo)}
         {#if confirmRevokeTokenId === t.id}
-          <Button variant="danger" onclick={() => revokeToken(t.id)}>Confirm revoke</Button>
-          <Button variant="secondary" onclick={() => { confirmRevokeTokenId = null; }}>Cancel</Button>
+          <Button variant="danger" onclick={() => revokeToken(t.id)}>{$_('settings.security.confirmRevoke')}</Button>
+          <Button variant="secondary" onclick={() => { confirmRevokeTokenId = null; }}>{$_('common.cancel')}</Button>
         {:else}
-          <Button variant="secondary" onclick={() => { confirmRevokeTokenId = t.id; }}>Revoke</Button>
+          <Button variant="secondary" onclick={() => { confirmRevokeTokenId = t.id; }}>{$_('settings.security.revoke')}</Button>
         {/if}
       {/snippet}
       <SortableTable
         class="token-table"
         columns={[
-          { key: "name", label: "Name", sortValue: (t) => t.name, cell: tokenNameCell },
-          { key: "scope", label: "Scope", sortValue: (t) => t.role, cell: tokenScopeCell },
-          { key: "created", label: "Created", sortValue: (t) => (t.created_at ? new Date(t.created_at) : null), cell: tokenCreatedCell },
-          { key: "lastUsed", label: "Last used", sortValue: (t) => (t.last_used_at ? new Date(t.last_used_at) : null), cell: tokenLastUsedCell },
+          { key: "name", label: $_('settings.security.name'), sortValue: (t) => t.name, cell: tokenNameCell },
+          { key: "scope", label: $_('settings.security.scope'), sortValue: (t) => t.role, cell: tokenScopeCell },
+          { key: "created", label: $_('settings.security.created'), sortValue: (t) => (t.created_at ? new Date(t.created_at) : null), cell: tokenCreatedCell },
+          { key: "lastUsed", label: $_('settings.security.lastUsed'), sortValue: (t) => (t.last_used_at ? new Date(t.last_used_at) : null), cell: tokenLastUsedCell },
           { key: "actions", label: "", sortable: false, cell: tokenActionsCell },
         ] as Column<TokenInfo>[]}
         rows={apiTokens}
@@ -261,8 +262,8 @@
 {#if authStore.user?.role === "admin"}
   <Card>
     <div class="section-header">
-      <h2>Users</h2>
-      <Button onclick={() => { showNewUserModal = true; userError = null; }}>New user</Button>
+      <h2>{$_('settings.security.users')}</h2>
+      <Button onclick={() => { showNewUserModal = true; userError = null; }}>{$_('settings.security.newUser')}</Button>
     </div>
     {#if usersLoaded}
       {#snippet userNameCell(u: UserInfo)}{u.username}{/snippet}
@@ -273,8 +274,8 @@
               <option value={r}>{r}</option>
             {/each}
           </select>
-          <Button onclick={() => updateUserRole(u.id, editUserRole)}>Save</Button>
-          <Button variant="secondary" onclick={() => { editingUserId = null; }}>Cancel</Button>
+          <Button onclick={() => updateUserRole(u.id, editUserRole)}>{$_('common.save')}</Button>
+          <Button variant="secondary" onclick={() => { editingUserId = null; }}>{$_('common.cancel')}</Button>
         {:else}
           <span class="role-badge">{u.role}</span>
         {/if}
@@ -283,26 +284,26 @@
       {#snippet userActionsCell(u: UserInfo)}
         <div style="display:flex;gap:4px;flex-wrap:wrap">
           {#if editingUserId !== u.id}
-            <Button variant="secondary" onclick={() => { editingUserId = u.id; editUserRole = u.role; }}>Edit role</Button>
+            <Button variant="secondary" onclick={() => { editingUserId = u.id; editUserRole = u.role; }}>{$_('settings.security.editRole')}</Button>
           {/if}
           {#if resetPasswordUserId === u.id}
             <input
               type="password"
               bind:value={resetPasswordValue}
-              placeholder="New password (min 8)"
+              placeholder={$_('settings.security.newPasswordPlaceholder')}
               class="inline-pw-input"
             />
-            <Button onclick={() => resetUserPassword(u.id)}>Set</Button>
-            <Button variant="secondary" onclick={() => { resetPasswordUserId = null; resetPasswordValue = ""; }}>Cancel</Button>
+            <Button onclick={() => resetUserPassword(u.id)}>{$_('settings.security.set')}</Button>
+            <Button variant="secondary" onclick={() => { resetPasswordUserId = null; resetPasswordValue = ""; }}>{$_('common.cancel')}</Button>
           {:else}
-            <Button variant="secondary" onclick={() => { resetPasswordUserId = u.id; }}>Reset pw</Button>
+            <Button variant="secondary" onclick={() => { resetPasswordUserId = u.id; }}>{$_('settings.security.resetPw')}</Button>
           {/if}
           {#if u.id !== authStore.user?.id}
             {#if confirmDeleteUserId === u.id}
-              <Button variant="danger" onclick={() => deleteUser(u.id)}>Confirm delete</Button>
-              <Button variant="secondary" onclick={() => { confirmDeleteUserId = null; }}>Cancel</Button>
+              <Button variant="danger" onclick={() => deleteUser(u.id)}>{$_('settings.security.confirmDelete')}</Button>
+              <Button variant="secondary" onclick={() => { confirmDeleteUserId = null; }}>{$_('common.cancel')}</Button>
             {:else}
-              <Button variant="secondary" onclick={() => { confirmDeleteUserId = u.id; }}>Delete</Button>
+              <Button variant="secondary" onclick={() => { confirmDeleteUserId = u.id; }}>{$_('common.delete')}</Button>
             {/if}
           {/if}
         </div>
@@ -310,10 +311,10 @@
       <SortableTable
         class="token-table"
         columns={[
-          { key: "username", label: "Username", sortValue: (u) => u.username, cell: userNameCell },
-          { key: "role", label: "Role", sortValue: (u) => u.role, cell: userRoleCell },
-          { key: "created", label: "Created", sortValue: (u) => (u.created_at ? new Date(u.created_at) : null), cell: userCreatedCell },
-          { key: "actions", label: "Actions", sortable: false, cell: userActionsCell },
+          { key: "username", label: $_('settings.security.username'), sortValue: (u) => u.username, cell: userNameCell },
+          { key: "role", label: $_('settings.security.role'), sortValue: (u) => u.role, cell: userRoleCell },
+          { key: "created", label: $_('settings.security.created'), sortValue: (u) => (u.created_at ? new Date(u.created_at) : null), cell: userCreatedCell },
+          { key: "actions", label: $_('settings.security.actions'), sortable: false, cell: userActionsCell },
         ] as Column<UserInfo>[]}
         rows={users}
         rowKey={(u) => u.id}
@@ -325,36 +326,35 @@
 {#if authStore.user?.role === "admin"}
   <Card>
     <div class="section-header">
-      <h2>Single Sign-On</h2>
+      <h2>{$_('settings.security.sso')}</h2>
     </div>
     <p class="section-desc">
-      Let users sign in via an external OIDC provider (Keycloak, Authentik, Google
-      Workspace, etc.) alongside local username/password login.
+      {$_('settings.security.ssoDesc')}
     </p>
     {#if oidcConfigLoaded}
       <label class="module-row">
         <input type="checkbox" bind:checked={oidcConfig.enabled} />
-        <span class="mod-label">Enable Single Sign-On</span>
+        <span class="mod-label">{$_('settings.security.enableSso')}</span>
       </label>
       <div class="modal-form" style="margin-top: var(--space-3)">
         <div class="modal-field">
-          <span class="modal-label">Provider name</span>
-          <Input bind:value={oidcConfig.provider_name} placeholder="e.g. Keycloak" />
+          <span class="modal-label">{$_('settings.security.providerName')}</span>
+          <Input bind:value={oidcConfig.provider_name} placeholder={$_('settings.security.providerNamePlaceholder')} />
         </div>
         <div class="modal-field">
-          <span class="modal-label">Issuer URL</span>
+          <span class="modal-label">{$_('settings.security.issuerUrl')}</span>
           <Input bind:value={oidcConfig.issuer} placeholder="https://auth.example.com/realms/home" />
         </div>
         <div class="modal-field">
-          <span class="modal-label">Client ID</span>
+          <span class="modal-label">{$_('settings.security.clientId')}</span>
           <Input bind:value={oidcConfig.client_id} />
         </div>
         <div class="modal-field">
-          <span class="modal-label">Client secret</span>
-          <Input type="password" bind:value={oidcClientSecretDraft} placeholder={oidcConfig.client_secret || "Not set"} />
+          <span class="modal-label">{$_('settings.security.clientSecret')}</span>
+          <Input type="password" bind:value={oidcClientSecretDraft} placeholder={oidcConfig.client_secret || $_('settings.security.notSet')} />
         </div>
         <div class="modal-field">
-          <span class="modal-label">Default role for new sign-ins</span>
+          <span class="modal-label">{$_('settings.security.defaultRole')}</span>
           <select bind:value={oidcConfig.default_role} class="modal-select">
             {#each ["ro", "normal", "admin"] as r}
               <option value={r}>{r}</option>
@@ -362,27 +362,27 @@
           </select>
         </div>
         <div class="modal-field">
-          <span class="modal-label">Redirect URI</span>
+          <span class="modal-label">{$_('settings.security.redirectUri')}</span>
           <p class="empty-hint">{window.location.origin}/api/auth/oidc/callback</p>
         </div>
         {#if oidcError}<div class="error">{oidcError}</div>{/if}
         <div class="modal-actions">
-          <Button onclick={saveOidcConfig} disabled={oidcSaving}>{oidcSaving ? "Saving…" : "Save"}</Button>
+          <Button onclick={saveOidcConfig} disabled={oidcSaving}>{oidcSaving ? $_('settings.security.saving') : $_('common.save')}</Button>
         </div>
       </div>
     {/if}
   </Card>
 {/if}
 
-<Modal open={showNewTokenModal} title="New API Token" onclose={() => { showNewTokenModal = false; tokenError = null; }}>
+<Modal open={showNewTokenModal} title={$_('settings.security.newApiToken')} onclose={() => { showNewTokenModal = false; tokenError = null; }}>
   {#snippet children()}
     <div class="modal-form">
       <div class="modal-field">
-        <span class="modal-label">Token name</span>
-        <Input bind:value={newTokenName} placeholder="e.g. Home Assistant MCP" />
+        <span class="modal-label">{$_('settings.security.tokenName')}</span>
+        <Input bind:value={newTokenName} placeholder={$_('settings.security.tokenNamePlaceholder')} />
       </div>
       <div class="modal-field">
-        <span class="modal-label">Scope</span>
+        <span class="modal-label">{$_('settings.security.scope')}</span>
         <select bind:value={newTokenRole} class="modal-select">
           {#each roleOptions as r}
             <option value={r}>{r}</option>
@@ -391,39 +391,39 @@
       </div>
       {#if tokenError}<div class="error">{tokenError}</div>{/if}
       <div class="modal-actions">
-        <Button variant="secondary" onclick={() => { showNewTokenModal = false; tokenError = null; }}>Cancel</Button>
-        <Button onclick={createApiToken}>Create</Button>
+        <Button variant="secondary" onclick={() => { showNewTokenModal = false; tokenError = null; }}>{$_('common.cancel')}</Button>
+        <Button onclick={createApiToken}>{$_('settings.security.create')}</Button>
       </div>
     </div>
   {/snippet}
 </Modal>
 
-<Modal open={!!createdTokenSecret} title="Token Created" onclose={() => { createdTokenSecret = null; }}>
+<Modal open={!!createdTokenSecret} title={$_('settings.security.tokenCreated')} onclose={() => { createdTokenSecret = null; }}>
   {#snippet children()}
     <div class="modal-form">
-      <p class="section-desc">Copy this token now. It will not be shown again.</p>
+      <p class="section-desc">{$_('settings.security.copyTokenNow')}</p>
       <div class="token-secret">{createdTokenSecret}</div>
       <div class="modal-actions">
-        <Button onclick={() => navigator.clipboard.writeText(createdTokenSecret!)}>Copy to clipboard</Button>
-        <Button variant="secondary" onclick={() => { createdTokenSecret = null; }}>Done</Button>
+        <Button onclick={() => navigator.clipboard.writeText(createdTokenSecret!)}>{$_('settings.security.copyToClipboard')}</Button>
+        <Button variant="secondary" onclick={() => { createdTokenSecret = null; }}>{$_('settings.security.done')}</Button>
       </div>
     </div>
   {/snippet}
 </Modal>
 
-<Modal open={showNewUserModal} title="New User" onclose={() => { showNewUserModal = false; userError = null; }}>
+<Modal open={showNewUserModal} title={$_('settings.security.newUserTitle')} onclose={() => { showNewUserModal = false; userError = null; }}>
   {#snippet children()}
     <div class="modal-form">
       <div class="modal-field">
-        <span class="modal-label">Username</span>
-        <Input bind:value={newUserName} placeholder="username" />
+        <span class="modal-label">{$_('settings.security.username')}</span>
+        <Input bind:value={newUserName} placeholder={$_('settings.security.usernamePlaceholder')} />
       </div>
       <div class="modal-field">
-        <span class="modal-label">Password (min 8 chars)</span>
+        <span class="modal-label">{$_('settings.security.passwordMin8')}</span>
         <Input type="password" bind:value={newUserPassword} />
       </div>
       <div class="modal-field">
-        <span class="modal-label">Role</span>
+        <span class="modal-label">{$_('settings.security.role')}</span>
         <select bind:value={newUserRole} class="modal-select">
           {#each ["ro", "normal", "admin"] as r}
             <option value={r}>{r}</option>
@@ -432,8 +432,8 @@
       </div>
       {#if userError}<div class="error">{userError}</div>{/if}
       <div class="modal-actions">
-        <Button variant="secondary" onclick={() => { showNewUserModal = false; userError = null; }}>Cancel</Button>
-        <Button onclick={createUser}>Create user</Button>
+        <Button variant="secondary" onclick={() => { showNewUserModal = false; userError = null; }}>{$_('common.cancel')}</Button>
+        <Button onclick={createUser}>{$_('settings.security.createUser')}</Button>
       </div>
     </div>
   {/snippet}
