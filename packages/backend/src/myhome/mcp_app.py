@@ -2,6 +2,7 @@
 and builds the Streamable HTTP ASGI app. Imported exactly once, from main.py, so
 tool registration happens before the app is built."""
 from . import (  # noqa: F401 - imported for the side effect of registering tools
+    mcp_tools_build,
     mcp_tools_chores,
     mcp_tools_consumables,
     mcp_tools_costs,
