@@ -302,6 +302,7 @@ notification_state = Table(
     "notification_state", metadata,
     Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
     Column("warranty_notified", Text, nullable=False),
+    Column("build_phases_notified", Text, nullable=False, server_default="[]"),
     Column("last_push_digest_date", String),
 )
 
