@@ -8,6 +8,7 @@
   import type { createConsumableStore } from "../consumableStore.svelte";
   import type { createLocationsStore } from "../locationsStore.svelte";
   import type { createPropertiesStore } from "../propertiesStore.svelte";
+  import type { createBuildStore } from "../buildStore.svelte";
   import HomeMapWidget from "./HomeMapWidget.svelte";
   import HomeChoresWidget from "./HomeChoresWidget.svelte";
   import HomeCostsWidget from "./HomeCostsWidget.svelte";
@@ -16,6 +17,7 @@
   import HomeConsumablesWidget from "./HomeConsumablesWidget.svelte";
   import HomeLocationsWidget from "./HomeLocationsWidget.svelte";
   import HomePropertiesWidget from "./HomePropertiesWidget.svelte";
+  import HomeBuildWidget from "./HomeBuildWidget.svelte";
 
   type HouseStore = ReturnType<typeof createHouseStore>;
   type ChoreStore = ReturnType<typeof createChoreStore>;
@@ -26,6 +28,7 @@
   type ConsumableStore = ReturnType<typeof createConsumableStore>;
   type LocationsStore = ReturnType<typeof createLocationsStore>;
   type PropertiesStore = ReturnType<typeof createPropertiesStore>;
+  type BuildStore = ReturnType<typeof createBuildStore>;
 
   interface Props {
     floorStore: HouseStore;
@@ -37,8 +40,9 @@
     consumableStore: ConsumableStore;
     locationsStore: LocationsStore;
     propertiesStore: PropertiesStore;
+    buildStore: BuildStore;
   }
-  let { floorStore, choreStore, inventoryStore, settingsStore, costsStore, worksStore, consumableStore, locationsStore, propertiesStore }: Props = $props();
+  let { floorStore, choreStore, inventoryStore, settingsStore, costsStore, worksStore, consumableStore, locationsStore, propertiesStore, buildStore }: Props = $props();
 
   function navigate(hash: string): void {
     window.location.hash = hash;
@@ -65,6 +69,7 @@
     <HomeConsumablesWidget {consumableStore} onnavigate={() => navigate("#/consumables")} />
     <HomeLocationsWidget {locationsStore} onnavigate={() => navigate("#/locations")} />
     <HomePropertiesWidget {propertiesStore} onnavigate={() => navigate("#/properties")} />
+    <HomeBuildWidget {buildStore} onnavigate={() => navigate("#/build")} />
   </div>
 </div>
 

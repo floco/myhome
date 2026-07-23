@@ -94,6 +94,7 @@
   const PROJECT_MODULES = [
     { id: "locations",  icon: "🌍" },
     { id: "properties", icon: "🏘" },
+    { id: "build",      icon: "🏗️" },
     { id: "budget",     icon: "💰" },
     { id: "visits",     icon: "📅" },
     { id: "contacts",   icon: "👤" },

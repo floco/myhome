@@ -30,6 +30,9 @@
   import { createLocationsStore } from "./lib/locationsStore.svelte";
   import PropertiesPage from "./lib/components/PropertiesPage.svelte";
   import { createPropertiesStore } from "./lib/propertiesStore.svelte";
+  import BuildPage from "./lib/components/BuildPage.svelte";
+  import TaskModal from "./lib/components/TaskModal.svelte";
+  import { createBuildStore } from "./lib/buildStore.svelte";
   import { createNotificationStore } from "./lib/notificationStore.svelte";
   import type { Notification } from "./lib/notificationStore.svelte";
   import NotificationBell from "./lib/components/NotificationBell.svelte";
@@ -82,6 +85,7 @@
   const consumableStore = createConsumableStore(getHomeId);
   const locationsStore = createLocationsStore(getHomeId);
   const propertiesStore = createPropertiesStore(getHomeId);
+  const buildStore = createBuildStore(getHomeId);
   const notificationStore = createNotificationStore(getHomeId);
   const authStore = createAuthStore();
 
@@ -105,6 +109,7 @@
     consumableStore.reload();
     locationsStore.reload();
     propertiesStore.reload();
+    buildStore.reload();
     notificationStore.reload();
   });
 
@@ -127,6 +132,7 @@
   let selectedChoreId = $state<string | null>(null);
   let selectedConsumableId = $state<string | null>(null);
   let selectedWorkId = $state<string | null>(null);
+  let openBuildTaskId = $state<string | null>(null);
   let selectedCostEntryId = $state<string | null>(null);
 
   const globalSearchIndex = $derived(buildSearchIndex({
@@ -1208,6 +1214,7 @@
           {consumableStore}
           {locationsStore}
           {propertiesStore}
+          {buildStore}
         />
 
       {:else if currentRoute === "#/chores" || currentRoute === "#/chores/manage"}
@@ -1289,6 +1296,8 @@
         <LocationsPage store={locationsStore} />
       {:else if currentRoute === "#/properties"}
         <PropertiesPage store={propertiesStore} {locationsStore} />
+      {:else if currentRoute === "#/build"}
+        <BuildPage store={buildStore} onopentask={(taskId) => { openBuildTaskId = taskId; }} />
       {:else if currentRoute === "#/budget"}
         <PlaceholderPage icon="💰" label={$_('common.modules.budget')} description={$_('app.placeholder.budgetDescription')} />
       {:else if currentRoute === "#/visits"}
@@ -1303,6 +1312,14 @@
 </div>
 
 <NewChoreModal open={showNewChoreModal} store={choreStore} onclose={() => { showNewChoreModal = false; }} />
+
+{#if openBuildTaskId}
+  <TaskModal
+    task={buildStore.tasks.find((t) => t.id === openBuildTaskId) ?? null}
+    store={buildStore}
+    onclose={() => { openBuildTaskId = null; }}
+  />
+{/if}
 
   {#if showChangePassword}
     <Modal title={$_('app.changePassword.title')} onclose={() => { showChangePassword = false; cpError = null; }}>

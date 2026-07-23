@@ -20,6 +20,7 @@
     { id: "costs",       href: "#/costs",       icon: "💶" },
     { id: "locations",   href: "#/locations",   icon: "🌍" },
     { id: "properties",  href: "#/properties",  icon: "🏘" },
+    { id: "build",       href: "#/build",       icon: "🏗️" },
     { id: "budget",      href: "#/budget",      icon: "💰", placeholder: true },
     { id: "visits",      href: "#/visits",      icon: "📅", placeholder: true },
     { id: "contacts",    href: "#/contacts",    icon: "👤", placeholder: true },
