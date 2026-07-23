@@ -362,3 +362,63 @@ properties = Table(
     Column("notes", String, nullable=False),
     Column("attachments", Text, nullable=False),
 )
+
+build_projects = Table(
+    "build_projects", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False, unique=True),
+    Column("status", String, nullable=False),
+    Column("planned_start_date", String),
+    Column("planned_completion_date", String),
+    Column("actual_completion_date", String),
+    Column("planned_budget", Float),
+    Column("notes", String, nullable=False),
+    Column("created_at", String, nullable=False),
+    Column("updated_at", String, nullable=False),
+)
+
+build_phases = Table(
+    "build_phases", metadata,
+    Column("id", String, primary_key=True),
+    Column("build_project_id", String, ForeignKey("build_projects.id", ondelete="CASCADE"), nullable=False),
+    Column("display_order", Integer, nullable=False),
+    Column("name_key", String),
+    Column("name_override", String),
+    Column("description_key", String),
+    Column("description_override", String),
+    Column("status", String, nullable=False),
+    Column("planned_start_date", String),
+    Column("planned_end_date", String),
+    Column("actual_start_date", String),
+    Column("actual_end_date", String),
+)
+
+build_tasks = Table(
+    "build_tasks", metadata,
+    Column("id", String, primary_key=True),
+    Column("phase_id", String, ForeignKey("build_phases.id", ondelete="CASCADE"), nullable=False),
+    Column("parent_task_id", String),
+    Column("display_order", Integer, nullable=False),
+    Column("title_key", String),
+    Column("title_override", String),
+    Column("description_key", String),
+    Column("description_override", String),
+    Column("status", String, nullable=False),
+    Column("planned_start_date", String),
+    Column("planned_due_date", String),
+    Column("actual_completion_date", String),
+    Column("planned_cost", Float),
+    Column("actual_cost", Float),
+    Column("contractor_id", String),
+    Column("validation_required", Boolean, nullable=False),
+    Column("validation_status", String, nullable=False),
+    Column("notes", String, nullable=False),
+    Column("attachments", Text, nullable=False),
+)
+
+build_task_dependencies = Table(
+    "build_task_dependencies", metadata,
+    Column("id", String, primary_key=True),
+    Column("predecessor_task_id", String, ForeignKey("build_tasks.id", ondelete="CASCADE"), nullable=False),
+    Column("successor_task_id", String, ForeignKey("build_tasks.id", ondelete="CASCADE"), nullable=False),
+)
