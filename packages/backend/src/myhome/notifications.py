@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from .models_build import BuildDocument
 from .models_chores import ChoreDocument
 from .models_consumables import ConsumableDocument
 from .models_inventory import InventoryDocument
 from .models_notifications import Notification, NotificationState
+from .persistence_build import load_build
 from .persistence_chores import load_chores
 from .persistence_consumables import load_consumables
 from .persistence_inventory import load_inventory
@@ -107,6 +109,50 @@ def _warranty_notifications(
     return fired, new_state
 
 
+def _build_notifications(
+    doc: BuildDocument, threshold_days: int, state: NotificationState,
+) -> tuple[list[Notification], NotificationState]:
+    if doc.project is None:
+        return [], state
+
+    now = datetime.now(timezone.utc)
+    results: list[Notification] = []
+
+    for task in doc.tasks:
+        if task.status == "completed":
+            continue
+        if task.plannedDueDate:
+            due = _parse_iso(task.plannedDueDate)
+            days_left = (due.date() - now.date()).days
+            if days_left <= threshold_days:
+                title = task.titleOverride or task.titleKey or task.id
+                results.append(Notification(
+                    type="build_task_due", refId=task.id, title=title,
+                    detail=_format_due(now, due), severity="critical" if days_left < 0 else "warning",
+                ))
+        if task.validationRequired and task.validationStatus == "pending_validation":
+            title = task.titleOverride or task.titleKey or task.id
+            results.append(Notification(
+                type="build_validation", refId=task.id, title=title,
+                detail="Validation pending", severity="info",
+            ))
+
+    notified = list(state.buildPhasesNotified)
+    changed = False
+    for phase in doc.phases:
+        if phase.status == "completed" and phase.id not in notified:
+            title = phase.nameOverride or phase.nameKey or phase.id
+            results.append(Notification(
+                type="build_phase_complete", refId=phase.id, title=title,
+                detail="Phase complete", severity="info",
+            ))
+            notified.append(phase.id)
+            changed = True
+
+    new_state = state.model_copy(update={"buildPhasesNotified": notified}) if changed else state
+    return results, new_state
+
+
 def compute_notifications(home_id: str) -> list[Notification]:
     settings = load_settings(home_id).notifications
     if not settings.enabled:
@@ -116,6 +162,7 @@ def compute_notifications(home_id: str) -> list[Notification]:
     chores_doc = load_chores(home_id)
     consumables_doc = load_consumables(home_id)
     inventory_doc = load_inventory(home_id)
+    build_doc = load_build(home_id)
 
     results: list[Notification] = []
     results += _chore_notifications(chores_doc, settings.choresDueSoonThreshold)
@@ -124,6 +171,10 @@ def compute_notifications(home_id: str) -> list[Notification]:
         inventory_doc, settings.warrantyDaysThreshold, state,
     )
     results += fired
+    build_fired, updated_state = _build_notifications(
+        build_doc, settings.buildTaskDueSoonThreshold, updated_state,
+    )
+    results += build_fired
     if updated_state != state:
         save_notification_state(home_id, updated_state)
     return results

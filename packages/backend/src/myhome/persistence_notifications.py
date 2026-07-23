@@ -19,6 +19,7 @@ def load_notification_state(home_id: str) -> NotificationState:
         return NotificationState()
     return NotificationState(
         warrantyNotified=json.loads(row["warranty_notified"]),
+        buildPhasesNotified=json.loads(row["build_phases_notified"]),
         lastPushDigestDate=row["last_push_digest_date"],
     )
 
@@ -28,12 +29,14 @@ def save_notification_state(home_id: str, state: NotificationState) -> None:
     with engine.begin() as conn:
         stmt = sqlite_insert(notification_state_table).values(
             home_id=home_id, warranty_notified=json.dumps(state.warrantyNotified),
+            build_phases_notified=json.dumps(state.buildPhasesNotified),
             last_push_digest_date=state.lastPushDigestDate,
         )
         stmt = stmt.on_conflict_do_update(
             index_elements=[notification_state_table.c.home_id],
             set_={
                 "warranty_notified": stmt.excluded.warranty_notified,
+                "build_phases_notified": stmt.excluded.build_phases_notified,
                 "last_push_digest_date": stmt.excluded.last_push_digest_date,
             },
         )

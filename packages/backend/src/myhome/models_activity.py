@@ -8,7 +8,7 @@ class ActivityEntry(BaseModel):
     timestamp: str  # ISO 8601 UTC
     userId: str
     username: str
-    module: Literal["chores", "works", "costs", "inventory", "consumables", "kb", "locations", "properties"]
+    module: Literal["chores", "works", "costs", "inventory", "consumables", "kb", "locations", "properties", "build"]
     action: Literal["create", "update", "delete", "complete", "restore", "delete_forever", "empty_trash"]
     entityLabel: str
     refId: str | None = None

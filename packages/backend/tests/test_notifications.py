@@ -152,3 +152,63 @@ def test_get_notifications_route_returns_empty_when_disabled(client, home_id):
     client.post(f"/api/homes/{home_id}/consumables", json={"name": "Salt", "quantity": 0, "minQuantity": 1})
     resp = client.get(f"/api/homes/{home_id}/notifications")
     assert resp.json() == []
+
+
+from myhome.models_build import BuildDocument, BuildPhase, BuildProject, BuildTask
+from myhome.notifications import _build_notifications
+
+
+def _make_build_doc(**task_kwargs) -> BuildDocument:
+    project = BuildProject(id="p1", createdAt="2026-01-01T00:00:00+00:00", updatedAt="2026-01-01T00:00:00+00:00")
+    phase = BuildPhase(id="ph1", displayOrder=0, nameKey="build.phases.planning.name")
+    task = BuildTask(id="t1", phaseId="ph1", displayOrder=0, titleKey="build.tasks.siteSurvey.title", **task_kwargs)
+    return BuildDocument(project=project, phases=[phase], tasks=[task])
+
+
+def test_build_task_due_soon():
+    doc = _make_build_doc(plannedDueDate=_iso_days_from_now(3))
+    notifications, _ = _build_notifications(doc, threshold_days=7, state=NotificationState())
+    assert any(n.type == "build_task_due" and n.severity == "warning" for n in notifications)
+
+
+def test_build_task_overdue():
+    doc = _make_build_doc(plannedDueDate=_iso_days_from_now(-2))
+    notifications, _ = _build_notifications(doc, threshold_days=7, state=NotificationState())
+    assert any(n.type == "build_task_due" and n.severity == "critical" for n in notifications)
+
+
+def test_build_task_not_due_soon_excluded():
+    doc = _make_build_doc(plannedDueDate=_iso_days_from_now(30))
+    notifications, _ = _build_notifications(doc, threshold_days=7, state=NotificationState())
+    assert not any(n.type == "build_task_due" for n in notifications)
+
+
+def test_build_task_completed_excluded_even_if_overdue():
+    doc = _make_build_doc(plannedDueDate=_iso_days_from_now(-2), status="completed")
+    notifications, _ = _build_notifications(doc, threshold_days=7, state=NotificationState())
+    assert not any(n.type == "build_task_due" for n in notifications)
+
+
+def test_build_validation_pending():
+    doc = _make_build_doc(validationRequired=True, validationStatus="pending_validation")
+    notifications, _ = _build_notifications(doc, threshold_days=7, state=NotificationState())
+    assert any(n.type == "build_validation" for n in notifications)
+
+
+def test_build_validation_not_required_excluded():
+    doc = _make_build_doc(validationRequired=False)
+    notifications, _ = _build_notifications(doc, threshold_days=7, state=NotificationState())
+    assert not any(n.type == "build_validation" for n in notifications)
+
+
+def test_build_phase_complete_fires_once():
+    project = BuildProject(id="p1", createdAt="2026-01-01T00:00:00+00:00", updatedAt="2026-01-01T00:00:00+00:00")
+    phase = BuildPhase(id="ph1", displayOrder=0, nameKey="build.phases.planning.name", status="completed")
+    doc = BuildDocument(project=project, phases=[phase], tasks=[])
+
+    notifications1, state1 = _build_notifications(doc, threshold_days=7, state=NotificationState())
+    assert any(n.type == "build_phase_complete" and n.refId == "ph1" for n in notifications1)
+    assert "ph1" in state1.buildPhasesNotified
+
+    notifications2, _ = _build_notifications(doc, threshold_days=7, state=state1)
+    assert not any(n.type == "build_phase_complete" for n in notifications2)

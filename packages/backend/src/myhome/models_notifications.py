@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 class Notification(BaseModel):
-    type: Literal["chore", "low_stock", "warranty"]
+    type: Literal["chore", "low_stock", "warranty", "build_task_due", "build_validation", "build_phase_complete"]
     refId: str
     title: str
     detail: str
@@ -14,4 +14,5 @@ class Notification(BaseModel):
 class NotificationState(BaseModel):
     version: int = 1
     warrantyNotified: dict[str, str] = {}
+    buildPhasesNotified: list[str] = []
     lastPushDigestDate: str | None = None

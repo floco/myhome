@@ -47,6 +47,7 @@ class NotificationSettings(BaseModel):
     enabled: bool = True
     choresDueSoonThreshold: float = 0.25
     warrantyDaysThreshold: int = 30
+    buildTaskDueSoonThreshold: int = 7
     haPushEnabled: bool = False
     haNotifyService: str | None = None
     haPushTime: str = "08:00"
