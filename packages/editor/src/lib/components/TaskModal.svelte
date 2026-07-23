@@ -65,9 +65,7 @@
     if (!title.trim()) { error = $_('build.modal.titleRequired'); return; }
     saving = true; error = null;
     try {
-      await store.updateTask(task.id, {
-        titleOverride: title.trim(),
-        descriptionOverride: description.trim(),
+      const patch: Record<string, unknown> = {
         status,
         contractorId: contractorId || null,
         plannedStartDate: plannedStartDate || null,
@@ -78,7 +76,13 @@
         validationRequired,
         validationStatus,
         notes: notes.trim(),
-      });
+      };
+      // Only write an override when the user actually changed the displayed
+      // text — otherwise every save would freeze a seeded task's translated
+      // title/description as literal text in whatever locale was active.
+      if (title.trim() !== resolvedTitle) patch.titleOverride = title.trim();
+      if (description.trim() !== resolvedDescription) patch.descriptionOverride = description.trim();
+      await store.updateTask(task.id, patch);
       onclose();
     } catch (e) {
       error = e instanceof Error ? e.message : $_('build.modal.saveFailed');

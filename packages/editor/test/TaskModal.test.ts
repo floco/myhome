@@ -80,4 +80,33 @@ describe("TaskModal", () => {
     unmount(comp);
     target.remove();
   });
+
+  it("saving without editing the title does not send a titleOverride (would freeze translation)", async () => {
+    const { store, target } = setup();
+    await waitTick();
+    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, onclose: vi.fn() } });
+    await tick();
+    flushSync();
+
+    const fetchMock = fetch as unknown as ReturnType<typeof vi.fn>;
+    // Change only the status, leave title/description untouched.
+    const statusSelect = target.querySelector("select") as HTMLSelectElement;
+    statusSelect.value = "in_progress";
+    statusSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+
+    const saveBtn = Array.from(target.querySelectorAll("button")).find((b) => b.textContent === "Save")!;
+    saveBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await waitTick();
+    flushSync();
+
+    const call = fetchMock.mock.calls.find((c) => c[0] === `/api/homes/${HOME}/build/tasks/t1`)!;
+    const body = JSON.parse(call[1].body as string);
+    expect(body.status).toBe("in_progress");
+    expect(body).not.toHaveProperty("titleOverride");
+    expect(body).not.toHaveProperty("descriptionOverride");
+
+    unmount(comp);
+    target.remove();
+  });
 });

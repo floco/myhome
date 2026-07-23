@@ -39,7 +39,7 @@
         <div class="phase-header" role="button" tabindex="0" onclick={() => toggle(phase.id)}>
           <span class="chevron">{expandedPhaseId === phase.id ? "▼" : "▶"}</span>
           <span class="phase-name">{resolveLabel(phase.nameKey, phase.nameOverride)}</span>
-          <span class="phase-status">{$_(`build.phaseStatus.${phase.status === "in_progress" ? "inProgress" : phase.status}`)}</span>
+          <span class="phase-status">{$_(`build.phaseStatus.${phase.status === "in_progress" ? "inProgress" : phase.status === "not_started" ? "notStarted" : phase.status}`)}</span>
           <span class="phase-count">{$_('build.page.taskCount', { values: { n: phaseTasks.length } })}</span>
           <div class="progress-track"><div class="progress-fill" style="width:{progress * 100}%"></div></div>
         </div>
