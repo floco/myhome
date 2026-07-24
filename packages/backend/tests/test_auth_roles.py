@@ -7,7 +7,7 @@ def test_ro_user_can_read_settings(client, ro_client, home_id):
 
 
 def test_ro_user_blocked_from_writing_settings(client, ro_client, home_id):
-    resp = ro_client.put(f"/api/homes/{home_id}/settings/suppliers", json=[{"id": "s1", "name": "Acme"}])
+    resp = ro_client.put(f"/api/homes/{home_id}/settings/contact-types", json=[{"id": "t1", "name": "Acme"}])
     assert resp.status_code == 403
 
 
@@ -36,7 +36,7 @@ def test_normal_user_can_write_data(tmp_path, monkeypatch):
     tc.post("/api/auth/login", json={"username": "normal", "password": "normal123"})
     home_resp = tc.post("/api/homes", json={"name": "Test Home", "type": "existing"})
     hid = home_resp.json()["id"]
-    resp = tc.put(f"/api/homes/{hid}/settings/suppliers", json=[{"id": "s1", "name": "Plumbers"}])
+    resp = tc.put(f"/api/homes/{hid}/settings/contact-types", json=[{"id": "t1", "name": "Plumbers"}])
     assert resp.status_code == 204
 
 
@@ -79,7 +79,7 @@ def test_ro_bearer_token_blocked_on_write(tmp_path, monkeypatch):
     create_resp = tc.post("/api/auth/tokens", json={"name": "ReadOnly", "role": "ro"})
     raw_token = create_resp.json()["token"]
     bare = TestClient(app)
-    resp = bare.put(f"/api/homes/{hid}/settings/suppliers",
-                    json=[{"id": "s1", "name": "X"}],
+    resp = bare.put(f"/api/homes/{hid}/settings/contact-types",
+                    json=[{"id": "t1", "name": "X"}],
                     headers={"Authorization": f"Bearer {raw_token}"})
     assert resp.status_code == 403

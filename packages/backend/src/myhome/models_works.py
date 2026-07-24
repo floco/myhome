@@ -21,7 +21,7 @@ class Work(BaseModel):
     categoryId: str | None = None
     date: str
     totalCost: float | None = None
-    supplierId: str | None = None
+    contactId: str | None = None
     notes: str = ""
     attachments: list[str] = []
     placement: WorkPlacement | None = None
@@ -39,7 +39,7 @@ class WorkCreate(BaseModel):
     categoryId: str | None = None
     date: str
     totalCost: float | None = None
-    supplierId: str | None = None
+    contactId: str | None = None
     notes: str = ""
 
 
@@ -50,5 +50,5 @@ class WorkUpdate(BaseModel):
     categoryId: str | None = None
     date: str | None = None
     totalCost: float | None = None
-    supplierId: str | None = None
+    contactId: str | None = None
     notes: str | None = None

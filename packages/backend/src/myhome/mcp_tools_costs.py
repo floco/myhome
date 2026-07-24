@@ -29,7 +29,7 @@ def _create_cost_entry_impl(
     doc = load_costs(resolved)
     entry = CostEntry(
         id=str(uuid.uuid4()), categoryId=category_id, date=date, totalAmount=total_amount,
-        quantity=quantity, unitPrice=unit_price, supplierId=supplier_id, notes=notes, roomId=room_id,
+        quantity=quantity, unitPrice=unit_price, contactId=supplier_id, notes=notes, roomId=room_id,
     )
     doc.entries.append(entry)
     save_costs(resolved, doc)
@@ -106,7 +106,7 @@ async def update_cost_entry(
     await _require_role(ctx.request_context.request, "normal")
     return _update_cost_entry_impl(
         home_id, entry_id, categoryId=category_id, date=date, totalAmount=total_amount,
-        quantity=quantity, unitPrice=unit_price, supplierId=supplier_id, notes=notes, roomId=room_id,
+        quantity=quantity, unitPrice=unit_price, contactId=supplier_id, notes=notes, roomId=room_id,
     )
 
 

@@ -9,7 +9,7 @@ class CostEntry(BaseModel):
     totalAmount: float
     quantity: float | None = None
     unitPrice: float | None = None
-    supplierId: str | None = None
+    contactId: str | None = None
     notes: str = ""
     roomId: str | None = None
     attachments: list[str] = []
@@ -26,7 +26,7 @@ class CostEntryCreate(BaseModel):
     totalAmount: float
     quantity: float | None = None
     unitPrice: float | None = None
-    supplierId: str | None = None
+    contactId: str | None = None
     notes: str = ""
     roomId: str | None = None
 
@@ -37,6 +37,6 @@ class CostEntryUpdate(BaseModel):
     totalAmount: float | None = None
     quantity: float | None = None
     unitPrice: float | None = None
-    supplierId: str | None = None
+    contactId: str | None = None
     notes: str | None = None
     roomId: str | None = None

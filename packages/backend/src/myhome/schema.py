@@ -230,7 +230,7 @@ chore_completions = Table(
     Column("notes", String, nullable=False),
 )
 
-# category_id/supplier_id are plain columns, no ForeignKey -- see the
+# category_id/contact_id are plain columns, no ForeignKey -- see the
 # hard-FK rule in this plan's Global Constraints (settings' category
 # tables are cleared/reinserted by a different save_x() call).
 cost_entries = Table(
@@ -243,7 +243,7 @@ cost_entries = Table(
     Column("total_amount", Float, nullable=False),
     Column("quantity", Float),
     Column("unit_price", Float),
-    Column("supplier_id", String),
+    Column("contact_id", String),
     Column("notes", String, nullable=False),
     Column("room_id", String),
     Column("attachments", Text, nullable=False),
@@ -282,7 +282,7 @@ works = Table(
     Column("category_id", String),
     Column("date", String, nullable=False),
     Column("total_cost", Float),
-    Column("supplier_id", String),
+    Column("contact_id", String),
     Column("notes", String, nullable=False),
     Column("attachments", Text, nullable=False),
     Column("placement_floor_id", String),

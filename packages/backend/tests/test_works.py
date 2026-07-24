@@ -43,14 +43,14 @@ def test_create_work_full_fields(client, home_id):
         "categoryId": "wcat-plumbing",
         "date": "2025-11-10",
         "totalCost": 3200.0,
-        "supplierId": "sup-1",
+        "contactId": "sup-1",
         "notes": "## Details\n\nViessmann unit",
     }
     resp = client.post(f"/api/homes/{home_id}/works", json=payload)
     assert resp.status_code == 201
     data = resp.json()
     assert data["totalCost"] == 3200.0
-    assert data["supplierId"] == "sup-1"
+    assert data["contactId"] == "sup-1"
     assert data["notes"].startswith("##")
 
 
