@@ -58,7 +58,6 @@
       "description": "Description",
       "status": "Status",
       "contractor": "Contractor",
-      "contractorPlaceholder": "Contractor name",
       "plannedStart": "Planned start",
       "plannedDue": "Planned due",
       "actualCompletion": "Actual completion",

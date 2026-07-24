@@ -1324,6 +1324,7 @@
   <TaskModal
     task={buildStore.tasks.find((t) => t.id === openBuildTaskId) ?? null}
     store={buildStore}
+    {contactsStore}
     onclose={() => { openBuildTaskId = null; }}
   />
 {/if}

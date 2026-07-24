@@ -2,23 +2,25 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
   import type { createBuildStore, BuildTask, ValidationStatus } from "../buildStore.svelte";
+  import type { createContactsStore } from "../contactsStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
   import { apiUrl } from "../apiUrl";
   import DatePicker from "./DatePicker.svelte";
   import Modal from "./ui/Modal.svelte";
-  import Input from "./ui/Input.svelte";
   import Button from "./ui/Button.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
 
   type BuildStore = ReturnType<typeof createBuildStore>;
+  type ContactsStore = ReturnType<typeof createContactsStore>;
 
   interface Props {
     task: BuildTask | null;
     store: BuildStore;
+    contactsStore: ContactsStore;
     onclose: () => void;
   }
-  let { task, store, onclose }: Props = $props();
+  let { task, store, contactsStore, onclose }: Props = $props();
 
   function resolveLabel(key: string | null, override: string | null): string {
     if (override) return override;
@@ -159,7 +161,12 @@
       </div>
       <div class="row">
         <label>{$_('build.modal.contractor')}</label>
-        <Input bind:value={contractorId} placeholder={$_('build.modal.contractorPlaceholder')} />
+        <select class="native-input" bind:value={contractorId}>
+          <option value="">{$_('build.modal.noneOption')}</option>
+          {#each contactsStore.contacts.filter(c => c.typeId === "ctype-contractor") as c}
+            <option value={c.id}>{c.name}</option>
+          {/each}
+        </select>
       </div>
     </div>
     <div class="row-pair">

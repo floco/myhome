@@ -58,7 +58,6 @@
       "description": "Description",
       "status": "Statut",
       "contractor": "Entrepreneur",
-      "contractorPlaceholder": "Nom de l'entrepreneur",
       "plannedStart": "Début prévu",
       "plannedDue": "Échéance prévue",
       "actualCompletion": "Achèvement réel",
