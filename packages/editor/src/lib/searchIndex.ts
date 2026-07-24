@@ -6,7 +6,8 @@ import type { Consumable } from "./consumableStore.svelte";
 import type { Work } from "./worksStore.svelte";
 import type { CostEntry } from "./costsStore.svelte";
 import type { KBEntry } from "./kbStore.svelte";
-import type { CostCategory, WorkCategory, Supplier } from "./settingsStore.svelte";
+import type { CostCategory, WorkCategory } from "./settingsStore.svelte";
+import type { Contact } from "./contactsStore.svelte";
 
 export type SearchModule = "chores" | "inventory" | "consumables" | "works" | "costs" | "kb";
 
@@ -33,7 +34,8 @@ export interface SearchStores {
   worksStore: { works: Work[] };
   costsStore: { entries: CostEntry[] };
   kbStore: { entries: KBEntry[] };
-  settingsStore: { costCategories: CostCategory[]; workCategories: WorkCategory[]; suppliers: Supplier[] };
+  settingsStore: { costCategories: CostCategory[]; workCategories: WorkCategory[] };
+  contactsStore: { contacts: Contact[] };
 }
 
 function fmtDate(iso: string): string {
@@ -104,10 +106,10 @@ export function buildSearchIndex(stores: SearchStores): SearchResult[] {
   }
 
   const costCategoryMap = new Map(stores.settingsStore.costCategories.map((c) => [c.id, c]));
-  const supplierMap = new Map(stores.settingsStore.suppliers.map((s) => [s.id, s]));
+  const contactMap = new Map(stores.contactsStore.contacts.map((c) => [c.id, c]));
   for (const entry of stores.costsStore.entries) {
     const category = costCategoryMap.get(entry.categoryId);
-    const supplier = entry.supplierId ? supplierMap.get(entry.supplierId) : undefined;
+    const contact = entry.contactId ? contactMap.get(entry.contactId) : undefined;
     const title = category?.name ?? get(_)("costs.entryFallbackTitle");
     results.push({
       module: "costs",
@@ -115,7 +117,7 @@ export function buildSearchIndex(stores: SearchStores): SearchResult[] {
       icon: category?.emoji ?? "💶",
       title,
       subtitle: `${entry.totalAmount} €`,
-      searchText: norm(title, supplier?.name, entry.notes),
+      searchText: norm(title, contact?.name, entry.notes),
       titleText: title.toLowerCase(),
     });
   }

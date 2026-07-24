@@ -9,7 +9,8 @@ function makeStores(overrides: Partial<Parameters<typeof buildSearchIndex>[0]> =
     worksStore: { works: [] },
     costsStore: { entries: [] },
     kbStore: { entries: [] },
-    settingsStore: { costCategories: [], workCategories: [], suppliers: [] },
+    settingsStore: { costCategories: [], workCategories: [] },
+    contactsStore: { contacts: [] },
     ...overrides,
   };
 }
@@ -84,7 +85,7 @@ describe("buildSearchIndex", () => {
   it("maps a work using a humanized status and date as subtitle, with its category emoji", () => {
     const stores = makeStores({
       worksStore: { works: [{ id: "w1", title: "Fix roof leak", description: "Patch near chimney", notes: "", status: "in_progress", categoryId: "wcat-roofing", date: "2026-06-10T12:00:00.000Z" } as any] },
-      settingsStore: { costCategories: [], suppliers: [], workCategories: [{ id: "wcat-roofing", name: "Roofing", emoji: "🏠" }] },
+      settingsStore: { costCategories: [], workCategories: [{ id: "wcat-roofing", name: "Roofing", emoji: "🏠" }] },
     });
     const index = buildSearchIndex(stores);
     expect(index[0]).toEqual({
@@ -106,14 +107,14 @@ describe("buildSearchIndex", () => {
     expect(index[0].icon).toBe("🔧");
   });
 
-  it("maps a cost entry resolving category and supplier names, with the category emoji", () => {
+  it("maps a cost entry resolving category and contact names, with the category emoji", () => {
     const stores = makeStores({
-      costsStore: { entries: [{ id: "ce1", categoryId: "cat-electricity", supplierId: "sup1", notes: "Winter bill", totalAmount: 120.5 } as any] },
+      costsStore: { entries: [{ id: "ce1", categoryId: "cat-electricity", contactId: "sup1", notes: "Winter bill", totalAmount: 120.5 } as any] },
       settingsStore: {
         costCategories: [{ id: "cat-electricity", name: "Electricity", emoji: "💡", unit: "kWh", color: "#4466cc" }],
         workCategories: [],
-        suppliers: [{ id: "sup1", name: "PowerCo" }],
       },
+      contactsStore: { contacts: [{ id: "sup1", name: "PowerCo", companyName: null, typeId: "ctype-supplier", phone: null, email: null, address: null, website: null, notes: "" }] },
     });
     const index = buildSearchIndex(stores);
     expect(index[0]).toEqual({

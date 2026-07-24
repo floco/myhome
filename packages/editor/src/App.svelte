@@ -33,6 +33,8 @@
   import BuildPage from "./lib/components/BuildPage.svelte";
   import TaskModal from "./lib/components/TaskModal.svelte";
   import { createBuildStore } from "./lib/buildStore.svelte";
+  import ContactsPage from "./lib/components/ContactsPage.svelte";
+  import { createContactsStore } from "./lib/contactsStore.svelte";
   import { createNotificationStore } from "./lib/notificationStore.svelte";
   import type { Notification } from "./lib/notificationStore.svelte";
   import NotificationBell from "./lib/components/NotificationBell.svelte";
@@ -86,6 +88,7 @@
   const locationsStore = createLocationsStore(getHomeId);
   const propertiesStore = createPropertiesStore(getHomeId);
   const buildStore = createBuildStore(getHomeId);
+  const contactsStore = createContactsStore(getHomeId);
   const notificationStore = createNotificationStore(getHomeId);
   const authStore = createAuthStore();
 
@@ -110,6 +113,7 @@
     locationsStore.reload();
     propertiesStore.reload();
     buildStore.reload();
+    contactsStore.reload();
     notificationStore.reload();
   });
 
@@ -136,7 +140,7 @@
   let selectedCostEntryId = $state<string | null>(null);
 
   const globalSearchIndex = $derived(buildSearchIndex({
-    choreStore, inventoryStore, consumableStore, worksStore, costsStore, kbStore, settingsStore,
+    choreStore, inventoryStore, consumableStore, worksStore, costsStore, kbStore, settingsStore, contactsStore,
   }));
 
   function handleSearchSelect(result: SearchResult): void {
@@ -1303,7 +1307,7 @@
       {:else if currentRoute === "#/visits"}
         <PlaceholderPage icon="📅" label={$_('common.modules.visits')} description={$_('app.placeholder.visitsDescription')} />
       {:else if currentRoute === "#/contacts"}
-        <PlaceholderPage icon="👤" label={$_('common.modules.contacts')} description={$_('app.placeholder.contactsDescription')} />
+        <ContactsPage store={contactsStore} {settingsStore} />
       {:else if currentRoute === "#/checklist"}
         <PlaceholderPage icon="✅" label={$_('common.modules.checklist')} description={$_('app.placeholder.checklistDescription')} />
       {/if}
