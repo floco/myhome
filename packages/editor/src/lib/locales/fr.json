@@ -910,7 +910,7 @@
         "cost": "Catégories de coûts",
         "inventory": "Catégories d'inventaire",
         "work": "Catégories de travaux",
-        "suppliers": "Fournisseurs",
+        "contactTypes": "Types de contact",
         "consumables": "Consommables"
       },
       "deleteConfirm": "Supprimer ?",

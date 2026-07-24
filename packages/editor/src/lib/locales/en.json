@@ -910,7 +910,7 @@
         "cost": "Cost categories",
         "inventory": "Inventory categories",
         "work": "Work categories",
-        "suppliers": "Suppliers",
+        "contactTypes": "Contact Types",
         "consumables": "Consumables"
       },
       "deleteConfirm": "Delete?",
