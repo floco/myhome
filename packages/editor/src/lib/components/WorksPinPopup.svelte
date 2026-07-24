@@ -2,25 +2,28 @@
   import { _ } from "svelte-i18n";
   import type { Work } from "../worksStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
+  import type { createContactsStore } from "../contactsStore.svelte";
 
   type SettingsStore = ReturnType<typeof createSettingsStore>;
+  type ContactsStore = ReturnType<typeof createContactsStore>;
 
   interface Props {
     work: Work;
     settingsStore: SettingsStore;
+    contactsStore: ContactsStore;
     screenX: number;
     screenY: number;
     onopen: () => void;
     onremove: () => void;
     onclose: () => void;
   }
-  let { work, settingsStore, screenX, screenY, onopen, onremove, onclose }: Props = $props();
+  let { work, settingsStore, contactsStore, screenX, screenY, onopen, onremove, onclose }: Props = $props();
 
   const category = $derived(
     work.categoryId ? settingsStore.workCategories.find(c => c.id === work.categoryId) : null
   );
   const supplier = $derived(
-    work.supplierId ? settingsStore.suppliers.find(s => s.id === work.supplierId) : null
+    work.contactId ? contactsStore.contacts.find(c => c.id === work.contactId) : null
   );
 
   function statusLabel(status: Work["status"]): string {

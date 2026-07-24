@@ -7,7 +7,7 @@ function makeStore() {
     costCategories: [],
     inventoryCategories: [],
     workCategories: [],
-    suppliers: [],
+    contactTypes: [],
     consumableUnits: [],
     consumableCategories: [],
     notificationSettings: {

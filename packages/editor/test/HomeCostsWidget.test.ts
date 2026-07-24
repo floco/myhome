@@ -16,7 +16,7 @@ function makeStores(withEntries: boolean) {
   const costsDoc = {
     version: 1,
     entries: withEntries
-      ? [{ id: "e1", categoryId: "cat1", date: `${lastYear}-03-01`, totalAmount: 300, quantity: null, unitPrice: null, supplierId: null, notes: "", roomId: null }]
+      ? [{ id: "e1", categoryId: "cat1", date: `${lastYear}-03-01`, totalAmount: 300, quantity: null, unitPrice: null, contactId: null, notes: "", roomId: null }]
       : [],
   };
   const settingsDoc = {
@@ -24,7 +24,7 @@ function makeStores(withEntries: boolean) {
     costCategories: [{ id: "cat1", name: "Fuel", emoji: "⛽", unit: "L", color: "#e76f51" }],
     inventoryCategories: [],
     workCategories: [],
-    suppliers: [],
+    contactTypes: [],
   };
   vi.stubGlobal(
     "fetch",

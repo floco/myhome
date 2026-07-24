@@ -2,6 +2,7 @@
   import { _ } from "svelte-i18n";
   import type { createCostsStore, CostEntry } from "../costsStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
+  import type { createContactsStore } from "../contactsStore.svelte";
   import type { createHouseStore } from "../houseStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
   import { apiUrl } from "../apiUrl";
@@ -14,17 +15,19 @@
 
   type CostsStore = ReturnType<typeof createCostsStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
+  type ContactsStore = ReturnType<typeof createContactsStore>;
   type HouseStore = ReturnType<typeof createHouseStore>;
 
   interface Props {
     entry: CostEntry | null;
     costsStore: CostsStore;
     settingsStore: SettingsStore;
+    contactsStore: ContactsStore;
     floorStore: HouseStore;
     onclose: () => void;
   }
 
-  let { entry, costsStore, settingsStore, floorStore, onclose }: Props = $props();
+  let { entry, costsStore, settingsStore, contactsStore, floorStore, onclose }: Props = $props();
 
   const isCreate = $derived(entry === null);
 
@@ -34,7 +37,7 @@
   let totalAmount = $state("");
   let quantity = $state("");
   let unitPrice = $state("");
-  let supplierId = $state("");
+  let contactId = $state("");
   let notes = $state("");
   let roomId = $state("");
 
@@ -44,7 +47,7 @@
     totalAmount = entry?.totalAmount != null ? String(entry.totalAmount) : "";
     quantity = entry?.quantity != null ? String(entry.quantity) : "";
     unitPrice = entry?.unitPrice != null ? String(entry.unitPrice) : "";
-    supplierId = entry?.supplierId ?? "";
+    contactId = entry?.contactId ?? "";
     notes = entry?.notes ?? "";
     roomId = entry?.roomId ?? "";
     activeTab = "info";
@@ -108,7 +111,7 @@
       categoryId, date, totalAmount: parsedTotal,
       quantity: quantity ? parseFloat(quantity) || null : null,
       unitPrice: unitPrice ? parseFloat(unitPrice) || null : null,
-      supplierId: supplierId || null,
+      contactId: contactId || null,
       notes: notes.trim(),
       roomId: roomId || null,
     };
@@ -187,9 +190,9 @@
 
     <div class="row">
       <label>{$_('costs.entryModal.supplier')}</label>
-      <select class="native-input flex-grow" bind:value={supplierId}>
+      <select class="native-input flex-grow" bind:value={contactId}>
         <option value="">{$_('costs.entryModal.noSupplier')}</option>
-        {#each settingsStore.suppliers as s}<option value={s.id}>{s.name}</option>{/each}
+        {#each contactsStore.contacts.filter(c => c.typeId === "ctype-supplier" || c.typeId === "ctype-service") as c}<option value={c.id}>{c.name}</option>{/each}
       </select>
     </div>
 

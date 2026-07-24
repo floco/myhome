@@ -9,7 +9,7 @@ function makeEntry(overrides: Partial<CostEntry> = {}): CostEntry {
   return {
     id: "ce1", categoryId: "cat-electricity", date: "2026-01-15",
     totalAmount: 120.5, quantity: null, unitPrice: null,
-    supplierId: null, notes: "", roomId: null, attachments: [],
+    contactId: null, notes: "", roomId: null, attachments: [],
     ...overrides,
   };
 }
@@ -29,9 +29,12 @@ function makeCostsStore(entries: CostEntry[]) {
 function makeSettingsStore() {
   return {
     costCategories: [{ id: "cat-electricity", name: "Electricity", emoji: "💡", color: "#ff0", unit: null }],
-    suppliers: [],
     workCategories: [],
   };
+}
+
+function makeContactsStore() {
+  return { contacts: [] };
 }
 
 describe("CostsPage — external selection", () => {
@@ -46,6 +49,7 @@ describe("CostsPage — external selection", () => {
       props: {
         costsStore: makeCostsStore([entry]),
         settingsStore: makeSettingsStore(),
+        contactsStore: makeContactsStore(),
         floorStore: { floors: [] },
         selectedItemId: "ce1",
         onclearselection,

@@ -11,7 +11,7 @@ describe("createSettingsStore — notifications", () => {
   it("loads notification settings from the fetched document", async () => {
     const doc = {
       version: 1, costCategories: [], inventoryCategories: [], workCategories: [],
-      suppliers: [], consumableUnits: [], consumableCategories: [],
+      contactTypes: [], consumableUnits: [], consumableCategories: [],
       notifications: {
         enabled: true, choresDueSoonThreshold: 0.25, warrantyDaysThreshold: 30,
         haPushEnabled: false, haNotifyService: null, haPushTime: "08:00",
@@ -26,7 +26,7 @@ describe("createSettingsStore — notifications", () => {
   it("updateNotificationSettings PUTs to the notifications settings endpoint", async () => {
     const doc = {
       version: 1, costCategories: [], inventoryCategories: [], workCategories: [],
-      suppliers: [], consumableUnits: [], consumableCategories: [],
+      contactTypes: [], consumableUnits: [], consumableCategories: [],
       notifications: {
         enabled: true, choresDueSoonThreshold: 0.25, warrantyDaysThreshold: 30,
         haPushEnabled: false, haNotifyService: null, haPushTime: "08:00",

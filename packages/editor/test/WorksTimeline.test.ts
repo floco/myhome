@@ -9,7 +9,7 @@ function makeWork(overrides: Partial<Work> = {}): Work {
   return {
     id: "w1", title: "Fix roof leak", description: "", status: "planned",
     categoryId: null, date: "2026-06-10T12:00:00.000Z", totalCost: null,
-    supplierId: null, notes: "", attachments: [], placement: null,
+    contactId: null, notes: "", attachments: [], placement: null,
     ...overrides,
   };
 }

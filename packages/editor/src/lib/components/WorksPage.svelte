@@ -2,6 +2,7 @@
   import { _ } from "svelte-i18n";
   import type { createWorksStore, Work } from "../worksStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
+  import type { createContactsStore } from "../contactsStore.svelte";
   import WorkModal from "./WorkModal.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
@@ -12,16 +13,18 @@
 
   type WorksStore = ReturnType<typeof createWorksStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
+  type ContactsStore = ReturnType<typeof createContactsStore>;
 
   interface Props {
     store: WorksStore;
     settingsStore: SettingsStore;
+    contactsStore: ContactsStore;
     onplaceonmap?: (workId: string) => void;
     selectedItemId?: string | null;
     onclearselection?: () => void;
   }
 
-  let { store, settingsStore, onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
+  let { store, settingsStore, contactsStore, onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
 
   let modalWork = $state<Work | "create" | null>(null);
 
@@ -43,7 +46,7 @@
     new Map(settingsStore.workCategories.map(c => [c.id, c]))
   );
   const supplierMap = $derived(
-    new Map(settingsStore.suppliers.map(s => [s.id, s]))
+    new Map(contactsStore.contacts.map(c => [c.id, c]))
   );
 
   const filteredWorks = $derived(store.works.filter(w => {
@@ -155,7 +158,7 @@
         {work.date}
       {/snippet}
       {#snippet supplierCell(work: Work)}
-        {supplierMap.get(work.supplierId ?? "")?.name ?? "—"}
+        {supplierMap.get(work.contactId ?? "")?.name ?? "—"}
       {/snippet}
       {#snippet costCell(work: Work)}
         {work.totalCost != null ? fmt(work.totalCost) + " €" : "—"}
@@ -174,7 +177,7 @@
           { key: "title", label: $_('works.page.title'), sortValue: (w) => w.title, cellClass: "name-cell", cell: titleCell },
           { key: "category", label: $_('costs.page.category'), sortValue: (w) => categoryMap.get(w.categoryId ?? "")?.name ?? null, cell: categoryCell },
           { key: "date", label: $_('costs.page.date'), sortValue: (w) => (w.date ? new Date(w.date) : null), cell: dateCell },
-          { key: "supplier", label: $_('costs.page.supplier'), sortValue: (w) => supplierMap.get(w.supplierId ?? "")?.name ?? null, cell: supplierCell },
+          { key: "supplier", label: $_('costs.page.supplier'), sortValue: (w) => supplierMap.get(w.contactId ?? "")?.name ?? null, cell: supplierCell },
           { key: "cost", label: $_('inventory.page.cost'), sortValue: (w) => w.totalCost, cell: costCell },
           { key: "status", label: $_('works.page.status'), sortValue: (w) => w.status, cell: statusCell },
         ] as Column<Work>[]}
@@ -195,6 +198,7 @@
     work={modalWork === "create" ? null : modalWork}
     {store}
     {settingsStore}
+    {contactsStore}
     onclose={() => { modalWork = null; }}
     {onplaceonmap}
   />

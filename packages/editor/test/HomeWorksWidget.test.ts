@@ -6,9 +6,9 @@ import { createWorksStore } from "../src/lib/worksStore.svelte";
 const sampleDoc = {
   version: 1,
   works: [
-    { id: "w1", title: "Repaint fence", description: "", status: "done", categoryId: null, date: "2026-01-10", totalCost: 150, supplierId: null, notes: "", attachments: [], placement: null },
-    { id: "w2", title: "Fix roof leak", description: "", status: "in_progress", categoryId: null, date: "2026-05-01", totalCost: 400, supplierId: null, notes: "", attachments: [], placement: null },
-    { id: "w3", title: "New deck", description: "", status: "planned", categoryId: null, date: "2026-08-01", totalCost: null, supplierId: null, notes: "", attachments: [], placement: null },
+    { id: "w1", title: "Repaint fence", description: "", status: "done", categoryId: null, date: "2026-01-10", totalCost: 150, contactId: null, notes: "", attachments: [], placement: null },
+    { id: "w2", title: "Fix roof leak", description: "", status: "in_progress", categoryId: null, date: "2026-05-01", totalCost: 400, contactId: null, notes: "", attachments: [], placement: null },
+    { id: "w3", title: "New deck", description: "", status: "planned", categoryId: null, date: "2026-08-01", totalCost: null, contactId: null, notes: "", attachments: [], placement: null },
   ],
 };
 

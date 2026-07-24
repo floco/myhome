@@ -9,7 +9,7 @@ function makeWork(overrides: Partial<Work> = {}): Work {
   return {
     id: "w1", title: "Fix roof leak", description: "", status: "planned",
     categoryId: null, date: "2026-06-10T12:00:00.000Z", totalCost: null,
-    supplierId: null, notes: "", attachments: [], placement: null,
+    contactId: null, notes: "", attachments: [], placement: null,
     ...overrides,
   };
 }
@@ -23,7 +23,11 @@ function makeWorksStore(works: Work[]) {
 }
 
 function makeSettingsStore() {
-  return { workCategories: [], suppliers: [] };
+  return { workCategories: [] };
+}
+
+function makeContactsStore() {
+  return { contacts: [] };
 }
 
 describe("WorksPage — external selection", () => {
@@ -35,7 +39,7 @@ describe("WorksPage — external selection", () => {
 
     const comp = mount(WorksPage, {
       target,
-      props: { store, settingsStore: makeSettingsStore(), selectedItemId: "w1", onclearselection },
+      props: { store, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore(), selectedItemId: "w1", onclearselection },
     });
     flushSync();
 
@@ -55,7 +59,7 @@ describe("WorksPage — timeline click opens modal", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
-    const comp = mount(WorksPage, { target, props: { store, settingsStore: makeSettingsStore() } });
+    const comp = mount(WorksPage, { target, props: { store, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore() } });
     flushSync();
 
     const circle = target.querySelector(".chart-card-wrap circle") as SVGCircleElement;

@@ -1067,6 +1067,7 @@
                 <WorksPinPopup
                   work={pin.work}
                   {settingsStore}
+                  {contactsStore}
                   screenX={pin.screenX}
                   screenY={pin.screenY}
                   onopen={() => {
@@ -1261,6 +1262,7 @@
         <WorksPage
           store={worksStore}
           {settingsStore}
+          {contactsStore}
           selectedItemId={selectedWorkId}
           onclearselection={() => { selectedWorkId = null; }}
           onplaceonmap={(workId) => {
@@ -1280,6 +1282,7 @@
         <CostsPage
           {costsStore}
           {settingsStore}
+          {contactsStore}
           {floorStore}
           selectedItemId={selectedCostEntryId}
           onclearselection={() => { selectedCostEntryId = null; }}
