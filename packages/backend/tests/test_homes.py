@@ -24,6 +24,7 @@ def test_create_home_existing(client):
     assert data["name"] == "Rue des Lilas"
     assert data["type"] == "existing"
     assert "chores" in data["enabledModules"]
+    assert "contacts" in data["enabledModules"]
     assert "id" in data
     assert "createdAt" in data
 
@@ -35,6 +36,7 @@ def test_create_home_project(client):
     assert data["type"] == "project"
     assert "chores" not in data["enabledModules"]
     assert "works" in data["enabledModules"]
+    assert "contacts" in data["enabledModules"]
 
 
 def test_create_home_project_seeds_default_location_criteria(client):
@@ -118,6 +120,10 @@ def test_create_home_demo_seeds_every_module(client):
         assert r.status_code == 200
         items = r.json()[key]
         assert len(items) >= 32, f"{path} returned only {len(items)} records"
+
+    r = client.get(f"/api/homes/{home_id}/contacts")
+    assert r.status_code == 200
+    assert len(r.json()["contacts"]) == 9
 
     house_resp = client.get(f"/api/homes/{home_id}/house")
     assert house_resp.status_code == 200

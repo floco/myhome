@@ -4,6 +4,7 @@ from myhome.demo_content import (
     INVENTORY_ITEMS,
     KB_TITLES,
     WORKS,
+    generate_demo_contacts,
     generate_demo_settings,
 )
 
@@ -14,7 +15,7 @@ def test_generate_demo_settings_has_expected_category_counts():
     assert len(settings.workCategories) == 7
     assert len(settings.inventoryCategories) == 8
     assert len(settings.consumableCategories) == 6
-    assert len(settings.suppliers) == 9
+    assert len(settings.contactTypes) == 6
     assert len(settings.consumableUnits) > 0
 
 
@@ -24,7 +25,13 @@ def test_generate_demo_settings_ids_are_unique():
     assert len({c.id for c in settings.workCategories}) == 7
     assert len({c.id for c in settings.inventoryCategories}) == 8
     assert len({c.id for c in settings.consumableCategories}) == 6
-    assert len({s.id for s in settings.suppliers}) == 9
+    assert len({t.id for t in settings.contactTypes}) == 6
+
+
+def test_generate_demo_contacts_has_expected_count_and_unique_ids():
+    contacts = generate_demo_contacts()
+    assert len(contacts) == 9
+    assert len({c.id for c in contacts}) == 9
 
 
 def test_curated_content_lists_have_at_least_32_entries():

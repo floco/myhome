@@ -92,31 +92,35 @@ def test_generate_demo_inventory_some_warranties_already_expired():
     assert len(expired) > 0
 
 
+from myhome.demo_content import generate_demo_contacts
 from myhome.demo_data import generate_demo_costs
 
 
 def test_generate_demo_costs_has_at_least_32_entries():
     settings = generate_demo_settings()
-    doc = generate_demo_costs(settings, random.Random(42))
+    contacts = generate_demo_contacts()
+    doc = generate_demo_costs(settings, contacts, random.Random(42))
     assert len(doc.entries) >= 32
 
 
-def test_generate_demo_costs_entries_reference_valid_categories_and_suppliers():
+def test_generate_demo_costs_entries_reference_valid_categories_and_contacts():
     settings = generate_demo_settings()
-    doc = generate_demo_costs(settings, random.Random(42))
+    contacts = generate_demo_contacts()
+    doc = generate_demo_costs(settings, contacts, random.Random(42))
     category_ids = {c.id for c in settings.costCategories}
-    supplier_ids = {s.id for s in settings.suppliers}
+    contact_ids = {c.id for c in contacts}
     for entry in doc.entries:
         assert entry.categoryId in category_ids
         assert entry.totalAmount > 0
-        if entry.supplierId is not None:
-            assert entry.supplierId in supplier_ids
+        if entry.contactId is not None:
+            assert entry.contactId in contact_ids
 
 
 def test_generate_demo_costs_spread_across_last_12_months():
     from datetime import date, timedelta
     settings = generate_demo_settings()
-    doc = generate_demo_costs(settings, random.Random(42))
+    contacts = generate_demo_contacts()
+    doc = generate_demo_costs(settings, contacts, random.Random(42))
     cutoff = (date.today() - timedelta(days=370)).isoformat()
     assert all(e.date >= cutoff for e in doc.entries)
     assert len({e.date[:7] for e in doc.entries}) >= 6  # spans several distinct months
@@ -128,14 +132,16 @@ from myhome.demo_data import generate_demo_works
 def test_generate_demo_works_has_at_least_32_entries():
     house = generate_demo_house()
     settings = generate_demo_settings()
-    doc = generate_demo_works(house, settings, random.Random(42))
+    contacts = generate_demo_contacts()
+    doc = generate_demo_works(house, settings, contacts, random.Random(42))
     assert len(doc.works) >= 32
 
 
 def test_generate_demo_works_has_a_mix_of_statuses():
     house = generate_demo_house()
     settings = generate_demo_settings()
-    doc = generate_demo_works(house, settings, random.Random(42))
+    contacts = generate_demo_contacts()
+    doc = generate_demo_works(house, settings, contacts, random.Random(42))
     statuses = {w.status for w in doc.works}
     assert statuses == {"planned", "in_progress", "done"}
     done = [w for w in doc.works if w.status == "done"]
@@ -147,7 +153,8 @@ def test_generate_demo_works_has_a_mix_of_statuses():
 def test_generate_demo_works_reference_valid_categories_and_floors():
     house = generate_demo_house()
     settings = generate_demo_settings()
-    doc = generate_demo_works(house, settings, random.Random(42))
+    contacts = generate_demo_contacts()
+    doc = generate_demo_works(house, settings, contacts, random.Random(42))
     category_ids = {c.id for c in settings.workCategories}
     floor_ids = {f.id for f in house.floors}
     for w in doc.works:
@@ -225,11 +232,12 @@ def test_attach_demo_files_gives_a_subset_of_records_attachments(tmp_path, monke
 
     house = generate_demo_house()
     settings = generate_demo_settings()
+    contacts = generate_demo_contacts()
     rng = random.Random(42)
     chores_doc = generate_demo_chores(house, rng)
     inventory_doc = generate_demo_inventory(house, settings, rng)
-    costs_doc = generate_demo_costs(settings, rng)
-    works_doc = generate_demo_works(house, settings, rng)
+    costs_doc = generate_demo_costs(settings, contacts, rng)
+    works_doc = generate_demo_works(house, settings, contacts, rng)
 
     attach_demo_files(home_id, chores_doc, inventory_doc, costs_doc, works_doc, random.Random(1))
 
@@ -257,6 +265,7 @@ from myhome import (
     persistence,
     persistence_chores,
     persistence_consumables,
+    persistence_contacts,
     persistence_costs,
     persistence_inventory,
     persistence_kb,
@@ -305,3 +314,6 @@ def test_seed_demo_home_writes_every_module(tmp_path, monkeypatch):
 
     consumables = persistence_consumables.load_consumables(home_id)
     assert len(consumables.consumables) >= 32
+
+    contacts = persistence_contacts.load_contacts(home_id)
+    assert len(contacts.contacts) == 9
