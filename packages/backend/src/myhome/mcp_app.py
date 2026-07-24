@@ -5,6 +5,7 @@ from . import (  # noqa: F401 - imported for the side effect of registering tool
     mcp_tools_build,
     mcp_tools_chores,
     mcp_tools_consumables,
+    mcp_tools_contacts,
     mcp_tools_costs,
     mcp_tools_homes,
     mcp_tools_inventory,
