@@ -48,7 +48,7 @@ describe("BuildPage", () => {
     target.remove();
   });
 
-  it("shows the dashboard tab with stat tiles once a project exists", async () => {
+  it("shows the stat cards and the phases table together, with no tabs", async () => {
     const { store, target } = renderPage(seededDoc);
     await waitTick();
     const comp = mount(BuildPage, { target, props: { store, onopentask: vi.fn() } });
@@ -56,26 +56,30 @@ describe("BuildPage", () => {
     flushSync();
 
     expect(target.querySelector(".start-card")).toBeFalsy();
-    const values = Array.from(target.querySelectorAll(".ui-stat-value")).map((el) => el.textContent);
-    expect(values.length).toBeGreaterThan(0);
+    expect(target.querySelector(".tab-bar")).toBeFalsy();
+
+    const values = Array.from(target.querySelectorAll(".stat-value")).map((el) => el.textContent);
+    expect(values.length).toBe(5);
+
+    expect(target.querySelector("table")).toBeTruthy();
 
     unmount(comp);
     target.remove();
   });
 
-  it("switches to the phases tab on click", async () => {
+  it("puts the card title above the value in each stat card", async () => {
     const { store, target } = renderPage(seededDoc);
     await waitTick();
     const comp = mount(BuildPage, { target, props: { store, onopentask: vi.fn() } });
     await tick();
     flushSync();
 
-    const tabs = Array.from(target.querySelectorAll(".tab-bar .tab"));
-    const phasesTab = tabs.find((el) => el.textContent?.includes("Phases")) as HTMLElement;
-    phasesTab.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    flushSync();
-
-    expect(target.querySelector(".phase-section")).toBeTruthy();
+    const firstCard = target.querySelector(".stat-row .ui-card") as HTMLElement;
+    const children = Array.from(firstCard.children);
+    const titleIndex = children.findIndex((c) => c.classList.contains("stat-title"));
+    const valueIndex = children.findIndex((c) => c.classList.contains("stat-value"));
+    expect(titleIndex).toBeGreaterThanOrEqual(0);
+    expect(titleIndex).toBeLessThan(valueIndex);
 
     unmount(comp);
     target.remove();
