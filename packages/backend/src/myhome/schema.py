@@ -92,10 +92,15 @@ backup_state = Table(
     Column("last_run_date", String),
 )
 
+# These five tables' ids are meaningful fixed strings (e.g. "cat-fuel",
+# "inv-electronics") shared verbatim across every home's default/demo seed
+# data -- they were only ever unique *within* a home under the pre-SQLite
+# per-home-JSON-file format. The primary key must be (home_id, id), not a
+# bare `id`, or seeding a second home's defaults collides with the first.
 cost_categories = Table(
     "cost_categories", metadata,
     Column("id", String, primary_key=True),
-    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
     Column("order_index", Integer, nullable=False),
     Column("name", String, nullable=False),
     Column("emoji", String, nullable=False),
@@ -109,7 +114,7 @@ cost_categories = Table(
 inventory_categories = Table(
     "inventory_categories", metadata,
     Column("id", String, primary_key=True),
-    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
     Column("order_index", Integer, nullable=False),
     Column("name", String, nullable=False),
 )
@@ -117,7 +122,7 @@ inventory_categories = Table(
 work_categories = Table(
     "work_categories", metadata,
     Column("id", String, primary_key=True),
-    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
     Column("order_index", Integer, nullable=False),
     Column("name", String, nullable=False),
     Column("emoji", String, nullable=False),
@@ -126,7 +131,7 @@ work_categories = Table(
 suppliers = Table(
     "suppliers", metadata,
     Column("id", String, primary_key=True),
-    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
     Column("order_index", Integer, nullable=False),
     Column("name", String, nullable=False),
 )
@@ -134,7 +139,7 @@ suppliers = Table(
 consumable_categories = Table(
     "consumable_categories", metadata,
     Column("id", String, primary_key=True),
-    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
     Column("order_index", Integer, nullable=False),
     Column("name", String, nullable=False),
     Column("emoji", String, nullable=False),
