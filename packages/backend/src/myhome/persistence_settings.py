@@ -15,19 +15,20 @@ from .models_settings import (
     InventoryCategory,
     NotificationSettings,
     SettingsDocument,
-    Supplier,
+    ContactType,
     WorkCategory,
     _default_cost_categories,
     _default_consumable_units,
     _default_inventory_categories,
     _default_work_categories,
+    _default_contact_types,
 )
 from .schema import (
     consumable_categories as consumable_categories_table,
     cost_categories as cost_categories_table,
     inventory_categories as inventory_categories_table,
     settings as settings_table,
-    suppliers as suppliers_table,
+    contact_types as contact_types_table,
     work_categories as work_categories_table,
 )
 
@@ -42,6 +43,7 @@ def load_settings(home_id: str) -> SettingsDocument:
                 inventoryCategories=_default_inventory_categories(),
                 workCategories=_default_work_categories(),
                 consumableUnits=_default_consumable_units(),
+                contactTypes=_default_contact_types(),
             )
         cost_rows = conn.execute(
             select(cost_categories_table).where(cost_categories_table.c.home_id == home_id)
@@ -55,9 +57,9 @@ def load_settings(home_id: str) -> SettingsDocument:
             select(work_categories_table).where(work_categories_table.c.home_id == home_id)
             .order_by(work_categories_table.c.order_index)
         ).mappings().all()
-        supplier_rows = conn.execute(
-            select(suppliers_table).where(suppliers_table.c.home_id == home_id)
-            .order_by(suppliers_table.c.order_index)
+        contact_type_rows = conn.execute(
+            select(contact_types_table).where(contact_types_table.c.home_id == home_id)
+            .order_by(contact_types_table.c.order_index)
         ).mappings().all()
         consumable_cat_rows = conn.execute(
             select(consumable_categories_table).where(consumable_categories_table.c.home_id == home_id)
@@ -80,7 +82,7 @@ def load_settings(home_id: str) -> SettingsDocument:
         ],
         inventoryCategories=[InventoryCategory(id=r["id"], name=r["name"]) for r in inv_rows],
         workCategories=[WorkCategory(id=r["id"], name=r["name"], emoji=r["emoji"]) for r in work_rows],
-        suppliers=[Supplier(id=r["id"], name=r["name"]) for r in supplier_rows],
+        contactTypes=[ContactType(id=r["id"], name=r["name"]) for r in contact_type_rows],
         consumableUnits=json.loads(row["consumable_units"]) or _default_consumable_units(),
         consumableCategories=[
             ConsumableCategory(id=r["id"], name=r["name"], emoji=r["emoji"]) for r in consumable_cat_rows
@@ -150,11 +152,11 @@ def save_settings(home_id: str, doc: SettingsDocument) -> None:
                 for i, c in enumerate(doc.workCategories)
             ])
 
-        conn.execute(suppliers_table.delete().where(suppliers_table.c.home_id == home_id))
-        if doc.suppliers:
-            conn.execute(suppliers_table.insert(), [
-                {"id": s.id, "home_id": home_id, "order_index": i, "name": s.name}
-                for i, s in enumerate(doc.suppliers)
+        conn.execute(contact_types_table.delete().where(contact_types_table.c.home_id == home_id))
+        if doc.contactTypes:
+            conn.execute(contact_types_table.insert(), [
+                {"id": t.id, "home_id": home_id, "order_index": i, "name": t.name}
+                for i, t in enumerate(doc.contactTypes)
             ])
 
         conn.execute(consumable_categories_table.delete().where(consumable_categories_table.c.home_id == home_id))
