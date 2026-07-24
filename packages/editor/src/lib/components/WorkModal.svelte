@@ -2,6 +2,7 @@
   import { _ } from "svelte-i18n";
   import type { createWorksStore, Work } from "../worksStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
+  import type { createContactsStore } from "../contactsStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
   import { apiUrl } from "../apiUrl";
   import DatePicker from "./DatePicker.svelte";
@@ -14,16 +15,18 @@
 
   type WorksStore = ReturnType<typeof createWorksStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
+  type ContactsStore = ReturnType<typeof createContactsStore>;
 
   interface Props {
     work: Work | null;
     store: WorksStore;
     settingsStore: SettingsStore;
+    contactsStore: ContactsStore;
     onclose: () => void;
     onplaceonmap?: (workId: string) => void;
   }
 
-  let { work, store, settingsStore, onclose, onplaceonmap }: Props = $props();
+  let { work, store, settingsStore, contactsStore, onclose, onplaceonmap }: Props = $props();
 
   const isCreate = work === null;
 
@@ -34,7 +37,7 @@
   let categoryId = $state(work?.categoryId ?? "");
   let date = $state(work?.date ?? new Date().toISOString().slice(0, 10));
   let totalCost = $state<string>(work?.totalCost != null ? String(work.totalCost) : "");
-  let supplierId = $state(work?.supplierId ?? "");
+  let contactId = $state(work?.contactId ?? "");
   let notes = $state(work?.notes ?? "");
 
   let editingNotes = $state(isCreate);
@@ -59,7 +62,7 @@
       categoryId: categoryId || null,
       date,
       totalCost: totalCost ? parseFloat(totalCost) || null : null,
-      supplierId: supplierId || null,
+      contactId: contactId || null,
       notes: notes.trim(),
     };
     try {
@@ -186,10 +189,10 @@
     </div>
     <div class="row">
       <label>{$_('costs.entryModal.supplier')}</label>
-      <select class="native-input" bind:value={supplierId}>
+      <select class="native-input" bind:value={contactId}>
         <option value="">{$_('works.modal.noneOption')}</option>
-        {#each settingsStore.suppliers as s}
-          <option value={s.id}>{s.name}</option>
+        {#each contactsStore.contacts.filter(c => c.typeId === "ctype-supplier" || c.typeId === "ctype-service") as c}
+          <option value={c.id}>{c.name}</option>
         {/each}
       </select>
     </div>

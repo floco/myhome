@@ -1,7 +1,7 @@
 <!-- packages/editor/src/lib/components/settings/SettingsCategories.svelte -->
 <script lang="ts">
   import { _ } from "svelte-i18n";
-  import type { createSettingsStore, CostCategory, ConsumableCategory, InventoryCategory, WorkCategory, Supplier } from "../../settingsStore.svelte";
+  import type { createSettingsStore, CostCategory, ConsumableCategory, InventoryCategory, WorkCategory, ContactType } from "../../settingsStore.svelte";
   import Button from "../ui/Button.svelte";
   import Input from "../ui/Input.svelte";
   import EmojiPicker from "../ui/EmojiPicker.svelte";
@@ -17,7 +17,7 @@
   }
   let { store }: Props = $props();
 
-  type CategoryTab = "cost" | "inventory" | "work" | "suppliers" | "consumables";
+  type CategoryTab = "cost" | "inventory" | "work" | "contactTypes" | "consumables";
   let activeTab = $state<CategoryTab>("cost");
 
   // --- Cost categories ---
@@ -155,46 +155,46 @@
     showNewWorkForm = false; workError = null;
   }
 
-  // --- Suppliers ---
-  let editingSupplierId = $state<string | null>(null);
-  let supplierDraft = $state<Supplier>({ id: "", name: "" });
-  let showNewSupplierForm = $state(false);
-  let newSupplierDraft = $state({ name: "" });
-  let confirmDeleteSupplierId = $state<string | null>(null);
-  let supplierError = $state<string | null>(null);
+  // --- Contact types ---
+  let editingContactTypeId = $state<string | null>(null);
+  let contactTypeDraft = $state<ContactType>({ id: "", name: "" });
+  let showNewContactTypeForm = $state(false);
+  let newContactTypeDraft = $state({ name: "" });
+  let confirmDeleteContactTypeId = $state<string | null>(null);
+  let contactTypeError = $state<string | null>(null);
 
-  function startEditSupplier(s: Supplier): void {
-    editingSupplierId = s.id;
-    supplierDraft = { ...s };
-    supplierError = null;
+  function startEditContactType(t: ContactType): void {
+    editingContactTypeId = t.id;
+    contactTypeDraft = { ...t };
+    contactTypeError = null;
   }
 
-  function cancelEditSupplier(): void { editingSupplierId = null; supplierError = null; }
+  function cancelEditContactType(): void { editingContactTypeId = null; contactTypeError = null; }
 
-  async function saveEditSupplier(): Promise<void> {
-    if (!supplierDraft.name.trim()) { supplierError = $_('settings.general.nameRequired'); return; }
-    const updated = store.suppliers.map(s =>
-      s.id === editingSupplierId ? { ...supplierDraft, name: supplierDraft.name.trim() } : s
+  async function saveEditContactType(): Promise<void> {
+    if (!contactTypeDraft.name.trim()) { contactTypeError = $_('settings.general.nameRequired'); return; }
+    const updated = store.contactTypes.map(t =>
+      t.id === editingContactTypeId ? { ...contactTypeDraft, name: contactTypeDraft.name.trim() } : t
     );
-    await store.updateSuppliers(updated);
-    editingSupplierId = null; supplierError = null;
+    await store.updateContactTypes(updated);
+    editingContactTypeId = null; contactTypeError = null;
   }
 
-  async function deleteSupplier(id: string): Promise<void> {
-    await store.updateSuppliers(store.suppliers.filter(s => s.id !== id));
-    confirmDeleteSupplierId = null;
+  async function deleteContactType(id: string): Promise<void> {
+    await store.updateContactTypes(store.contactTypes.filter(t => t.id !== id));
+    confirmDeleteContactTypeId = null;
   }
 
-  async function addSupplier(): Promise<void> {
-    if (!newSupplierDraft.name.trim()) { supplierError = $_('settings.general.nameRequired'); return; }
-    const newS: Supplier = {
+  async function addContactType(): Promise<void> {
+    if (!newContactTypeDraft.name.trim()) { contactTypeError = $_('settings.general.nameRequired'); return; }
+    const newT: ContactType = {
       id: crypto.randomUUID(),
-      name: newSupplierDraft.name.trim(),
+      name: newContactTypeDraft.name.trim(),
     };
-    await store.updateSuppliers([...store.suppliers, newS]);
-    newSupplierDraft = { name: "" };
-    showNewSupplierForm = false;
-    supplierError = null;
+    await store.updateContactTypes([...store.contactTypes, newT]);
+    newContactTypeDraft = { name: "" };
+    showNewContactTypeForm = false;
+    contactTypeError = null;
   }
 
   // --- Consumable units ---
@@ -263,7 +263,7 @@
     { id: "cost", label: $_('settings.categories.tabs.cost') },
     { id: "inventory", label: $_('settings.categories.tabs.inventory') },
     { id: "work", label: $_('settings.categories.tabs.work') },
-    { id: "suppliers", label: $_('settings.categories.tabs.suppliers') },
+    { id: "contactTypes", label: $_('settings.categories.tabs.contactTypes') },
     { id: "consumables", label: $_('settings.categories.tabs.consumables') },
   ]}
   active={activeTab}
@@ -455,52 +455,52 @@
   </Card>
 {/if}
 
-{#if activeTab === "suppliers"}
+{#if activeTab === "contactTypes"}
   <Card>
     <div class="section-header">
-      <h2>{$_('settings.categories.tabs.suppliers')}</h2>
-      <Button onclick={() => { showNewSupplierForm = true; supplierError = null; }}>＋ {$_('common.add')}</Button>
+      <h2>{$_('settings.categories.tabs.contactTypes')}</h2>
+      <Button onclick={() => { showNewContactTypeForm = true; contactTypeError = null; }}>＋ {$_('common.add')}</Button>
     </div>
     <div class="table-wrapper">
-      {#snippet supplierNameCell(s: Supplier)}
-        {#if editingSupplierId === s.id}
-          <Input bind:value={supplierDraft.name} placeholder={$_('settings.categories.name')} />
+      {#snippet contactTypeNameCell(t: ContactType)}
+        {#if editingContactTypeId === t.id}
+          <Input bind:value={contactTypeDraft.name} placeholder={$_('settings.categories.name')} />
         {:else}
-          {s.name}
+          {t.name}
         {/if}
       {/snippet}
-      {#snippet supplierActionsCell(s: Supplier)}
-        {#if editingSupplierId === s.id}
-          <button class="icon-action ok" onclick={saveEditSupplier} title={$_('common.save')}>✓</button>
-          <button class="icon-action" onclick={cancelEditSupplier} title={$_('common.cancel')}>✕</button>
-        {:else if confirmDeleteSupplierId === s.id}
+      {#snippet contactTypeActionsCell(t: ContactType)}
+        {#if editingContactTypeId === t.id}
+          <button class="icon-action ok" onclick={saveEditContactType} title={$_('common.save')}>✓</button>
+          <button class="icon-action" onclick={cancelEditContactType} title={$_('common.cancel')}>✕</button>
+        {:else if confirmDeleteContactTypeId === t.id}
           <span class="confirm-text">{$_('settings.categories.deleteConfirm')}</span>
-          <button class="icon-action danger" onclick={() => deleteSupplier(s.id)}>✓</button>
-          <button class="icon-action" onclick={() => { confirmDeleteSupplierId = null; }}>✕</button>
+          <button class="icon-action danger" onclick={() => deleteContactType(t.id)}>✓</button>
+          <button class="icon-action" onclick={() => { confirmDeleteContactTypeId = null; }}>✕</button>
         {:else}
-          <button class="icon-action" onclick={() => startEditSupplier(s)} title={$_('common.edit')}>✏</button>
-          <button class="icon-action danger" onclick={() => { confirmDeleteSupplierId = s.id; }} title={$_('common.delete')}>🗑</button>
+          <button class="icon-action" onclick={() => startEditContactType(t)} title={$_('common.edit')}>✏</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteContactTypeId = t.id; }} title={$_('common.delete')}>🗑</button>
         {/if}
       {/snippet}
-      {#snippet supplierNewRow()}
-        <td class="name-cell-input wide"><Input bind:value={newSupplierDraft.name} placeholder={$_('settings.categories.nameRequiredPlaceholder')} /></td>
+      {#snippet contactTypeNewRow()}
+        <td class="name-cell-input wide"><Input bind:value={newContactTypeDraft.name} placeholder={$_('settings.categories.nameRequiredPlaceholder')} /></td>
         <td class="actions">
-          <button class="icon-action ok" onclick={addSupplier} title={$_('common.add')}>✓</button>
-          <button class="icon-action" onclick={() => { showNewSupplierForm = false; supplierError = null; }} title={$_('common.cancel')}>✕</button>
+          <button class="icon-action ok" onclick={addContactType} title={$_('common.add')}>✓</button>
+          <button class="icon-action" onclick={() => { showNewContactTypeForm = false; contactTypeError = null; }} title={$_('common.cancel')}>✕</button>
         </td>
       {/snippet}
       <SortableTable
         columns={[
-          { key: "name", label: $_('settings.categories.name'), sortValue: (s) => s.name, cellClass: (s) => editingSupplierId === s.id ? "name-cell-input wide" : "", cell: supplierNameCell },
-          { key: "actions", label: "", sortable: false, cellClass: "actions", cell: supplierActionsCell },
-        ] as Column<Supplier>[]}
-        rows={store.suppliers}
-        rowKey={(s) => s.id}
-        rowClass={(s) => editingSupplierId === s.id ? "editing-row" : ""}
-        extraRow={showNewSupplierForm ? supplierNewRow : undefined}
+          { key: "name", label: $_('settings.categories.name'), sortValue: (t) => t.name, cellClass: (t) => editingContactTypeId === t.id ? "name-cell-input wide" : "", cell: contactTypeNameCell },
+          { key: "actions", label: "", sortable: false, cellClass: "actions", cell: contactTypeActionsCell },
+        ] as Column<ContactType>[]}
+        rows={store.contactTypes}
+        rowKey={(t) => t.id}
+        rowClass={(t) => editingContactTypeId === t.id ? "editing-row" : ""}
+        extraRow={showNewContactTypeForm ? contactTypeNewRow : undefined}
       />
     </div>
-    {#if supplierError}<div class="error">{supplierError}</div>{/if}
+    {#if contactTypeError}<div class="error">{contactTypeError}</div>{/if}
   </Card>
 {/if}
 

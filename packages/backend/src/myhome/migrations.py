@@ -23,7 +23,7 @@ from .schema import (
     work_categories,
 )
 
-CURRENT_VERSION = 4
+CURRENT_VERSION = 5
 
 
 def _drop_kb_folders_table(conn: Connection) -> None:
@@ -50,10 +50,47 @@ def _scope_category_tables_by_home(conn: Connection) -> None:
         conn.execute(text(f"DROP TABLE {name}_old"))
 
 
+_DEFAULT_CONTACT_TYPES = [
+    ("ctype-contractor", "Contractor"),
+    ("ctype-supplier", "Supplier"),
+    ("ctype-service", "Service Provider"),
+    ("ctype-agent", "Agent"),
+    ("ctype-notary", "Notary"),
+    ("ctype-other", "Other"),
+]
+
+
+def _absorb_suppliers_into_contacts(conn: Connection) -> None:
+    # cost_entries.supplier_id / works.supplier_id become contact_id, and
+    # the standalone suppliers list is replaced by the new Contacts module
+    # + a per-home editable Contact Types list. contact_types is a
+    # brand-new table, so unlike cost_categories/work_categories/etc.
+    # (whose rows already existed for any home that had ever saved
+    # settings before this migration), every existing home's contact_types
+    # starts genuinely empty -- it will never hit the lazy "row is None"
+    # default-seed path in load_settings() again once that home already
+    # has a settings row. Seed the defaults directly here so upgraded
+    # homes get the same starting list a fresh home gets.
+    conn.execute(text("ALTER TABLE cost_entries RENAME COLUMN supplier_id TO contact_id"))
+    conn.execute(text("ALTER TABLE works RENAME COLUMN supplier_id TO contact_id"))
+    conn.execute(text("DROP TABLE IF EXISTS suppliers"))
+    home_ids = [r[0] for r in conn.execute(text("SELECT id FROM homes")).all()]
+    for home_id in home_ids:
+        for i, (type_id, name) in enumerate(_DEFAULT_CONTACT_TYPES):
+            conn.execute(
+                text(
+                    "INSERT INTO contact_types (id, home_id, order_index, name) "
+                    "VALUES (:id, :home_id, :i, :name)"
+                ),
+                {"id": type_id, "home_id": home_id, "i": i, "name": name},
+            )
+
+
 MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (2, _drop_kb_folders_table),
     (3, _add_ha_user_id_column),
     (4, _scope_category_tables_by_home),
+    (5, _absorb_suppliers_into_contacts),
 ]
 
 

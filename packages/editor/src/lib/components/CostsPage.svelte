@@ -3,6 +3,7 @@
   import { _ } from "svelte-i18n";
   import type { createCostsStore, CostEntry } from "../costsStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
+  import type { createContactsStore } from "../contactsStore.svelte";
   import type { createHouseStore } from "../houseStore.svelte";
   import CostsEntryModal from "./CostsEntryModal.svelte";
   import CostsCategoryModal from "./CostsCategoryModal.svelte";
@@ -15,18 +16,20 @@
 
   type CostsStore = ReturnType<typeof createCostsStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
+  type ContactsStore = ReturnType<typeof createContactsStore>;
   type HouseStore = ReturnType<typeof createHouseStore>;
 
   interface Props {
     costsStore: CostsStore;
     settingsStore: SettingsStore;
+    contactsStore: ContactsStore;
     floorStore: HouseStore;
     onplaceonmap?: (catId: string) => void;
     selectedItemId?: string | null;
     onclearselection?: () => void;
   }
 
-  let { costsStore, settingsStore, floorStore, onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
+  let { costsStore, settingsStore, contactsStore, floorStore, onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
 
   let modalEntry = $state<CostEntry | "create" | null>(null);
 
@@ -49,7 +52,7 @@
     new Map(settingsStore.costCategories.map(c => [c.id, c]))
   );
   const supplierMap = $derived(
-    new Map(settingsStore.suppliers.map(s => [s.id, s]))
+    new Map(contactsStore.contacts.map(c => [c.id, c]))
   );
 
   function categoryName(categoryId: string): string {
@@ -96,7 +99,7 @@
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const name = categoryName(e.categoryId).toLowerCase();
-        const sup = (e.supplierId ? (supplierMap.get(e.supplierId)?.name ?? "") : "").toLowerCase();
+        const sup = (e.contactId ? (supplierMap.get(e.contactId)?.name ?? "") : "").toLowerCase();
         const notes = e.notes.toLowerCase();
         if (!name.includes(q) && !sup.includes(q) && !notes.includes(q)) return false;
       }
@@ -271,7 +274,7 @@
       {entry.date}
     {/snippet}
     {#snippet supplierCell(entry: CostEntry)}
-      {entry.supplierId ? (supplierMap.get(entry.supplierId)?.name ?? "—") : "—"}
+      {entry.contactId ? (supplierMap.get(entry.contactId)?.name ?? "—") : "—"}
     {/snippet}
     {#snippet qtyCell(entry: CostEntry)}
       {formatQty(entry)}
@@ -291,7 +294,7 @@
         { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
         { key: "category", label: $_('costs.page.category'), sortValue: (e) => categoryName(e.categoryId), cellClass: "name-cell", cell: categoryCell },
         { key: "date", label: $_('costs.page.date'), sortValue: (e) => new Date(e.date), cell: dateCell },
-        { key: "supplier", label: $_('costs.page.supplier'), sortValue: (e) => (e.supplierId ? supplierMap.get(e.supplierId)?.name ?? null : null), cell: supplierCell },
+        { key: "supplier", label: $_('costs.page.supplier'), sortValue: (e) => (e.contactId ? supplierMap.get(e.contactId)?.name ?? null : null), cell: supplierCell },
         { key: "qty", label: $_('costs.page.qty'), headerClass: "num-col", cellClass: "num-col", sortValue: (e) => e.quantity, cell: qtyCell },
         { key: "unitPrice", label: $_('costs.page.unitPrice'), headerClass: "num-col", cellClass: "num-col", sortValue: (e) => e.unitPrice, cell: unitPriceCell },
         { key: "total", label: $_('costs.page.total'), headerClass: "num-col", cellClass: "num-col amount-cell", sortValue: (e) => e.totalAmount, cell: totalCell },
@@ -321,6 +324,7 @@
     entry={modalEntry === "create" ? null : modalEntry}
     {costsStore}
     {settingsStore}
+    {contactsStore}
     {floorStore}
     onclose={() => { modalEntry = null; }}
   />

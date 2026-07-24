@@ -49,7 +49,7 @@ def load_works(home_id: str) -> WorksDocument:
         Work(
             id=r["id"], title=r["title"], description=r["description"], status=r["status"],
             categoryId=r["category_id"], date=r["date"], totalCost=r["total_cost"],
-            supplierId=r["supplier_id"], notes=r["notes"], attachments=json.loads(r["attachments"]),
+            contactId=r["contact_id"], notes=r["notes"], attachments=json.loads(r["attachments"]),
             placement=(
                 WorkPlacement(floorId=r["placement_floor_id"], position=WorkPosition(x=r["placement_x"], y=r["placement_y"]))
                 if r["placement_floor_id"] is not None else None
@@ -68,7 +68,7 @@ def save_works(home_id: str, doc: WorksDocument) -> None:
                 {
                     "id": w.id, "home_id": home_id, "order_index": i, "title": w.title,
                     "description": w.description, "status": w.status, "category_id": w.categoryId,
-                    "date": w.date, "total_cost": w.totalCost, "supplier_id": w.supplierId,
+                    "date": w.date, "total_cost": w.totalCost, "contact_id": w.contactId,
                     "notes": w.notes, "attachments": json.dumps(w.attachments),
                     "placement_floor_id": w.placement.floorId if w.placement else None,
                     "placement_x": w.placement.position.x if w.placement else None,

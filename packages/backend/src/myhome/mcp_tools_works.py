@@ -33,7 +33,7 @@ def _create_work_impl(
     doc = load_works(resolved)
     work = Work(
         id=str(uuid.uuid4()), title=title, description=description, status=status,
-        categoryId=category_id, date=date, totalCost=total_cost, supplierId=supplier_id, notes=notes,
+        categoryId=category_id, date=date, totalCost=total_cost, contactId=supplier_id, notes=notes,
     )
     doc.works.append(work)
     save_works(resolved, doc)
@@ -110,7 +110,7 @@ async def update_work(
     await _require_role(ctx.request_context.request, "normal")
     return _update_work_impl(
         home_id, work_id, title=title, description=description, status=status,
-        categoryId=category_id, date=date, totalCost=total_cost, supplierId=supplier_id, notes=notes,
+        categoryId=category_id, date=date, totalCost=total_cost, contactId=supplier_id, notes=notes,
     )
 
 

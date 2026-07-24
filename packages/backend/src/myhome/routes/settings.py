@@ -6,7 +6,7 @@ from ..models_settings import (
     InventoryCategory,
     NotificationSettings,
     WorkCategory,
-    Supplier,
+    ContactType,
     SettingsDocument,
 )
 from ..persistence_settings import load_settings, save_settings
@@ -60,10 +60,10 @@ def put_work_categories(home_id: str, body: list[WorkCategory]) -> None:
     save_settings(home_id, doc)
 
 
-@router.put("/api/homes/{home_id}/settings/suppliers", status_code=204)
-def put_suppliers(home_id: str, body: list[Supplier]) -> None:
+@router.put("/api/homes/{home_id}/settings/contact-types", status_code=204)
+def put_contact_types(home_id: str, body: list[ContactType]) -> None:
     doc = load_settings(home_id)
-    doc.suppliers = body
+    doc.contactTypes = body
     save_settings(home_id, doc)
 
 

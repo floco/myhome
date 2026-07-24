@@ -4,7 +4,7 @@ import WorkModal from "../src/lib/components/WorkModal.svelte";
 
 function makeStore(attachments: string[] = []) {
   return {
-    works: [{ id: "w1", title: "Boiler repair", description: "", status: "done", categoryId: null, date: "2025-11-10", totalCost: 1200, supplierId: null, notes: "", attachments, placement: null }],
+    works: [{ id: "w1", title: "Boiler repair", description: "", status: "done", categoryId: null, date: "2025-11-10", totalCost: 1200, contactId: null, notes: "", attachments, placement: null }],
     loaded: true,
     loadError: null,
     createWork: vi.fn(),
@@ -17,7 +17,11 @@ function makeStore(attachments: string[] = []) {
 }
 
 function makeSettingsStore() {
-  return { workCategories: [], suppliers: [] };
+  return { workCategories: [] };
+}
+
+function makeContactsStore() {
+  return { contacts: [] };
 }
 
 function setup(attachments: string[] = []) {
@@ -31,6 +35,7 @@ function setup(attachments: string[] = []) {
       work,
       store,
       settingsStore: makeSettingsStore(),
+      contactsStore: makeContactsStore(),
       onclose: vi.fn(),
     },
   });

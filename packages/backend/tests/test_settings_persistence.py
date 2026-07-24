@@ -45,7 +45,7 @@ def test_round_trip(tmp_path, monkeypatch):
 
 def test_round_trip_preserves_all_category_lists_and_notifications(tmp_path, monkeypatch):
     from myhome.models_settings import (
-        ConsumableCategory, NotificationSettings, Supplier, WorkCategory,
+        ConsumableCategory, NotificationSettings, ContactType, WorkCategory,
     )
     _setup(tmp_path, monkeypatch)
     doc = SettingsDocument(
@@ -55,7 +55,7 @@ def test_round_trip_preserves_all_category_lists_and_notifications(tmp_path, mon
         ],
         inventoryCategories=[InventoryCategory(id="i1", name="Electronics")],
         workCategories=[WorkCategory(id="w1", name="Plumbing", emoji="🔧")],
-        suppliers=[Supplier(id="s1", name="Acme")],
+        contactTypes=[ContactType(id="t1", name="Plumber")],
         consumableUnits=["count", "L"],
         consumableCategories=[ConsumableCategory(id="cc1", name="Cleaning", emoji="🧽")],
         notifications=NotificationSettings(
@@ -67,7 +67,7 @@ def test_round_trip_preserves_all_category_lists_and_notifications(tmp_path, mon
     loaded = load_settings(HOME_ID)
     assert [c.id for c in loaded.costCategories] == ["c1", "c2"]
     assert loaded.workCategories[0].name == "Plumbing"
-    assert loaded.suppliers[0].name == "Acme"
+    assert loaded.contactTypes[0].name == "Plumber"
     assert loaded.consumableUnits == ["count", "L"]
     assert loaded.consumableCategories[0].emoji == "🧽"
     assert loaded.notifications.enabled is False

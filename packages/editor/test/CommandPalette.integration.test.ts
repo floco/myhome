@@ -13,7 +13,7 @@ const CHORES_DOC = {
 
 const SETTINGS_DOC = {
   version: 1,
-  costCategories: [], inventoryCategories: [], workCategories: [], suppliers: [], consumableCategories: [], consumableUnits: [],
+  costCategories: [], inventoryCategories: [], workCategories: [], contactTypes: [], consumableCategories: [], consumableUnits: [],
 };
 
 function stubFetch() {
@@ -28,6 +28,7 @@ function stubFetch() {
       [`/api/homes/${HOME.id}/works`]: { version: 1, works: [] },
       [`/api/homes/${HOME.id}/costs`]: { version: 1, entries: [] },
       [`/api/homes/${HOME.id}/kb`]: { version: 1, entries: [] },
+      [`/api/homes/${HOME.id}/contacts`]: { version: 1, contacts: [] },
     };
     if (url in handlers) {
       return Promise.resolve({ ok: true, status: 200, json: async () => handlers[url] });

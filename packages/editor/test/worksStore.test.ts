@@ -22,7 +22,7 @@ afterEach(() => vi.unstubAllGlobals());
 function makeWork(overrides: Partial<Work> = {}): Work {
   return {
     id: "w1", title: "Boiler repair", description: "", status: "done",
-    categoryId: null, date: "2025-11-10", totalCost: 1200, supplierId: null,
+    categoryId: null, date: "2025-11-10", totalCost: 1200, contactId: null,
     notes: "", attachments: [], placement: null,
     ...overrides,
   };
@@ -68,7 +68,7 @@ describe("worksStore — createWork", () => {
     vi.stubGlobal("fetch", fetchFn);
     const store = createWorksStore(getHomeId);
     await tick();
-    await store.createWork({ title: "New work", description: "", status: "planned", categoryId: null, date: "2026-01-01", totalCost: null, supplierId: null, notes: "" });
+    await store.createWork({ title: "New work", description: "", status: "planned", categoryId: null, date: "2026-01-01", totalCost: null, contactId: null, notes: "" });
     await tick();
     expect(fetchFn.mock.calls[1][0]).toBe(`/api/homes/${HOME}/works`);
     expect(fetchFn.mock.calls[1][1].method).toBe("POST");

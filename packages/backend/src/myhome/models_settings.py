@@ -32,7 +32,7 @@ class WorkCategory(BaseModel):
     emoji: str
 
 
-class Supplier(BaseModel):
+class ContactType(BaseModel):
     id: str
     name: str
 
@@ -88,12 +88,23 @@ def _default_work_categories() -> list[WorkCategory]:
     ]
 
 
+def _default_contact_types() -> list[ContactType]:
+    return [
+        ContactType(id="ctype-contractor", name="Contractor"),
+        ContactType(id="ctype-supplier", name="Supplier"),
+        ContactType(id="ctype-service", name="Service Provider"),
+        ContactType(id="ctype-agent", name="Agent"),
+        ContactType(id="ctype-notary", name="Notary"),
+        ContactType(id="ctype-other", name="Other"),
+    ]
+
+
 class SettingsDocument(BaseModel):
     version: int = 1
     costCategories: list[CostCategory] = []
     inventoryCategories: list[InventoryCategory] = []
     workCategories: list[WorkCategory] = []
-    suppliers: list[Supplier] = []
+    contactTypes: list[ContactType] = []
     consumableUnits: list[str] = []
     consumableCategories: list[ConsumableCategory] = []
     notifications: NotificationSettings = NotificationSettings()

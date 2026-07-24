@@ -18,7 +18,7 @@ export interface Work {
   categoryId: string | null;
   date: string;
   totalCost: number | null;
-  supplierId: string | null;
+  contactId: string | null;
   notes: string;
   attachments: string[];
   placement: WorkPlacement | null;

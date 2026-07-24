@@ -104,7 +104,8 @@ async def update_build_task(
     planned_due_date: str | None = None, actual_cost: float | None = None,
     validation_status: str | None = None, notes: str | None = None,
 ) -> dict:
-    """Update a build task's status, contractor, dates, cost, or validation status."""
+    """Update a build task's status, contractor, dates, cost, or validation status.
+    contractor_id should be the id of a Contact (ideally one with type Contractor) from list_contacts."""
     await _require_role(ctx.request_context.request, "normal")
     return _update_build_task_impl(
         home_id, task_id, status=status, contractorId=contractor_id,

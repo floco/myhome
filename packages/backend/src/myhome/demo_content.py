@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+from .models_contacts import Contact
 from .models_settings import (
     ConsumableCategory,
     CostCategory,
     InventoryCategory,
-    Supplier,
     SettingsDocument,
     WorkCategory,
     _default_consumable_units,
+    _default_contact_types,
 )
 
 # ── Settings: demo-specific category/supplier sets ──────────────────────────
@@ -57,16 +58,16 @@ _CONSUMABLE_CATEGORIES = [
     ConsumableCategory(id="ccat-office", name="Office Supplies", emoji="📎"),
 ]
 
-_SUPPLIERS = [
-    Supplier(id="sup-metro-plumbing", name="Metro Plumbing Co."),
-    Supplier(id="sup-brightspark-electric", name="BrightSpark Electric"),
-    Supplier(id="sup-greenscape-landscaping", name="GreenScape Landscaping"),
-    Supplier(id="sup-ace-hardware", name="Ace Hardware"),
-    Supplier(id="sup-cleanpro-services", name="CleanPro Services"),
-    Supplier(id="sup-valleyview-appliance-repair", name="ValleyView Appliance Repair"),
-    Supplier(id="sup-suntrust-roofing", name="SunTrust Roofing"),
-    Supplier(id="sup-clearview-window-gutter", name="ClearView Window & Gutter"),
-    Supplier(id="sup-home-comfort-hvac", name="Home Comfort HVAC"),
+_CONTACTS = [
+    Contact(id="sup-metro-plumbing", name="Metro Plumbing Co.", typeId="ctype-supplier"),
+    Contact(id="sup-brightspark-electric", name="BrightSpark Electric", typeId="ctype-supplier"),
+    Contact(id="sup-greenscape-landscaping", name="GreenScape Landscaping", typeId="ctype-service"),
+    Contact(id="sup-ace-hardware", name="Ace Hardware", typeId="ctype-supplier"),
+    Contact(id="sup-cleanpro-services", name="CleanPro Services", typeId="ctype-service"),
+    Contact(id="sup-valleyview-appliance-repair", name="ValleyView Appliance Repair", typeId="ctype-service"),
+    Contact(id="sup-suntrust-roofing", name="SunTrust Roofing", typeId="ctype-contractor"),
+    Contact(id="sup-clearview-window-gutter", name="ClearView Window & Gutter", typeId="ctype-contractor"),
+    Contact(id="sup-home-comfort-hvac", name="Home Comfort HVAC", typeId="ctype-service"),
 ]
 
 
@@ -76,9 +77,13 @@ def generate_demo_settings() -> SettingsDocument:
         workCategories=list(_WORK_CATEGORIES),
         inventoryCategories=list(_INVENTORY_CATEGORIES),
         consumableCategories=list(_CONSUMABLE_CATEGORIES),
-        suppliers=list(_SUPPLIERS),
+        contactTypes=_default_contact_types(),
         consumableUnits=_default_consumable_units(),
     )
+
+
+def generate_demo_contacts() -> list[Contact]:
+    return list(_CONTACTS)
 
 
 # ── Chores: (name, emoji, periodDays, room label hint) ──────────────────────

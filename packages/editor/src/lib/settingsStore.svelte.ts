@@ -30,7 +30,7 @@ export interface WorkCategory {
   emoji: string;
 }
 
-export interface Supplier {
+export interface ContactType {
   id: string;
   name: string;
 }
@@ -55,7 +55,7 @@ export interface SettingsDocument {
   costCategories: CostCategory[];
   inventoryCategories: InventoryCategory[];
   workCategories: WorkCategory[];
-  suppliers: Supplier[];
+  contactTypes: ContactType[];
   consumableUnits: string[];
   consumableCategories: ConsumableCategory[];
   notifications: NotificationSettings;
@@ -65,7 +65,7 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
   const costCategories = $state<CostCategory[]>([]);
   const inventoryCategories = $state<InventoryCategory[]>([]);
   const workCategories = $state<WorkCategory[]>([]);
-  const suppliers = $state<Supplier[]>([]);
+  const contactTypes = $state<ContactType[]>([]);
   const consumableUnits = $state<string[]>([]);
   const consumableCategories = $state<ConsumableCategory[]>([]);
   const notificationSettings = $state<NotificationSettings>({
@@ -88,8 +88,8 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
       for (const c of doc.inventoryCategories) inventoryCategories.push(c);
       workCategories.length = 0;
       for (const c of (doc.workCategories ?? [])) workCategories.push(c);
-      suppliers.length = 0;
-      for (const s of (doc.suppliers ?? [])) suppliers.push(s);
+      contactTypes.length = 0;
+      for (const t of (doc.contactTypes ?? [])) contactTypes.push(t);
       consumableUnits.length = 0;
       for (const u of (doc.consumableUnits ?? [])) consumableUnits.push(u);
       consumableCategories.length = 0;
@@ -138,10 +138,10 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
     await init();
   }
 
-  async function updateSuppliers(list: Supplier[]): Promise<void> {
+  async function updateContactTypes(list: ContactType[]): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
-    const resp = await fetch(`/api/homes/${homeId}/settings/suppliers`, {
+    const resp = await fetch(`/api/homes/${homeId}/settings/contact-types`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(list),
@@ -209,7 +209,7 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
     get costCategories() { return costCategories as CostCategory[]; },
     get inventoryCategories() { return inventoryCategories as InventoryCategory[]; },
     get workCategories() { return workCategories as WorkCategory[]; },
-    get suppliers() { return suppliers as Supplier[]; },
+    get contactTypes() { return contactTypes as ContactType[]; },
     get consumableUnits() { return consumableUnits as string[]; },
     get consumableCategories() { return consumableCategories as ConsumableCategory[]; },
     get notificationSettings() { return notificationSettings as NotificationSettings; },
@@ -218,7 +218,7 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
     updateCostCategories,
     updateInventoryCategories,
     updateWorkCategories,
-    updateSuppliers,
+    updateContactTypes,
     updateConsumableUnits,
     updateConsumableCategories,
     updateNotificationSettings,

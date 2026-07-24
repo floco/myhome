@@ -97,7 +97,8 @@ def test_get_settings_returns_default_work_categories(client, home_id):
     data = resp.json()
     assert len(data["workCategories"]) == 5
     assert data["workCategories"][0]["name"] == "Plumbing"
-    assert data["suppliers"] == []
+    assert len(data["contactTypes"]) == 6
+    assert data["contactTypes"][0]["name"] == "Contractor"
 
 
 def test_put_work_categories(client, home_id):
@@ -109,19 +110,19 @@ def test_put_work_categories(client, home_id):
     assert data["workCategories"][0]["name"] == "Masonry"
 
 
-def test_put_suppliers(client, home_id):
-    resp = client.put(f"/api/homes/{home_id}/settings/suppliers", json=[{"id": "s1", "name": "Acme Plumbers"}])
+def test_put_contact_types(client, home_id):
+    resp = client.put(f"/api/homes/{home_id}/settings/contact-types", json=[{"id": "t1", "name": "Plumber"}])
     assert resp.status_code == 204
     data = client.get(f"/api/homes/{home_id}/settings").json()
-    assert data["suppliers"][0]["name"] == "Acme Plumbers"
+    assert data["contactTypes"][0]["name"] == "Plumber"
 
 
-def test_put_suppliers_replaces_all(client, home_id):
-    client.put(f"/api/homes/{home_id}/settings/suppliers", json=[{"id": "s1", "name": "A"}, {"id": "s2", "name": "B"}])
-    client.put(f"/api/homes/{home_id}/settings/suppliers", json=[{"id": "s3", "name": "C"}])
+def test_put_contact_types_replaces_all(client, home_id):
+    client.put(f"/api/homes/{home_id}/settings/contact-types", json=[{"id": "t1", "name": "A"}, {"id": "t2", "name": "B"}])
+    client.put(f"/api/homes/{home_id}/settings/contact-types", json=[{"id": "t3", "name": "C"}])
     data = client.get(f"/api/homes/{home_id}/settings").json()
-    assert len(data["suppliers"]) == 1
-    assert data["suppliers"][0]["name"] == "C"
+    assert len(data["contactTypes"]) == 1
+    assert data["contactTypes"][0]["name"] == "C"
 
 
 def test_get_settings_returns_default_consumable_units(client, home_id):

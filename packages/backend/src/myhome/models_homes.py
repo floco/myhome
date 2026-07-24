@@ -10,10 +10,10 @@ ALL_MODULE_IDS: list[str] = [
 ]
 
 DEFAULT_EXISTING_MODULES: list[str] = [
-    "home", "plan", "chores", "inventory", "consumables", "works", "kb", "costs",
+    "home", "plan", "chores", "inventory", "consumables", "works", "kb", "costs", "contacts",
 ]
 
-DEFAULT_PROJECT_MODULES: list[str] = ["home", "plan", "works", "kb", "build"]
+DEFAULT_PROJECT_MODULES: list[str] = ["home", "plan", "works", "kb", "build", "contacts"]
 
 DEFAULT_DEMO_MODULES: list[str] = list(ALL_MODULE_IDS)
 

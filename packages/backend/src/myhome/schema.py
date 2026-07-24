@@ -128,12 +128,43 @@ work_categories = Table(
     Column("emoji", String, nullable=False),
 )
 
+# suppliers is superseded by contacts + contact_types (see migration
+# version 5, _absorb_suppliers_into_contacts) and is no longer read or
+# written by any persistence_*.py module. The Table object stays defined
+# here ONLY because migration version 4 (_scope_category_tables_by_home,
+# already shipped) references it by name to recreate the table with a
+# composite primary key -- removing the object would break that migration
+# for any database still below schema version 4. Do not remove this until
+# migration version 4 itself is retired.
 suppliers = Table(
     "suppliers", metadata,
     Column("id", String, primary_key=True),
     Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
     Column("order_index", Integer, nullable=False),
     Column("name", String, nullable=False),
+)
+
+contact_types = Table(
+    "contact_types", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+)
+
+contacts = Table(
+    "contacts", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+    Column("company_name", String),
+    Column("type_id", String, nullable=False),
+    Column("phone", String),
+    Column("email", String),
+    Column("address", String),
+    Column("website", String),
+    Column("notes", String, nullable=False),
 )
 
 consumable_categories = Table(
@@ -199,7 +230,7 @@ chore_completions = Table(
     Column("notes", String, nullable=False),
 )
 
-# category_id/supplier_id are plain columns, no ForeignKey -- see the
+# category_id/contact_id are plain columns, no ForeignKey -- see the
 # hard-FK rule in this plan's Global Constraints (settings' category
 # tables are cleared/reinserted by a different save_x() call).
 cost_entries = Table(
@@ -212,7 +243,7 @@ cost_entries = Table(
     Column("total_amount", Float, nullable=False),
     Column("quantity", Float),
     Column("unit_price", Float),
-    Column("supplier_id", String),
+    Column("contact_id", String),
     Column("notes", String, nullable=False),
     Column("room_id", String),
     Column("attachments", Text, nullable=False),
@@ -251,7 +282,7 @@ works = Table(
     Column("category_id", String),
     Column("date", String, nullable=False),
     Column("total_cost", Float),
-    Column("supplier_id", String),
+    Column("contact_id", String),
     Column("notes", String, nullable=False),
     Column("attachments", Text, nullable=False),
     Column("placement_floor_id", String),

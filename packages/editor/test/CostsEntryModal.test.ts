@@ -9,16 +9,19 @@ function makeEntry(overrides: Partial<CostEntry> = {}): CostEntry {
   return {
     id: "c1", categoryId: "cat-electricity", date: "2026-01-15",
     totalAmount: 120.5, quantity: null, unitPrice: null,
-    supplierId: null, notes: "", roomId: null, attachments: [], ...overrides,
+    contactId: null, notes: "", roomId: null, attachments: [], ...overrides,
   };
 }
 
 function makeSettingsStore() {
   return {
     costCategories: [{ id: "cat-electricity", name: "Electricity", emoji: "⚡", color: "#ff0", unit: null }],
-    suppliers: [],
     workCategories: [],
   };
+}
+
+function makeContactsStore() {
+  return { contacts: [] };
 }
 
 function makeFloorStore() {
@@ -50,7 +53,7 @@ describe("CostsEntryModal — Media tab", () => {
     const costsStore = makeCostsStore([entry]);
     const app = mount(CostsEntryModal, {
       target,
-      props: { entry, costsStore, settingsStore: makeSettingsStore(), floorStore: makeFloorStore(), onclose: vi.fn() },
+      props: { entry, costsStore, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore(), floorStore: makeFloorStore(), onclose: vi.fn() },
     });
     flushSync();
     const tabs = Array.from(target.querySelectorAll(".tab")).map(t => t.textContent?.trim());
@@ -65,7 +68,7 @@ describe("CostsEntryModal — Media tab", () => {
     const costsStore = makeCostsStore();
     const app = mount(CostsEntryModal, {
       target,
-      props: { entry: null, costsStore, settingsStore: makeSettingsStore(), floorStore: makeFloorStore(), onclose: vi.fn() },
+      props: { entry: null, costsStore, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore(), floorStore: makeFloorStore(), onclose: vi.fn() },
     });
     flushSync();
     const mediaTab = Array.from(target.querySelectorAll(".tab"))
@@ -81,7 +84,7 @@ describe("CostsEntryModal — Media tab", () => {
     const costsStore = makeCostsStore([entry]);
     const app = mount(CostsEntryModal, {
       target,
-      props: { entry, costsStore, settingsStore: makeSettingsStore(), floorStore: makeFloorStore(), onclose: vi.fn() },
+      props: { entry, costsStore, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore(), floorStore: makeFloorStore(), onclose: vi.fn() },
     });
     flushSync();
     const mediaTab = Array.from(target.querySelectorAll(".tab"))

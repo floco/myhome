@@ -22,6 +22,15 @@ async function waitTick(): Promise<void> {
 
 afterEach(() => vi.unstubAllGlobals());
 
+function makeContactsStore(contacts: { id: string; name: string; typeId: string }[] = []) {
+  return {
+    contacts: contacts.map((c) => ({
+      companyName: null, phone: null, email: null, address: null, website: null, notes: "",
+      ...c,
+    })),
+  };
+}
+
 function setup() {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => doc }));
   const store = createBuildStore(getHomeId);
@@ -34,7 +43,7 @@ describe("TaskModal", () => {
   it("shows the resolved i18n title for a seeded task with no override", async () => {
     const { store, target } = setup();
     await waitTick();
-    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, onclose: vi.fn() } });
+    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: makeContactsStore(), onclose: vi.fn() } });
     await tick();
     flushSync();
 
@@ -48,7 +57,7 @@ describe("TaskModal", () => {
   it("shows the validation status field when validationRequired is true", async () => {
     const { store, target } = setup();
     await waitTick();
-    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, onclose: vi.fn() } });
+    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: makeContactsStore(), onclose: vi.fn() } });
     await tick();
     flushSync();
 
@@ -62,7 +71,7 @@ describe("TaskModal", () => {
     const { store, target } = setup();
     await waitTick();
     const onclose = vi.fn();
-    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, onclose } });
+    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: makeContactsStore(), onclose } });
     await tick();
     flushSync();
 
@@ -84,7 +93,7 @@ describe("TaskModal", () => {
   it("saving without editing the title does not send a titleOverride (would freeze translation)", async () => {
     const { store, target } = setup();
     await waitTick();
-    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, onclose: vi.fn() } });
+    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: makeContactsStore(), onclose: vi.fn() } });
     await tick();
     flushSync();
 
@@ -105,6 +114,24 @@ describe("TaskModal", () => {
     expect(body.status).toBe("in_progress");
     expect(body).not.toHaveProperty("titleOverride");
     expect(body).not.toHaveProperty("descriptionOverride");
+
+    unmount(comp);
+    target.remove();
+  });
+
+  it("lists only ctype-contractor contacts in the contractor dropdown", async () => {
+    const { store, target } = setup();
+    await waitTick();
+    const contactsStore = makeContactsStore([
+      { id: "c1", name: "SunTrust Roofing", typeId: "ctype-contractor" },
+      { id: "c2", name: "Metro Plumbing", typeId: "ctype-supplier" },
+    ]);
+    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore, onclose: vi.fn() } });
+    await tick();
+    flushSync();
+
+    expect(target.textContent).toContain("SunTrust Roofing");
+    expect(target.textContent).not.toContain("Metro Plumbing");
 
     unmount(comp);
     target.remove();

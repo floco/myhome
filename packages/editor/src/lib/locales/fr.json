@@ -58,7 +58,6 @@
       "description": "Description",
       "status": "Statut",
       "contractor": "Entrepreneur",
-      "contractorPlaceholder": "Nom de l'entrepreneur",
       "plannedStart": "Début prévu",
       "plannedDue": "Échéance prévue",
       "actualCompletion": "Achèvement réel",
@@ -489,6 +488,43 @@
       "uploadFailed": "Échec de l'envoi"
     }
   },
+  "contacts": {
+    "page": {
+      "emptyCharts": "Aucun contact pour l'instant — cliquez sur ＋ Ajouter un contact pour commencer.",
+      "countByType": "Contacts par type",
+      "allTypes": "Tous les types",
+      "addContact": "Ajouter un contact",
+      "name": "Nom",
+      "type": "Type",
+      "phone": "Téléphone",
+      "email": "E-mail",
+      "emptyNoContacts": "Aucun contact pour l'instant — cliquez sur ＋ Ajouter un contact pour commencer.",
+      "emptyNoMatch": "Aucun contact ne correspond à vos filtres.",
+      "footer": "{n, plural, one {# contact} other {# contacts}}"
+    },
+    "modal": {
+      "newContact": "Nouveau contact",
+      "editContact": "Modifier le contact",
+      "name": "Nom",
+      "namePlaceholder": "Nom du contact",
+      "companyName": "Entreprise",
+      "companyNamePlaceholder": "Nom de l'entreprise",
+      "type": "Type",
+      "phone": "Téléphone",
+      "email": "E-mail",
+      "address": "Adresse",
+      "website": "Site web",
+      "notes": "Notes",
+      "notesPlaceholder": "Notes complémentaires…",
+      "usedIn": "Utilisé dans",
+      "notUsed": "Pas encore utilisé.",
+      "deleteBlockedByUsage": "Ce contact est utilisé ailleurs et ne peut pas être supprimé tant que ces références ne sont pas retirées.",
+      "nameRequired": "Le nom est requis",
+      "saveFailed": "Échec de l'enregistrement",
+      "deleteFailed": "Échec de la suppression",
+      "confirm": "Confirmer"
+    }
+  },
   "inventory": {
     "pinPopup": {
       "expired": "Expirée",
@@ -873,7 +909,7 @@
         "cost": "Catégories de coûts",
         "inventory": "Catégories d'inventaire",
         "work": "Catégories de travaux",
-        "suppliers": "Fournisseurs",
+        "contactTypes": "Types de contact",
         "consumables": "Consommables"
       },
       "deleteConfirm": "Supprimer ?",
@@ -1072,7 +1108,6 @@
     "placeholder": {
       "budgetDescription": "Planifiez et suivez votre budget d'acquisition ou de construction.",
       "visitsDescription": "Planifiez et enregistrez les visites du site.",
-      "contactsDescription": "Gérez les agents, notaires, constructeurs et autres contacts.",
       "checklistDescription": "Suivez les tâches et les éléments de diligence raisonnable de votre projet."
     },
     "changePassword": {

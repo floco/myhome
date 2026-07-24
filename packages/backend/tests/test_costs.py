@@ -13,7 +13,7 @@ def make_doc() -> CostsDocument:
                 totalAmount=1650.0,
                 quantity=1500.0,
                 unitPrice=1.10,
-                supplierId="sup-butagaz",
+                contactId="sup-butagaz",
             )
         ]
     )
@@ -39,7 +39,7 @@ def test_create_entry(client, home_id):
         "totalAmount": 1650.0,
         "quantity": 1500.0,
         "unitPrice": 1.10,
-        "supplierId": "sup-butagaz",
+        "contactId": "sup-butagaz",
     }
     resp = client.post(f"/api/homes/{home_id}/costs/entries", json=payload)
     assert resp.status_code == 201
@@ -47,7 +47,7 @@ def test_create_entry(client, home_id):
     assert data["categoryId"] == "cat-fuel"
     assert data["totalAmount"] == 1650.0
     assert data["quantity"] == 1500.0
-    assert data["supplierId"] == "sup-butagaz"
+    assert data["contactId"] == "sup-butagaz"
     assert "id" in data
 
 
@@ -61,16 +61,16 @@ def test_create_lump_sum_entry(client, home_id):
     data = resp.json()
     assert data["quantity"] is None
     assert data["unitPrice"] is None
-    assert data["supplierId"] is None
+    assert data["contactId"] is None
 
 
 def test_update_entry_partial(client, tmp_path, home_id):
     save_costs(home_id, make_doc())
-    resp = client.put(f"/api/homes/{home_id}/costs/entries/e1", json={"totalAmount": 1800.0, "supplierId": "sup-total"})
+    resp = client.put(f"/api/homes/{home_id}/costs/entries/e1", json={"totalAmount": 1800.0, "contactId": "sup-total"})
     assert resp.status_code == 204
     entry = client.get(f"/api/homes/{home_id}/costs").json()["entries"][0]
     assert entry["totalAmount"] == 1800.0
-    assert entry["supplierId"] == "sup-total"
+    assert entry["contactId"] == "sup-total"
     assert entry["quantity"] == 1500.0    # unchanged
     assert entry["unitPrice"] == 1.10     # unchanged
 

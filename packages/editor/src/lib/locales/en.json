@@ -58,7 +58,6 @@
       "description": "Description",
       "status": "Status",
       "contractor": "Contractor",
-      "contractorPlaceholder": "Contractor name",
       "plannedStart": "Planned start",
       "plannedDue": "Planned due",
       "actualCompletion": "Actual completion",
@@ -489,6 +488,43 @@
       "uploadFailed": "Upload failed"
     }
   },
+  "contacts": {
+    "page": {
+      "emptyCharts": "No contacts yet — click ＋ Add contact to get started.",
+      "countByType": "Contacts by type",
+      "allTypes": "All types",
+      "addContact": "Add contact",
+      "name": "Name",
+      "type": "Type",
+      "phone": "Phone",
+      "email": "Email",
+      "emptyNoContacts": "No contacts yet — click ＋ Add contact to get started.",
+      "emptyNoMatch": "No contacts match your filters.",
+      "footer": "{n, plural, one {# contact} other {# contacts}}"
+    },
+    "modal": {
+      "newContact": "New contact",
+      "editContact": "Edit contact",
+      "name": "Name",
+      "namePlaceholder": "Contact name",
+      "companyName": "Company",
+      "companyNamePlaceholder": "Company name",
+      "type": "Type",
+      "phone": "Phone",
+      "email": "Email",
+      "address": "Address",
+      "website": "Website",
+      "notes": "Notes",
+      "notesPlaceholder": "Additional notes…",
+      "usedIn": "Used in",
+      "notUsed": "Not used anywhere yet.",
+      "deleteBlockedByUsage": "This contact is used elsewhere and can't be deleted until those references are removed.",
+      "nameRequired": "Name is required",
+      "saveFailed": "Save failed",
+      "deleteFailed": "Delete failed",
+      "confirm": "Confirm"
+    }
+  },
   "inventory": {
     "pinPopup": {
       "expired": "Expired",
@@ -873,7 +909,7 @@
         "cost": "Cost categories",
         "inventory": "Inventory categories",
         "work": "Work categories",
-        "suppliers": "Suppliers",
+        "contactTypes": "Contact Types",
         "consumables": "Consumables"
       },
       "deleteConfirm": "Delete?",
@@ -1072,7 +1108,6 @@
     "placeholder": {
       "budgetDescription": "Plan and track your acquisition or build budget.",
       "visitsDescription": "Schedule and log site visits and viewings.",
-      "contactsDescription": "Manage agents, notaries, builders, and other contacts.",
       "checklistDescription": "Track tasks and due diligence items for your project."
     },
     "changePassword": {

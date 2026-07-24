@@ -15,6 +15,7 @@ from .demo_content import (
     KB_OPENERS,
     KB_TITLES,
     WORKS,
+    generate_demo_contacts,
     generate_demo_settings,
 )
 from .demo_geometry import generate_demo_house, room_centroid
@@ -22,6 +23,7 @@ from . import (
     persistence,
     persistence_chores,
     persistence_consumables,
+    persistence_contacts,
     persistence_costs,
     persistence_inventory,
     persistence_kb,
@@ -30,6 +32,7 @@ from . import (
 )
 from .models import HouseDocument, Room
 from .models_chores import Assignment, ChoreDocument, Chore, CompletionRecord, Position
+from .models_contacts import Contact, ContactsDocument
 from .models_costs import CostEntry, CostsDocument
 from .models_inventory import InventoryDocument, InventoryItem, InventoryPlacement, InventoryPosition
 from .models_consumables import (
@@ -158,10 +161,10 @@ def _months_ago(base: date, n: int) -> date:
     return date(year, month, day)
 
 
-def generate_demo_costs(settings: SettingsDocument, rng: random.Random) -> CostsDocument:
+def generate_demo_costs(settings: SettingsDocument, contacts: list[Contact], rng: random.Random) -> CostsDocument:
     today = date.today()
     entries: list[CostEntry] = []
-    supplier_ids = [s.id for s in settings.suppliers]
+    supplier_ids = [c.id for c in contacts if c.typeId in ("ctype-supplier", "ctype-service")]
 
     for i in range(12):
         entries.append(CostEntry(
@@ -191,7 +194,7 @@ def generate_demo_costs(settings: SettingsDocument, rng: random.Random) -> Costs
             id=str(uuid.uuid4()), categoryId="cat-maintenance",
             date=(today - timedelta(days=rng.randint(1, 365))).isoformat(),
             totalAmount=round(rng.uniform(100, 600), 2), notes=note,
-            supplierId=rng.choice(supplier_ids),
+            contactId=rng.choice(supplier_ids),
         ))
     for note in ["Streaming subscription bundle", "Home theater setup"]:
         entries.append(CostEntry(
@@ -208,9 +211,9 @@ def generate_demo_costs(settings: SettingsDocument, rng: random.Random) -> Costs
     return CostsDocument(entries=entries)
 
 
-def generate_demo_works(house: HouseDocument, settings: SettingsDocument, rng: random.Random) -> WorksDocument:
+def generate_demo_works(house: HouseDocument, settings: SettingsDocument, contacts: list[Contact], rng: random.Random) -> WorksDocument:
     today = date.today()
-    supplier_ids = [s.id for s in settings.suppliers]
+    supplier_ids = [c.id for c in contacts if c.typeId in ("ctype-supplier", "ctype-service")]
     all_rooms = [(f.id, r) for f in house.floors for r in f.rooms]
 
     shuffled = WORKS[:]
@@ -245,7 +248,7 @@ def generate_demo_works(house: HouseDocument, settings: SettingsDocument, rng: r
 
         works.append(Work(
             id=str(uuid.uuid4()), title=title, status=status, categoryId=category_id,
-            date=work_date.isoformat(), totalCost=total_cost, supplierId=supplier_id,
+            date=work_date.isoformat(), totalCost=total_cost, contactId=supplier_id,
             placement=placement,
         ))
 
@@ -400,14 +403,16 @@ def seed_demo_home(home_id: str) -> None:
 
     house = generate_demo_house()
     settings = generate_demo_settings()
+    contacts = generate_demo_contacts()
     chores_doc = generate_demo_chores(house, rng)
     inventory_doc = generate_demo_inventory(house, settings, rng)
-    costs_doc = generate_demo_costs(settings, rng)
-    works_doc = generate_demo_works(house, settings, rng)
+    costs_doc = generate_demo_costs(settings, contacts, rng)
+    works_doc = generate_demo_works(house, settings, contacts, rng)
     kb_doc = generate_demo_kb(rng)
     consumables_doc = generate_demo_consumables(house, settings, rng)
 
     persistence_settings.save_settings(home_id, settings)
+    persistence_contacts.save_contacts(home_id, ContactsDocument(contacts=contacts))
     persistence.save_house(home_id, house)
     persistence_chores.save_chores(home_id, chores_doc)
     persistence_inventory.save_inventory(home_id, inventory_doc)
