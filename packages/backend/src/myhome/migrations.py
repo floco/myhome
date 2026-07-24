@@ -15,7 +15,15 @@ from collections.abc import Callable
 from sqlalchemy import text
 from sqlalchemy.engine import Connection, Engine
 
-CURRENT_VERSION = 3
+from .schema import (
+    consumable_categories,
+    cost_categories,
+    inventory_categories,
+    suppliers,
+    work_categories,
+)
+
+CURRENT_VERSION = 4
 
 
 def _drop_kb_folders_table(conn: Connection) -> None:
@@ -26,9 +34,26 @@ def _add_ha_user_id_column(conn: Connection) -> None:
     conn.execute(text("ALTER TABLE users ADD COLUMN ha_user_id VARCHAR"))
 
 
+def _scope_category_tables_by_home(conn: Connection) -> None:
+    # These tables were originally created with a bare `id` primary key,
+    # which collides across homes since seed data reuses the same fixed
+    # ids (e.g. "cat-fuel") for every home. Recreate each with the
+    # (id, home_id) composite key now declared in schema.py, preserving
+    # existing rows. SQLite has no ALTER TABLE for primary keys, so this
+    # is a rename-recreate-copy-drop dance per table.
+    for table in (cost_categories, inventory_categories, work_categories, suppliers, consumable_categories):
+        name = table.name
+        columns = ", ".join(c.name for c in table.columns)
+        conn.execute(text(f"ALTER TABLE {name} RENAME TO {name}_old"))
+        table.create(conn)
+        conn.execute(text(f"INSERT INTO {name} ({columns}) SELECT {columns} FROM {name}_old"))
+        conn.execute(text(f"DROP TABLE {name}_old"))
+
+
 MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (2, _drop_kb_folders_table),
     (3, _add_ha_user_id_column),
+    (4, _scope_category_tables_by_home),
 ]
 
 
