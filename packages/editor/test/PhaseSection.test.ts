@@ -27,7 +27,7 @@ async function waitTick(): Promise<void> {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("PhaseSection", () => {
-  it("renders one collapsed phase-section per phase", async () => {
+  it("renders one table row per phase", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => doc }));
     const store = createBuildStore(getHomeId);
     await waitTick();
@@ -37,14 +37,15 @@ describe("PhaseSection", () => {
     await tick();
     flushSync();
 
-    expect(target.querySelectorAll(".phase-section")).toHaveLength(2);
+    const rows = target.querySelectorAll("table tbody tr:not(.ui-sortable-table-expand-row)");
+    expect(rows).toHaveLength(2);
     expect(target.querySelectorAll(".phase-tasks").length).toBe(0);
 
     unmount(comp);
     target.remove();
   });
 
-  it("expands a phase to show its tasks on click", async () => {
+  it("expands a phase row to show its tasks on click", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => doc }));
     const store = createBuildStore(getHomeId);
     await waitTick();
@@ -54,7 +55,7 @@ describe("PhaseSection", () => {
     await tick();
     flushSync();
 
-    (target.querySelector(".phase-header") as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    (target.querySelector(".expand-btn") as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
     flushSync();
 
     const taskRows = target.querySelectorAll(".phase-tasks .task-row");
@@ -75,12 +76,35 @@ describe("PhaseSection", () => {
     await tick();
     flushSync();
 
-    (target.querySelector(".phase-header") as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    (target.querySelector(".expand-btn") as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
     flushSync();
     (target.querySelector(".task-row") as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
     flushSync();
 
     expect(onopentask).toHaveBeenCalledWith("t1");
+
+    unmount(comp);
+    target.remove();
+  });
+
+  it("filters phases by search text", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => doc }));
+    const store = createBuildStore(getHomeId);
+    await waitTick();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(PhaseSection, { target, props: { store, onopentask: vi.fn() } });
+    await tick();
+    flushSync();
+
+    const input = target.querySelector("input") as HTMLInputElement;
+    input.value = "Foundation";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+
+    const rows = target.querySelectorAll("table tbody tr:not(.ui-sortable-table-expand-row)");
+    expect(rows).toHaveLength(1);
+    expect(target.textContent).toContain("Foundation");
 
     unmount(comp);
     target.remove();
