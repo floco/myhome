@@ -2,13 +2,16 @@ import mimetypes
 import os
 import re
 import uuid
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 from ..deps import get_current_user_id
+from ..models_costs import CostEntry
 from ..models_insurance import InsurancePolicy, InsurancePolicyCreate, InsurancePolicyUpdate, InsuranceDocument
 from ..persistence_activity import log_activity
+from ..persistence_costs import load_costs, save_costs
 from ..persistence_insurance import (
     delete_all_attachments,
     delete_attachment,
@@ -20,6 +23,32 @@ from ..persistence_insurance import (
 )
 
 router = APIRouter()
+
+_FREQUENCY_MULTIPLIER = {"monthly": 12, "quarterly": 4, "annual": 1, "other": 1}
+
+
+def _annualized_amount(amount: float, frequency: str) -> float:
+    return amount * _FREQUENCY_MULTIPLIER[frequency]
+
+
+def _sync_cost_entry(home_id: str, policy: InsurancePolicy) -> str | None:
+    costs_doc = load_costs(home_id)
+    costs_doc.entries = [e for e in costs_doc.entries if e.id != policy.linkedCostEntryId]
+    linked_id = None
+    if policy.includeInCosts and policy.premiumAmount is not None:
+        linked_id = policy.linkedCostEntryId or str(uuid.uuid4())
+        costs_doc.entries.append(CostEntry(
+            id=linked_id,
+            categoryId="cat-insurance",
+            date=policy.startDate or date.today().isoformat(),
+            totalAmount=_annualized_amount(policy.premiumAmount, policy.premiumFrequency),
+            contactId=policy.contactId,
+            notes=f"{policy.name} ({policy.premiumFrequency})",
+            sourceModule="insurance",
+            sourceId=policy.id,
+        ))
+    save_costs(home_id, costs_doc)
+    return linked_id
 
 
 @router.get("/api/homes/{home_id}/insurance", response_model=InsuranceDocument)
@@ -34,6 +63,7 @@ def create_policy(
 ) -> InsurancePolicy:
     doc = load_insurance(home_id)
     policy = InsurancePolicy(id=str(uuid.uuid4()), **body.model_dump())
+    policy.linkedCostEntryId = _sync_cost_entry(home_id, policy)
     doc.policies.append(policy)
     save_insurance(home_id, doc)
     log_activity(home_id, current_user_id, "insurance", "create", policy.name, policy.id)
@@ -51,6 +81,7 @@ def update_policy(
         raise HTTPException(status_code=404)
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(policy, field, value)
+    policy.linkedCostEntryId = _sync_cost_entry(home_id, policy)
     save_insurance(home_id, doc)
     log_activity(home_id, current_user_id, "insurance", "update", policy.name, id)
 
@@ -64,6 +95,8 @@ def delete_policy(
     policy = next((p for p in doc.policies if p.id == id), None)
     if policy is None:
         raise HTTPException(status_code=404)
+    policy.includeInCosts = False
+    _sync_cost_entry(home_id, policy)
     doc.policies = [p for p in doc.policies if p.id != id]
     save_insurance(home_id, doc)
     delete_all_attachments(home_id, id)

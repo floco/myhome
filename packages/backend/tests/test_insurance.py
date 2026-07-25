@@ -1,4 +1,5 @@
 from myhome.models_insurance import InsurancePolicy, InsuranceDocument
+from myhome.persistence_costs import load_costs
 from myhome.persistence_insurance import save_insurance
 
 
@@ -144,3 +145,82 @@ def test_activity_log_records_insurance_actions(client, home_id):
     entry = next(e for e in log["entries"] if e["module"] == "insurance" and e["action"] == "create")
     assert entry["entityLabel"] == "Travel Insurance"
     assert entry["refId"] == policy_id
+
+
+def test_create_policy_with_include_in_costs_syncs_cost_entry(client, home_id):
+    payload = {
+        "name": "Home Insurance — AXA", "categoryId": "icat-home", "premiumAmount": 45.0,
+        "premiumFrequency": "monthly", "includeInCosts": True, "startDate": "2026-01-01",
+    }
+    resp = client.post(f"/api/homes/{home_id}/insurance", json=payload)
+    policy = resp.json()
+    assert policy["linkedCostEntryId"] is not None
+
+    costs = load_costs(home_id)
+    assert len(costs.entries) == 1
+    entry = costs.entries[0]
+    assert entry.id == policy["linkedCostEntryId"]
+    assert entry.categoryId == "cat-insurance"
+    assert entry.totalAmount == 540.0  # 45 * 12
+    assert entry.sourceModule == "insurance"
+    assert entry.sourceId == policy["id"]
+    assert entry.date == "2026-01-01"
+
+
+def test_create_policy_without_include_in_costs_does_not_sync(client, home_id):
+    payload = {
+        "name": "Travel Insurance", "categoryId": "icat-travel", "premiumAmount": 120.0,
+        "premiumFrequency": "annual", "includeInCosts": False,
+    }
+    resp = client.post(f"/api/homes/{home_id}/insurance", json=payload)
+    assert resp.json()["linkedCostEntryId"] is None
+    assert load_costs(home_id).entries == []
+
+
+def test_toggling_include_in_costs_on_creates_synced_entry(client, home_id):
+    resp = client.post(f"/api/homes/{home_id}/insurance", json={
+        "name": "Life Insurance", "categoryId": "icat-life", "premiumAmount": 30.0,
+        "premiumFrequency": "monthly", "includeInCosts": False,
+    })
+    policy_id = resp.json()["id"]
+    assert load_costs(home_id).entries == []
+
+    client.put(f"/api/homes/{home_id}/insurance/{policy_id}", json={"includeInCosts": True})
+    costs = load_costs(home_id)
+    assert len(costs.entries) == 1
+    assert costs.entries[0].sourceId == policy_id
+
+
+def test_toggling_include_in_costs_off_removes_synced_entry(client, home_id):
+    resp = client.post(f"/api/homes/{home_id}/insurance", json={
+        "name": "Home Insurance", "categoryId": "icat-home", "premiumAmount": 45.0,
+        "premiumFrequency": "monthly", "includeInCosts": True,
+    })
+    policy_id = resp.json()["id"]
+    assert len(load_costs(home_id).entries) == 1
+
+    client.put(f"/api/homes/{home_id}/insurance/{policy_id}", json={"includeInCosts": False})
+    assert load_costs(home_id).entries == []
+
+
+def test_updating_premium_updates_synced_cost_entry_amount(client, home_id):
+    resp = client.post(f"/api/homes/{home_id}/insurance", json={
+        "name": "Home Insurance", "categoryId": "icat-home", "premiumAmount": 45.0,
+        "premiumFrequency": "monthly", "includeInCosts": True,
+    })
+    policy_id = resp.json()["id"]
+    client.put(f"/api/homes/{home_id}/insurance/{policy_id}", json={"premiumAmount": 50.0})
+    costs = load_costs(home_id)
+    assert len(costs.entries) == 1
+    assert costs.entries[0].totalAmount == 600.0  # 50 * 12
+
+
+def test_deleting_synced_policy_removes_cost_entry(client, home_id):
+    resp = client.post(f"/api/homes/{home_id}/insurance", json={
+        "name": "Home Insurance", "categoryId": "icat-home", "premiumAmount": 45.0,
+        "premiumFrequency": "monthly", "includeInCosts": True,
+    })
+    policy_id = resp.json()["id"]
+    assert len(load_costs(home_id).entries) == 1
+    client.delete(f"/api/homes/{home_id}/insurance/{policy_id}")
+    assert load_costs(home_id).entries == []

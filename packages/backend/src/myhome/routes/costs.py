@@ -72,6 +72,8 @@ def update_entry(
     entry = next((e for e in doc.entries if e.id == id), None)
     if not entry:
         raise HTTPException(status_code=404)
+    if entry.sourceModule is not None:
+        raise HTTPException(status_code=400, detail=f"This entry is synced from {entry.sourceModule} — edit it there instead")
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(entry, field, value)
     save_costs(home_id, doc)
@@ -87,6 +89,8 @@ def delete_entry(
     entry = next((e for e in doc.entries if e.id == id), None)
     if entry is None:
         raise HTTPException(status_code=404)
+    if entry.sourceModule is not None:
+        raise HTTPException(status_code=400, detail=f"This entry is synced from {entry.sourceModule} — edit it there instead")
     doc.entries = [e for e in doc.entries if e.id != id]
     save_costs(home_id, doc)
     delete_all_attachments(home_id, id)

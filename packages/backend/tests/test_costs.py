@@ -161,3 +161,23 @@ def test_costs_get_jpeg_returns_image_content_type(client, home_id):
     resp = client.get(f"/api/homes/{home_id}/costs/entries/{eid}/attachments/receipt.jpg")
     assert resp.status_code == 200
     assert "image/jpeg" in resp.headers["content-type"]
+
+
+def test_update_synced_cost_entry_rejected(client, home_id):
+    resp = client.post(f"/api/homes/{home_id}/insurance", json={
+        "name": "Home Insurance", "categoryId": "icat-home", "premiumAmount": 45.0,
+        "premiumFrequency": "monthly", "includeInCosts": True,
+    })
+    entry_id = resp.json()["linkedCostEntryId"]
+    resp2 = client.put(f"/api/homes/{home_id}/costs/entries/{entry_id}", json={"totalAmount": 999.0})
+    assert resp2.status_code == 400
+
+
+def test_delete_synced_cost_entry_rejected(client, home_id):
+    resp = client.post(f"/api/homes/{home_id}/insurance", json={
+        "name": "Home Insurance", "categoryId": "icat-home", "premiumAmount": 45.0,
+        "premiumFrequency": "monthly", "includeInCosts": True,
+    })
+    entry_id = resp.json()["linkedCostEntryId"]
+    resp2 = client.delete(f"/api/homes/{home_id}/costs/entries/{entry_id}")
+    assert resp2.status_code == 400
