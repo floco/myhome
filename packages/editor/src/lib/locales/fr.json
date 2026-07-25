@@ -183,10 +183,8 @@
       "locations": "Emplacements",
       "properties": "Biens",
       "build": "Construction",
-      "budget": "Budget",
-      "visits": "Visites",
       "contacts": "Contacts",
-      "checklist": "Checklist"
+      "insurance": "Assurance"
     },
     "search": {
       "placeholder": "Rechercher corvées, inventaire, travaux, coûts…",
@@ -831,8 +829,6 @@
       "language": "Langue",
       "modules": "Modules",
       "modulesDesc": "Choisissez les modules visibles dans la navigation pour ce logement.",
-      "coreModules": "Modules principaux",
-      "projectModules": "Modules projet",
       "placeholderTag": "Provisoire",
       "deleteHomeTitle": "Supprimer le logement",
       "deleteHomePrefix": "Supprimer",
@@ -1106,9 +1102,7 @@
       "delete": "Supprimer"
     },
     "placeholder": {
-      "budgetDescription": "Planifiez et suivez votre budget d'acquisition ou de construction.",
-      "visitsDescription": "Planifiez et enregistrez les visites du site.",
-      "checklistDescription": "Suivez les tâches et les éléments de diligence raisonnable de votre projet."
+      "insuranceDescription": "Suivez les polices d'assurance habitation, les garanties et les renouvellements."
     },
     "changePassword": {
       "title": "Changer le mot de passe",

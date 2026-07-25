@@ -183,10 +183,8 @@
       "locations": "Locations",
       "properties": "Properties",
       "build": "Build",
-      "budget": "Budget",
-      "visits": "Visits",
       "contacts": "Contacts",
-      "checklist": "Checklist"
+      "insurance": "Insurance"
     },
     "search": {
       "placeholder": "Search chores, inventory, works, costs…",
@@ -831,8 +829,6 @@
       "language": "Language",
       "modules": "Modules",
       "modulesDesc": "Choose which modules are visible in the nav for this home.",
-      "coreModules": "Core modules",
-      "projectModules": "Project modules",
       "placeholderTag": "Placeholder",
       "deleteHomeTitle": "Delete home",
       "deleteHomePrefix": "Delete",
@@ -1106,9 +1102,7 @@
       "delete": "Delete"
     },
     "placeholder": {
-      "budgetDescription": "Plan and track your acquisition or build budget.",
-      "visitsDescription": "Schedule and log site visits and viewings.",
-      "checklistDescription": "Track tasks and due diligence items for your project."
+      "insuranceDescription": "Track home insurance policies, coverage, and renewals."
     },
     "changePassword": {
       "title": "Change Password",

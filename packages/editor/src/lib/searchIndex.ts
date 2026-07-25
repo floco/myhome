@@ -114,7 +114,7 @@ export function buildSearchIndex(stores: SearchStores): SearchResult[] {
     results.push({
       module: "costs",
       id: entry.id,
-      icon: category?.emoji ?? "💶",
+      icon: category?.emoji ?? "💰",
       title,
       subtitle: `${entry.totalAmount} €`,
       searchText: norm(title, contact?.name, entry.notes),

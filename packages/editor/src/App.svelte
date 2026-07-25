@@ -247,7 +247,7 @@
   const costsPickerLayer = $derived<PickerLayer>({
     id: "costs",
     label: $_('common.modules.costs'),
-    emoji: "💶",
+    emoji: "💰",
     items: settingsStore.costCategories.map(c => ({
       id: c.id,
       name: c.name,
@@ -1305,14 +1305,10 @@
         <PropertiesPage store={propertiesStore} {locationsStore} />
       {:else if currentRoute === "#/build"}
         <BuildPage store={buildStore} onopentask={(taskId) => { openBuildTaskId = taskId; }} />
-      {:else if currentRoute === "#/budget"}
-        <PlaceholderPage icon="💰" label={$_('common.modules.budget')} description={$_('app.placeholder.budgetDescription')} />
-      {:else if currentRoute === "#/visits"}
-        <PlaceholderPage icon="📅" label={$_('common.modules.visits')} description={$_('app.placeholder.visitsDescription')} />
       {:else if currentRoute === "#/contacts"}
         <ContactsPage store={contactsStore} {settingsStore} />
-      {:else if currentRoute === "#/checklist"}
-        <PlaceholderPage icon="✅" label={$_('common.modules.checklist')} description={$_('app.placeholder.checklistDescription')} />
+      {:else if currentRoute === "#/insurance"}
+        <PlaceholderPage icon="🛡️" label={$_('common.modules.insurance')} description={$_('app.placeholder.insuranceDescription')} />
       {/if}
     </div>
   </div>

@@ -6,14 +6,14 @@ from pydantic import BaseModel
 ALL_MODULE_IDS: list[str] = [
     "home", "plan", "chores", "inventory", "consumables",
     "works", "kb", "costs",
-    "locations", "properties", "build", "budget", "visits", "contacts", "checklist",
+    "locations", "properties", "build", "contacts", "insurance",
 ]
 
 DEFAULT_EXISTING_MODULES: list[str] = [
-    "home", "plan", "chores", "inventory", "consumables", "works", "kb", "costs", "contacts",
+    "home", "plan", "chores", "inventory", "consumables", "works", "kb", "costs", "contacts", "insurance",
 ]
 
-DEFAULT_PROJECT_MODULES: list[str] = ["home", "plan", "works", "kb", "build", "contacts"]
+DEFAULT_PROJECT_MODULES: list[str] = ["home", "plan", "works", "kb", "build", "contacts", "insurance"]
 
 DEFAULT_DEMO_MODULES: list[str] = list(ALL_MODULE_IDS)
 

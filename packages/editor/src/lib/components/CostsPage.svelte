@@ -157,7 +157,7 @@
   <!-- Chart section -->
   {#if !hasEntries}
     <div class="empty-charts">
-      <span class="empty-icon">💶</span>
+      <span class="empty-icon">💰</span>
       <p>{$_('costs.page.emptyCharts')}</p>
     </div>
   {:else}
