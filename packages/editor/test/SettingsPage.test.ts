@@ -58,7 +58,7 @@ describe("SettingsPage — nav shell", () => {
     unmount(app);
   });
 
-  it("shows all 7 groups for an admin, including Integrations and Activity Log", () => {
+  it("shows all 8 groups for an admin, including Integrations, Activity Log, and About", () => {
     const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin"), importFromDonetick: vi.fn(async () => 0) } });
     flushSync();
     const labels = [...target.querySelectorAll(".nav-item")].map((b) => b.textContent);
@@ -69,6 +69,15 @@ describe("SettingsPage — nav shell", () => {
     expect(labels.some((l) => l?.includes("Integrations"))).toBe(true);
     expect(labels.some((l) => l?.includes("Backup & Restore"))).toBe(true);
     expect(labels.some((l) => l?.includes("Activity Log"))).toBe(true);
+    expect(labels.some((l) => l?.includes("About"))).toBe(true);
+    unmount(app);
+  });
+
+  it("shows About for a non-admin too", () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("normal"), importFromDonetick: vi.fn(async () => 0) } });
+    flushSync();
+    const labels = [...target.querySelectorAll(".nav-item")].map((b) => b.textContent);
+    expect(labels.some((l) => l?.includes("About"))).toBe(true);
     unmount(app);
   });
 
