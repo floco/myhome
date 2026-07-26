@@ -53,6 +53,32 @@ describe("InsuranceModal — create", () => {
     unmount(comp);
   });
 
+  it("unchecks includeInCosts when the category is changed away from Home", async () => {
+    const store = makeInsuranceStore();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const comp = mount(InsuranceModal, {
+      target,
+      props: { policy: null, store, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore(), onclose: vi.fn() },
+    });
+    flushSync();
+
+    const categorySelect = target.querySelector(".ui-modal select") as HTMLSelectElement;
+    categorySelect.value = "icat-travel";
+    categorySelect.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+
+    const costTab = Array.from(target.querySelectorAll("button.tab")).find((b) => b.textContent?.includes("Cost"));
+    costTab?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+
+    const checkbox = target.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    expect(checkbox.checked).toBe(false);
+
+    unmount(comp);
+  });
+
   it("calls createPolicy with entered fields on save", async () => {
     const store = makeInsuranceStore();
     const target = document.createElement("div");

@@ -40,6 +40,11 @@
   let premiumAmount = $state<string>(policy?.premiumAmount != null ? String(policy.premiumAmount) : "");
   let premiumFrequency = $state<InsurancePolicy["premiumFrequency"]>(policy?.premiumFrequency ?? "annual");
   let includeInCosts = $state(policy?.includeInCosts ?? categoryId === "icat-home");
+  $effect(() => {
+    if (isCreate) {
+      includeInCosts = categoryId === "icat-home";
+    }
+  });
   let coverageSummary = $state(policy?.coverageSummary ?? "");
   let conditionsUrl = $state(policy?.conditionsUrl ?? "");
   let alternatives = $state(policy?.alternatives ?? "");
