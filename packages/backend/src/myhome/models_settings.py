@@ -43,6 +43,12 @@ class ConsumableCategory(BaseModel):
     emoji: str
 
 
+class InsuranceCategory(BaseModel):
+    id: str
+    name: str
+    emoji: str
+
+
 class NotificationSettings(BaseModel):
     enabled: bool = True
     choresDueSoonThreshold: float = 0.25
@@ -64,6 +70,7 @@ def _default_cost_categories() -> list[CostCategory]:
         CostCategory(id="cat-water",       name="Water",          emoji="💧", unit="m³",     color="#44ccaa"),
         CostCategory(id="cat-wood",        name="Wood",           emoji="🪵", unit="stère",  color="#cc8844"),
         CostCategory(id="cat-tax",         name="Property Tax",   emoji="🏠", unit=None,     color="#9966cc"),
+        CostCategory(id="cat-insurance",   name="Insurance",      emoji="🛡️", unit=None,     color="#7a5cc4"),
     ]
 
 
@@ -88,6 +95,17 @@ def _default_work_categories() -> list[WorkCategory]:
     ]
 
 
+def _default_insurance_categories() -> list[InsuranceCategory]:
+    return [
+        InsuranceCategory(id="icat-home",      name="Home",      emoji="🏠"),
+        InsuranceCategory(id="icat-auto",      name="Auto",      emoji="🚗"),
+        InsuranceCategory(id="icat-health",    name="Health",    emoji="⚕️"),
+        InsuranceCategory(id="icat-life",      name="Life",      emoji="❤️"),
+        InsuranceCategory(id="icat-travel",    name="Travel",    emoji="✈️"),
+        InsuranceCategory(id="icat-liability", name="Liability", emoji="🛡️"),
+    ]
+
+
 def _default_contact_types() -> list[ContactType]:
     return [
         ContactType(id="ctype-contractor", name="Contractor"),
@@ -107,4 +125,5 @@ class SettingsDocument(BaseModel):
     contactTypes: list[ContactType] = []
     consumableUnits: list[str] = []
     consumableCategories: list[ConsumableCategory] = []
+    insuranceCategories: list[InsuranceCategory] = []
     notifications: NotificationSettings = NotificationSettings()

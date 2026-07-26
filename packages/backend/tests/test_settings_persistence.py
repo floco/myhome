@@ -25,7 +25,7 @@ def _setup(tmp_path, monkeypatch):
 def test_load_returns_defaults_when_file_missing(tmp_path, monkeypatch):
     _setup(tmp_path, monkeypatch)
     doc = load_settings(HOME_ID)
-    assert len(doc.costCategories) == 5
+    assert len(doc.costCategories) == 6
     assert doc.costCategories[0].name == "Fuel / Mazout"
     assert len(doc.inventoryCategories) == 6
 
