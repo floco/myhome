@@ -45,3 +45,43 @@ describe("createSettingsStore — notifications", () => {
     );
   });
 });
+
+describe("createSettingsStore — insuranceCategories", () => {
+  it("loads insuranceCategories from the fetched document", async () => {
+    const doc = {
+      version: 1, costCategories: [], inventoryCategories: [], workCategories: [],
+      contactTypes: [], consumableUnits: [], consumableCategories: [],
+      insuranceCategories: [{ id: "icat-home", name: "Home", emoji: "🏠" }],
+      notifications: {
+        enabled: true, choresDueSoonThreshold: 0.25, warrantyDaysThreshold: 30,
+        haPushEnabled: false, haNotifyService: null, haPushTime: "08:00",
+      },
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => doc }));
+    const store = createSettingsStore(() => "home-1");
+    await tick();
+    expect(store.insuranceCategories).toEqual([{ id: "icat-home", name: "Home", emoji: "🏠" }]);
+  });
+
+  it("updateInsuranceCategories PUTs to the insurance-categories settings endpoint", async () => {
+    const doc = {
+      version: 1, costCategories: [], inventoryCategories: [], workCategories: [],
+      contactTypes: [], consumableUnits: [], consumableCategories: [], insuranceCategories: [],
+      notifications: {
+        enabled: true, choresDueSoonThreshold: 0.25, warrantyDaysThreshold: 30,
+        haPushEnabled: false, haNotifyService: null, haPushTime: "08:00",
+      },
+    };
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => doc });
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createSettingsStore(() => "home-1");
+    await tick();
+
+    fetchMock.mockResolvedValue({ ok: true, status: 204, json: async () => ({}) });
+    await store.updateInsuranceCategories([{ id: "icat-pet", name: "Pet", emoji: "🐶" }]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/homes/home-1/settings/insurance-categories",
+      expect.objectContaining({ method: "PUT" }),
+    );
+  });
+});
