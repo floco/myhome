@@ -11,6 +11,7 @@
   import SettingsIntegrations from "./settings/SettingsIntegrations.svelte";
   import SettingsBackup from "./settings/SettingsBackup.svelte";
   import SettingsActivityLog from "./settings/SettingsActivityLog.svelte";
+  import SettingsAbout from "./settings/SettingsAbout.svelte";
 
   type SettingsStore = ReturnType<typeof createSettingsStore>;
   type AuthStore = ReturnType<typeof createAuthStore>;
@@ -36,6 +37,7 @@
     { id: "integrations", icon: "🔌", adminOnly: true },
     { id: "backup", icon: "💾" },
     { id: "activity", icon: "📜" },
+    { id: "about", icon: "ℹ️" },
   ];
 
   const visibleGroups = $derived(
@@ -74,6 +76,8 @@
         <SettingsBackup />
       {:else if activeGroup === "activity"}
         <SettingsActivityLog />
+      {:else if activeGroup === "about"}
+        <SettingsAbout />
       {/if}
     </div>
   </div>

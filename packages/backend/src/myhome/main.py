@@ -17,7 +17,7 @@ from .mcp_app import mcp_asgi_app
 from .mcp_server import mcp
 from .notification_scheduler import notification_digest_loop
 from .persistence_mcp import load_mcp_config
-from .routes import activity, auth, backup, build, chores, consumables, contacts, costs, ha, homes, house, insurance, inventory, kb, locations, mcp_config, notifications, properties, settings, svg, works
+from .routes import activity, auth, backup, build, chores, consumables, contacts, costs, ha, homes, house, insurance, inventory, kb, locations, mcp_config, notifications, properties, settings, svg, system, works
 
 
 @asynccontextmanager
@@ -170,6 +170,7 @@ app.include_router(build.router)
 app.include_router(notifications.router)
 app.include_router(mcp_config.router)
 app.include_router(activity.router)
+app.include_router(system.router)
 
 app.mount("/mcp", _gated_mcp_app)
 
@@ -178,6 +179,6 @@ app.mount("/mcp", _gated_mcp_app)
 
 _static_dir = Path(os.environ.get("STATIC_DIR", "/app/static"))
 if _static_dir.exists():
-    from fastapi.staticfiles import StaticFiles
+    from .caching_static import CachingStaticFiles
 
-    app.mount("/", StaticFiles(directory=str(_static_dir), html=True), name="static")
+    app.mount("/", CachingStaticFiles(directory=str(_static_dir), html=True), name="static")
