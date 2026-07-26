@@ -93,7 +93,7 @@
     { id: "properties", icon: "🏘" },
     { id: "build",      icon: "🏗️" },
     { id: "contacts",   icon: "👤" },
-    { id: "insurance",  icon: "🛡️", placeholder: true },
+    { id: "insurance",  icon: "🛡️" },
   ];
 </script>
 

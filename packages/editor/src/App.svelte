@@ -35,6 +35,8 @@
   import { createBuildStore } from "./lib/buildStore.svelte";
   import ContactsPage from "./lib/components/ContactsPage.svelte";
   import { createContactsStore } from "./lib/contactsStore.svelte";
+  import InsurancePage from "./lib/components/InsurancePage.svelte";
+  import { createInsuranceStore } from "./lib/insuranceStore.svelte";
   import { createNotificationStore } from "./lib/notificationStore.svelte";
   import type { Notification } from "./lib/notificationStore.svelte";
   import NotificationBell from "./lib/components/NotificationBell.svelte";
@@ -67,7 +69,6 @@
   import { homesStore } from "./lib/homesStore.svelte";
   import NewHomeModal from "./lib/components/NewHomeModal.svelte";
   import HomesSwitcher from "./lib/components/HomesSwitcher.svelte";
-  import PlaceholderPage from "./lib/components/PlaceholderPage.svelte";
   import FurnitureLibraryPanel from "./lib/components/FurnitureLibraryPanel.svelte";
   import { getTemplate } from "./lib/furnitureLibrary";
   import CommandPalette from "./lib/components/CommandPalette.svelte";
@@ -89,6 +90,7 @@
   const propertiesStore = createPropertiesStore(getHomeId);
   const buildStore = createBuildStore(getHomeId);
   const contactsStore = createContactsStore(getHomeId);
+  const insuranceStore = createInsuranceStore(getHomeId);
   const notificationStore = createNotificationStore(getHomeId);
   const authStore = createAuthStore();
 
@@ -114,6 +116,7 @@
     propertiesStore.reload();
     buildStore.reload();
     contactsStore.reload();
+    insuranceStore.reload();
     notificationStore.reload();
   });
 
@@ -1308,7 +1311,7 @@
       {:else if currentRoute === "#/contacts"}
         <ContactsPage store={contactsStore} {settingsStore} />
       {:else if currentRoute === "#/insurance"}
-        <PlaceholderPage icon="🛡️" label={$_('common.modules.insurance')} description={$_('app.placeholder.insuranceDescription')} />
+        <InsurancePage store={insuranceStore} {settingsStore} {contactsStore} />
       {/if}
     </div>
   </div>

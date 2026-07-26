@@ -22,7 +22,7 @@
     { id: "properties",  href: "#/properties",  icon: "🏘" },
     { id: "build",       href: "#/build",       icon: "🏗️" },
     { id: "contacts",    href: "#/contacts",    icon: "👤" },
-    { id: "insurance",   href: "#/insurance",   icon: "🛡️", placeholder: true },
+    { id: "insurance",   href: "#/insurance",   icon: "🛡️" },
   ];
 
   const visibleModules = $derived(
