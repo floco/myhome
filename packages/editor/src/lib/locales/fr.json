@@ -955,7 +955,8 @@
         "inventory": "Catégories d'inventaire",
         "work": "Catégories de travaux",
         "contactTypes": "Types de contact",
-        "consumables": "Consommables"
+        "consumables": "Consommables",
+        "insurance": "Catégories d'assurance"
       },
       "deleteConfirm": "Supprimer ?",
       "name": "Nom",

@@ -955,7 +955,8 @@
         "inventory": "Inventory categories",
         "work": "Work categories",
         "contactTypes": "Contact Types",
-        "consumables": "Consumables"
+        "consumables": "Consumables",
+        "insurance": "Insurance categories"
       },
       "deleteConfirm": "Delete?",
       "name": "Name",

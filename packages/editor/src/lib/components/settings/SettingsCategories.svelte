@@ -1,7 +1,7 @@
 <!-- packages/editor/src/lib/components/settings/SettingsCategories.svelte -->
 <script lang="ts">
   import { _ } from "svelte-i18n";
-  import type { createSettingsStore, CostCategory, ConsumableCategory, InventoryCategory, WorkCategory, ContactType } from "../../settingsStore.svelte";
+  import type { createSettingsStore, CostCategory, ConsumableCategory, InventoryCategory, WorkCategory, ContactType, InsuranceCategory } from "../../settingsStore.svelte";
   import Button from "../ui/Button.svelte";
   import Input from "../ui/Input.svelte";
   import EmojiPicker from "../ui/EmojiPicker.svelte";
@@ -17,7 +17,7 @@
   }
   let { store }: Props = $props();
 
-  type CategoryTab = "cost" | "inventory" | "work" | "contactTypes" | "consumables";
+  type CategoryTab = "cost" | "inventory" | "work" | "contactTypes" | "consumables" | "insurance";
   let activeTab = $state<CategoryTab>("cost");
 
   // --- Cost categories ---
@@ -256,6 +256,48 @@
     showNewConsumableCatForm = false;
     consumableCatError = null;
   }
+
+  // --- Insurance categories ---
+  let editingInsuranceId = $state<string | null>(null);
+  let insuranceDraft = $state<InsuranceCategory>({ id: "", name: "", emoji: "" });
+  let showNewInsuranceForm = $state(false);
+  let newInsuranceDraft = $state({ name: "", emoji: "" });
+  let confirmDeleteInsuranceId = $state<string | null>(null);
+  let insuranceError = $state<string | null>(null);
+
+  function startEditInsurance(cat: InsuranceCategory): void {
+    editingInsuranceId = cat.id;
+    insuranceDraft = { ...cat };
+    insuranceError = null;
+  }
+
+  function cancelEditInsurance(): void { editingInsuranceId = null; insuranceError = null; }
+
+  async function saveEditInsurance(): Promise<void> {
+    if (!insuranceDraft.name.trim()) { insuranceError = $_('settings.general.nameRequired'); return; }
+    const updated = store.insuranceCategories.map(c =>
+      c.id === editingInsuranceId ? { ...insuranceDraft, name: insuranceDraft.name.trim() } : c
+    );
+    await store.updateInsuranceCategories(updated);
+    editingInsuranceId = null; insuranceError = null;
+  }
+
+  async function deleteInsuranceCategory(id: string): Promise<void> {
+    await store.updateInsuranceCategories(store.insuranceCategories.filter(c => c.id !== id));
+    confirmDeleteInsuranceId = null;
+  }
+
+  async function addInsuranceCategory(): Promise<void> {
+    if (!newInsuranceDraft.name.trim()) { insuranceError = $_('settings.general.nameRequired'); return; }
+    const newCat: InsuranceCategory = {
+      id: crypto.randomUUID(),
+      name: newInsuranceDraft.name.trim(),
+      emoji: newInsuranceDraft.emoji || "🛡️",
+    };
+    await store.updateInsuranceCategories([...store.insuranceCategories, newCat]);
+    newInsuranceDraft = { name: "", emoji: "" };
+    showNewInsuranceForm = false; insuranceError = null;
+  }
 </script>
 
 <Tabs
@@ -265,6 +307,7 @@
     { id: "work", label: $_('settings.categories.tabs.work') },
     { id: "contactTypes", label: $_('settings.categories.tabs.contactTypes') },
     { id: "consumables", label: $_('settings.categories.tabs.consumables') },
+    { id: "insurance", label: $_('settings.categories.tabs.insurance') },
   ]}
   active={activeTab}
   onchange={(id) => { activeTab = id as CategoryTab; }}
@@ -579,6 +622,64 @@
       <Button onclick={() => { showNewConsumableCatForm = true; consumableCatError = null; }}>＋ {$_('settings.categories.addCategory')}</Button>
     </div>
     {#if consumableCatError}<div class="error">{consumableCatError}</div>{/if}
+  </Card>
+{/if}
+
+{#if activeTab === "insurance"}
+  <Card>
+    <div class="section-header">
+      <h2>{$_('settings.categories.tabs.insurance')}</h2>
+      <Button onclick={() => { showNewInsuranceForm = true; insuranceError = null; }}>＋ {$_('common.add')}</Button>
+    </div>
+    <div class="table-wrapper">
+      {#snippet insuranceEmojiCell(cat: InsuranceCategory)}
+        {#if editingInsuranceId === cat.id}
+          <EmojiPicker bind:value={insuranceDraft.emoji} />
+        {:else}
+          {cat.emoji}
+        {/if}
+      {/snippet}
+      {#snippet insuranceNameCell(cat: InsuranceCategory)}
+        {#if editingInsuranceId === cat.id}
+          <Input bind:value={insuranceDraft.name} placeholder={$_('settings.categories.name')} />
+        {:else}
+          {cat.name}
+        {/if}
+      {/snippet}
+      {#snippet insuranceActionsCell(cat: InsuranceCategory)}
+        {#if editingInsuranceId === cat.id}
+          <button class="icon-action ok" onclick={saveEditInsurance} title={$_('common.save')}>✓</button>
+          <button class="icon-action" onclick={cancelEditInsurance} title={$_('common.cancel')}>✕</button>
+        {:else if confirmDeleteInsuranceId === cat.id}
+          <span class="confirm-text">{$_('settings.categories.deleteConfirm')}</span>
+          <button class="icon-action danger" onclick={() => deleteInsuranceCategory(cat.id)}>✓</button>
+          <button class="icon-action" onclick={() => { confirmDeleteInsuranceId = null; }}>✕</button>
+        {:else}
+          <button class="icon-action" onclick={() => startEditInsurance(cat)} title={$_('common.edit')}>✏</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteInsuranceId = cat.id; }} title={$_('common.delete')}>🗑</button>
+        {/if}
+      {/snippet}
+      {#snippet insuranceNewRow()}
+        <td><EmojiPicker bind:value={newInsuranceDraft.emoji} /></td>
+        <td class="name-cell-input"><Input bind:value={newInsuranceDraft.name} placeholder={$_('settings.categories.nameRequiredPlaceholder')} /></td>
+        <td class="actions">
+          <button class="icon-action ok" onclick={addInsuranceCategory} title={$_('common.add')}>✓</button>
+          <button class="icon-action" onclick={() => { showNewInsuranceForm = false; insuranceError = null; }} title={$_('common.cancel')}>✕</button>
+        </td>
+      {/snippet}
+      <SortableTable
+        columns={[
+          { key: "emoji", label: $_('settings.categories.emoji'), sortable: false, cellClass: "emoji-cell", cell: insuranceEmojiCell },
+          { key: "name", label: $_('settings.categories.name'), sortValue: (c) => c.name, cellClass: (c) => editingInsuranceId === c.id ? "name-cell-input" : "", cell: insuranceNameCell },
+          { key: "actions", label: "", sortable: false, cellClass: "actions", cell: insuranceActionsCell },
+        ] as Column<InsuranceCategory>[]}
+        rows={store.insuranceCategories}
+        rowKey={(c) => c.id}
+        rowClass={(c) => editingInsuranceId === c.id ? "editing-row" : ""}
+        extraRow={showNewInsuranceForm ? insuranceNewRow : undefined}
+      />
+    </div>
+    {#if insuranceError}<div class="error">{insuranceError}</div>{/if}
   </Card>
 {/if}
 

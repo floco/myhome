@@ -10,12 +10,14 @@ function makeStore() {
     contactTypes: [{ id: "t1", name: "Supplier" }],
     consumableUnits: ["tablets"],
     consumableCategories: [{ id: "cc1", name: "Cleaning", emoji: "🧼" }],
+    insuranceCategories: [{ id: "icat-home", name: "Home", emoji: "🏠" }],
     updateCostCategories: vi.fn(),
     updateInventoryCategories: vi.fn(),
     updateWorkCategories: vi.fn(),
     updateContactTypes: vi.fn(),
     updateConsumableUnits: vi.fn(),
     updateConsumableCategories: vi.fn(),
+    updateInsuranceCategories: vi.fn(),
   };
 }
 
@@ -100,6 +102,39 @@ describe("SettingsCategories", () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(store.updateCostCategories).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ name: "Water" })]),
+    );
+    unmount(app);
+  });
+
+  it("switches to the Insurance categories tab and shows insurance categories", () => {
+    const app = mount(SettingsCategories, { target, props: { store: makeStore() } });
+    flushSync();
+    const tab = [...target.querySelectorAll(".tab")].find((b) => b.textContent === "Insurance categories")!;
+    (tab as HTMLButtonElement).click();
+    flushSync();
+    expect(target.textContent).toContain("Home");
+    unmount(app);
+  });
+
+  it("adding an insurance category calls store.updateInsuranceCategories", async () => {
+    const store = makeStore();
+    const app = mount(SettingsCategories, { target, props: { store } });
+    flushSync();
+    const tab = [...target.querySelectorAll(".tab")].find((b) => b.textContent === "Insurance categories")!;
+    (tab as HTMLButtonElement).click();
+    flushSync();
+    const addBtn = [...target.querySelectorAll("button")].find((b) => b.textContent?.includes("＋ Add"))!;
+    addBtn.click();
+    flushSync();
+    const nameInput = target.querySelector('input[placeholder="Name *"]') as HTMLInputElement;
+    nameInput.value = "Pet";
+    nameInput.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    const okBtn = target.querySelector(".icon-action.ok") as HTMLButtonElement;
+    okBtn.click();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(store.updateInsuranceCategories).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ name: "Pet" })]),
     );
     unmount(app);
   });
