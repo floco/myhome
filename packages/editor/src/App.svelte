@@ -35,6 +35,8 @@
   import { createBuildStore } from "./lib/buildStore.svelte";
   import ContactsPage from "./lib/components/ContactsPage.svelte";
   import { createContactsStore } from "./lib/contactsStore.svelte";
+  import InsurancePage from "./lib/components/InsurancePage.svelte";
+  import { createInsuranceStore } from "./lib/insuranceStore.svelte";
   import { createNotificationStore } from "./lib/notificationStore.svelte";
   import type { Notification } from "./lib/notificationStore.svelte";
   import NotificationBell from "./lib/components/NotificationBell.svelte";
@@ -67,7 +69,6 @@
   import { homesStore } from "./lib/homesStore.svelte";
   import NewHomeModal from "./lib/components/NewHomeModal.svelte";
   import HomesSwitcher from "./lib/components/HomesSwitcher.svelte";
-  import PlaceholderPage from "./lib/components/PlaceholderPage.svelte";
   import FurnitureLibraryPanel from "./lib/components/FurnitureLibraryPanel.svelte";
   import { getTemplate } from "./lib/furnitureLibrary";
   import CommandPalette from "./lib/components/CommandPalette.svelte";
@@ -89,6 +90,7 @@
   const propertiesStore = createPropertiesStore(getHomeId);
   const buildStore = createBuildStore(getHomeId);
   const contactsStore = createContactsStore(getHomeId);
+  const insuranceStore = createInsuranceStore(getHomeId);
   const notificationStore = createNotificationStore(getHomeId);
   const authStore = createAuthStore();
 
@@ -114,6 +116,7 @@
     propertiesStore.reload();
     buildStore.reload();
     contactsStore.reload();
+    insuranceStore.reload();
     notificationStore.reload();
   });
 
@@ -247,7 +250,7 @@
   const costsPickerLayer = $derived<PickerLayer>({
     id: "costs",
     label: $_('common.modules.costs'),
-    emoji: "💶",
+    emoji: "💰",
     items: settingsStore.costCategories.map(c => ({
       id: c.id,
       name: c.name,
@@ -1305,14 +1308,10 @@
         <PropertiesPage store={propertiesStore} {locationsStore} />
       {:else if currentRoute === "#/build"}
         <BuildPage store={buildStore} onopentask={(taskId) => { openBuildTaskId = taskId; }} />
-      {:else if currentRoute === "#/budget"}
-        <PlaceholderPage icon="💰" label={$_('common.modules.budget')} description={$_('app.placeholder.budgetDescription')} />
-      {:else if currentRoute === "#/visits"}
-        <PlaceholderPage icon="📅" label={$_('common.modules.visits')} description={$_('app.placeholder.visitsDescription')} />
       {:else if currentRoute === "#/contacts"}
         <ContactsPage store={contactsStore} {settingsStore} />
-      {:else if currentRoute === "#/checklist"}
-        <PlaceholderPage icon="✅" label={$_('common.modules.checklist')} description={$_('app.placeholder.checklistDescription')} />
+      {:else if currentRoute === "#/insurance"}
+        <InsurancePage store={insuranceStore} {settingsStore} {contactsStore} />
       {/if}
     </div>
   </div>

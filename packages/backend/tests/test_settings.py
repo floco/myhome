@@ -7,7 +7,7 @@ def test_get_settings_returns_defaults_when_no_file(client, home_id):
     resp = client.get(f"/api/homes/{home_id}/settings")
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data["costCategories"]) == 5
+    assert len(data["costCategories"]) == 6
     assert data["costCategories"][0]["name"] == "Fuel / Mazout"
     assert len(data["inventoryCategories"]) == 6
 
@@ -181,3 +181,23 @@ def test_put_notification_settings(client, home_id):
     assert data["choresDueSoonThreshold"] == 0.4
     assert data["haNotifyService"] == "notify.mobile_app_pixel"
     assert data["haPushTime"] == "09:30"
+
+
+def test_settings_defaults_include_insurance_categories(client, home_id):
+    resp = client.get(f"/api/homes/{home_id}/settings")
+    cats = resp.json()["insuranceCategories"]
+    assert [c["id"] for c in cats] == [
+        "icat-home", "icat-auto", "icat-health", "icat-life", "icat-travel", "icat-liability",
+    ]
+    assert cats[0]["name"] == "Home"
+    assert cats[0]["emoji"] == "🏠"
+
+
+def test_put_insurance_categories(client, home_id):
+    resp = client.put(
+        f"/api/homes/{home_id}/settings/insurance-categories",
+        json=[{"id": "icat-custom", "name": "Pet", "emoji": "🐶"}],
+    )
+    assert resp.status_code == 204
+    cats = client.get(f"/api/homes/{home_id}/settings").json()["insuranceCategories"]
+    assert cats == [{"id": "icat-custom", "name": "Pet", "emoji": "🐶"}]

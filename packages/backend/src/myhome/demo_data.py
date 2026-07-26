@@ -9,6 +9,7 @@ from .demo_content import (
     CHORES,
     CONSUMABLE_CATEGORY_ROOM_HINTS,
     CONSUMABLES,
+    INSURANCE_POLICIES,
     INVENTORY_CATEGORY_ROOM_HINTS,
     INVENTORY_ITEMS,
     KB_CLOSERS,
@@ -25,6 +26,7 @@ from . import (
     persistence_consumables,
     persistence_contacts,
     persistence_costs,
+    persistence_insurance,
     persistence_inventory,
     persistence_kb,
     persistence_settings,
@@ -42,6 +44,7 @@ from .models_consumables import (
     ConsumablePosition,
     ConsumableTransaction,
 )
+from .models_insurance import InsuranceDocument, InsurancePolicy
 from .models_kb import KBDocument, KBEntry
 from .models_settings import SettingsDocument
 from .models_works import Work, WorksDocument, WorkPlacement, WorkPosition
@@ -255,6 +258,22 @@ def generate_demo_works(house: HouseDocument, settings: SettingsDocument, contac
     return WorksDocument(works=works)
 
 
+def generate_demo_insurance(settings: SettingsDocument, contacts: list[Contact], rng: random.Random) -> InsuranceDocument:
+    today = date.today()
+    contact_ids = [c.id for c in contacts if c.typeId == "ctype-service"]
+    policies: list[InsurancePolicy] = []
+    for name, category_id, premium, frequency, include_in_costs in INSURANCE_POLICIES:
+        start = today - timedelta(days=rng.randint(30, 300))
+        end = start + timedelta(days=365)
+        policies.append(InsurancePolicy(
+            id=str(uuid.uuid4()), name=name, categoryId=category_id,
+            contactId=rng.choice(contact_ids) if contact_ids else None,
+            premiumAmount=premium, premiumFrequency=frequency, includeInCosts=include_in_costs,
+            startDate=start.isoformat(), endDate=end.isoformat(),
+        ))
+    return InsuranceDocument(policies=policies)
+
+
 def generate_demo_kb(rng: random.Random) -> KBDocument:
     now = datetime.now(timezone.utc)
     entries: list[KBEntry] = []
@@ -410,6 +429,7 @@ def seed_demo_home(home_id: str) -> None:
     works_doc = generate_demo_works(house, settings, contacts, rng)
     kb_doc = generate_demo_kb(rng)
     consumables_doc = generate_demo_consumables(house, settings, rng)
+    insurance_doc = generate_demo_insurance(settings, contacts, rng)
 
     persistence_settings.save_settings(home_id, settings)
     persistence_contacts.save_contacts(home_id, ContactsDocument(contacts=contacts))
@@ -421,6 +441,7 @@ def seed_demo_home(home_id: str) -> None:
     for entry in kb_doc.entries:
         persistence_kb.save_entry(home_id, entry)
     persistence_consumables.save_consumables(home_id, consumables_doc)
+    persistence_insurance.save_insurance(home_id, insurance_doc)
 
     attach_demo_files(home_id, chores_doc, inventory_doc, costs_doc, works_doc, rng)
     persistence_chores.save_chores(home_id, chores_doc)

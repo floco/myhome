@@ -83,6 +83,14 @@ def _create_legacy_category_tables(conn) -> None:
         "CREATE TABLE contact_types (id VARCHAR NOT NULL, home_id VARCHAR NOT NULL, "
         "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, PRIMARY KEY (id, home_id))"
     ))
+    # insurance_categories is also a brand-new table (added alongside migration
+    # 6) -- like contact_types, give it the composite (id, home_id) PK from
+    # schema.py directly rather than the bare-id shape the pre-migration-4
+    # tables above use, since it never existed in that older, buggy shape.
+    conn.execute(text(
+        "CREATE TABLE insurance_categories (id VARCHAR NOT NULL, home_id VARCHAR NOT NULL, "
+        "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, PRIMARY KEY (id, home_id))"
+    ))
 
 
 def test_run_migrations_scopes_cost_categories_by_home(tmp_path):
@@ -121,7 +129,12 @@ def test_run_migrations_scopes_cost_categories_by_home(tmp_path):
 
     with engine.connect() as conn:
         version = conn.execute(text("SELECT version FROM schema_version")).scalar()
-        rows = conn.execute(text("SELECT id, home_id, name FROM cost_categories ORDER BY home_id")).mappings().all()
+        # Scoped to 'cat-fuel' -- migration 6 also backfills an unrelated
+        # 'cat-insurance' row per home, which is exercised separately by
+        # test_run_migrations_adds_insurance_support.
+        rows = conn.execute(
+            text("SELECT id, home_id, name FROM cost_categories WHERE id = 'cat-fuel' ORDER BY home_id")
+        ).mappings().all()
 
     assert version == CURRENT_VERSION
     assert [dict(r) for r in rows] == [
@@ -140,6 +153,21 @@ def test_run_migrations_absorbs_suppliers_into_contacts(tmp_path):
         conn.execute(text("INSERT INTO homes (id, name, type, created_at) VALUES ('h1', 'Home 1', 'existing', '2026-01-01')"))
         conn.execute(text("INSERT INTO homes (id, name, type, created_at) VALUES ('h2', 'Home 2', 'existing', '2026-01-01')"))
         _create_legacy_category_tables(conn)
+        # This test stamps schema_version=4, i.e. migration 4 (which gives
+        # cost_categories a composite (id, home_id) PK) is assumed already
+        # applied -- but _create_legacy_category_tables always builds the
+        # pre-migration-4 bare-id shape. Recreate it in the post-migration-4
+        # shape so migration 6's later per-home cost_categories backfill
+        # (unrelated to this test's supplier-absorption focus) doesn't
+        # collide across homes on a uniqueness constraint that would never
+        # exist in a real database already at version 4.
+        conn.execute(text("DROP TABLE cost_categories"))
+        conn.execute(text(
+            "CREATE TABLE cost_categories (id VARCHAR NOT NULL, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+            "unit VARCHAR, color VARCHAR NOT NULL, placement_floor_id VARCHAR, placement_x FLOAT, "
+            "placement_y FLOAT, PRIMARY KEY (id, home_id))"
+        ))
         conn.execute(text(
             "INSERT INTO cost_entries (id, home_id, order_index, category_id, date, total_amount, "
             "supplier_id, notes, attachments) VALUES "
@@ -178,3 +206,71 @@ def test_run_migrations_absorbs_suppliers_into_contacts(tmp_path):
     ]
     assert h1_types[0]["name"] == "Contractor"
     assert len(h2_types) == 6
+
+
+def test_run_migrations_adds_insurance_support(tmp_path):
+    db_path = tmp_path / "legacy.db"
+    engine = create_engine(f"sqlite:///{db_path}")
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE homes (id VARCHAR PRIMARY KEY, name VARCHAR, type VARCHAR, created_at VARCHAR)"
+        ))
+        conn.execute(text("INSERT INTO homes (id, name, type, created_at) VALUES ('h1', 'Home 1', 'existing', '2026-01-01')"))
+        conn.execute(text("INSERT INTO homes (id, name, type, created_at) VALUES ('h2', 'Home 2', 'existing', '2026-01-01')"))
+        # Build a post-migration-5 snapshot directly (composite-PK cost_categories,
+        # contact_id already renamed on cost_entries) rather than reusing
+        # _create_legacy_category_tables, which builds a pre-migration-4 snapshot.
+        conn.execute(text(
+            "CREATE TABLE cost_categories (id VARCHAR NOT NULL, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+            "unit VARCHAR, color VARCHAR NOT NULL, placement_floor_id VARCHAR, placement_x FLOAT, "
+            "placement_y FLOAT, PRIMARY KEY (id, home_id))"
+        ))
+        conn.execute(text(
+            "CREATE TABLE insurance_categories (id VARCHAR NOT NULL, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, PRIMARY KEY (id, home_id))"
+        ))
+        # cost_entries already has contact_id (post-migration-5 shape) but not
+        # the new source_module/source_id columns yet.
+        conn.execute(text(
+            "CREATE TABLE cost_entries (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, category_id VARCHAR NOT NULL, date VARCHAR NOT NULL, "
+            "total_amount FLOAT NOT NULL, quantity FLOAT, unit_price FLOAT, contact_id VARCHAR, "
+            "notes VARCHAR NOT NULL, room_id VARCHAR, attachments TEXT NOT NULL)"
+        ))
+        conn.execute(text(
+            "INSERT INTO cost_entries (id, home_id, order_index, category_id, date, total_amount, notes, attachments) "
+            "VALUES ('c1', 'h1', 0, 'cat-fuel', '2026-01-01', 100.0, '', '[]')"
+        ))
+        conn.execute(text(
+            "INSERT INTO cost_categories (id, home_id, order_index, name, emoji, color) "
+            "VALUES ('cat-fuel', 'h1', 0, 'Fuel', '🛢', '#4466cc')"
+        ))
+        conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
+        conn.execute(text("INSERT INTO schema_version (version) VALUES (5)"))
+
+    run_migrations(engine)
+
+    with engine.connect() as conn:
+        version = conn.execute(text("SELECT version FROM schema_version")).scalar()
+        cost_row = conn.execute(text("SELECT source_module, source_id FROM cost_entries WHERE id = 'c1'")).mappings().first()
+        h1_insurance_cats = conn.execute(
+            text("SELECT id, name, emoji FROM insurance_categories WHERE home_id = 'h1' ORDER BY order_index")
+        ).mappings().all()
+        h2_insurance_cats = conn.execute(
+            text("SELECT id FROM insurance_categories WHERE home_id = 'h2'")
+        ).mappings().all()
+        h1_cost_cats = conn.execute(
+            text("SELECT id, name FROM cost_categories WHERE home_id = 'h1' ORDER BY order_index")
+        ).mappings().all()
+
+    assert version == CURRENT_VERSION
+    assert cost_row["source_module"] is None
+    assert cost_row["source_id"] is None
+    assert [c["id"] for c in h1_insurance_cats] == [
+        "icat-home", "icat-auto", "icat-health", "icat-life", "icat-travel", "icat-liability",
+    ]
+    assert h1_insurance_cats[0]["name"] == "Home"
+    assert h1_insurance_cats[0]["emoji"] == "🏠"
+    assert len(h2_insurance_cats) == 6
+    assert [c["id"] for c in h1_cost_cats] == ["cat-fuel", "cat-insurance"]

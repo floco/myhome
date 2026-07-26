@@ -176,6 +176,15 @@ consumable_categories = Table(
     Column("emoji", String, nullable=False),
 )
 
+insurance_categories = Table(
+    "insurance_categories", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+    Column("emoji", String, nullable=False),
+)
+
 settings = Table(
     "settings", metadata,
     Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
@@ -247,6 +256,8 @@ cost_entries = Table(
     Column("notes", String, nullable=False),
     Column("room_id", String),
     Column("attachments", Text, nullable=False),
+    Column("source_module", String),
+    Column("source_id", String),
 )
 
 inventory_items = Table(
@@ -318,6 +329,28 @@ consumable_transactions = Table(
     Column("quantity_after", Float, nullable=False),
     Column("note", String, nullable=False),
     Column("timestamp", String, nullable=False),
+)
+
+insurance_policies = Table(
+    "insurance_policies", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+    Column("category_id", String, nullable=False),
+    Column("contact_id", String),
+    Column("policy_number", String),
+    Column("coverage_summary", String, nullable=False),
+    Column("conditions_url", String),
+    Column("start_date", String),
+    Column("end_date", String),
+    Column("premium_amount", Float),
+    Column("premium_frequency", String, nullable=False),
+    Column("include_in_costs", Boolean, nullable=False),
+    Column("alternatives", String, nullable=False),
+    Column("notes", String, nullable=False),
+    Column("attachments", Text, nullable=False),
+    Column("linked_cost_entry_id", String),
 )
 
 activity_log_entries = Table(

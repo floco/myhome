@@ -13,6 +13,7 @@ from .models_settings import (
     CostCategoryPlacement,
     CostCategoryPosition,
     InventoryCategory,
+    InsuranceCategory,
     NotificationSettings,
     SettingsDocument,
     ContactType,
@@ -22,6 +23,7 @@ from .models_settings import (
     _default_inventory_categories,
     _default_work_categories,
     _default_contact_types,
+    _default_insurance_categories,
 )
 from .schema import (
     consumable_categories as consumable_categories_table,
@@ -30,6 +32,7 @@ from .schema import (
     settings as settings_table,
     contact_types as contact_types_table,
     work_categories as work_categories_table,
+    insurance_categories as insurance_categories_table,
 )
 
 
@@ -44,6 +47,7 @@ def load_settings(home_id: str) -> SettingsDocument:
                 workCategories=_default_work_categories(),
                 consumableUnits=_default_consumable_units(),
                 contactTypes=_default_contact_types(),
+                insuranceCategories=_default_insurance_categories(),
             )
         cost_rows = conn.execute(
             select(cost_categories_table).where(cost_categories_table.c.home_id == home_id)
@@ -64,6 +68,10 @@ def load_settings(home_id: str) -> SettingsDocument:
         consumable_cat_rows = conn.execute(
             select(consumable_categories_table).where(consumable_categories_table.c.home_id == home_id)
             .order_by(consumable_categories_table.c.order_index)
+        ).mappings().all()
+        insurance_cat_rows = conn.execute(
+            select(insurance_categories_table).where(insurance_categories_table.c.home_id == home_id)
+            .order_by(insurance_categories_table.c.order_index)
         ).mappings().all()
 
     return SettingsDocument(
@@ -86,6 +94,9 @@ def load_settings(home_id: str) -> SettingsDocument:
         consumableUnits=json.loads(row["consumable_units"]) or _default_consumable_units(),
         consumableCategories=[
             ConsumableCategory(id=r["id"], name=r["name"], emoji=r["emoji"]) for r in consumable_cat_rows
+        ],
+        insuranceCategories=[
+            InsuranceCategory(id=r["id"], name=r["name"], emoji=r["emoji"]) for r in insurance_cat_rows
         ],
         notifications=NotificationSettings(
             enabled=bool(row["notif_enabled"]),
@@ -164,4 +175,11 @@ def save_settings(home_id: str, doc: SettingsDocument) -> None:
             conn.execute(consumable_categories_table.insert(), [
                 {"id": c.id, "home_id": home_id, "order_index": i, "name": c.name, "emoji": c.emoji}
                 for i, c in enumerate(doc.consumableCategories)
+            ])
+
+        conn.execute(insurance_categories_table.delete().where(insurance_categories_table.c.home_id == home_id))
+        if doc.insuranceCategories:
+            conn.execute(insurance_categories_table.insert(), [
+                {"id": c.id, "home_id": home_id, "order_index": i, "name": c.name, "emoji": c.emoji}
+                for i, c in enumerate(doc.insuranceCategories)
             ])

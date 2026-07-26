@@ -41,6 +41,12 @@ export interface ConsumableCategory {
   emoji: string;
 }
 
+export interface InsuranceCategory {
+  id: string;
+  name: string;
+  emoji: string;
+}
+
 export interface NotificationSettings {
   enabled: boolean;
   choresDueSoonThreshold: number;
@@ -58,6 +64,7 @@ export interface SettingsDocument {
   contactTypes: ContactType[];
   consumableUnits: string[];
   consumableCategories: ConsumableCategory[];
+  insuranceCategories: InsuranceCategory[];
   notifications: NotificationSettings;
 }
 
@@ -68,6 +75,7 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
   const contactTypes = $state<ContactType[]>([]);
   const consumableUnits = $state<string[]>([]);
   const consumableCategories = $state<ConsumableCategory[]>([]);
+  const insuranceCategories = $state<InsuranceCategory[]>([]);
   const notificationSettings = $state<NotificationSettings>({
     enabled: true, choresDueSoonThreshold: 0.25, warrantyDaysThreshold: 30,
     haPushEnabled: false, haNotifyService: null, haPushTime: "08:00",
@@ -94,6 +102,8 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
       for (const u of (doc.consumableUnits ?? [])) consumableUnits.push(u);
       consumableCategories.length = 0;
       for (const c of (doc.consumableCategories ?? [])) consumableCategories.push(c);
+      insuranceCategories.length = 0;
+      for (const c of (doc.insuranceCategories ?? [])) insuranceCategories.push(c);
       if (doc.notifications) Object.assign(notificationSettings, doc.notifications);
     } catch (e) {
       loadError = e instanceof Error ? e.message : String(e);
@@ -174,6 +184,18 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
     await init();
   }
 
+  async function updateInsuranceCategories(list: InsuranceCategory[]): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/settings/insurance-categories`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(list),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
   async function updateNotificationSettings(settings: NotificationSettings): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
@@ -212,6 +234,7 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
     get contactTypes() { return contactTypes as ContactType[]; },
     get consumableUnits() { return consumableUnits as string[]; },
     get consumableCategories() { return consumableCategories as ConsumableCategory[]; },
+    get insuranceCategories() { return insuranceCategories as InsuranceCategory[]; },
     get notificationSettings() { return notificationSettings as NotificationSettings; },
     get loaded() { return loaded; },
     get loadError() { return loadError; },
@@ -221,6 +244,7 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
     updateContactTypes,
     updateConsumableUnits,
     updateConsumableCategories,
+    updateInsuranceCategories,
     updateNotificationSettings,
     placeCostCategory,
     reload: init,

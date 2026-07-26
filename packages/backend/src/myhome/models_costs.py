@@ -13,6 +13,8 @@ class CostEntry(BaseModel):
     notes: str = ""
     roomId: str | None = None
     attachments: list[str] = []
+    sourceModule: str | None = None
+    sourceId: str | None = None
 
 
 class CostsDocument(BaseModel):

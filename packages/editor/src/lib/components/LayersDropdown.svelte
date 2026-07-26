@@ -14,7 +14,7 @@
     { id: "chores",      icon: "✅" },
     { id: "inventory",   icon: "📦" },
     { id: "consumables", icon: "🛒" },
-    { id: "costs",       icon: "💶" },
+    { id: "costs",       icon: "💰" },
     { id: "works",       icon: "🔧" },
   ];
 

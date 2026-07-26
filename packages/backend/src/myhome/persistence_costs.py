@@ -51,6 +51,7 @@ def load_costs(home_id: str) -> CostsDocument:
             id=r["id"], categoryId=r["category_id"], date=r["date"], totalAmount=r["total_amount"],
             quantity=r["quantity"], unitPrice=r["unit_price"], contactId=r["contact_id"],
             notes=r["notes"], roomId=r["room_id"], attachments=json.loads(r["attachments"]),
+            sourceModule=r["source_module"], sourceId=r["source_id"],
         )
         for r in rows
     ])
@@ -67,6 +68,7 @@ def save_costs(home_id: str, doc: CostsDocument) -> None:
                     "date": e.date, "total_amount": e.totalAmount, "quantity": e.quantity,
                     "unit_price": e.unitPrice, "contact_id": e.contactId, "notes": e.notes,
                     "room_id": e.roomId, "attachments": json.dumps(e.attachments),
+                    "source_module": e.sourceModule, "source_id": e.sourceId,
                 }
                 for i, e in enumerate(doc.entries)
             ])
