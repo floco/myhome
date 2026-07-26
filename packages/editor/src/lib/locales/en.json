@@ -863,7 +863,8 @@
       "security": "Security & Access",
       "integrations": "Integrations",
       "backup": "Backup & Restore",
-      "activity": "Activity Log"
+      "activity": "Activity Log",
+      "about": "About"
     },
     "general": {
       "home": "Home",
@@ -1031,6 +1032,22 @@
       "haNotifyService": "HA notify service",
       "haNotifyServicePlaceholder": "e.g. notify.mobile_app_pixel",
       "digestTime": "Digest time (UTC, HH:MM)"
+    },
+    "about": {
+      "appName": "My Home",
+      "updateAvailable": "Update available: v{version}",
+      "upToDate": "You're up to date",
+      "updateUnknown": "Unable to check for updates",
+      "deploymentMode": "Deployment",
+      "deploymentHa": "Home Assistant add-on",
+      "deploymentStandalone": "Standalone Docker",
+      "pythonVersion": "Backend runtime",
+      "architecture": "Architecture",
+      "dbSchemaVersion": "Database schema version",
+      "homeCount": "Homes",
+      "databaseSize": "Database size",
+      "uptime": "Uptime",
+      "loadFailed": "Unable to load system information."
     }
   },
   "datePicker": {

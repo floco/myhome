@@ -16,6 +16,9 @@ COPY packages/backend/pyproject.toml ./
 COPY packages/backend/src ./src
 RUN pip install --no-cache-dir .
 COPY --from=frontend-build /build/packages/editor/dist ./static
+COPY addon/config.yaml /tmp/addon-config.yaml
+RUN grep '^version:' /tmp/addon-config.yaml | sed 's/version: *"\(.*\)"/\1/' > /app/VERSION \
+    && rm /tmp/addon-config.yaml
 COPY addon/run.sh /run.sh
 RUN chmod +x /run.sh
 ENV STATIC_DIR=/app/static
