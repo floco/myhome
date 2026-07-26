@@ -1,3 +1,8 @@
+import httpx
+import pytest
+import respx
+from httpx import Response
+
 from myhome import system_info
 
 
@@ -66,3 +71,76 @@ def test_get_static_system_info_shape(tmp_path, monkeypatch):
     assert info["uptimeSeconds"] >= 0
     assert isinstance(info["pythonVersion"], str)
     assert isinstance(info["arch"], str)
+
+
+@pytest.fixture(autouse=True)
+def _reset_update_cache():
+    system_info.reset_update_cache()
+    yield
+    system_info.reset_update_cache()
+
+
+async def test_check_for_update_detects_update_available():
+    with respx.mock:
+        respx.get(system_info._GITHUB_TAGS_URL).mock(
+            return_value=Response(200, json=[{"name": "v0.9.0"}, {"name": "v0.8.0"}])
+        )
+        result = await system_info.check_for_update("0.8.0")
+    assert result["status"] == "update_available"
+    assert result["latestVersion"] == "0.9.0"
+    assert result["checkedAt"] is not None
+
+
+async def test_check_for_update_detects_up_to_date():
+    with respx.mock:
+        respx.get(system_info._GITHUB_TAGS_URL).mock(
+            return_value=Response(200, json=[{"name": "v0.8.0"}, {"name": "v0.7.1"}])
+        )
+        result = await system_info.check_for_update("0.8.0")
+    assert result["status"] == "up_to_date"
+    assert result["latestVersion"] == "0.8.0"
+
+
+async def test_check_for_update_returns_unknown_on_network_failure():
+    with respx.mock:
+        respx.get(system_info._GITHUB_TAGS_URL).mock(side_effect=httpx.ConnectError("boom"))
+        result = await system_info.check_for_update("0.8.0")
+    assert result["status"] == "unknown"
+    assert result["latestVersion"] is None
+
+
+async def test_check_for_update_handles_unparseable_current_version():
+    with respx.mock:
+        respx.get(system_info._GITHUB_TAGS_URL).mock(
+            return_value=Response(200, json=[{"name": "v0.8.0"}])
+        )
+        result = await system_info.check_for_update("unknown")
+    assert result["status"] == "unknown"
+
+
+async def test_check_for_update_falls_back_to_cached_result_on_later_failure():
+    with respx.mock:
+        respx.get(system_info._GITHUB_TAGS_URL).mock(
+            return_value=Response(200, json=[{"name": "v0.8.0"}])
+        )
+        first = await system_info.check_for_update("0.8.0")
+    assert first["status"] == "up_to_date"
+
+    # Force the cache to look stale so the next call re-fetches.
+    system_info._update_cache["checkedAt"] = "2000-01-01T00:00:00+00:00"
+
+    with respx.mock:
+        respx.get(system_info._GITHUB_TAGS_URL).mock(side_effect=httpx.ConnectError("boom"))
+        second = await system_info.check_for_update("0.8.0")
+    assert second["status"] == "up_to_date"
+    assert second["latestVersion"] == "0.8.0"
+
+
+async def test_check_for_update_uses_cache_within_ttl():
+    with respx.mock:
+        route = respx.get(system_info._GITHUB_TAGS_URL).mock(
+            return_value=Response(200, json=[{"name": "v0.8.0"}])
+        )
+        await system_info.check_for_update("0.8.0")
+        await system_info.check_for_update("0.8.0")
+    assert route.call_count == 1
