@@ -4,6 +4,7 @@ from .models_contacts import Contact
 from .models_settings import (
     ConsumableCategory,
     CostCategory,
+    InsuranceCategory,
     InventoryCategory,
     SettingsDocument,
     WorkCategory,
@@ -58,6 +59,25 @@ _CONSUMABLE_CATEGORIES = [
     ConsumableCategory(id="ccat-office", name="Office Supplies", emoji="📎"),
 ]
 
+_INSURANCE_CATEGORIES = [
+    InsuranceCategory(id="icat-home", name="Home", emoji="🏠"),
+    InsuranceCategory(id="icat-auto", name="Auto", emoji="🚗"),
+    InsuranceCategory(id="icat-health", name="Health", emoji="⚕️"),
+    InsuranceCategory(id="icat-life", name="Life", emoji="❤️"),
+    InsuranceCategory(id="icat-travel", name="Travel", emoji="✈️"),
+    InsuranceCategory(id="icat-liability", name="Liability", emoji="🛡️"),
+]
+
+# (name, categoryId, premiumAmount, premiumFrequency, includeInCosts)
+INSURANCE_POLICIES: list[tuple[str, str, float, str, bool]] = [
+    ("Home Insurance — AXA", "icat-home", 42.0, "monthly", True),
+    ("Car Insurance — Allianz", "icat-auto", 65.0, "monthly", False),
+    ("Health Insurance — Mutuelle Générale", "icat-health", 180.0, "monthly", False),
+    ("Life Insurance — CNP", "icat-life", 25.0, "monthly", False),
+    ("Annual Travel Insurance — Europ Assistance", "icat-travel", 89.0, "annual", False),
+    ("Personal Liability — MAIF", "icat-liability", 60.0, "annual", False),
+]
+
 _CONTACTS = [
     Contact(id="sup-metro-plumbing", name="Metro Plumbing Co.", typeId="ctype-supplier"),
     Contact(id="sup-brightspark-electric", name="BrightSpark Electric", typeId="ctype-supplier"),
@@ -77,6 +97,7 @@ def generate_demo_settings() -> SettingsDocument:
         workCategories=list(_WORK_CATEGORIES),
         inventoryCategories=list(_INVENTORY_CATEGORIES),
         consumableCategories=list(_CONSUMABLE_CATEGORIES),
+        insuranceCategories=list(_INSURANCE_CATEGORIES),
         contactTypes=_default_contact_types(),
         consumableUnits=_default_consumable_units(),
     )

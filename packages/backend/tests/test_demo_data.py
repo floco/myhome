@@ -163,6 +163,32 @@ def test_generate_demo_works_reference_valid_categories_and_floors():
         assert w.placement.floorId in floor_ids
 
 
+from myhome.demo_data import generate_demo_insurance
+
+
+def test_generate_demo_insurance_covers_every_category():
+    settings = generate_demo_settings()
+    contacts = generate_demo_contacts()
+    doc = generate_demo_insurance(settings, contacts, random.Random(42))
+    category_ids = {c.id for c in settings.insuranceCategories}
+    seen_categories = {p.categoryId for p in doc.policies}
+    assert seen_categories == category_ids
+    for p in doc.policies:
+        assert p.categoryId in category_ids
+        if p.contactId is not None:
+            assert p.contactId in {c.id for c in contacts}
+
+
+def test_generate_demo_insurance_only_home_category_includes_costs():
+    settings = generate_demo_settings()
+    contacts = generate_demo_contacts()
+    doc = generate_demo_insurance(settings, contacts, random.Random(42))
+    home_policies = [p for p in doc.policies if p.categoryId == "icat-home"]
+    non_home_policies = [p for p in doc.policies if p.categoryId != "icat-home"]
+    assert any(p.includeInCosts for p in home_policies)
+    assert all(not p.includeInCosts for p in non_home_policies)
+
+
 from myhome.demo_data import generate_demo_kb
 
 
@@ -267,6 +293,7 @@ from myhome import (
     persistence_consumables,
     persistence_contacts,
     persistence_costs,
+    persistence_insurance,
     persistence_inventory,
     persistence_kb,
     persistence_settings,
@@ -317,3 +344,6 @@ def test_seed_demo_home_writes_every_module(tmp_path, monkeypatch):
 
     contacts = persistence_contacts.load_contacts(home_id)
     assert len(contacts.contacts) == 9
+
+    insurance = persistence_insurance.load_insurance(home_id)
+    assert len(insurance.policies) == 6
