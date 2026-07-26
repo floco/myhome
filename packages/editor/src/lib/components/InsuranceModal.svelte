@@ -139,7 +139,6 @@
   const currentPolicy = $derived(
     policy ? (store.policies.find(p => p.id === policy.id) ?? policy) : null
   );
-  const attachmentCount = $derived(currentPolicy?.attachments.length ?? 0);
 
   const mediaItems = $derived<MediaItem[]>(
     (currentPolicy?.attachments ?? []).map(fname => {

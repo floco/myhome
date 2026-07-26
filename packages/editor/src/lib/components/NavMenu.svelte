@@ -9,7 +9,7 @@
   }
   let { currentRoute, expanded, onclose }: Props = $props();
 
-  const ALL_MODULES = [
+  const ALL_MODULES: { id: string; href: string; icon: string; placeholder?: boolean }[] = [
     { id: "home",        href: "#/",            icon: "🏡" },
     { id: "plan",        href: "#/plan",        icon: "📐" },
     { id: "chores",      href: "#/chores",      icon: "✅" },

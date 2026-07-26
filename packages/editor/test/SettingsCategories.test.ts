@@ -11,6 +11,12 @@ function makeStore() {
     consumableUnits: ["tablets"],
     consumableCategories: [{ id: "cc1", name: "Cleaning", emoji: "🧼" }],
     insuranceCategories: [{ id: "icat-home", name: "Home", emoji: "🏠" }],
+    notificationSettings: {
+      enabled: true, choresDueSoonThreshold: 0.25, warrantyDaysThreshold: 30,
+      haPushEnabled: false, haNotifyService: null, haPushTime: "08:00",
+    },
+    loaded: true,
+    loadError: null,
     updateCostCategories: vi.fn(),
     updateInventoryCategories: vi.fn(),
     updateWorkCategories: vi.fn(),
@@ -18,6 +24,9 @@ function makeStore() {
     updateConsumableUnits: vi.fn(),
     updateConsumableCategories: vi.fn(),
     updateInsuranceCategories: vi.fn(),
+    updateNotificationSettings: vi.fn(),
+    placeCostCategory: vi.fn(),
+    reload: vi.fn(),
   };
 }
 

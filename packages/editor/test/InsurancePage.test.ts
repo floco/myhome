@@ -19,16 +19,32 @@ function makeInsuranceStore(policies: InsurancePolicy[]) {
   return {
     policies, loaded: true, loadError: null,
     createPolicy: vi.fn(), updatePolicy: vi.fn(), deletePolicy: vi.fn(),
-    uploadAttachment: vi.fn(), deleteAttachment: vi.fn(),
+    uploadAttachment: vi.fn(), deleteAttachment: vi.fn(), reload: vi.fn(),
   };
 }
 
 function makeSettingsStore() {
-  return { insuranceCategories: [{ id: "icat-home", name: "Home", emoji: "🏠" }] };
+  return {
+    costCategories: [], inventoryCategories: [], workCategories: [], contactTypes: [],
+    consumableUnits: [], consumableCategories: [],
+    insuranceCategories: [{ id: "icat-home", name: "Home", emoji: "🏠" }],
+    notificationSettings: {
+      enabled: true, choresDueSoonThreshold: 0.25, warrantyDaysThreshold: 30,
+      haPushEnabled: false, haNotifyService: null, haPushTime: "08:00",
+    },
+    loaded: true, loadError: null,
+    updateCostCategories: vi.fn(), updateInventoryCategories: vi.fn(), updateWorkCategories: vi.fn(),
+    updateContactTypes: vi.fn(), updateConsumableUnits: vi.fn(), updateConsumableCategories: vi.fn(),
+    updateInsuranceCategories: vi.fn(), updateNotificationSettings: vi.fn(), placeCostCategory: vi.fn(),
+    reload: vi.fn(),
+  };
 }
 
 function makeContactsStore() {
-  return { contacts: [] };
+  return {
+    contacts: [], loaded: true, loadError: null,
+    createContact: vi.fn(), updateContact: vi.fn(), deleteContact: vi.fn(), getUsage: vi.fn(), reload: vi.fn(),
+  };
 }
 
 describe("InsurancePage — list rendering", () => {

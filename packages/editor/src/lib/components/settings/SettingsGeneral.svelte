@@ -80,7 +80,7 @@
     }
   }
 
-  const MODULES = [
+  const MODULES: { id: string; icon: string; placeholder?: boolean }[] = [
     { id: "home",        icon: "🏡" },
     { id: "plan",        icon: "📐" },
     { id: "chores",      icon: "✅" },
