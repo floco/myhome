@@ -179,6 +179,6 @@ app.mount("/mcp", _gated_mcp_app)
 
 _static_dir = Path(os.environ.get("STATIC_DIR", "/app/static"))
 if _static_dir.exists():
-    from fastapi.staticfiles import StaticFiles
+    from .caching_static import CachingStaticFiles
 
-    app.mount("/", StaticFiles(directory=str(_static_dir), html=True), name="static")
+    app.mount("/", CachingStaticFiles(directory=str(_static_dir), html=True), name="static")
