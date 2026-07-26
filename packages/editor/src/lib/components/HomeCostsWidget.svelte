@@ -34,7 +34,7 @@
 <div class="widget" role="button" tabindex="0" onclick={onnavigate} onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onnavigate(); } }}>
   <Card>
     <div class="header">
-      <h3>💶 {$_('common.modules.costs')}</h3>
+      <h3>💰 {$_('common.modules.costs')}</h3>
       <span class="sub">{lastCompleteYearNum}</span>
     </div>
     {#if breakdown.length === 0}

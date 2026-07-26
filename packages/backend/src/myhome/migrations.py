@@ -23,7 +23,7 @@ from .schema import (
     work_categories,
 )
 
-CURRENT_VERSION = 5
+CURRENT_VERSION = 6
 
 
 def _drop_kb_folders_table(conn: Connection) -> None:
@@ -86,11 +86,58 @@ def _absorb_suppliers_into_contacts(conn: Connection) -> None:
             )
 
 
+_DEFAULT_INSURANCE_CATEGORIES = [
+    ("icat-home", "Home", "🏠"),
+    ("icat-auto", "Auto", "🚗"),
+    ("icat-health", "Health", "⚕️"),
+    ("icat-life", "Life", "❤️"),
+    ("icat-travel", "Travel", "✈️"),
+    ("icat-liability", "Liability", "🛡️"),
+]
+
+
+def _add_insurance_support(conn: Connection) -> None:
+    # insurance_categories is a brand-new table -- create_all() already
+    # created it (empty) for every home before this migration runs, same
+    # situation contact_types was in for migration 5. Back-fill defaults so
+    # upgraded homes start with the same category list a fresh home gets;
+    # load_settings()'s lazy "row is None" default-seed path won't fire
+    # again for any home whose settings row already exists.
+    conn.execute(text("ALTER TABLE cost_entries ADD COLUMN source_module VARCHAR"))
+    conn.execute(text("ALTER TABLE cost_entries ADD COLUMN source_id VARCHAR"))
+    home_ids = [r[0] for r in conn.execute(text("SELECT id FROM homes")).all()]
+    for home_id in home_ids:
+        for i, (cat_id, name, emoji) in enumerate(_DEFAULT_INSURANCE_CATEGORIES):
+            conn.execute(
+                text(
+                    "INSERT INTO insurance_categories (id, home_id, order_index, name, emoji) "
+                    "VALUES (:id, :home_id, :i, :name, :emoji)"
+                ),
+                {"id": cat_id, "home_id": home_id, "i": i, "name": name, "emoji": emoji},
+            )
+        existing = conn.execute(
+            text("SELECT 1 FROM cost_categories WHERE home_id = :h AND id = 'cat-insurance'"),
+            {"h": home_id},
+        ).first()
+        if existing is None:
+            count = conn.execute(
+                text("SELECT COUNT(*) FROM cost_categories WHERE home_id = :h"), {"h": home_id}
+            ).scalar()
+            conn.execute(
+                text(
+                    "INSERT INTO cost_categories (id, home_id, order_index, name, emoji, unit, color) "
+                    "VALUES ('cat-insurance', :h, :i, 'Insurance', '🛡️', NULL, '#7a5cc4')"
+                ),
+                {"h": home_id, "i": count},
+            )
+
+
 MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (2, _drop_kb_folders_table),
     (3, _add_ha_user_id_column),
     (4, _scope_category_tables_by_home),
     (5, _absorb_suppliers_into_contacts),
+    (6, _add_insurance_support),
 ]
 
 

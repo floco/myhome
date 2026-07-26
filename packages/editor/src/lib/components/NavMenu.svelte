@@ -9,7 +9,7 @@
   }
   let { currentRoute, expanded, onclose }: Props = $props();
 
-  const ALL_MODULES = [
+  const ALL_MODULES: { id: string; href: string; icon: string; placeholder?: boolean }[] = [
     { id: "home",        href: "#/",            icon: "🏡" },
     { id: "plan",        href: "#/plan",        icon: "📐" },
     { id: "chores",      href: "#/chores",      icon: "✅" },
@@ -17,14 +17,12 @@
     { id: "consumables", href: "#/consumables", icon: "🛒" },
     { id: "works",       href: "#/works",       icon: "🔧" },
     { id: "kb",          href: "#/kb",          icon: "📖" },
-    { id: "costs",       href: "#/costs",       icon: "💶" },
+    { id: "costs",       href: "#/costs",       icon: "💰" },
     { id: "locations",   href: "#/locations",   icon: "🌍" },
     { id: "properties",  href: "#/properties",  icon: "🏘" },
     { id: "build",       href: "#/build",       icon: "🏗️" },
-    { id: "budget",      href: "#/budget",      icon: "💰", placeholder: true },
-    { id: "visits",      href: "#/visits",      icon: "📅", placeholder: true },
     { id: "contacts",    href: "#/contacts",    icon: "👤" },
-    { id: "checklist",   href: "#/checklist",   icon: "✅", placeholder: true },
+    { id: "insurance",   href: "#/insurance",   icon: "🛡️" },
   ];
 
   const visibleModules = $derived(

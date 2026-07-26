@@ -183,10 +183,8 @@
       "locations": "Locations",
       "properties": "Properties",
       "build": "Build",
-      "budget": "Budget",
-      "visits": "Visits",
       "contacts": "Contacts",
-      "checklist": "Checklist"
+      "insurance": "Insurance"
     },
     "search": {
       "placeholder": "Search chores, inventory, works, costs…",
@@ -483,6 +481,55 @@
       "doneEditing": "Done editing",
       "confirm": "Confirm",
       "titleRequired": "Title is required",
+      "saveFailed": "Save failed",
+      "deleteFailed": "Delete failed",
+      "uploadFailed": "Upload failed"
+    }
+  },
+  "insurance": {
+    "page": {
+      "emptyCharts": "No insurance policies yet — click ＋ Add policy to get started.",
+      "byCategory": "By category",
+      "annualCost": "Annual cost",
+      "policies": "Policies",
+      "search": "Search policies…",
+      "addPolicy": "Add policy",
+      "name": "Name",
+      "premium": "Premium",
+      "startDate": "Start date",
+      "endDate": "Renewal date",
+      "expired": "Expired",
+      "emptyNoPolicies": "No insurance policies yet — click ＋ Add policy to get started.",
+      "emptyNoMatch": "No policies match your filters.",
+      "footer": "{n} policies"
+    },
+    "frequency": {
+      "monthly": "month",
+      "quarterly": "quarter",
+      "annual": "year",
+      "other": "other"
+    },
+    "modal": {
+      "newPolicy": "New policy",
+      "editPolicy": "Edit policy",
+      "namePlaceholder": "e.g. Home Insurance — AXA",
+      "nameRequired": "Name is required",
+      "categoryRequired": "Category is required",
+      "costTab": "Cost",
+      "coverageTab": "Coverage",
+      "alternativesTab": "Alternatives",
+      "policyNumber": "Policy number",
+      "policyNumberPlaceholder": "POL-123456",
+      "premiumAmount": "Premium (€)",
+      "premiumFrequency": "Billed",
+      "includeInCosts": "Include in Costs module",
+      "includeInCostsHint": "When on, this policy's annualized premium is kept in sync as an entry in the Costs module. Turn this off for policies that shouldn't count toward household costs (e.g. travel, life).",
+      "coverageSummary": "What it covers",
+      "coverageSummaryPlaceholder": "Summary of coverage…",
+      "conditionsUrl": "Conditions / policy link",
+      "attachAfterCreate": "Save the policy first to attach documents.",
+      "alternatives": "Alternatives / competitors",
+      "alternativesPlaceholder": "Notes on competing quotes…",
       "saveFailed": "Save failed",
       "deleteFailed": "Delete failed",
       "uploadFailed": "Upload failed"
@@ -831,8 +878,6 @@
       "language": "Language",
       "modules": "Modules",
       "modulesDesc": "Choose which modules are visible in the nav for this home.",
-      "coreModules": "Core modules",
-      "projectModules": "Project modules",
       "placeholderTag": "Placeholder",
       "deleteHomeTitle": "Delete home",
       "deleteHomePrefix": "Delete",
@@ -910,7 +955,8 @@
         "inventory": "Inventory categories",
         "work": "Work categories",
         "contactTypes": "Contact Types",
-        "consumables": "Consumables"
+        "consumables": "Consumables",
+        "insurance": "Insurance categories"
       },
       "deleteConfirm": "Delete?",
       "name": "Name",
@@ -1106,9 +1152,7 @@
       "delete": "Delete"
     },
     "placeholder": {
-      "budgetDescription": "Plan and track your acquisition or build budget.",
-      "visitsDescription": "Schedule and log site visits and viewings.",
-      "checklistDescription": "Track tasks and due diligence items for your project."
+      "insuranceDescription": "Track home insurance policies, coverage, and renewals."
     },
     "changePassword": {
       "title": "Change Password",

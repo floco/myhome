@@ -80,7 +80,7 @@
     }
   }
 
-  const CORE_MODULES = [
+  const MODULES: { id: string; icon: string; placeholder?: boolean }[] = [
     { id: "home",        icon: "🏡" },
     { id: "plan",        icon: "📐" },
     { id: "chores",      icon: "✅" },
@@ -88,17 +88,12 @@
     { id: "consumables", icon: "🛒" },
     { id: "works",       icon: "🔧" },
     { id: "kb",          icon: "📖" },
-    { id: "costs",       icon: "💶" },
-  ];
-
-  const PROJECT_MODULES = [
+    { id: "costs",       icon: "💰" },
     { id: "locations",  icon: "🌍" },
     { id: "properties", icon: "🏘" },
     { id: "build",      icon: "🏗️" },
-    { id: "budget",     icon: "💰" },
-    { id: "visits",     icon: "📅" },
     { id: "contacts",   icon: "👤" },
-    { id: "checklist",  icon: "✅" },
+    { id: "insurance",  icon: "🛡️" },
   ];
 </script>
 
@@ -161,8 +156,7 @@
   {/if}
 
   <div class="module-group">
-    <h3 class="group-label">{$_('settings.general.coreModules')}</h3>
-    {#each CORE_MODULES as mod (mod.id)}
+    {#each MODULES as mod (mod.id)}
       <label class="module-row">
         <input
           type="checkbox"
@@ -171,21 +165,7 @@
         />
         <span class="mod-icon">{mod.icon}</span>
         <span class="mod-label">{$_(`common.modules.${mod.id}`)}</span>
-      </label>
-    {/each}
-  </div>
-
-  <div class="module-group">
-    <h3 class="group-label">{$_('settings.general.projectModules')} <span class="soon-tag">{$_('settings.general.placeholderTag')}</span></h3>
-    {#each PROJECT_MODULES as mod (mod.id)}
-      <label class="module-row">
-        <input
-          type="checkbox"
-          checked={homesStore.activeHome?.enabledModules.includes(mod.id) ?? false}
-          onchange={() => toggleModule(mod.id)}
-        />
-        <span class="mod-icon">{mod.icon}</span>
-        <span class="mod-label">{$_(`common.modules.${mod.id}`)}</span>
+        {#if mod.placeholder}<span class="soon-tag">{$_('settings.general.placeholderTag')}</span>{/if}
       </label>
     {/each}
   </div>
@@ -211,7 +191,6 @@
 
   .section-desc { font-size: 13px; color: var(--text-muted); margin: 0 0 12px; }
   .module-group { margin-bottom: 16px; }
-  .group-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
   .module-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; cursor: pointer; }
   .module-row input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; }
   .mod-icon { font-size: 16px; width: 20px; text-align: center; }

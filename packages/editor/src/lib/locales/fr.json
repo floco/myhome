@@ -183,10 +183,8 @@
       "locations": "Emplacements",
       "properties": "Biens",
       "build": "Construction",
-      "budget": "Budget",
-      "visits": "Visites",
       "contacts": "Contacts",
-      "checklist": "Checklist"
+      "insurance": "Assurance"
     },
     "search": {
       "placeholder": "Rechercher corvées, inventaire, travaux, coûts…",
@@ -483,6 +481,55 @@
       "doneEditing": "Terminer l'édition",
       "confirm": "Confirmer",
       "titleRequired": "Le titre est requis",
+      "saveFailed": "Échec de l'enregistrement",
+      "deleteFailed": "Échec de la suppression",
+      "uploadFailed": "Échec de l'envoi"
+    }
+  },
+  "insurance": {
+    "page": {
+      "emptyCharts": "Aucune police d'assurance pour l'instant — cliquez sur ＋ Ajouter une police pour commencer.",
+      "byCategory": "Par catégorie",
+      "annualCost": "Coût annuel",
+      "policies": "Polices",
+      "search": "Rechercher des polices…",
+      "addPolicy": "Ajouter une police",
+      "name": "Nom",
+      "premium": "Prime",
+      "startDate": "Date de début",
+      "endDate": "Date de renouvellement",
+      "expired": "Expirée",
+      "emptyNoPolicies": "Aucune police d'assurance pour l'instant — cliquez sur ＋ Ajouter une police pour commencer.",
+      "emptyNoMatch": "Aucune police ne correspond à vos filtres.",
+      "footer": "{n} polices"
+    },
+    "frequency": {
+      "monthly": "mois",
+      "quarterly": "trimestre",
+      "annual": "an",
+      "other": "autre"
+    },
+    "modal": {
+      "newPolicy": "Nouvelle police",
+      "editPolicy": "Modifier la police",
+      "namePlaceholder": "ex. Assurance Habitation — AXA",
+      "nameRequired": "Le nom est requis",
+      "categoryRequired": "La catégorie est requise",
+      "costTab": "Coût",
+      "coverageTab": "Couverture",
+      "alternativesTab": "Alternatives",
+      "policyNumber": "Numéro de police",
+      "policyNumberPlaceholder": "POL-123456",
+      "premiumAmount": "Prime (€)",
+      "premiumFrequency": "Facturée",
+      "includeInCosts": "Inclure dans le module Coûts",
+      "includeInCostsHint": "Lorsque activé, la prime annualisée de cette police est synchronisée comme une entrée dans le module Coûts. Désactivez pour les polices qui ne doivent pas compter dans les coûts du foyer (ex. voyage, vie).",
+      "coverageSummary": "Ce qui est couvert",
+      "coverageSummaryPlaceholder": "Résumé de la couverture…",
+      "conditionsUrl": "Conditions / lien de la police",
+      "attachAfterCreate": "Enregistrez d'abord la police pour joindre des documents.",
+      "alternatives": "Alternatives / concurrents",
+      "alternativesPlaceholder": "Notes sur les devis concurrents…",
       "saveFailed": "Échec de l'enregistrement",
       "deleteFailed": "Échec de la suppression",
       "uploadFailed": "Échec de l'envoi"
@@ -831,8 +878,6 @@
       "language": "Langue",
       "modules": "Modules",
       "modulesDesc": "Choisissez les modules visibles dans la navigation pour ce logement.",
-      "coreModules": "Modules principaux",
-      "projectModules": "Modules projet",
       "placeholderTag": "Provisoire",
       "deleteHomeTitle": "Supprimer le logement",
       "deleteHomePrefix": "Supprimer",
@@ -910,7 +955,8 @@
         "inventory": "Catégories d'inventaire",
         "work": "Catégories de travaux",
         "contactTypes": "Types de contact",
-        "consumables": "Consommables"
+        "consumables": "Consommables",
+        "insurance": "Catégories d'assurance"
       },
       "deleteConfirm": "Supprimer ?",
       "name": "Nom",
@@ -1106,9 +1152,7 @@
       "delete": "Supprimer"
     },
     "placeholder": {
-      "budgetDescription": "Planifiez et suivez votre budget d'acquisition ou de construction.",
-      "visitsDescription": "Planifiez et enregistrez les visites du site.",
-      "checklistDescription": "Suivez les tâches et les éléments de diligence raisonnable de votre projet."
+      "insuranceDescription": "Suivez les polices d'assurance habitation, les garanties et les renouvellements."
     },
     "changePassword": {
       "title": "Changer le mot de passe",

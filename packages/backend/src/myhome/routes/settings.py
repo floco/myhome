@@ -7,6 +7,7 @@ from ..models_settings import (
     NotificationSettings,
     WorkCategory,
     ContactType,
+    InsuranceCategory,
     SettingsDocument,
 )
 from ..persistence_settings import load_settings, save_settings
@@ -78,6 +79,13 @@ def put_consumable_units(home_id: str, body: list[str]) -> None:
 def put_consumable_categories(home_id: str, body: list[ConsumableCategory]) -> None:
     doc = load_settings(home_id)
     doc.consumableCategories = body
+    save_settings(home_id, doc)
+
+
+@router.put("/api/homes/{home_id}/settings/insurance-categories", status_code=204)
+def put_insurance_categories(home_id: str, body: list[InsuranceCategory]) -> None:
+    doc = load_settings(home_id)
+    doc.insuranceCategories = body
     save_settings(home_id, doc)
 
 

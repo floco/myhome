@@ -8,6 +8,7 @@ from . import (  # noqa: F401 - imported for the side effect of registering tool
     mcp_tools_contacts,
     mcp_tools_costs,
     mcp_tools_homes,
+    mcp_tools_insurance,
     mcp_tools_inventory,
     mcp_tools_kb,
     mcp_tools_locations,
