@@ -863,7 +863,8 @@
       "security": "Sécurité et accès",
       "integrations": "Intégrations",
       "backup": "Sauvegarde et restauration",
-      "activity": "Journal d'activité"
+      "activity": "Journal d'activité",
+      "about": "À propos"
     },
     "general": {
       "home": "Logement",
@@ -1031,6 +1032,22 @@
       "haNotifyService": "Service de notification HA",
       "haNotifyServicePlaceholder": "ex. notify.mobile_app_pixel",
       "digestTime": "Heure du résumé (UTC, HH:MM)"
+    },
+    "about": {
+      "appName": "My Home",
+      "updateAvailable": "Mise à jour disponible : v{version}",
+      "upToDate": "Vous êtes à jour",
+      "updateUnknown": "Impossible de vérifier les mises à jour",
+      "deploymentMode": "Déploiement",
+      "deploymentHa": "Module complémentaire Home Assistant",
+      "deploymentStandalone": "Docker autonome",
+      "pythonVersion": "Moteur backend",
+      "architecture": "Architecture",
+      "dbSchemaVersion": "Version du schéma de base de données",
+      "homeCount": "Logements",
+      "databaseSize": "Taille de la base de données",
+      "uptime": "Disponibilité",
+      "loadFailed": "Impossible de charger les informations système."
     }
   },
   "datePicker": {
