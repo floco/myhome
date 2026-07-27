@@ -58,7 +58,7 @@ describe("BuildPage", () => {
     expect(target.querySelector(".start-card")).toBeFalsy();
     expect(target.querySelector(".tab-bar")).toBeFalsy();
 
-    const values = Array.from(target.querySelectorAll(".stat-value")).map((el) => el.textContent);
+    const values = Array.from(target.querySelectorAll(".ui-stat-value")).map((el) => el.textContent);
     expect(values.length).toBe(5);
 
     expect(target.querySelector("table")).toBeTruthy();
@@ -67,19 +67,19 @@ describe("BuildPage", () => {
     target.remove();
   });
 
-  it("puts the card title above the value in each stat card", async () => {
+  it("puts the value above the label in each stat card", async () => {
     const { store, target } = renderPage(seededDoc);
     await waitTick();
     const comp = mount(BuildPage, { target, props: { store, onopentask: vi.fn() } });
     await tick();
     flushSync();
 
-    const firstCard = target.querySelector(".stat-row .ui-card") as HTMLElement;
+    const firstCard = target.querySelector(".ui-stat-row .ui-card") as HTMLElement;
     const children = Array.from(firstCard.children);
-    const titleIndex = children.findIndex((c) => c.classList.contains("stat-title"));
-    const valueIndex = children.findIndex((c) => c.classList.contains("stat-value"));
-    expect(titleIndex).toBeGreaterThanOrEqual(0);
-    expect(titleIndex).toBeLessThan(valueIndex);
+    const valueIndex = children.findIndex((c) => c.classList.contains("ui-stat-value"));
+    const labelIndex = children.findIndex((c) => c.classList.contains("ui-stat-label"));
+    expect(valueIndex).toBeGreaterThanOrEqual(0);
+    expect(valueIndex).toBeLessThan(labelIndex);
 
     unmount(comp);
     target.remove();

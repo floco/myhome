@@ -9,6 +9,8 @@
   import SortableTable from "./ui/SortableTable.svelte";
   import type { Column } from "./ui/SortableTable.types";
   import Card from "./ui/Card.svelte";
+  import StatTile from "./ui/StatTile.svelte";
+  import StatTileRow from "./ui/StatTileRow.svelte";
   import WorksTimeline from "./WorksTimeline.svelte";
 
   type WorksStore = ReturnType<typeof createWorksStore>;
@@ -98,27 +100,18 @@
       <p>{$_('works.page.emptyCharts')}</p>
     </div>
   {:else}
+    <div class="stat-row-wrap">
+      <StatTileRow>
+        <StatTile label={$_('works.status.planned')} value={plannedCount} />
+        <StatTile label={$_('works.status.inProgress')} value={inProgressCount} />
+        <StatTile label={$_('works.status.done')} value={doneCount} />
+        <StatTile label={$_('works.page.totalCost')} value={`${fmt(allTimeCost)} €`} />
+      </StatTileRow>
+    </div>
+
     <div class="chart-card-wrap">
       <Card>
         <div class="chart-label">{$_('works.page.houseTimeline')}</div>
-        <div class="stat-chips-row">
-          <div class="stat-chip">
-            <div class="stat-title">{$_('works.status.planned')}</div>
-            <div class="stat-value">{plannedCount}</div>
-          </div>
-          <div class="stat-chip">
-            <div class="stat-title">{$_('works.status.inProgress')}</div>
-            <div class="stat-value">{inProgressCount}</div>
-          </div>
-          <div class="stat-chip">
-            <div class="stat-title">{$_('works.status.done')}</div>
-            <div class="stat-value">{doneCount}</div>
-          </div>
-          <div class="stat-chip">
-            <div class="stat-title">{$_('works.page.totalCost')}</div>
-            <div class="stat-value">{fmt(allTimeCost)} €</div>
-          </div>
-        </div>
         <WorksTimeline works={store.works} onworkclick={handleTimelineClick} />
       </Card>
     </div>
@@ -219,13 +212,8 @@
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
   }
-  .stat-chips-row { display: flex; gap: 8px; margin-bottom: 10px; }
-  .stat-chip {
-    flex: 1; background: var(--surface-alt); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 6px 10px;
-  }
-  .stat-title { font-size: 8px; color: var(--text-faint); text-transform: uppercase; margin-bottom: 2px; }
-  .stat-value { font-size: 13px; color: var(--text); font-weight: 600; }
+
+  .stat-row-wrap { padding: var(--space-4) var(--space-4) 0; flex-shrink: 0; }
 
   .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
 

@@ -9,6 +9,8 @@
   import SortableTable from "./ui/SortableTable.svelte";
   import type { Column } from "./ui/SortableTable.types";
   import Card from "./ui/Card.svelte";
+  import StatTile from "./ui/StatTile.svelte";
+  import StatTileRow from "./ui/StatTileRow.svelte";
   import DonutChart from "./DonutChart.svelte";
   import { assignCategoryColors } from "../colorAssignment";
 
@@ -94,32 +96,21 @@
   {:else}
     <div class="chart-card-wrap">
       <Card>
-        <div class="chart-inner">
-          <div class="pie-area">
-            <div class="chart-label">{$_('insurance.page.byCategory')}</div>
-            <DonutChart
-              segments={categoryBreakdown}
-              centerLabel={$_('insurance.page.annualCost')}
-              centerValue={`${fmt(totalAnnualCost)} €`}
-              showLabels={true}
-            />
-          </div>
-          <div class="chart-divider"></div>
-          <div class="stats-area">
-            <div class="chart-label">{$_('chores.page.atAGlance')}</div>
-            <div class="stat-chips-col">
-              <div class="stat-chip">
-                <div class="stat-title">{$_('insurance.page.policies')}</div>
-                <div class="stat-value">{store.policies.length}</div>
-              </div>
-              <div class="stat-chip">
-                <div class="stat-title">{$_('insurance.page.annualCost')}</div>
-                <div class="stat-value">{fmt(totalAnnualCost)} €</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div class="chart-label">{$_('insurance.page.byCategory')}</div>
+        <DonutChart
+          segments={categoryBreakdown}
+          centerLabel={$_('insurance.page.annualCost')}
+          centerValue={`${fmt(totalAnnualCost)} €`}
+          showLabels={true}
+        />
       </Card>
+    </div>
+
+    <div class="stat-row-wrap">
+      <StatTileRow>
+        <StatTile label={$_('insurance.page.policies')} value={store.policies.length} />
+        <StatTile label={$_('insurance.page.annualCost')} value={`${fmt(totalAnnualCost)} €`} />
+      </StatTileRow>
     </div>
   {/if}
 
@@ -202,22 +193,12 @@
   .empty-charts p { margin: 0; font-size: 13px; }
 
   .chart-card-wrap { padding: var(--space-4); flex-shrink: 0; }
-  .chart-inner { display: flex; gap: 24px; align-items: center; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
   }
-  .pie-area { flex-shrink: 0; }
-  .chart-divider { width: 1px; background: var(--border); align-self: stretch; flex-shrink: 0; margin: 0 8px; }
 
-  .stats-area { flex: 1; min-width: 0; }
-  .stat-chips-col { display: flex; flex-direction: column; gap: 8px; max-width: 220px; }
-  .stat-chip {
-    background: var(--surface-alt); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 6px 10px;
-  }
-  .stat-title { font-size: 8px; color: var(--text-faint); text-transform: uppercase; margin-bottom: 2px; }
-  .stat-value { font-size: 13px; color: var(--text); font-weight: 600; }
+  .stat-row-wrap { padding: 0 var(--space-4) var(--space-4); flex-shrink: 0; }
 
   .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
 

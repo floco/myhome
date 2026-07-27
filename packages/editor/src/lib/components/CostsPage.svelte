@@ -10,6 +10,8 @@
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
   import Card from "./ui/Card.svelte";
+  import StatTile from "./ui/StatTile.svelte";
+  import StatTileRow from "./ui/StatTileRow.svelte";
   import DonutChart from "./DonutChart.svelte";
   import SortableTable from "./ui/SortableTable.svelte";
   import type { Column } from "./ui/SortableTable.types";
@@ -218,27 +220,33 @@
                 {/each}
               </div>
             </div>
-            <div class="stat-chips">
-              <div class="stat-chip">
-                <div class="stat-title">{$_('costs.page.tenYearAvg')}</div>
-                <div class="stat-value">{$_('costs.page.perYear', { values: { amount: tenYearAvg.toLocaleString(undefined, { maximumFractionDigits: 0 }) } })}</div>
-              </div>
-              <div class="stat-chip">
-                <div class="stat-title">{$_('costs.page.lastCompleteYr')}</div>
-                <div class="stat-value">
-                  {lastCompleteTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} €
-                  {#if yoyPct !== null}
-                    <span class="yoy" class:up={yoyPct > 0} class:down={yoyPct < 0}>
-                      {yoyPct > 0 ? "▲" : "▼"}{Math.abs(yoyPct)}%
-                    </span>
-                  {/if}
-                </div>
-              </div>
-            </div>
           </div>
 
         </div>
       </Card>
+    </div>
+
+    {#snippet lastCompleteYearValue()}
+      {lastCompleteTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} €
+      {#if yoyPct !== null}
+        <span class="yoy" class:up={yoyPct > 0} class:down={yoyPct < 0}>
+          {yoyPct > 0 ? "▲" : "▼"}{Math.abs(yoyPct)}%
+        </span>
+      {/if}
+    {/snippet}
+
+    <div class="stat-row-wrap">
+      <StatTileRow>
+        <StatTile
+          label={$_('costs.page.tenYearAvg')}
+          value={$_('costs.page.perYear', { values: { amount: tenYearAvg.toLocaleString(undefined, { maximumFractionDigits: 0 }) } })}
+        />
+        <StatTile
+          label={$_('costs.page.lastCompleteYr')}
+          value={`${lastCompleteTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} €`}
+          valueContent={lastCompleteYearValue}
+        />
+      </StatTileRow>
     </div>
   {/if}
 
@@ -380,13 +388,7 @@
   .bar-label { font-size: 7px; color: var(--text-faint); white-space: nowrap; }
   .bar-label.current-label { color: var(--accent); }
 
-  .stat-chips { display: flex; gap: 8px; margin-top: 8px; }
-  .stat-chip {
-    flex: 1; background: var(--surface-alt); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 6px 10px;
-  }
-  .stat-title { font-size: 8px; color: var(--text-faint); text-transform: uppercase; margin-bottom: 2px; }
-  .stat-value { font-size: 13px; color: var(--text); font-weight: 600; }
+  .stat-row-wrap { padding: 0 var(--space-4) var(--space-4); flex-shrink: 0; }
   .yoy { font-size: 10px; margin-left: 4px; }
   .yoy.up { color: var(--danger); }
   .yoy.down { color: var(--success); }
