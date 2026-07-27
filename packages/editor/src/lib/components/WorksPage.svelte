@@ -100,20 +100,17 @@
       <p>{$_('works.page.emptyCharts')}</p>
     </div>
   {:else}
-    <div class="stat-row-wrap">
-      <StatTileRow>
+    <div class="chart-card-wrap">
+      <Card style="flex:1; min-width:0;">
+        <div class="chart-label">{$_('works.page.houseTimeline')}</div>
+        <WorksTimeline works={store.works} onworkclick={handleTimelineClick} />
+      </Card>
+      <StatTileRow direction="column">
         <StatTile label={$_('works.status.planned')} value={plannedCount} />
         <StatTile label={$_('works.status.inProgress')} value={inProgressCount} />
         <StatTile label={$_('works.status.done')} value={doneCount} />
         <StatTile label={$_('works.page.totalCost')} value={`${fmt(allTimeCost)} €`} />
       </StatTileRow>
-    </div>
-
-    <div class="chart-card-wrap">
-      <Card>
-        <div class="chart-label">{$_('works.page.houseTimeline')}</div>
-        <WorksTimeline works={store.works} onworkclick={handleTimelineClick} />
-      </Card>
     </div>
   {/if}
 
@@ -207,15 +204,18 @@
   .empty-icon { font-size: 36px; }
   .empty-charts p { margin: 0; font-size: 13px; }
 
-  .chart-card-wrap { padding: var(--space-4); flex-shrink: 0; }
+  .chart-card-wrap { display: flex; gap: var(--space-3); align-items: stretch; padding: var(--space-4); flex-shrink: 0; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
   }
 
-  .stat-row-wrap { padding: var(--space-4) var(--space-4) 0; flex-shrink: 0; }
-
   .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
+
+  @media (max-width: 700px) {
+    .chart-card-wrap { flex-direction: column; }
+    .chart-card-wrap :global(.ui-stat-row.column) { width: auto; }
+  }
 
   .toolbar {
     display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
