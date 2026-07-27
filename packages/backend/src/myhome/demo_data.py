@@ -20,8 +20,10 @@ from .demo_content import (
     generate_demo_settings,
 )
 from .demo_geometry import generate_demo_house, room_centroid
+from .build_template import seed_default_build
 from . import (
     persistence,
+    persistence_build,
     persistence_chores,
     persistence_consumables,
     persistence_contacts,
@@ -29,10 +31,12 @@ from . import (
     persistence_insurance,
     persistence_inventory,
     persistence_kb,
+    persistence_properties,
     persistence_settings,
     persistence_works,
 )
 from .models import HouseDocument, Room
+from .models_build import BuildDocument, BuildTask
 from .models_chores import Assignment, ChoreDocument, Chore, CompletionRecord, Position
 from .models_contacts import Contact, ContactsDocument
 from .models_costs import CostEntry, CostsDocument
@@ -46,6 +50,7 @@ from .models_consumables import (
 )
 from .models_insurance import InsuranceDocument, InsurancePolicy
 from .models_kb import KBDocument, KBEntry
+from .models_properties import Property, PropertiesDocument
 from .models_settings import SettingsDocument
 from .models_works import Work, WorksDocument, WorkPlacement, WorkPosition
 
@@ -417,6 +422,63 @@ def attach_demo_files(
         work.attachments.append(warranty.name)
 
 
+def generate_demo_properties(rng: random.Random) -> PropertiesDocument:
+    entries: list[tuple[str, str, str, str, float, float | None, float | None, int | None, int | None]] = [
+        ("Maple Street Cottage", "🏠", "house", "watching", 285000, 120, 95, 3, 2),
+        ("Riverside Lot 12", "🌳", "land", "watching", 95000, 1800, None, None, None),
+        ("Oakview New Development Unit 4", "🏗️", "new_build", "visited", 340000, 90, 88, 3, 2),
+        ("Cedar Hill Farmhouse", "🏡", "house", "proposal_made", 410000, 4200, 180, 4, 3),
+        ("Birchwood Family Home", "🏠", "house", "purchased", 375000, 650, 165, 4, 2),
+        ("Pinecrest Ranch", "🏚️", "house", "rejected", 250000, 2200, 140, 3, 1),
+    ]
+    properties: list[Property] = []
+    for name, emoji, ptype, status, price, land_size, built_size, bedrooms, bathrooms in entries:
+        properties.append(Property(
+            id=str(uuid.uuid4()), name=name, emoji=emoji, type=ptype, status=status,
+            address=f"{rng.randint(1, 200)} {name.split()[0]} Ave",
+            price=price, landSize=land_size, builtSize=built_size,
+            bedrooms=bedrooms, bathrooms=bathrooms,
+        ))
+    return PropertiesDocument(properties=properties)
+
+
+def generate_demo_build(rng: random.Random) -> BuildDocument:
+    start = datetime.now(timezone.utc) - timedelta(days=210)
+    doc = seed_default_build(planned_start_date=start.date().isoformat())
+    doc.project.status = "in_progress"
+
+    tasks_by_phase: dict[str, list[BuildTask]] = {}
+    for task in doc.tasks:
+        task.plannedCost = round(rng.uniform(300, 3500), 2)
+        tasks_by_phase.setdefault(task.phaseId, []).append(task)
+
+    completed_phase_count = 6
+    cursor = start
+    for phase_index, phase in enumerate(doc.phases):
+        phase_tasks = tasks_by_phase.get(phase.id, [])
+        if phase_index < completed_phase_count:
+            phase.status = "completed"
+            phase.actualStartDate = cursor.date().isoformat()
+            cursor += timedelta(days=rng.randint(5, 14))
+            phase.actualEndDate = cursor.date().isoformat()
+            for task in phase_tasks:
+                task.status = "completed"
+                task.actualCost = round(task.plannedCost * rng.uniform(0.85, 1.2), 2)
+                task.actualCompletionDate = phase.actualEndDate
+        elif phase_index == completed_phase_count:
+            phase.status = "in_progress"
+            phase.actualStartDate = cursor.date().isoformat()
+            halfway = len(phase_tasks) // 2
+            for i, task in enumerate(phase_tasks):
+                if i < halfway:
+                    task.status = "completed"
+                    task.actualCost = round(task.plannedCost * rng.uniform(0.85, 1.2), 2)
+                    task.actualCompletionDate = cursor.date().isoformat()
+
+    doc.project.plannedBudget = round(sum(t.plannedCost or 0 for t in doc.tasks), 2)
+    return doc
+
+
 def seed_demo_home(home_id: str) -> None:
     rng = random.Random()
 
@@ -430,6 +492,8 @@ def seed_demo_home(home_id: str) -> None:
     kb_doc = generate_demo_kb(rng)
     consumables_doc = generate_demo_consumables(house, settings, rng)
     insurance_doc = generate_demo_insurance(settings, contacts, rng)
+    properties_doc = generate_demo_properties(rng)
+    build_doc = generate_demo_build(rng)
 
     persistence_settings.save_settings(home_id, settings)
     persistence_contacts.save_contacts(home_id, ContactsDocument(contacts=contacts))
@@ -442,6 +506,8 @@ def seed_demo_home(home_id: str) -> None:
         persistence_kb.save_entry(home_id, entry)
     persistence_consumables.save_consumables(home_id, consumables_doc)
     persistence_insurance.save_insurance(home_id, insurance_doc)
+    persistence_properties.save_properties(home_id, properties_doc)
+    persistence_build.save_build(home_id, build_doc)
 
     attach_demo_files(home_id, chores_doc, inventory_doc, costs_doc, works_doc, rng)
     persistence_chores.save_chores(home_id, chores_doc)
