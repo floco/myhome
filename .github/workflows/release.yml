@@ -56,6 +56,15 @@ jobs:
           fi
           echo "Version $CONFIG_VERSION validated."
 
+      - name: Validate addon/CHANGELOG.md has an entry for this version
+        run: |
+          CONFIG_VERSION=$(grep '^version:' addon/config.yaml | sed 's/version: *"\(.*\)"/\1/')
+          if ! grep -qE "^## ${CONFIG_VERSION}( |\$)" addon/CHANGELOG.md; then
+            echo "ERROR: addon/CHANGELOG.md has no '## ${CONFIG_VERSION}' entry. Add one before releasing."
+            exit 1
+          fi
+          echo "Changelog entry for $CONFIG_VERSION found."
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:

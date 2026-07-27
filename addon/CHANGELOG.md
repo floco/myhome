@@ -1,0 +1,58 @@
+# Changelog
+
+## 0.9.0 - 2026-07-27
+
+- Added an About screen (Settings) showing app version, deployment mode, and whether a newer release is available
+- Restyled stat cards across every module (Chores, Inventory, Consumables, Costs, Works, Insurance, Properties, Contacts, Build) onto a shared, consistent chart + stat-card layout
+- Fixed the app version showing as "unknown" when running outside the built container image
+
+## 0.8.0 - 2026-07-26
+
+- Added full French translation and app-wide i18n support
+- Added a house build tracking module (phases and tasks for new-construction projects)
+- Added a contacts module (contractors, suppliers, and providers directory)
+- Added an insurance module for tracking policies and renewals
+- Fixed a bug where cost/inventory/work/consumable categories and suppliers were shared across homes instead of scoped per home
+- Fixed build page layout
+
+## 0.7.1 - 2026-07-22
+
+- Fixed the room panel being hidden and new homes starting without a floor
+
+## 0.7.0 - 2026-07-21
+
+- Added a Properties module for tracking land/house/new-build listings
+- Hardened Home Assistant ingress trust handling and fixed an admin authentication edge case
+
+## 0.6.0 - 2026-07-17
+
+- Reworked the Knowledge Base so pages can nest as folders, with icons, live links, and a Trash
+- Moved the Donetick import into Settings → Integrations
+
+## 0.5.2 - 2026-07-15
+
+- Fixed the frontend not working when served from a path prefix under Home Assistant ingress
+
+## 0.5.1 - 2026-07-15
+
+- Fixed the add-on icon, panel icon, and repository recognition in Home Assistant
+- Fixed static assets requiring authentication
+
+## 0.5.0 - 2026-07-14
+
+- Migrated data persistence to SQLite
+- Added sortable tables and chart + stat-card summary layouts across modules
+- Extended the activity log to show entries from all users
+
+## 0.4.0 - 2026-07-08
+
+- Added multi-home support, global search, a notification center, scheduled backups, and an activity log
+- Added an in-process MCP server exposing the app's tools
+- Added a furniture library and improved wall rendering
+- Reorganized Settings into a sidebar-navigated panel
+- Added a consumables module
+- Extended the media gallery to more modules
+
+## 0.3.0 - 2026-06-29
+
+- Baseline add-on release
