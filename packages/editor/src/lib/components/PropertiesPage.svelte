@@ -8,6 +8,8 @@
   import SortableTable from "./ui/SortableTable.svelte";
   import type { Column } from "./ui/SortableTable.types";
   import Card from "./ui/Card.svelte";
+  import StatTile from "./ui/StatTile.svelte";
+  import StatTileRow from "./ui/StatTileRow.svelte";
 
   type PropertiesStore = ReturnType<typeof createPropertiesStore>;
   type LocationsStore = ReturnType<typeof createLocationsStore>;
@@ -98,36 +100,16 @@
       <p>{$_('properties.page.emptyCharts')}</p>
     </div>
   {:else}
-    <div class="chart-card-wrap">
-      <Card>
-        <div class="chart-label">{$_('properties.page.searchPipeline')}</div>
-        <div class="stat-chips-row">
-          <div class="stat-chip">
-            <div class="stat-title">{$_('properties.status.watching')}</div>
-            <div class="stat-value">{countByStatus("watching")}</div>
-          </div>
-          <div class="stat-chip">
-            <div class="stat-title">{$_('properties.status.visited')}</div>
-            <div class="stat-value">{countByStatus("visited")}</div>
-          </div>
-          <div class="stat-chip">
-            <div class="stat-title">{$_('properties.status.proposalMade')}</div>
-            <div class="stat-value">{countByStatus("proposal_made")}</div>
-          </div>
-          <div class="stat-chip">
-            <div class="stat-title">{$_('properties.status.purchased')}</div>
-            <div class="stat-value">{countByStatus("purchased")}</div>
-          </div>
-          <div class="stat-chip">
-            <div class="stat-title">{$_('properties.status.rejected')}</div>
-            <div class="stat-value">{countByStatus("rejected")}</div>
-          </div>
-          <div class="stat-chip">
-            <div class="stat-title">{$_('properties.page.total')}</div>
-            <div class="stat-value">{store.properties.length}</div>
-          </div>
-        </div>
-      </Card>
+    <div class="stat-row-wrap">
+      <div class="chart-label">{$_('properties.page.searchPipeline')}</div>
+      <StatTileRow>
+        <StatTile label={$_('properties.status.watching')} value={countByStatus("watching")} />
+        <StatTile label={$_('properties.status.visited')} value={countByStatus("visited")} />
+        <StatTile label={$_('properties.status.proposalMade')} value={countByStatus("proposal_made")} />
+        <StatTile label={$_('properties.status.purchased')} value={countByStatus("purchased")} />
+        <StatTile label={$_('properties.status.rejected')} value={countByStatus("rejected")} />
+        <StatTile label={$_('properties.page.total')} value={store.properties.length} />
+      </StatTileRow>
     </div>
   {/if}
 
@@ -220,18 +202,11 @@
   .empty-icon { font-size: 36px; }
   .empty-charts p { margin: 0; font-size: 13px; }
 
-  .chart-card-wrap { padding: var(--space-4); flex-shrink: 0; }
+  .stat-row-wrap { padding: var(--space-4); flex-shrink: 0; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
   }
-  .stat-chips-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-  .stat-chip {
-    flex: 1; min-width: 100px; background: var(--surface-alt); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 6px 10px;
-  }
-  .stat-title { font-size: 8px; color: var(--text-faint); text-transform: uppercase; margin-bottom: 2px; }
-  .stat-value { font-size: 13px; color: var(--text); font-weight: 600; }
 
   .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
 
