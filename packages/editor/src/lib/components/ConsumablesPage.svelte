@@ -10,6 +10,8 @@
   import type { Column } from "./ui/SortableTable.types";
   import Card from "./ui/Card.svelte";
   import HorizontalBarChart from "./HorizontalBarChart.svelte";
+  import StatTile from "./ui/StatTile.svelte";
+  import StatTileRow from "./ui/StatTileRow.svelte";
 
   type ConsumableStore = ReturnType<typeof createConsumableStore>;
   type SettingsStore = Pick<ReturnType<typeof createSettingsStore>, "consumableCategories" | "consumableUnits">;
@@ -114,29 +116,16 @@
   {:else}
     <div class="chart-card-wrap">
       <Card>
-        <div class="chart-inner">
-          <div class="bar-area">
-            <div class="chart-label">{$_('consumables.page.stockStatus', { values: { n: store.consumables.length } })}</div>
-            <HorizontalBarChart segments={stockBreakdown} />
-          </div>
-
-          <div class="chart-divider"></div>
-
-          <div class="stats-area">
-            <div class="chart-label">{$_('chores.page.atAGlance')}</div>
-            <div class="stat-chips-col">
-              <div class="stat-chip">
-                <div class="stat-title">{$_('consumables.page.low')}</div>
-                <div class="stat-value low">{lowStockCount}</div>
-              </div>
-              <div class="stat-chip">
-                <div class="stat-title">{$_('consumables.page.empty')}</div>
-                <div class="stat-value empty">{emptyStockCount}</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div class="chart-label">{$_('consumables.page.stockStatus', { values: { n: store.consumables.length } })}</div>
+        <HorizontalBarChart segments={stockBreakdown} />
       </Card>
+    </div>
+
+    <div class="stat-row-wrap">
+      <StatTileRow>
+        <StatTile label={$_('consumables.page.low')} value={lowStockCount} variant="warning" />
+        <StatTile label={$_('consumables.page.empty')} value={emptyStockCount} variant="danger" />
+      </StatTileRow>
     </div>
   {/if}
 
@@ -253,24 +242,12 @@
   .empty-charts p { margin: 0; font-size: 13px; }
 
   .chart-card-wrap { padding: var(--space-4); flex-shrink: 0; }
-  .chart-inner { display: flex; gap: 24px; align-items: center; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
   }
-  .bar-area { flex: 1; min-width: 0; }
-  .chart-divider { width: 1px; background: var(--border); align-self: stretch; flex-shrink: 0; margin: 0 8px; }
 
-  .stats-area { flex: 1; min-width: 0; }
-  .stat-chips-col { display: flex; flex-flow: row wrap; gap: 8px; }
-  .stat-chip {
-    background: var(--surface-alt); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 6px 10px;
-  }
-  .stat-title { font-size: 8px; color: var(--text-faint); text-transform: uppercase; margin-bottom: 2px; }
-  .stat-value { font-size: 13px; color: var(--text); font-weight: 600; }
-  .stat-value.low { color: #ff9800; }
-  .stat-value.empty { color: #f44336; }
+  .stat-row-wrap { padding: 0 var(--space-4) var(--space-4); flex-shrink: 0; }
 
   .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
 

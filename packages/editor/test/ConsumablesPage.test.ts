@@ -180,8 +180,8 @@ describe("ConsumablesPage — stock status summary", () => {
     flushSync();
 
     expect(target.querySelectorAll(".chart-card-wrap .stacked-segment")).toHaveLength(3);
-    expect(target.querySelector(".stat-value.low")?.textContent).toBe("1");
-    expect(target.querySelector(".stat-value.empty")?.textContent).toBe("1");
+    expect(target.querySelector(".ui-stat-value.warning")?.textContent).toBe("1");
+    expect(target.querySelector(".ui-stat-value.danger")?.textContent).toBe("1");
 
     unmount(comp);
   });
