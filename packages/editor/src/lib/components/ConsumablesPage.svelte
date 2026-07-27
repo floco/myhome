@@ -115,14 +115,14 @@
     </div>
   {:else}
     <div class="chart-card-wrap">
-      <Card style="flex:1; min-width:0;">
-        <div class="chart-label">{$_('consumables.page.stockStatus', { values: { n: store.consumables.length } })}</div>
-        <HorizontalBarChart segments={stockBreakdown} />
-      </Card>
       <StatTileRow direction="column">
         <StatTile label={$_('consumables.page.low')} value={lowStockCount} variant="warning" />
         <StatTile label={$_('consumables.page.empty')} value={emptyStockCount} variant="danger" />
       </StatTileRow>
+      <Card style="flex:1; min-width:0;">
+        <div class="chart-label">{$_('consumables.page.stockStatus', { values: { n: store.consumables.length } })}</div>
+        <HorizontalBarChart segments={stockBreakdown} />
+      </Card>
     </div>
   {/if}
 
@@ -238,7 +238,7 @@
   .empty-icon { font-size: 36px; }
   .empty-charts p { margin: 0; font-size: 13px; }
 
-  .chart-card-wrap { display: flex; gap: var(--space-3); align-items: stretch; padding: var(--space-4); flex-shrink: 0; }
+  .chart-card-wrap { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-4); flex-shrink: 0; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;

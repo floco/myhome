@@ -197,15 +197,15 @@
     </div>
   {:else}
     <div class="chart-card-wrap">
-      <Card style="flex:1; min-width:0;">
-        <div class="chart-label">{$_('chores.page.scheduleHealth')}</div>
-        <HorizontalBarChart segments={healthBreakdown} />
-      </Card>
       <StatTileRow direction="column">
         <StatTile label={$_('chores.page.active')} value={totalAssignments} />
         <StatTile label={$_('chores.page.overdue')} value={overdueCount} variant="danger" />
         <StatTile label={$_('chores.page.onTrack')} value={`${onTrackPct}%`} variant="success" />
       </StatTileRow>
+      <Card style="flex:1; min-width:0;">
+        <div class="chart-label">{$_('chores.page.scheduleHealth')}</div>
+        <HorizontalBarChart segments={healthBreakdown} />
+      </Card>
     </div>
   {/if}
 
@@ -345,7 +345,7 @@
   .empty-icon { font-size: 36px; }
   .empty-charts p { margin: 0; font-size: 13px; }
 
-  .chart-card-wrap { display: flex; gap: var(--space-3); align-items: stretch; padding: var(--space-4); flex-shrink: 0; }
+  .chart-card-wrap { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-4); flex-shrink: 0; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
