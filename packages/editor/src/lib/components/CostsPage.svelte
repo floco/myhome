@@ -172,8 +172,8 @@
     {/snippet}
 
     <div class="chart-card-wrap">
-      <!-- Pie chart with connector labels -->
-      <Card style="flex-shrink:0;">
+      <!-- Pie chart with connector labels -- spans both grid rows -->
+      <Card>
         <div class="chart-label">
           {$_('costs.page.breakdownByCategory', { values: { year: lastCompleteYearNum } })}
         </div>
@@ -194,49 +194,48 @@
         />
       </Card>
 
-      <!-- 10-year total bar chart, with the two stats stacked underneath -->
-      <div class="bar-and-stats-col">
-        <Card>
-          <div class="chart-label">{$_('costs.page.totalHouseCosts')}</div>
-          <div class="bar-chart-wrap">
-            <div class="y-axis">
-              <span>{formatK(maxBarAmount)}</span>
-              <span>{formatK(Math.round(maxBarAmount / 2))}</span>
-              <span>0</span>
-            </div>
-            <div class="bars">
-              {#each chartYears as y}
-                {@const h = barHeight(y, 100)}
-                {@const isLastComplete = y === lastCompleteYearNum}
-                {@const isCurrent = y === currentYear}
-                {@const hasData = (yearlyTotals.get(y) ?? 0) > 0}
-                <div class="bar-col">
-                  <div
-                    class="bar"
-                    class:highlight={isLastComplete}
-                    class:partial={isCurrent}
-                    class:empty={!hasData}
-                    style="height:{h}px"
-                    title="{y}: {(yearlyTotals.get(y) ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} €"
-                  ></div>
-                  <span class="bar-label" class:current-label={isCurrent}>{y}</span>
-                </div>
-              {/each}
-            </div>
+      <!-- 10-year total bar chart -->
+      <Card>
+        <div class="chart-label">{$_('costs.page.totalHouseCosts')}</div>
+        <div class="bar-chart-wrap">
+          <div class="y-axis">
+            <span>{formatK(maxBarAmount)}</span>
+            <span>{formatK(Math.round(maxBarAmount / 2))}</span>
+            <span>0</span>
           </div>
-        </Card>
-
-        <div class="stats-under-bar">
-          <StatTile
-            label={$_('costs.page.tenYearAvg')}
-            value={$_('costs.page.perYear', { values: { amount: tenYearAvg.toLocaleString(undefined, { maximumFractionDigits: 0 }) } })}
-          />
-          <StatTile
-            label={$_('costs.page.lastCompleteYr')}
-            value={`${lastCompleteTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} €`}
-            valueContent={lastCompleteYearValue}
-          />
+          <div class="bars">
+            {#each chartYears as y}
+              {@const h = barHeight(y, 100)}
+              {@const isLastComplete = y === lastCompleteYearNum}
+              {@const isCurrent = y === currentYear}
+              {@const hasData = (yearlyTotals.get(y) ?? 0) > 0}
+              <div class="bar-col">
+                <div
+                  class="bar"
+                  class:highlight={isLastComplete}
+                  class:partial={isCurrent}
+                  class:empty={!hasData}
+                  style="height:{h}px"
+                  title="{y}: {(yearlyTotals.get(y) ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} €"
+                ></div>
+                <span class="bar-label" class:current-label={isCurrent}>{y}</span>
+              </div>
+            {/each}
+          </div>
         </div>
+      </Card>
+
+      <!-- The two stats, side by side, under the bar chart -->
+      <div class="stats-under-bar">
+        <StatTile
+          label={$_('costs.page.tenYearAvg')}
+          value={$_('costs.page.perYear', { values: { amount: tenYearAvg.toLocaleString(undefined, { maximumFractionDigits: 0 }) } })}
+        />
+        <StatTile
+          label={$_('costs.page.lastCompleteYr')}
+          value={`${lastCompleteTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })} €`}
+          valueContent={lastCompleteYearValue}
+        />
       </div>
     </div>
   {/if}
@@ -352,14 +351,23 @@
   .empty-icon { font-size: 36px; }
   .empty-charts p { margin: 0; font-size: 13px; }
 
-  .chart-card-wrap { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-4); flex-shrink: 0; }
+  .chart-card-wrap {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    flex-shrink: 0;
+  }
+  .chart-card-wrap > :global(.ui-card:nth-child(1)) { grid-column: 1; grid-row: 1 / 3; }
+  .chart-card-wrap > :global(.ui-card:nth-child(2)) { grid-column: 2; grid-row: 1; min-width: 0; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
   }
 
-  .bar-and-stats-col { display: flex; flex-direction: column; gap: var(--space-3); flex: 1; min-width: 0; }
-  .stats-under-bar { display: flex; flex-direction: column; gap: var(--space-3); }
+  .stats-under-bar { grid-column: 2; grid-row: 2; display: flex; gap: var(--space-3); }
+  .stats-under-bar > :global(.ui-card) { flex: 1; min-width: 0; }
 
   .bar-chart-wrap { display: flex; align-items: flex-end; gap: 4px; height: 120px; }
   .y-axis {
@@ -383,7 +391,10 @@
   .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
 
   @media (max-width: 900px) {
-    .chart-card-wrap { flex-direction: column; }
+    .chart-card-wrap { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
+    .chart-card-wrap > :global(.ui-card:nth-child(1)) { grid-column: 1; grid-row: 1; }
+    .chart-card-wrap > :global(.ui-card:nth-child(2)) { grid-column: 1; grid-row: 2; }
+    .stats-under-bar { grid-column: 1; grid-row: 3; }
   }
 
   .toolbar {
