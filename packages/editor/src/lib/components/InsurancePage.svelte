@@ -84,6 +84,20 @@
   function fmt(n: number): string {
     return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
   }
+
+  const nextRenewalDate = $derived((() => {
+    const upcoming = store.policies
+      .map((p) => p.endDate)
+      .filter((d): d is string => !!d && new Date(d).getTime() >= Date.now())
+      .sort();
+    return upcoming[0] ?? null;
+  })());
+
+  const nextRenewalLabel = $derived(
+    nextRenewalDate
+      ? new Date(nextRenewalDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+      : "—"
+  );
 </script>
 
 <div class="page">
@@ -95,7 +109,7 @@
     </div>
   {:else}
     <div class="chart-card-wrap">
-      <Card style="flex:1; min-width:0;">
+      <Card style="flex-shrink:0;">
         <div class="chart-label">{$_('insurance.page.byCategory')}</div>
         <DonutChart
           segments={categoryBreakdown}
@@ -107,6 +121,7 @@
       <StatTileRow direction="column">
         <StatTile label={$_('insurance.page.policies')} value={store.policies.length} />
         <StatTile label={$_('insurance.page.annualCost')} value={`${fmt(totalAnnualCost)} €`} />
+        <StatTile label={$_('insurance.page.nextRenewal')} value={nextRenewalLabel} />
       </StatTileRow>
     </div>
   {/if}
@@ -189,7 +204,8 @@
   .empty-icon { font-size: 36px; }
   .empty-charts p { margin: 0; font-size: 13px; }
 
-  .chart-card-wrap { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-4); flex-shrink: 0; }
+  .chart-card-wrap { display: flex; gap: var(--space-3); align-items: stretch; padding: var(--space-4); flex-shrink: 0; }
+  .chart-card-wrap :global(.ui-stat-row.column) :global(.ui-card) { flex: 1; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
