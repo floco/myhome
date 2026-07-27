@@ -25,4 +25,39 @@ describe("ui/StatTileRow", () => {
     unmount(comp);
     target.remove();
   });
+
+  it("applies the column class when direction is column", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const comp = mount(StatTileRow, {
+      target,
+      props: {
+        direction: "column",
+        children: () => mount(StatTile, { target: document.createElement("div"), props: { value: 1, label: "A" } }),
+      },
+    });
+
+    expect(target.querySelector(".ui-stat-row")!.classList.contains("column")).toBe(true);
+
+    unmount(comp);
+    target.remove();
+  });
+
+  it("has no column class by default", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const comp = mount(StatTileRow, {
+      target,
+      props: {
+        children: () => mount(StatTile, { target: document.createElement("div"), props: { value: 1, label: "A" } }),
+      },
+    });
+
+    expect(target.querySelector(".ui-stat-row")!.classList.contains("column")).toBe(false);
+
+    unmount(comp);
+    target.remove();
+  });
 });
