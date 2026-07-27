@@ -9,6 +9,8 @@
   import SortableTable from "./ui/SortableTable.svelte";
   import type { Column } from "./ui/SortableTable.types";
   import Card from "./ui/Card.svelte";
+  import StatTile from "./ui/StatTile.svelte";
+  import StatTileRow from "./ui/StatTileRow.svelte";
 
   type ContactsStore = ReturnType<typeof createContactsStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -48,18 +50,13 @@
       <p>{$_('contacts.page.emptyCharts')}</p>
     </div>
   {:else}
-    <div class="chart-card-wrap">
-      <Card>
-        <div class="chart-label">{$_('contacts.page.countByType')}</div>
-        <div class="stat-chips-row">
-          {#each settingsStore.contactTypes as t}
-            <div class="stat-chip">
-              <div class="stat-title">{t.name}</div>
-              <div class="stat-value">{typeCounts.get(t.id) ?? 0}</div>
-            </div>
-          {/each}
-        </div>
-      </Card>
+    <div class="stat-row-wrap">
+      <div class="chart-label">{$_('contacts.page.countByType')}</div>
+      <StatTileRow>
+        {#each settingsStore.contactTypes as t}
+          <StatTile label={t.name} value={typeCounts.get(t.id) ?? 0} />
+        {/each}
+      </StatTileRow>
     </div>
   {/if}
 
@@ -127,12 +124,8 @@
   }
   .empty-icon { font-size: 36px; }
   .empty-charts p { margin: 0; font-size: 13px; }
-  .chart-card-wrap { padding: var(--space-4); flex-shrink: 0; }
+  .stat-row-wrap { padding: var(--space-4); flex-shrink: 0; }
   .chart-label { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
-  .stat-chips-row { display: flex; gap: 8px; flex-wrap: wrap; }
-  .stat-chip { flex: 1; min-width: 100px; background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px; }
-  .stat-title { font-size: 8px; color: var(--text-faint); text-transform: uppercase; margin-bottom: 2px; }
-  .stat-value { font-size: 13px; color: var(--text); font-weight: 600; }
   .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
   .toolbar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
   .toolbar :global(.ui-input) { flex: 1; }
