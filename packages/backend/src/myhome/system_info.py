@@ -26,7 +26,7 @@ def _db_path() -> Path:
 def get_app_version() -> str:
     version_file = Path(os.environ.get("APP_VERSION_FILE", "/app/VERSION"))
     if not version_file.exists():
-        return "unknown"
+        return "dev"
     return version_file.read_text().strip()
 
 

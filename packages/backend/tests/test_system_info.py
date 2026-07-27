@@ -13,9 +13,9 @@ def test_get_app_version_reads_version_file(tmp_path, monkeypatch):
     assert system_info.get_app_version() == "1.2.3"
 
 
-def test_get_app_version_returns_unknown_when_file_missing(tmp_path, monkeypatch):
+def test_get_app_version_returns_dev_when_file_missing(tmp_path, monkeypatch):
     monkeypatch.setenv("APP_VERSION_FILE", str(tmp_path / "does-not-exist"))
-    assert system_info.get_app_version() == "unknown"
+    assert system_info.get_app_version() == "dev"
 
 
 def test_get_deployment_mode_detects_home_assistant(monkeypatch):
@@ -114,7 +114,7 @@ async def test_check_for_update_handles_unparseable_current_version():
         respx.get(system_info._GITHUB_TAGS_URL).mock(
             return_value=Response(200, json=[{"name": "v0.8.0"}])
         )
-        result = await system_info.check_for_update("unknown")
+        result = await system_info.check_for_update("dev")
     assert result["status"] == "unknown"
 
 
