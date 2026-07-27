@@ -67,7 +67,7 @@ describe("BuildPage", () => {
     target.remove();
   });
 
-  it("puts the value above the label in each stat card", async () => {
+  it("puts the label above the value in each stat card", async () => {
     const { store, target } = renderPage(seededDoc);
     await waitTick();
     const comp = mount(BuildPage, { target, props: { store, onopentask: vi.fn() } });
@@ -78,8 +78,8 @@ describe("BuildPage", () => {
     const children = Array.from(firstCard.children);
     const valueIndex = children.findIndex((c) => c.classList.contains("ui-stat-value"));
     const labelIndex = children.findIndex((c) => c.classList.contains("ui-stat-label"));
-    expect(valueIndex).toBeGreaterThanOrEqual(0);
-    expect(valueIndex).toBeLessThan(labelIndex);
+    expect(labelIndex).toBeGreaterThanOrEqual(0);
+    expect(labelIndex).toBeLessThan(valueIndex);
 
     unmount(comp);
     target.remove();
