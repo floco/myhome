@@ -127,9 +127,9 @@ describe("ChoresPage — schedule health summary", () => {
     flushSync();
 
     expect(target.querySelectorAll(".chart-card-wrap .stacked-segment")).toHaveLength(3);
-    expect(target.querySelector(".stat-value")?.textContent).toBe("3");
-    expect(target.querySelector(".stat-value.overdue")?.textContent).toBe("1");
-    expect(target.querySelector(".stat-value.ontrack")?.textContent).toBe("33%");
+    expect(target.querySelector(".ui-stat-value")?.textContent).toBe("3");
+    expect(target.querySelector(".ui-stat-value.danger")?.textContent).toBe("1");
+    expect(target.querySelector(".ui-stat-value.success")?.textContent).toBe("33%");
 
     unmount(comp);
   });

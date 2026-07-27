@@ -5,6 +5,8 @@
   import Card from "./ui/Card.svelte";
   import Button from "./ui/Button.svelte";
   import PhaseSection from "./PhaseSection.svelte";
+  import StatTile from "./ui/StatTile.svelte";
+  import StatTileRow from "./ui/StatTileRow.svelte";
 
   type BuildStore = ReturnType<typeof createBuildStore>;
 
@@ -55,28 +57,19 @@
 {:else}
   <div class="page">
     <div class="stat-row-wrap">
-      <div class="stat-row">
-        <Card>
-          <div class="stat-title">{$_('build.dashboard.status')}</div>
-          <div class="stat-value">{$_(`build.projectStatus.${store.project.status === "in_progress" ? "inProgress" : store.project.status === "on_hold" ? "onHold" : store.project.status}`)}</div>
-        </Card>
-        <Card>
-          <div class="stat-title">{$_('build.dashboard.currentPhase')}</div>
-          <div class="stat-value">{currentPhase ? resolveLabel(currentPhase.nameKey, currentPhase.nameOverride) : "—"}</div>
-        </Card>
-        <Card>
-          <div class="stat-title">{$_('build.dashboard.percentComplete')}</div>
-          <div class="stat-value">{Math.round(store.projectProgress * 100)}%</div>
-        </Card>
-        <Card>
-          <div class="stat-title">{$_('build.dashboard.plannedBudget')}</div>
-          <div class="stat-value">{fmtMoney(store.projectBudget.planned)}</div>
-        </Card>
-        <Card>
-          <div class="stat-title">{$_('build.dashboard.actualCost')}</div>
-          <div class="stat-value">{fmtMoney(store.projectBudget.actual)}</div>
-        </Card>
-      </div>
+      <StatTileRow>
+        <StatTile
+          label={$_('build.dashboard.status')}
+          value={$_(`build.projectStatus.${store.project.status === "in_progress" ? "inProgress" : store.project.status === "on_hold" ? "onHold" : store.project.status}`)}
+        />
+        <StatTile
+          label={$_('build.dashboard.currentPhase')}
+          value={currentPhase ? resolveLabel(currentPhase.nameKey, currentPhase.nameOverride) : "—"}
+        />
+        <StatTile label={$_('build.dashboard.percentComplete')} value={`${Math.round(store.projectProgress * 100)}%`} />
+        <StatTile label={$_('build.dashboard.plannedBudget')} value={fmtMoney(store.projectBudget.planned)} />
+        <StatTile label={$_('build.dashboard.actualCost')} value={fmtMoney(store.projectBudget.actual)} />
+      </StatTileRow>
     </div>
 
     <div class="table-card-wrap">
@@ -95,13 +88,6 @@
   .page { display: flex; flex-direction: column; height: 100%; }
 
   .stat-row-wrap { padding: var(--space-4); flex-shrink: 0; }
-  .stat-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-3); }
-  .stat-title { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-  .stat-value { font-size: 18px; font-weight: 700; color: var(--text); }
 
   .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
-
-  @media (max-width: 900px) {
-    .stat-row { grid-template-columns: repeat(2, 1fr); }
-  }
 </style>
