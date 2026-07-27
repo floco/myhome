@@ -10,6 +10,8 @@
   import type { Column } from "./ui/SortableTable.types";
   import Card from "./ui/Card.svelte";
   import HorizontalBarChart from "./HorizontalBarChart.svelte";
+  import StatTile from "./ui/StatTile.svelte";
+  import StatTileRow from "./ui/StatTileRow.svelte";
 
   type ChoreStore = ReturnType<typeof createChoreStore>;
   type Assignment = ChoreStore["assignments"][number];
@@ -196,33 +198,17 @@
   {:else}
     <div class="chart-card-wrap">
       <Card>
-        <div class="chart-inner">
-          <div class="bar-area">
-            <div class="chart-label">{$_('chores.page.scheduleHealth')}</div>
-            <HorizontalBarChart segments={healthBreakdown} />
-          </div>
-
-          <div class="chart-divider"></div>
-
-          <div class="stats-area">
-            <div class="chart-label">{$_('chores.page.atAGlance')}</div>
-            <div class="stat-chips-col">
-              <div class="stat-chip">
-                <div class="stat-title">{$_('chores.page.active')}</div>
-                <div class="stat-value">{totalAssignments}</div>
-              </div>
-              <div class="stat-chip">
-                <div class="stat-title">{$_('chores.page.overdue')}</div>
-                <div class="stat-value overdue">{overdueCount}</div>
-              </div>
-              <div class="stat-chip">
-                <div class="stat-title">{$_('chores.page.onTrack')}</div>
-                <div class="stat-value ontrack">{onTrackPct}%</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div class="chart-label">{$_('chores.page.scheduleHealth')}</div>
+        <HorizontalBarChart segments={healthBreakdown} />
       </Card>
+    </div>
+
+    <div class="stat-row-wrap">
+      <StatTileRow>
+        <StatTile label={$_('chores.page.active')} value={totalAssignments} />
+        <StatTile label={$_('chores.page.overdue')} value={overdueCount} variant="danger" />
+        <StatTile label={$_('chores.page.onTrack')} value={`${onTrackPct}%`} variant="success" />
+      </StatTileRow>
     </div>
   {/if}
 
@@ -363,24 +349,12 @@
   .empty-charts p { margin: 0; font-size: 13px; }
 
   .chart-card-wrap { padding: var(--space-4); flex-shrink: 0; }
-  .chart-inner { display: flex; gap: 24px; align-items: center; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
   }
-  .bar-area { flex: 1; min-width: 0; }
-  .chart-divider { width: 1px; background: var(--border); align-self: stretch; flex-shrink: 0; margin: 0 8px; }
 
-  .stats-area { flex: 1; min-width: 0; }
-  .stat-chips-col { display: flex; flex-flow: row wrap; gap: 8px; }
-  .stat-chip {
-    background: var(--surface-alt); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 6px 10px;
-  }
-  .stat-title { font-size: 8px; color: var(--text-faint); text-transform: uppercase; margin-bottom: 2px; }
-  .stat-value { font-size: 13px; color: var(--text); font-weight: 600; }
-  .stat-value.overdue { color: #f44336; }
-  .stat-value.ontrack { color: #4caf50; }
+  .stat-row-wrap { padding: 0 var(--space-4) var(--space-4); flex-shrink: 0; }
 
   .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
 
