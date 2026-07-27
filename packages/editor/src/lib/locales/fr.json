@@ -944,6 +944,7 @@
       "mcpDesc": "Permet à un client MCP (Claude Desktop, claude.ai, Claude Code ou Assist de Home Assistant) de consulter et d'agir sur les données de ce logement. Créez un jeton API ci-dessus avec le niveau d'accès souhaité pour l'assistant, puis utilisez-le comme jeton Bearer lors de la connexion.",
       "enableMcp": "Activer le serveur MCP",
       "connectionUrl": "URL de connexion :",
+      "mcpPortHint": "Si votre client MCP ne peut pas atteindre l'URL ci-dessus (par ex. une adresse accessible uniquement via ingress), associez le port 8000 à un port de l'hôte dans la configuration réseau de cet add-on dans Home Assistant, puis connectez-vous à http://<hôte-home-assistant>:<port-associé>/mcp à la place.",
       "donetick": "Donetick",
       "donetickDesc": "Importe les corvées depuis votre instance Donetick vers ce logement. Collez un jeton API Donetick et cliquez sur Importer.",
       "apiTokenPlaceholder": "Jeton API",

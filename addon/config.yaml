@@ -1,5 +1,5 @@
 name: "My Home"
-version: "0.9.0"
+version: "0.9.1"
 slug: "myhome"
 description: "Home management app — floor plans, chores, inventory, costs, works, knowledge base, and more."
 url: "https://github.com/floco/myhome"
@@ -15,6 +15,10 @@ ingress: true
 ingress_port: 8000
 panel_icon: mdi:floor-plan
 panel_title: My Home
+ports:
+  8000/tcp: null
+ports_description:
+  8000/tcp: "Direct access to the web UI/API, bypassing ingress. Needed for MCP clients (Claude Desktop, claude.ai, etc.) that can't use ingress's browser-session URL."
 map:
   - data:rw
 options:

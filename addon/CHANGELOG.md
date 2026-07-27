@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.1 - 2026-07-27
+
+- Added an optional direct port mapping for the web UI/API (Settings → Add-on → Network), for MCP clients that can't reach the app through Home Assistant's ingress URL
+
 ## 0.9.0 - 2026-07-27
 
 - Added an About screen (Settings) showing app version, deployment mode, and whether a newer release is available

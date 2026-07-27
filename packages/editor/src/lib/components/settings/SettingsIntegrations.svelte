@@ -75,6 +75,7 @@
       </label>
       {#if mcpEnabled}
         <p class="empty-hint">{$_('settings.integrations.connectionUrl')} <code>{window.location.origin}/mcp</code></p>
+        <p class="empty-hint">{$_('settings.integrations.mcpPortHint')}</p>
       {/if}
     {/if}
     {#if mcpError}<div class="error">{mcpError}</div>{/if}

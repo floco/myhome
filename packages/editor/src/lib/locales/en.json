@@ -944,6 +944,7 @@
       "mcpDesc": "Lets an MCP client (Claude Desktop, claude.ai, Claude Code, or Home Assistant's Assist) query and act on this home's data. Create an API token above with the access level you want the assistant to have, then use it as the Bearer token when connecting.",
       "enableMcp": "Enable MCP Server",
       "connectionUrl": "Connection URL:",
+      "mcpPortHint": "If your MCP client can't reach the URL above (e.g. it's an ingress-only address), map port 8000 to a host port in this add-on's Network configuration in Home Assistant, then connect to http://<home-assistant-host>:<mapped-port>/mcp instead.",
       "donetick": "Donetick",
       "donetickDesc": "Imports chores from your Donetick instance into this home. Paste an API token from Donetick and click Import.",
       "apiTokenPlaceholder": "API token",
