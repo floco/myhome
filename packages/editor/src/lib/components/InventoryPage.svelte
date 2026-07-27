@@ -142,7 +142,7 @@
     </div>
   {:else}
     <div class="chart-card-wrap">
-      <Card>
+      <Card style="flex:1; min-width:0;">
         <div class="chart-label">{$_('inventory.page.byCategory')}</div>
         <DonutChart
           segments={categoryBreakdown}
@@ -151,10 +151,7 @@
           showLabels={true}
         />
       </Card>
-    </div>
-
-    <div class="stat-row-wrap">
-      <StatTileRow>
+      <StatTileRow direction="column">
         <StatTile label={$_('inventory.page.items')} value={store.items.length} />
         <StatTile label={$_('inventory.page.totalValue')} value={`${totalValue.toLocaleString()} €`} />
       </StatTileRow>
@@ -258,15 +255,18 @@
   .empty-icon { font-size: 36px; }
   .empty-charts p { margin: 0; font-size: 13px; }
 
-  .chart-card-wrap { padding: var(--space-4); flex-shrink: 0; }
+  .chart-card-wrap { display: flex; gap: var(--space-3); align-items: stretch; padding: var(--space-4); flex-shrink: 0; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
   }
 
-  .stat-row-wrap { padding: 0 var(--space-4) var(--space-4); flex-shrink: 0; }
-
   .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
+
+  @media (max-width: 700px) {
+    .chart-card-wrap { flex-direction: column; }
+    .chart-card-wrap :global(.ui-stat-row.column) { width: auto; }
+  }
 
   .toolbar {
     display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
