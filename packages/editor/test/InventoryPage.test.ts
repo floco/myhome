@@ -36,7 +36,7 @@ describe("InventoryPage — category summary", () => {
 
     expect(target.querySelectorAll(".chart-card-wrap svg path")).toHaveLength(2);
     const values = Array.from(target.querySelectorAll(".ui-stat-value")).map((el) => el.textContent);
-    expect(values).toEqual(["3", "200 €"]);
+    expect(values).toEqual(["3", "200 €", "0"]);
 
     unmount(comp);
   });

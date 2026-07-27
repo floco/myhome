@@ -131,6 +131,10 @@
   const totalValue = $derived(
     store.items.reduce((sum, i) => sum + (i.purchasePrice ?? 0), 0)
   );
+
+  const underWarrantyCount = $derived(
+    store.items.filter((i) => i.warrantyExpiryDate && new Date(i.warrantyExpiryDate).getTime() >= Date.now()).length
+  );
 </script>
 
 <div class="page">
@@ -142,7 +146,7 @@
     </div>
   {:else}
     <div class="chart-card-wrap">
-      <Card style="flex:1; min-width:0;">
+      <Card style="flex-shrink:0;">
         <div class="chart-label">{$_('inventory.page.byCategory')}</div>
         <DonutChart
           segments={categoryBreakdown}
@@ -154,6 +158,7 @@
       <StatTileRow direction="column">
         <StatTile label={$_('inventory.page.items')} value={store.items.length} />
         <StatTile label={$_('inventory.page.totalValue')} value={`${totalValue.toLocaleString()} €`} />
+        <StatTile label={$_('inventory.page.underWarranty')} value={underWarrantyCount} />
       </StatTileRow>
     </div>
   {/if}
@@ -255,7 +260,8 @@
   .empty-icon { font-size: 36px; }
   .empty-charts p { margin: 0; font-size: 13px; }
 
-  .chart-card-wrap { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-4); flex-shrink: 0; }
+  .chart-card-wrap { display: flex; gap: var(--space-3); align-items: stretch; padding: var(--space-4); flex-shrink: 0; }
+  .chart-card-wrap :global(.ui-stat-row.column) :global(.ui-card) { flex: 1; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
