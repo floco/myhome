@@ -32,35 +32,29 @@
     </div>
   {:else}
     <div class="chart-card-wrap">
-      <Card>
-        <div class="chart-inner">
-          <div class="stats-area">
-            <div class="chart-label">{$_('chores.page.atAGlance')}</div>
-            {#if leaders.length === 0}
-              <p class="no-leader">{$_('locations.page.noRatingsYet')}</p>
-            {:else}
-              <div class="leaders-col">
-                {#each leaders as { loc, score } (loc.id)}
-                  <div class="leader-chip">
-                    <span class="crown">👑</span>
-                    <div class="leader-winner">
-                      <span class="leader-emoji">{loc.emoji}</span>
-                      <span class="leader-name">{loc.name}</span>
-                    </div>
-                    <div class="leader-score">{score!.toFixed(1)} / 5</div>
-                  </div>
-                {/each}
+      <Card style="flex:1; min-width:0;">
+        <div class="chart-label">{$_('chores.page.atAGlance')}</div>
+        {#if leaders.length === 0}
+          <p class="no-leader">{$_('locations.page.noRatingsYet')}</p>
+        {:else}
+          <div class="leaders-col">
+            {#each leaders as { loc, score } (loc.id)}
+              <div class="leader-chip">
+                <span class="crown">👑</span>
+                <div class="leader-winner">
+                  <span class="leader-emoji">{loc.emoji}</span>
+                  <span class="leader-name">{loc.name}</span>
+                </div>
+                <div class="leader-score">{score!.toFixed(1)} / 5</div>
               </div>
-            {/if}
+            {/each}
           </div>
+        {/if}
+      </Card>
 
-          <div class="chart-divider"></div>
-
-          <div class="bar-area">
-            <div class="chart-label">{$_('locations.page.ranking')}</div>
-            <LocationRankingChart locations={store.locations} criteria={store.criteria} ratings={store.ratings} />
-          </div>
-        </div>
+      <Card style="flex:2; min-width:0;">
+        <div class="chart-label">{$_('locations.page.ranking')}</div>
+        <LocationRankingChart locations={store.locations} criteria={store.criteria} ratings={store.ratings} />
       </Card>
     </div>
   {/if}
@@ -84,14 +78,9 @@
   }
   .empty-icon { font-size: 36px; }
   .empty-state p { margin: 0; font-size: 13px; }
-  .chart-card-wrap { flex-shrink: 0; }
+  .chart-card-wrap { display: flex; gap: var(--space-3); align-items: stretch; flex-shrink: 0; }
   .chart-label { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
   .matrix-card-wrap { flex: 1; min-height: 0; }
-
-  .chart-inner { display: flex; gap: 24px; align-items: center; }
-  .chart-divider { width: 1px; background: var(--border); align-self: stretch; flex-shrink: 0; margin: 0 8px; }
-  .bar-area { flex: 2; min-width: 0; }
-  .stats-area { flex: 1; min-width: 0; }
 
   .no-leader { margin: 0; font-size: 12px; color: var(--text-faint); font-style: italic; }
   .leaders-col { display: flex; flex-direction: column; gap: 10px; }
