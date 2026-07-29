@@ -61,12 +61,17 @@ def next_due_from_schedule(chore: Chore, from_dt: datetime) -> datetime:
             if d > wd:
                 return from_dt + timedelta(days=d - wd)
         return from_dt + timedelta(days=7 - wd + days[0])
+    # Donetick's own scheduler always advances "daily"/"weekly"/"monthly"/"yearly"
+    # chores by exactly 1 unit and ignores `frequency` for them entirely -- that
+    # multiplier only applies to the "interval" type (see upstream
+    # internal/chore/scheduler.go). A chore imported with a stray `frequency`
+    # value on one of these literal types must not be multiplied.
     if ft == "weekly":
-        return from_dt + timedelta(weeks=freq)
+        return from_dt + timedelta(weeks=1)
     if ft in ("monthly", "month"):
-        return add_months(from_dt, freq)
+        return add_months(from_dt, 1)
     if ft in ("yearly", "year"):
-        return add_years(from_dt, freq)
+        return add_years(from_dt, 1)
     if ft == "interval":
         if unit == "years":
             return add_years(from_dt, freq)

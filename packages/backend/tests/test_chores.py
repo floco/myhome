@@ -278,6 +278,12 @@ def test_import_from_donetick(client, home_id, monkeypatch):
         respx.get("https://donetick.example.com/api/v1/chores/").mock(
             return_value=httpx.Response(200, json=donetick_response)
         )
+        respx.get("https://donetick.example.com/api/v1/chores/42/history").mock(
+            return_value=httpx.Response(200, json={"res": []})
+        )
+        respx.get("https://donetick.example.com/api/v1/chores/43/history").mock(
+            return_value=httpx.Response(200, json={"res": []})
+        )
         resp = client.post(
             f"/api/homes/{home_id}/chores/import",
             json={"token": "test-token", "url": "https://donetick.example.com"},
@@ -295,7 +301,9 @@ def test_import_from_donetick(client, home_id, monkeypatch):
     assert window["frequency"] == 6
     assert window["frequencyMetadata"]["unit"] == "months"
     sweep = next(c for c in chores if c["donetickId"] == 43)
-    assert sweep["periodDays"] == 14  # 2 * 7
+    # Donetick's scheduler ignores `frequency` for the literal "weekly" type
+    # (always every 1 week) -- the multiplier only applies to "interval".
+    assert sweep["periodDays"] == 7
     assert sweep["frequencyType"] == "weekly"
     assert sweep["frequency"] == 2
 
@@ -324,6 +332,218 @@ def test_import_is_idempotent(client, home_id, tmp_path, monkeypatch):
 
     assert resp.json()["imported"] == 0
     assert len(client.get(f"/api/homes/{home_id}/chores").json()["chores"]) == 1
+
+
+def test_import_ignores_donetick_frequency_for_yearly(client, home_id, monkeypatch):
+    """Donetick's own scheduler always advances literal 'yearly'/'weekly'/'monthly'
+    chores by exactly 1 unit and ignores the `frequency` field entirely (that
+    multiplier only applies to the 'interval' type) -- so a Donetick chore with
+    a stray `frequency` value on a plain 'yearly' type must still import as a
+    1-year period, not `frequency` years."""
+    import respx
+    import httpx
+
+    _mock_public_dns(monkeypatch)
+
+    donetick_response = {
+        "res": [{
+            "id": 99,
+            "name": "Exporter transactions banques",
+            "frequencyType": "yearly",
+            "frequency": 3,
+            "frequencyMetadata": {},
+            "nextDueDate": "2027-01-01T00:00:00Z",
+        }]
+    }
+    with respx.mock:
+        respx.get("https://donetick.example.com/api/v1/chores/").mock(
+            return_value=httpx.Response(200, json=donetick_response)
+        )
+        respx.get("https://donetick.example.com/api/v1/chores/99/history").mock(
+            return_value=httpx.Response(200, json={"res": []})
+        )
+        resp = client.post(
+            f"/api/homes/{home_id}/chores/import",
+            json={"token": "test-token", "url": "https://donetick.example.com"},
+        )
+
+    assert resp.status_code == 200
+    chore = client.get(f"/api/homes/{home_id}/chores").json()["chores"][0]
+    assert chore["periodDays"] == 365
+
+
+def test_import_strips_leading_emoji_from_name(client, home_id, monkeypatch):
+    import respx
+    import httpx
+
+    _mock_public_dns(monkeypatch)
+
+    donetick_response = {
+        "res": [{
+            "id": 7,
+            "name": "🧹 Sweep kitchen",
+            "frequencyType": "interval",
+            "frequency": 1,
+            "frequencyMetadata": {"unit": "weeks"},
+            "nextDueDate": "2027-01-01T00:00:00Z",
+        }]
+    }
+    with respx.mock:
+        respx.get("https://donetick.example.com/api/v1/chores/").mock(
+            return_value=httpx.Response(200, json=donetick_response)
+        )
+        respx.get("https://donetick.example.com/api/v1/chores/7/history").mock(
+            return_value=httpx.Response(200, json={"res": []})
+        )
+        resp = client.post(
+            f"/api/homes/{home_id}/chores/import",
+            json={"token": "test-token", "url": "https://donetick.example.com"},
+        )
+
+    assert resp.status_code == 200
+    chore = client.get(f"/api/homes/{home_id}/chores").json()["chores"][0]
+    assert chore["name"] == "Sweep kitchen"
+    assert chore["emoji"] == "🧹"
+
+
+def test_import_keeps_name_without_leading_icon(client, home_id, monkeypatch):
+    import respx
+    import httpx
+
+    _mock_public_dns(monkeypatch)
+
+    donetick_response = {
+        "res": [{
+            "id": 8,
+            "name": "Exporter transactions banques",
+            "frequencyType": "yearly",
+            "frequency": 1,
+            "frequencyMetadata": {},
+            "nextDueDate": "2027-01-01T00:00:00Z",
+        }]
+    }
+    with respx.mock:
+        respx.get("https://donetick.example.com/api/v1/chores/").mock(
+            return_value=httpx.Response(200, json=donetick_response)
+        )
+        respx.get("https://donetick.example.com/api/v1/chores/8/history").mock(
+            return_value=httpx.Response(200, json={"res": []})
+        )
+        resp = client.post(
+            f"/api/homes/{home_id}/chores/import",
+            json={"token": "test-token", "url": "https://donetick.example.com"},
+        )
+
+    assert resp.status_code == 200
+    chore = client.get(f"/api/homes/{home_id}/chores").json()["chores"][0]
+    assert chore["name"] == "Exporter transactions banques"
+    assert chore["emoji"] == "📋"
+
+
+def test_import_creates_completion_history_for_new_chores(client, home_id, monkeypatch):
+    import respx
+    import httpx
+
+    _mock_public_dns(monkeypatch)
+
+    donetick_response = {
+        "res": [{
+            "id": 55,
+            "name": "🧺 Laundry",
+            "frequencyType": "interval",
+            "frequency": 1,
+            "frequencyMetadata": {"unit": "weeks"},
+            "nextDueDate": "2027-01-01T00:00:00Z",
+        }]
+    }
+    history_response = {
+        "res": [
+            {"id": 1, "choreId": 55, "performedAt": "2026-01-01T10:00:00Z", "dueDate": "2026-01-01T00:00:00Z", "notes": "done", "status": 1},
+            {"id": 2, "choreId": 55, "performedAt": "2026-01-08T10:00:00Z", "dueDate": "2026-01-08T00:00:00Z", "notes": "", "status": 1},
+            {"id": 3, "choreId": 55, "performedAt": None, "dueDate": "2026-01-15T00:00:00Z", "notes": "", "status": 2},
+        ]
+    }
+    with respx.mock:
+        respx.get("https://donetick.example.com/api/v1/chores/").mock(
+            return_value=httpx.Response(200, json=donetick_response)
+        )
+        respx.get("https://donetick.example.com/api/v1/chores/55/history").mock(
+            return_value=httpx.Response(200, json=history_response)
+        )
+        resp = client.post(
+            f"/api/homes/{home_id}/chores/import",
+            json={"token": "test-token", "url": "https://donetick.example.com"},
+        )
+
+    assert resp.status_code == 200
+    data = client.get(f"/api/homes/{home_id}/chores").json()
+    chore_id = data["chores"][0]["id"]
+    completions = [c for c in data["completions"] if c["choreId"] == chore_id]
+    assert len(completions) == 2
+    assert {c["completedAt"] for c in completions} == {"2026-01-01T10:00:00Z", "2026-01-08T10:00:00Z"}
+    done = next(c for c in completions if c["completedAt"] == "2026-01-01T10:00:00Z")
+    assert done["scheduledDue"] == "2026-01-01T00:00:00Z"
+    assert done["notes"] == "done"
+
+
+def test_import_skips_history_for_already_imported_chores(client, home_id, monkeypatch, tmp_path):
+    import respx
+    import httpx
+
+    _mock_public_dns(monkeypatch)
+
+    existing = ChoreDocument(
+        chores=[Chore(id="x", donetickId=42, name="Clean windows", emoji="🪟", periodDays=180, nextDueDate="2027-01-01T00:00:00Z")],
+        assignments=[],
+    )
+    save_chores(home_id, existing)
+
+    donetick_response = {"res": [{"id": 42, "name": "🪟 Clean windows", "frequencyType": "interval", "frequency": 6, "frequencyMetadata": {"unit": "months"}, "nextDueDate": "2027-01-01T00:00:00Z"}]}
+    with respx.mock:
+        respx.get("https://donetick.example.com/api/v1/chores/").mock(
+            return_value=httpx.Response(200, json=donetick_response)
+        )
+        # No history route mocked for id 42 -- respx.mock raises if it's called,
+        # asserting the importer does NOT fetch history for already-imported chores.
+        resp = client.post(
+            f"/api/homes/{home_id}/chores/import",
+            json={"token": "test-token", "url": "https://donetick.example.com"},
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["imported"] == 0
+
+
+def test_import_continues_when_history_fetch_fails(client, home_id, monkeypatch):
+    import respx
+    import httpx
+
+    _mock_public_dns(monkeypatch)
+
+    donetick_response = {
+        "res": [{
+            "id": 9,
+            "name": "Test chore",
+            "frequencyType": "interval",
+            "frequency": 1,
+            "frequencyMetadata": {"unit": "weeks"},
+            "nextDueDate": "2027-01-01T00:00:00Z",
+        }]
+    }
+    with respx.mock:
+        respx.get("https://donetick.example.com/api/v1/chores/").mock(
+            return_value=httpx.Response(200, json=donetick_response)
+        )
+        respx.get("https://donetick.example.com/api/v1/chores/9/history").mock(
+            return_value=httpx.Response(500)
+        )
+        resp = client.post(
+            f"/api/homes/{home_id}/chores/import",
+            json={"token": "test-token", "url": "https://donetick.example.com"},
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["imported"] == 1
 
 
 def test_import_requires_url(client, home_id):
@@ -415,10 +635,15 @@ def test_complete_chore_yearly_interval(client, home_id, tmp_path):
 
 
 def test_complete_chore_weekly_frequency(client, home_id, tmp_path):
+    """Donetick's own scheduler ignores `frequency` for the literal "weekly"
+    type (always advances by exactly 1 week) -- the multiplier only applies
+    to the "interval" type, see test_complete_chore_monthly_interval /
+    test_complete_chore_yearly_interval above. A stray `frequency` value here
+    must not change the advance."""
     doc = ChoreDocument(
         chores=[
             Chore(
-                id="c1", name="Sweep", emoji="🧹", periodDays=14,
+                id="c1", name="Sweep", emoji="🧹", periodDays=7,
                 frequencyType="weekly", frequency=2,
                 frequencyMetadata={},
                 nextDueDate="2027-01-01T00:00:00Z",
@@ -432,7 +657,7 @@ def test_complete_chore_weekly_frequency(client, home_id, tmp_path):
     from datetime import datetime, timezone, timedelta
     now = datetime.now(timezone.utc)
     new_due = datetime.fromisoformat(resp.json()["nextDueDate"].replace("Z", "+00:00"))
-    expected = now + timedelta(weeks=2)
+    expected = now + timedelta(weeks=1)
     assert abs((new_due - expected).total_seconds()) < 5
 
 

@@ -21,11 +21,14 @@ def test_interval_days_advances_by_frequency():
     assert result == datetime(2026, 7, 7, tzinfo=timezone.utc)
 
 
-def test_weekly_advances_by_weeks():
+def test_weekly_advances_by_one_week_regardless_of_frequency():
+    """Donetick's own scheduler ignores `frequency` for the literal "weekly"
+    type (always advances by exactly 1 week) -- the multiplier only applies
+    to the "interval" type. A stray `frequency` value must not change this."""
     chore = _chore(frequencyType="weekly", frequency=2)
     from_dt = datetime(2026, 7, 4, tzinfo=timezone.utc)
     result = next_due_from_schedule(chore, from_dt)
-    assert result == datetime(2026, 7, 18, tzinfo=timezone.utc)
+    assert result == datetime(2026, 7, 11, tzinfo=timezone.utc)
 
 
 def test_monthly_advances_by_months():

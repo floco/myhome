@@ -84,16 +84,25 @@ UNIT_DAYS: dict[str, float] = {"days": 1, "weeks": 7, "months": 30, "years": 365
 
 
 def _period_days(chore: dict) -> float:
+    # Donetick's own scheduler always advances "daily"/"weekly"/"monthly"/"yearly"
+    # chores by exactly 1 unit and ignores `frequency` for them entirely -- that
+    # multiplier only applies to the "interval" type (see upstream
+    # internal/chore/scheduler.go). A chore imported with a stray `frequency`
+    # value on one of these literal types must not be multiplied.
     freq: int = chore["frequency"]
     freq_type: str = chore["frequencyType"]
     meta: dict = chore.get("frequencyMetadata") or {}
     unit: str = meta.get("unit", "days")
-    if freq_type == "weekly":
-        return freq * 7.0
+    if freq_type == "daily":
+        return 1.0
+    elif freq_type == "weekly":
+        return 7.0
     elif freq_type == "interval":
         return freq * UNIT_DAYS.get(unit, 1)
+    elif freq_type in ("monthly", "month"):
+        return 30.0
     elif freq_type == "yearly":
-        return freq * 365.0
+        return 365.0
     elif freq_type == "day_of_the_month":
         return 30.0
     return 30.0
@@ -112,6 +121,35 @@ def _extract_emoji(name: str) -> str:
         elif result:
             break
     return "".join(result).strip() or "📋"
+
+
+def _strip_leading_emoji(name: str, emoji: str) -> str:
+    """myhome has a dedicated `emoji` field, so drop it from the Donetick name if
+    it's a leading icon rather than keeping it duplicated in the title."""
+    if emoji and name.startswith(emoji):
+        return name[len(emoji):].strip()
+    return name
+
+
+# Donetick ChoreHistoryStatus: 1 = completed (see upstream internal/chore/model).
+# Other statuses (started/skipped/pending-approval/rejected/missed/rescheduled)
+# aren't a "this chore was done" event, so they're not imported as completions.
+_DONETICK_HISTORY_STATUS_COMPLETED = 1
+
+
+async def _fetch_donetick_history(client, base_url: str, token: str, donetick_chore_id: int) -> list[dict]:
+    try:
+        resp = await client.get(
+            f"{base_url}/api/v1/chores/{donetick_chore_id}/history",
+            headers={"secretkey": token},
+            timeout=10.0,
+        )
+        resp.raise_for_status()
+        return resp.json().get("res", []) or []
+    except Exception:
+        # History is a best-effort enrichment of the import -- a chore whose
+        # history fetch fails should still be imported, just without history.
+        return []
 
 
 # GET must come before /import and /{id} routes - FastAPI matches in definition order
@@ -147,33 +185,54 @@ async def import_from_donetick(
             )
             resp.raise_for_status()
             raw_chores: list[dict] = resp.json().get("res", [])
+
+            doc = load_chores(home_id)
+            existing_ids = {c.donetickId for c in doc.chores if c.donetickId is not None}
+            imported = 0
+
+            for rc in raw_chores:
+                if rc["id"] in existing_ids:
+                    continue
+                raw_due = rc.get("nextDueDate") or ""
+                next_due = raw_due if raw_due else datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                raw_name = rc["name"].strip()
+                emoji = _extract_emoji(rc["name"])
+                chore_id = str(uuid.uuid4())
+                doc.chores.append(
+                    Chore(
+                        id=chore_id,
+                        donetickId=rc["id"],
+                        name=_strip_leading_emoji(raw_name, emoji),
+                        emoji=emoji,
+                        periodDays=_period_days(rc),
+                        frequencyType=rc["frequencyType"],
+                        frequency=rc["frequency"],
+                        frequencyMetadata=rc.get("frequencyMetadata") or {},
+                        nextDueDate=next_due,
+                        description="",
+                    )
+                )
+                imported += 1
+
+                for entry in await _fetch_donetick_history(client, base_url, body.token, rc["id"]):
+                    if entry.get("status") != _DONETICK_HISTORY_STATUS_COMPLETED:
+                        continue
+                    completed_at = entry.get("performedAt")
+                    if not completed_at:
+                        continue
+                    doc.completions.append(
+                        CompletionRecord(
+                            id=str(uuid.uuid4()),
+                            choreId=chore_id,
+                            completedAt=completed_at,
+                            scheduledDue=entry.get("dueDate") or "",
+                            notes=entry.get("notes") or "",
+                        )
+                    )
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Donetick error: {exc}") from exc
-
-    doc = load_chores(home_id)
-    existing_ids = {c.donetickId for c in doc.chores if c.donetickId is not None}
-    imported = 0
-
-    for rc in raw_chores:
-        if rc["id"] in existing_ids:
-            continue
-        raw_due = rc.get("nextDueDate") or ""
-        next_due = raw_due if raw_due else datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        doc.chores.append(
-            Chore(
-                id=str(uuid.uuid4()),
-                donetickId=rc["id"],
-                name=rc["name"].strip(),
-                emoji=_extract_emoji(rc["name"]),
-                periodDays=_period_days(rc),
-                frequencyType=rc["frequencyType"],
-                frequency=rc["frequency"],
-                frequencyMetadata=rc.get("frequencyMetadata") or {},
-                nextDueDate=next_due,
-                description="",
-            )
-        )
-        imported += 1
 
     save_chores(home_id, doc)
     return ImportResponse(imported=imported)
