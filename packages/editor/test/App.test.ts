@@ -466,6 +466,44 @@ describe("App — item picker visibility across floor modes", () => {
     unmount(app);
     target.remove();
   });
+
+  it("keeps the floating toolbar visible in All-floor mode and can switch back to a floor", async () => {
+    stubFetch404();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = await mountAndLoad(target);
+
+    (target.querySelector('.compact-btn') as HTMLButtonElement).click();
+    await tick();
+    flushSync();
+    (target.querySelector('button[title="House-wide assignments — drag chores here"]') as HTMLButtonElement).click();
+    await tick();
+    flushSync();
+
+    expect(target.querySelector(".all-floor-canvas")).not.toBeNull();
+    // The toolbar -- and the FloorSwitcher inside it -- must stay visible;
+    // it's the only way out of All-floor mode.
+    const toolbar = target.querySelector(".floating-toolbar");
+    expect(toolbar).not.toBeNull();
+    const compactBtn = toolbar!.querySelector(".compact-btn") as HTMLButtonElement;
+    expect(compactBtn).not.toBeNull();
+
+    compactBtn.click();
+    await tick();
+    flushSync();
+    const floorItem = Array.from(target.querySelectorAll(".compact-floor-item")).find(
+      (b) => !b.textContent?.includes("All") && !b.classList.contains("add"),
+    ) as HTMLButtonElement;
+    floorItem.click();
+    await tick();
+    flushSync();
+
+    expect(target.querySelector(".all-floor-canvas")).toBeNull();
+    expect(target.querySelector("svg.canvas")).not.toBeNull();
+
+    unmount(app);
+    target.remove();
+  });
 });
 
 // NOTE: Home dashboard routing tests live in App.routing.test.ts

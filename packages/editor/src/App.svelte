@@ -1144,7 +1144,9 @@
               <FurnitureLibraryPanel onstartdrag={startFpDrag} />
             </div>
           {/if}
-          {#if floorStore.loaded && !allFloorsMode}
+          {#if floorStore.loaded}
+            <!-- The FloorSwitcher below is the only way to leave whole-house
+                 mode -- this block must stay visible while allFloorsMode is on. -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div
               class="floating-toolbar"
@@ -1197,7 +1199,7 @@
               <div class="ft-sep"></div>
               <button class="ft-btn" title={$_('floorPlan.tools.undo')} disabled={!floorStore.hasUndo} onclick={handleUndo}>↩ <span class="ft-label">{$_('app.floatingToolbar.undo')}</span></button>
               <button class="ft-btn" title={$_('floorPlan.tools.redo')} disabled={!floorStore.hasRedo} onclick={handleRedo}>↪ <span class="ft-label">{$_('app.floatingToolbar.redo')}</span></button>
-              {#if !choreLayerActive}
+              {#if !choreLayerActive && !allFloorsMode}
                 <div class="ft-sep"></div>
                 <button class="ft-btn" title={$_('floorPlan.tools.select')} class:active={toolStore.state.tool === "select"} onclick={() => toolStore.setTool("select")}>🖱 <span class="ft-label">{$_('floorPlan.tools.select')}</span></button>
                 <button class="ft-btn" title={$_('floorPlan.tools.wall')} class:active={toolStore.state.tool === "wall"} onclick={() => toolStore.setTool("wall")}>🧱 <span class="ft-label">{$_('floorPlan.tools.wall')}</span></button>
