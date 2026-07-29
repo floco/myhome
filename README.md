@@ -149,4 +149,4 @@ Dockerfile     # Multi-stage build (frontend → backend)
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+AGPL-3.0 — see [LICENSE](LICENSE).
