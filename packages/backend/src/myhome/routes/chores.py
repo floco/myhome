@@ -1,8 +1,12 @@
+import asyncio
+import ipaddress
 import mimetypes
 import os
 import re
+import socket
 import uuid
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse
@@ -21,7 +25,7 @@ from ..models_chores import (
     ImportResponse,
 )
 from ..chore_scheduling import next_due_from_schedule
-from ..deps import get_current_user_id
+from ..deps import get_current_user_id, require_auth
 from ..persistence_activity import log_activity
 from ..persistence_chores import (
     get_attachment_path,
@@ -35,7 +39,6 @@ from ..persistence_chores import (
 
 router = APIRouter()
 
-_DONETICK_BASE = os.environ.get("DONETICK_URL", "https://chores.casa.mutualis.com")
 _ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
 _ID_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")
 
@@ -48,6 +51,28 @@ def _validate_id(chore_id: str) -> None:
 def _validate_filename(filename: str) -> None:
     if not re.fullmatch(r"[A-Za-z0-9._-]+", filename) or filename.startswith("."):
         raise HTTPException(status_code=400, detail="Invalid filename")
+
+
+async def _validate_donetick_url(raw_url: str) -> str:
+    """Reject anything that isn't a resolvable http(s) URL pointed at a normal
+    host. RFC1918 addresses are allowed on purpose -- self-hosted Donetick
+    instances normally live on the same LAN as this add-on -- but loopback,
+    link-local (which covers the 169.254.169.254 cloud-metadata address), and
+    other special ranges are not legitimate Donetick targets and are the
+    classic SSRF probes.
+    """
+    parsed = urlparse(raw_url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise HTTPException(status_code=400, detail="Donetick URL must be a valid http(s) URL")
+    try:
+        addrs = await asyncio.to_thread(socket.getaddrinfo, parsed.hostname, None)
+    except socket.gaierror as exc:
+        raise HTTPException(status_code=400, detail=f"Could not resolve Donetick URL: {exc}") from exc
+    for _family, _type, _proto, _canon, sockaddr in addrs:
+        ip = ipaddress.ip_address(sockaddr[0])
+        if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_unspecified:
+            raise HTTPException(status_code=400, detail="Donetick URL resolves to a disallowed address")
+    return raw_url.rstrip("/")
 
 
 def _sanitise_filename(name: str) -> str:
@@ -98,12 +123,23 @@ def get_chores(home_id: str) -> ChoreDocument:
 # CRITICAL: /import MUST be defined before /{chore_id}
 # so FastAPI does not try to match "import" as a chore ID.
 @router.post("/api/homes/{home_id}/chores/import", response_model=ImportResponse)
-async def import_from_donetick(home_id: str, body: ImportRequest) -> ImportResponse:
+async def import_from_donetick(
+    home_id: str, body: ImportRequest,
+    current_user: tuple[str, str] = require_auth("admin"),
+) -> ImportResponse:
     import httpx
 
+    stripped_url = body.url.strip()
+    if not stripped_url:
+        raise HTTPException(status_code=400, detail="Donetick URL is required")
+    base_url = await _validate_donetick_url(stripped_url)
+
     try:
+        # httpx.AsyncClient defaults to follow_redirects=False -- a redirect
+        # to an internal address would otherwise bypass the resolution check
+        # above, since only the original host is validated.
         async with httpx.AsyncClient() as client:
-            url = f"{_DONETICK_BASE}/api/v1/chores/"
+            url = f"{base_url}/api/v1/chores/"
             resp = await client.get(
                 url,
                 headers={"secretkey": body.token},

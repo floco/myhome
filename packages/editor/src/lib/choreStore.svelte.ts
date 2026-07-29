@@ -187,13 +187,13 @@ export function createChoreStore(getHomeId: () => string | null = () => null) {
     await init();
   }
 
-  async function importFromDonetick(token: string): Promise<number> {
+  async function importFromDonetick(token: string, url: string): Promise<number> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
     const resp = await fetch(`/api/homes/${homeId}/chores/import`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
+      body: JSON.stringify({ token, url }),
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const { imported } = await resp.json();

@@ -19,7 +19,7 @@
   interface Props {
     store: SettingsStore;
     authStore: AuthStore;
-    importFromDonetick: (token: string) => Promise<number>;
+    importFromDonetick: (token: string, url: string) => Promise<number>;
   }
   let { store, authStore, importFromDonetick }: Props = $props();
 

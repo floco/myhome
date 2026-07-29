@@ -231,9 +231,27 @@ def test_complete_chore_advances_all_assignments(client, home_id, tmp_path):
 
 # --- POST /api/homes/{home_id}/chores/import (mock Donetick) ---
 
-def test_import_from_donetick(client, home_id):
+def _mock_public_dns(monkeypatch, hostname: str = "donetick.example.com") -> None:
+    """The import route resolves the Donetick hostname to guard against SSRF;
+    tests run without real DNS, so stub resolution to a public-looking IP."""
+    import socket
+    from myhome.routes import chores as chores_module
+
+    real_getaddrinfo = socket.getaddrinfo
+
+    def fake_getaddrinfo(host, *args, **kwargs):
+        if host == hostname:
+            return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
+        return real_getaddrinfo(host, *args, **kwargs)
+
+    monkeypatch.setattr(chores_module.socket, "getaddrinfo", fake_getaddrinfo)
+
+
+def test_import_from_donetick(client, home_id, monkeypatch):
     import respx
     import httpx
+
+    _mock_public_dns(monkeypatch)
 
     donetick_response = {
         "res": [
@@ -257,10 +275,13 @@ def test_import_from_donetick(client, home_id):
     }
 
     with respx.mock:
-        respx.get("https://chores.casa.mutualis.com/api/v1/chores/").mock(
+        respx.get("https://donetick.example.com/api/v1/chores/").mock(
             return_value=httpx.Response(200, json=donetick_response)
         )
-        resp = client.post(f"/api/homes/{home_id}/chores/import", json={"token": "test-token"})
+        resp = client.post(
+            f"/api/homes/{home_id}/chores/import",
+            json={"token": "test-token", "url": "https://donetick.example.com"},
+        )
 
     assert resp.status_code == 200
     assert resp.json()["imported"] == 2
@@ -279,9 +300,11 @@ def test_import_from_donetick(client, home_id):
     assert sweep["frequency"] == 2
 
 
-def test_import_is_idempotent(client, home_id, tmp_path):
+def test_import_is_idempotent(client, home_id, tmp_path, monkeypatch):
     import respx
     import httpx
+
+    _mock_public_dns(monkeypatch)
 
     existing = ChoreDocument(
         chores=[Chore(id="x", donetickId=42, name="🪟 Clean windows", emoji="🪟", periodDays=180, nextDueDate="2027-01-01T00:00:00Z")],
@@ -291,13 +314,58 @@ def test_import_is_idempotent(client, home_id, tmp_path):
 
     donetick_response = {"res": [{"id": 42, "name": "🪟 Clean windows", "frequencyType": "interval", "frequency": 6, "frequencyMetadata": {"unit": "months"}, "nextDueDate": "2027-01-01T00:00:00Z"}]}
     with respx.mock:
-        respx.get("https://chores.casa.mutualis.com/api/v1/chores/").mock(
+        respx.get("https://donetick.example.com/api/v1/chores/").mock(
             return_value=httpx.Response(200, json=donetick_response)
         )
-        resp = client.post(f"/api/homes/{home_id}/chores/import", json={"token": "test-token"})
+        resp = client.post(
+            f"/api/homes/{home_id}/chores/import",
+            json={"token": "test-token", "url": "https://donetick.example.com"},
+        )
 
     assert resp.json()["imported"] == 0
     assert len(client.get(f"/api/homes/{home_id}/chores").json()["chores"]) == 1
+
+
+def test_import_requires_url(client, home_id):
+    resp = client.post(f"/api/homes/{home_id}/chores/import", json={"token": "test-token", "url": ""})
+    assert resp.status_code == 400
+
+
+@pytest.mark.parametrize("url", [
+    "http://127.0.0.1:8000",
+    "http://localhost",
+    "http://169.254.169.254/latest/meta-data/",  # cloud metadata SSRF target
+    "ftp://donetick.example.com",  # non-http(s) scheme
+])
+def test_import_rejects_ssrf_targets(client, home_id, url):
+    resp = client.post(f"/api/homes/{home_id}/chores/import", json={"token": "test-token", "url": url})
+    assert resp.status_code == 400
+
+
+def test_import_allows_private_lan_address(client, home_id):
+    """RFC1918 addresses must stay allowed -- self-hosted Donetick instances
+    normally live on the same LAN as this add-on."""
+    import respx
+    import httpx
+
+    with respx.mock:
+        respx.get("http://192.168.1.50:2021/api/v1/chores/").mock(
+            return_value=httpx.Response(200, json={"res": []})
+        )
+        resp = client.post(
+            f"/api/homes/{home_id}/chores/import",
+            json={"token": "test-token", "url": "http://192.168.1.50:2021"},
+        )
+
+    assert resp.status_code == 200
+
+
+def test_import_forbidden_for_non_admin(ro_client, home_id):
+    resp = ro_client.post(
+        f"/api/homes/{home_id}/chores/import",
+        json={"token": "test-token", "url": "https://donetick.example.com"},
+    )
+    assert resp.status_code == 403
 
 
 # --- Calendar-aware scheduling ---

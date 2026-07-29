@@ -147,3 +147,20 @@ describe("ChoresPage — schedule health summary", () => {
     unmount(comp);
   });
 });
+
+describe("ChoresPage — unassigned chores stay visible by default", () => {
+  it("shows a freshly imported chore with no room assignment under the default attention filter", () => {
+    const chore = makeChore({ id: "c1", name: "Imported chore" });
+    const store = makeStore([chore]);
+    // No assignments -- mirrors a Donetick import, which creates Chore rows only.
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    expect(target.querySelector(".name-cell")?.textContent).toContain("Imported chore");
+    expect(target.querySelector(".footer")?.textContent).toContain("1 chore");
+
+    unmount(comp);
+  });
+});

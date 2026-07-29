@@ -10,9 +10,11 @@
 
   interface Props {
     authStore: AuthStore;
-    importFromDonetick: (token: string) => Promise<number>;
+    importFromDonetick: (token: string, url: string) => Promise<number>;
   }
   let { authStore, importFromDonetick }: Props = $props();
+
+  const DONETICK_URL_STORAGE_KEY = "myhome-donetick-url";
 
   let mcpEnabled = $state(false);
   let mcpConfigLoaded = $state(false);
@@ -44,18 +46,29 @@
 
   loadMcpConfig();
 
+  let importUrl = $state(localStorage.getItem(DONETICK_URL_STORAGE_KEY) ?? "");
   let importToken = $state("");
   let importStatus = $state<"idle" | "loading" | "done" | "error">("idle");
   let importCount = $state(0);
+  let importError = $state("");
 
   async function handleImport(): Promise<void> {
+    const url = importUrl.trim();
+    if (!url) {
+      importStatus = "error";
+      importError = $_('settings.integrations.urlRequired');
+      return;
+    }
     importStatus = "loading";
+    importError = "";
     try {
-      importCount = await importFromDonetick(importToken.trim());
+      importCount = await importFromDonetick(importToken.trim(), url);
       importStatus = "done";
       importToken = "";
+      localStorage.setItem(DONETICK_URL_STORAGE_KEY, url);
     } catch {
       importStatus = "error";
+      importError = $_('settings.integrations.failed');
     }
   }
 </script>
@@ -89,13 +102,14 @@
       {$_('settings.integrations.donetickDesc')}
     </p>
     <div class="import-row">
+      <Input placeholder={$_('settings.integrations.urlPlaceholder')} bind:value={importUrl} />
       <Input type="password" placeholder={$_('settings.integrations.apiTokenPlaceholder')} bind:value={importToken} />
       <Button disabled={importStatus === "loading"} onclick={handleImport}>
         {importStatus === "loading" ? $_('settings.integrations.importing') : $_('settings.integrations.import')}
       </Button>
-      {#if importStatus === "error"}<span class="msg-error">{$_('settings.integrations.failed')}</span>{/if}
-      {#if importStatus === "done"}<span class="msg-success">{$_('settings.integrations.imported', { values: { n: importCount } })}</span>{/if}
     </div>
+    {#if importStatus === "error"}<div class="msg-error">{importError}</div>{/if}
+    {#if importStatus === "done"}<div class="msg-success">{$_('settings.integrations.imported', { values: { n: importCount } })}</div>{/if}
   </Card>
 {/if}
 
@@ -111,6 +125,7 @@
   .mod-label { font-size: 13px; color: var(--text); }
 
   .import-row { display: flex; align-items: center; gap: 10px; margin-top: var(--space-2); }
-  .msg-error { color: var(--danger); font-size: 11px; }
-  .msg-success { color: var(--success); font-size: 11px; }
+  .import-row :global(.ui-input) { flex: 1; min-width: 0; }
+  .msg-error { color: var(--danger); font-size: 11px; margin-top: 6px; }
+  .msg-success { color: var(--success); font-size: 11px; margin-top: 6px; }
 </style>

@@ -44,7 +44,7 @@
   let expandedHistory = $state<string | null>(null);
 
   function needsAttention(assignments: Assignment[]): boolean {
-    if (assignments.length === 0) return false;
+    if (assignments.length === 0) return true; // unplaced chore -- needs a room before it can be tracked
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() + 7);
     return assignments.some((a) => a.nextDueDate && new Date(a.nextDueDate) <= cutoff);

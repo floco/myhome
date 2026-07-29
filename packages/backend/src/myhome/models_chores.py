@@ -89,6 +89,7 @@ class CompleteRequest(BaseModel):
 
 class ImportRequest(BaseModel):
     token: str
+    url: str
 
 
 class ImportResponse(BaseModel):

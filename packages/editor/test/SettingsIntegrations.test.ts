@@ -18,6 +18,7 @@ describe("SettingsIntegrations", () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
+    localStorage.clear();
     target = document.createElement("div");
     document.body.appendChild(target);
     fetchMock = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
@@ -72,7 +73,7 @@ describe("SettingsIntegrations", () => {
     unmount(app);
   });
 
-  function makeImportFromDonetick(impl: (token: string) => Promise<number>) {
+  function makeImportFromDonetick(impl: (token: string, url: string) => Promise<number>) {
     return vi.fn(impl);
   }
 
@@ -97,8 +98,9 @@ describe("SettingsIntegrations", () => {
   });
 
   it("imports from Donetick and shows the count", async () => {
-    const importFromDonetick = makeImportFromDonetick(async (token) => {
+    const importFromDonetick = makeImportFromDonetick(async (token, url) => {
       expect(token).toBe("secret-token");
+      expect(url).toBe("https://donetick.example.com");
       return 3;
     });
     const app = mount(SettingsIntegrations, {
@@ -106,6 +108,9 @@ describe("SettingsIntegrations", () => {
       props: { authStore: makeAuthStore("admin"), importFromDonetick },
     });
     flushSync();
+    const urlInput = target.querySelector('input[placeholder^="Donetick URL"]') as HTMLInputElement;
+    urlInput.value = "https://donetick.example.com";
+    urlInput.dispatchEvent(new Event("input", { bubbles: true }));
     const tokenInput = target.querySelector('input[placeholder="API token"]') as HTMLInputElement;
     tokenInput.value = "secret-token";
     tokenInput.dispatchEvent(new Event("input", { bubbles: true }));
@@ -114,8 +119,24 @@ describe("SettingsIntegrations", () => {
     importButton.click();
     await new Promise((r) => setTimeout(r, 0));
     flushSync();
-    expect(importFromDonetick).toHaveBeenCalledWith("secret-token");
+    expect(importFromDonetick).toHaveBeenCalledWith("secret-token", "https://donetick.example.com");
     expect(target.textContent).toContain("3 imported");
+    unmount(app);
+  });
+
+  it("requires a URL before importing", async () => {
+    const importFromDonetick = makeImportFromDonetick(async () => 0);
+    const app = mount(SettingsIntegrations, {
+      target,
+      props: { authStore: makeAuthStore("admin"), importFromDonetick },
+    });
+    flushSync();
+    const importButton = Array.from(target.querySelectorAll("button")).find((b) => b.textContent === "Import") as HTMLButtonElement;
+    importButton.click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(importFromDonetick).not.toHaveBeenCalled();
+    expect(target.textContent).toContain("Donetick URL is required");
     unmount(app);
   });
 
@@ -126,6 +147,9 @@ describe("SettingsIntegrations", () => {
       props: { authStore: makeAuthStore("admin"), importFromDonetick },
     });
     flushSync();
+    const urlInput = target.querySelector('input[placeholder^="Donetick URL"]') as HTMLInputElement;
+    urlInput.value = "https://donetick.example.com";
+    urlInput.dispatchEvent(new Event("input", { bubbles: true }));
     const tokenInput = target.querySelector('input[placeholder="API token"]') as HTMLInputElement;
     tokenInput.value = "bad-token";
     tokenInput.dispatchEvent(new Event("input", { bubbles: true }));
