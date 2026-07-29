@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.0 - 2026-07-29
+
+- Added a URL field to the Donetick import (Settings → Integrations) — the server address is no longer hardcoded, and the import is now restricted to admins with SSRF hardening on the URL
+- Fixed chores imported from Donetick not showing up in the Chores list by default
+- Fixed the floor-plan toolbar disappearing after assigning a chore to "whole house", with no way back to a floor without reloading
+
 ## 0.9.1 - 2026-07-27
 
 - Added an optional direct port mapping for the web UI/API (Settings → Add-on → Network), for MCP clients that can't reach the app through Home Assistant's ingress URL
