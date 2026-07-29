@@ -8,6 +8,17 @@ This app is mostly **vibe coded**. I couldn't find anything out there that would
 
 Take it or leave it. No guarantee, use at your own risk. I'm sharing it in case it's useful to someone else too in an internal network.
 
+## Screenshots
+
+Populated from the built-in "Demo home" seed data (create one from **New home → Demo home** to explore the app yourself).
+
+| | |
+|---|---|
+| ![Home dashboard](docs/screenshots/home.png) | ![Floor plan editor](docs/screenshots/floor-plan.png) |
+| Home dashboard | Floor plan editor |
+| ![Chores](docs/screenshots/chores.png) | ![Costs](docs/screenshots/costs.png) |
+| Chores | Costs |
+
 ## Modules
 
 | Module | Description |
