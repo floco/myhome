@@ -16,7 +16,9 @@ dependencies = [
     # passlib 1.7.4 (latest, unmaintained) probes bcrypt.__about__.__version__,
     # which bcrypt removed in 4.1 -- pin below that to avoid a warning on every hash/verify.
     "bcrypt>=4.0,<4.1",
-    "mcp>=1.28",
+    # mcp 2.0.0 dropped the mcp.server.fastmcp module our MCP tools import from --
+    # pin below that until the server code is ported to whatever replaced it.
+    "mcp>=1.28,<2",
     "sqlalchemy>=2.0",
 ]
 

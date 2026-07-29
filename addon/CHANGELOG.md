@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.10.1 - 2026-07-29
+
+- Fixed the release build, which failed after an unrelated upstream dependency published a breaking major version (no user-facing changes; see 0.10.0 below for what's actually in this release)
+
 ## 0.10.0 - 2026-07-29
 
 - Added a URL field to the Donetick import (Settings → Integrations) — the server address is no longer hardcoded, and the import is now restricted to admins with SSRF hardening on the URL
