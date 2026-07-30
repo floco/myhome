@@ -954,3 +954,17 @@ def test_delete_completion(client, home_id, tmp_path):
 def test_delete_completion_404(client, home_id):
     resp = client.delete(f"/api/homes/{home_id}/completions/nonexistent")
     assert resp.status_code == 404
+
+
+def test_reset_chores_clears_data_and_attachments(client, tmp_path, home_id):
+    cid = _chore_id(client, home_id)
+    client.post(f"/api/homes/{home_id}/chores/{cid}/attachments",
+                files={"file": ("photo.jpg", b"\xff\xd8\xff" + b"\x00" * 10, "image/jpeg")})
+    att_dir = tmp_path / "homes" / home_id / "chores-attachments" / cid
+    assert att_dir.exists()
+
+    from myhome.persistence_chores import reset_chores
+    reset_chores(home_id)
+
+    assert client.get(f"/api/homes/{home_id}/chores").json()["chores"] == []
+    assert not att_dir.exists()

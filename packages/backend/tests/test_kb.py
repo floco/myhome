@@ -320,3 +320,22 @@ def test_kb_delete_entry_removes_attachment_dir(client, tmp_path, home_id):
     assert att_dir.exists()
     client.delete(f"/api/homes/{home_id}/kb/trash/{eid}")
     assert not att_dir.exists()
+
+
+def test_reset_kb_clears_entries_and_attachments(client, tmp_path, home_id):
+    eid = client.post(f"/api/homes/{home_id}/kb", json={"title": "How to paint", "content": "# Painting"}).json()["id"]
+    client.post(
+        f"/api/homes/{home_id}/kb/{eid}/attachments",
+        files={"file": ("photo.jpg", b"\xff\xd8\xff" + b"\x00" * 50, "image/jpeg")},
+    )
+    kb_dir = tmp_path / "homes" / home_id / "kb"
+    att_dir = tmp_path / "homes" / home_id / "kb-attachments"
+    assert kb_dir.exists()
+    assert att_dir.exists()
+
+    from myhome.persistence_kb import reset_kb
+    reset_kb(home_id)
+
+    assert client.get(f"/api/homes/{home_id}/kb").json()["entries"] == []
+    assert not kb_dir.exists()
+    assert not att_dir.exists()

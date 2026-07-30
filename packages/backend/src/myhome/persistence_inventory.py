@@ -124,6 +124,13 @@ def delete_all_attachments(home_id: str, item_id: str) -> None:
         shutil.rmtree(path)
 
 
+def reset_inventory(home_id: str) -> None:
+    save_inventory(home_id, InventoryDocument())
+    attachments_root = _home_dir(home_id) / "inventory-attachments"
+    if attachments_root.exists():
+        shutil.rmtree(attachments_root)
+
+
 def generate_pdf_thumbnail(pdf_path: Path, thumb_path: Path) -> None:
     try:
         import fitz

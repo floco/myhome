@@ -119,6 +119,13 @@ def delete_all_attachments(home_id: str, policy_id: str) -> None:
         shutil.rmtree(path)
 
 
+def reset_insurance(home_id: str) -> None:
+    save_insurance(home_id, InsuranceDocument())
+    attachments_root = _home_dir(home_id) / "insurance-attachments"
+    if attachments_root.exists():
+        shutil.rmtree(attachments_root)
+
+
 def generate_pdf_thumbnail(pdf_path: Path, thumb_path: Path) -> None:
     try:
         import fitz  # pymupdf

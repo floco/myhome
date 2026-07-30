@@ -164,6 +164,7 @@
     "save": "Enregistrer",
     "cancel": "Annuler",
     "delete": "Supprimer",
+    "reset": "Réinitialiser",
     "edit": "Modifier",
     "close": "Fermer",
     "add": "Ajouter",
@@ -889,7 +890,11 @@
       "failedToSave": "Échec de l'enregistrement",
       "failedToUpdateType": "Échec de la mise à jour du type",
       "failedToDelete": "Échec de la suppression du logement",
-      "moduleHideWarning": "Cela masque {label} mais ne supprime pas vos données."
+      "moduleHideWarning": "Cela masque {label} mais ne supprime pas vos données.",
+      "resetModuleTitle": "Réinitialiser les données de {label}",
+      "resetModuleBody": "Cela supprime définitivement toutes les données et pièces jointes de {label}. La configuration partagée de ce module (catégories, etc.) est conservée. Cette action est irréversible.",
+      "resetModuleSuccess": "Les données de {label} ont été réinitialisées.",
+      "resetModuleFailed": "Échec de la réinitialisation des données de {label}"
     },
     "security": {
       "apiTokens": "Jetons API",

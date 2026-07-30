@@ -228,3 +228,10 @@ def test_upload_pdf_creates_thumbnail(client, tmp_path, home_id):
     assert resp.status_code == 201
     thumb = tmp_path / "homes" / home_id / "properties-attachments" / "p1" / "listing.pdf.thumb.jpg"
     assert thumb.exists(), "thumbnail should be created on PDF upload"
+
+
+def test_reset_properties_clears_data(client, home_id):
+    client.post(f"/api/homes/{home_id}/properties", json={"name": "Terreno Norte", "type": "land"})
+    from myhome.persistence_properties import reset_properties
+    reset_properties(home_id)
+    assert client.get(f"/api/homes/{home_id}/properties").json()["properties"] == []

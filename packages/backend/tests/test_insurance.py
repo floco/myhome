@@ -224,3 +224,12 @@ def test_deleting_synced_policy_removes_cost_entry(client, home_id):
     assert len(load_costs(home_id).entries) == 1
     client.delete(f"/api/homes/{home_id}/insurance/{policy_id}")
     assert load_costs(home_id).entries == []
+
+
+def test_reset_insurance_clears_data(client, home_id):
+    client.post(f"/api/homes/{home_id}/insurance", json={
+        "name": "Travel Insurance", "categoryId": "icat-travel", "premiumFrequency": "annual",
+    })
+    from myhome.persistence_insurance import reset_insurance
+    reset_insurance(home_id)
+    assert client.get(f"/api/homes/{home_id}/insurance").json()["policies"] == []

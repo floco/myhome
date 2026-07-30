@@ -79,4 +79,6 @@ def log_activity(
 
 
 def describe(entry: ActivityEntry) -> str:
+    if entry.action == "reset":
+        return f"reset {MODULE_NOUNS[entry.module]} data"
     return f"{ACTION_VERBS[entry.action]} {MODULE_NOUNS[entry.module]} '{entry.entityLabel}'"

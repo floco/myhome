@@ -8,3 +8,11 @@ def test_describe_build_task_created():
         module="build", action="create", entityLabel="Foundation Pour", refId="t1",
     )
     assert describe(entry) == "added build task 'Foundation Pour'"
+
+
+def test_describe_module_reset():
+    entry = ActivityEntry(
+        id="e1", timestamp="2026-01-01T00:00:00+00:00", userId="u1", username="admin",
+        module="chores", action="reset", entityLabel="chores", refId=None,
+    )
+    assert describe(entry) == "reset chore data"

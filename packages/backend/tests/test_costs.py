@@ -181,3 +181,12 @@ def test_delete_synced_cost_entry_rejected(client, home_id):
     entry_id = resp.json()["linkedCostEntryId"]
     resp2 = client.delete(f"/api/homes/{home_id}/costs/entries/{entry_id}")
     assert resp2.status_code == 400
+
+
+def test_reset_costs_clears_data(client, home_id):
+    client.post(f"/api/homes/{home_id}/costs", json={
+        "categoryId": "cat-fuel", "date": "2026-01-01", "totalAmount": 100.0,
+    })
+    from myhome.persistence_costs import reset_costs
+    reset_costs(home_id)
+    assert client.get(f"/api/homes/{home_id}/costs").json()["entries"] == []

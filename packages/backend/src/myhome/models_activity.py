@@ -9,7 +9,7 @@ class ActivityEntry(BaseModel):
     userId: str
     username: str
     module: Literal["chores", "works", "costs", "inventory", "consumables", "kb", "locations", "properties", "build", "contacts", "insurance"]
-    action: Literal["create", "update", "delete", "complete", "restore", "delete_forever", "empty_trash"]
+    action: Literal["create", "update", "delete", "complete", "restore", "delete_forever", "empty_trash", "reset"]
     entityLabel: str
     refId: str | None = None
 

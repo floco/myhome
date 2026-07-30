@@ -163,3 +163,12 @@ def test_delete_transaction(client, tmp_path, home_id):
 def test_delete_transaction_not_found(client, home_id):
     resp = client.delete(f"/api/homes/{home_id}/consumable-transactions/nope")
     assert resp.status_code == 404
+
+
+def test_reset_consumables_clears_data(client, home_id):
+    client.post(f"/api/homes/{home_id}/consumables", json={
+        "name": "Dish soap", "emoji": "🧴", "unit": "mL", "quantity": 500.0, "minQuantity": 100.0,
+    })
+    from myhome.persistence_consumables import reset_consumables
+    reset_consumables(home_id)
+    assert client.get(f"/api/homes/{home_id}/consumables").json()["consumables"] == []

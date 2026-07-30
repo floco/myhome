@@ -93,6 +93,20 @@ describe("homesStore — deleteHome", () => {
   });
 });
 
+describe("homesStore — resetModuleData", () => {
+  it("posts to the module reset endpoint", async () => {
+    const fetchMock = makeFetch(204);
+    vi.stubGlobal("fetch", fetchMock);
+    await homesStore.resetModuleData("h1", "chores");
+    expect(fetchMock).toHaveBeenCalledWith("/api/homes/h1/modules/chores/reset", { method: "POST" });
+  });
+
+  it("throws on a non-ok response", async () => {
+    vi.stubGlobal("fetch", makeFetch(403));
+    await expect(homesStore.resetModuleData("h1", "chores")).rejects.toThrow("HTTP 403");
+  });
+});
+
 describe("homesStore — activeHome", () => {
   it("returns the active home object", async () => {
     const home = { id: "h1", name: "Test", type: "existing" as const, enabledModules: ["home"], createdAt: "" };
