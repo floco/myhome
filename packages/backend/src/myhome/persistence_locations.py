@@ -92,3 +92,10 @@ def seed_default_criteria(home_id: str) -> None:
         ],
     )
     save_locations(home_id, doc)
+
+
+def reset_locations(home_id: str) -> None:
+    engine = get_engine()
+    with engine.begin() as conn:
+        conn.execute(location_ratings_table.delete().where(location_ratings_table.c.home_id == home_id))
+        conn.execute(locations_table.delete().where(locations_table.c.home_id == home_id))
