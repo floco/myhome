@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.1 - 2026-07-30
+
+- Fixed a Donetick-imported chore with a "yearly"/"monthly"/"weekly" recurrence showing the wrong interval (e.g. "Every 3 years" instead of "Yearly") when Donetick attached a stray, unused frequency value to the import
+
 ## 0.11.0 - 2026-07-30
 
 - Added a per-module "Reset" option in Settings → General to clear one module's data (records and attachments) without deleting the whole home — categories and other shared config are kept
