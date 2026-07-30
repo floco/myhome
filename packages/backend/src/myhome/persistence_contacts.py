@@ -79,3 +79,7 @@ def get_contact_usage(home_id: str, contact_id: str) -> list[dict]:
         label = r["notes"] or f"{r['total_amount']:g}"
         references.append({"module": "costs", "id": r["id"], "label": label})
     return references
+
+
+def reset_contacts(home_id: str) -> None:
+    save_contacts(home_id, ContactsDocument())

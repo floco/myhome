@@ -76,3 +76,7 @@ def save_consumables(home_id: str, doc: ConsumableDocument) -> None:
                 }
                 for i, t in enumerate(doc.transactions)
             ])
+
+
+def reset_consumables(home_id: str) -> None:
+    save_consumables(home_id, ConsumableDocument())

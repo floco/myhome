@@ -96,3 +96,10 @@ def test_delete_contact_unblocked_after_reference_removed(client, home_id):
     client.put(f"/api/homes/{home_id}/works/{work['id']}", json={"contactId": None})
     resp = client.delete(f"/api/homes/{home_id}/contacts/{contact['id']}")
     assert resp.status_code == 204
+
+
+def test_reset_contacts_clears_data(client, home_id):
+    client.post(f"/api/homes/{home_id}/contacts", json={"name": "Metro Plumbing", "typeId": "ctype-supplier"})
+    from myhome.persistence_contacts import reset_contacts
+    reset_contacts(home_id)
+    assert client.get(f"/api/homes/{home_id}/contacts").json()["contacts"] == []
