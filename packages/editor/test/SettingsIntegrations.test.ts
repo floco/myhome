@@ -140,8 +140,10 @@ describe("SettingsIntegrations", () => {
     unmount(app);
   });
 
-  it("shows an error message when the import fails", async () => {
-    const importFromDonetick = makeImportFromDonetick(async () => { throw new Error("boom"); });
+  it("shows the backend's actual error message when the import fails", async () => {
+    const importFromDonetick = makeImportFromDonetick(async () => {
+      throw new Error("Donetick error: [Errno -2] Name or service not known");
+    });
     const app = mount(SettingsIntegrations, {
       target,
       props: { authStore: makeAuthStore("admin"), importFromDonetick },
@@ -153,6 +155,25 @@ describe("SettingsIntegrations", () => {
     const tokenInput = target.querySelector('input[placeholder="API token"]') as HTMLInputElement;
     tokenInput.value = "bad-token";
     tokenInput.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    const importButton = Array.from(target.querySelectorAll("button")).find((b) => b.textContent === "Import") as HTMLButtonElement;
+    importButton.click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(target.textContent).toContain("Donetick error: [Errno -2] Name or service not known");
+    unmount(app);
+  });
+
+  it("falls back to a generic message when the thrown error has no message", async () => {
+    const importFromDonetick = makeImportFromDonetick(async () => { throw new Error(); });
+    const app = mount(SettingsIntegrations, {
+      target,
+      props: { authStore: makeAuthStore("admin"), importFromDonetick },
+    });
+    flushSync();
+    const urlInput = target.querySelector('input[placeholder^="Donetick URL"]') as HTMLInputElement;
+    urlInput.value = "https://donetick.example.com";
+    urlInput.dispatchEvent(new Event("input", { bubbles: true }));
     flushSync();
     const importButton = Array.from(target.querySelectorAll("button")).find((b) => b.textContent === "Import") as HTMLButtonElement;
     importButton.click();

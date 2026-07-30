@@ -195,7 +195,11 @@ export function createChoreStore(getHomeId: () => string | null = () => null) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, url }),
     });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    if (!resp.ok) {
+      const body = await resp.json().catch(() => null);
+      const detail = body && typeof body.detail === "string" ? body.detail : null;
+      throw new Error(detail ?? `HTTP ${resp.status}`);
+    }
     const { imported } = await resp.json();
     await init();
     return imported as number;

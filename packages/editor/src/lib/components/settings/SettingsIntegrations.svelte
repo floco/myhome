@@ -66,9 +66,9 @@
       importStatus = "done";
       importToken = "";
       localStorage.setItem(DONETICK_URL_STORAGE_KEY, url);
-    } catch {
+    } catch (e) {
       importStatus = "error";
-      importError = $_('settings.integrations.failed');
+      importError = e instanceof Error && e.message ? e.message : $_('settings.integrations.failed');
     }
   }
 </script>

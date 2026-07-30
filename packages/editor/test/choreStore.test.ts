@@ -149,3 +149,30 @@ describe("choreStore — assignmentsForRoom", () => {
     expect(forR1.every((a) => a.roomId !== null)).toBe(true);
   });
 });
+
+describe("choreStore — importFromDonetick", () => {
+  function makeImportFetch(status: number, body: unknown) {
+    return vi.fn().mockImplementation((url: string) => {
+      if (typeof url === "string" && url.includes("/chores/import")) {
+        return Promise.resolve({ ok: status >= 200 && status < 300, status, json: async () => body });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => emptyDoc });
+    });
+  }
+
+  it("throws the backend's detail message on failure", async () => {
+    vi.stubGlobal("fetch", makeImportFetch(502, { detail: "Donetick error: [Errno -2] Name or service not known" }));
+    const store = createChoreStore(getHomeId);
+    await tick();
+    await expect(store.importFromDonetick("token", "https://bad.example.com")).rejects.toThrow(
+      "Donetick error: [Errno -2] Name or service not known",
+    );
+  });
+
+  it("falls back to a status code message when the body has no detail", async () => {
+    vi.stubGlobal("fetch", makeImportFetch(502, {}));
+    const store = createChoreStore(getHomeId);
+    await tick();
+    await expect(store.importFromDonetick("token", "https://bad.example.com")).rejects.toThrow("HTTP 502");
+  });
+});
