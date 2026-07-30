@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import SettingsPage from "../src/lib/components/SettingsPage.svelte";
+import { homesStore } from "../src/lib/homesStore.svelte";
 
 function makeStore() {
   return {
@@ -48,6 +49,7 @@ describe("SettingsPage — nav shell", () => {
   afterEach(() => {
     globalThis.fetch = originalFetch;
     target.remove();
+    homesStore._reset();
   });
 
   it("shows the General panel by default", () => {
@@ -108,6 +110,27 @@ describe("SettingsPage — nav shell", () => {
     const sidebarCount = target.querySelectorAll(".nav-item").length;
     const dropdownCount = target.querySelectorAll(".nav-select option").length;
     expect(dropdownCount).toBe(sidebarCount);
+    unmount(app);
+  });
+
+  it("threads reloadAllStores through to the General panel's module reset flow", async () => {
+    homesStore.homes.push({ id: "h1", name: "Test Home", type: "existing", enabledModules: ["home", "plan", "chores"], createdAt: "" });
+    homesStore.setActiveHomeId("h1");
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 204, json: async () => ({}) });
+    const reloadAllStores = vi.fn();
+    const app = mount(SettingsPage, {
+      target,
+      props: { store: makeStore(), authStore: makeAuthStore(), importFromDonetick: vi.fn(async () => 0), reloadAllStores },
+    });
+    flushSync();
+    const choresRow = [...target.querySelectorAll(".module-row")].find((r) => r.textContent?.includes("Chores"))!;
+    const resetBtn = [...choresRow.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Reset")!;
+    resetBtn.click();
+    flushSync();
+    const confirmBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Reset")!;
+    confirmBtn.click();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(reloadAllStores).toHaveBeenCalledOnce();
     unmount(app);
   });
 });

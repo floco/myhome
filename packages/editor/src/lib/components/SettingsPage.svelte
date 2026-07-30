@@ -20,8 +20,9 @@
     store: SettingsStore;
     authStore: AuthStore;
     importFromDonetick: (token: string, url: string) => Promise<number>;
+    reloadAllStores?: () => void;
   }
-  let { store, authStore, importFromDonetick }: Props = $props();
+  let { store, authStore, importFromDonetick, reloadAllStores }: Props = $props();
 
   interface SettingsGroupDef {
     id: string;
@@ -63,7 +64,7 @@
 
     <div class="content">
       {#if activeGroup === "general"}
-        <SettingsGeneral />
+        <SettingsGeneral {reloadAllStores} />
       {:else if activeGroup === "categories"}
         <SettingsCategories {store} />
       {:else if activeGroup === "notifications"}
