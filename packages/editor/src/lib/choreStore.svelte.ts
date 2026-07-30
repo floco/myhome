@@ -35,9 +35,14 @@ export function scheduleLabel(chore: Chore): string {
     const days = ((meta as Record<string, number[]>)?.days ?? []).map((d) => t(`chores.schedule.dayAbbrev.${dayKeys[(d - 1) % 7]}`));
     return days.length ? t("chores.schedule.weeklyOn", { values: { days: days.join(", ") } }) : t("chores.schedule.weekly");
   }
-  if (ft === "weekly") return n === 1 ? t("chores.schedule.weekly") : t("chores.schedule.everyNWeeks", { values: { n } });
-  if (ft === "monthly") return n === 1 ? t("chores.schedule.monthly") : t("chores.schedule.everyNMonths", { values: { n } });
-  if (ft === "yearly") return n === 1 ? t("chores.schedule.yearly") : t("chores.schedule.everyNYears", { values: { n } });
+  // Donetick's own scheduler always advances "weekly"/"monthly"/"yearly" chores
+  // by exactly 1 unit and ignores `frequency` for them entirely -- that
+  // multiplier only applies to the "interval" type. A chore imported with a
+  // stray `frequency` value on one of these literal types must not be
+  // multiplied here either (see chore_scheduling.py / _period_days).
+  if (ft === "weekly") return t("chores.schedule.weekly");
+  if (ft === "monthly") return t("chores.schedule.monthly");
+  if (ft === "yearly") return t("chores.schedule.yearly");
   if (ft === "interval") {
     if (unit === "years") return n === 1 ? t("chores.schedule.yearly") : t("chores.schedule.everyNYears", { values: { n } });
     if (unit === "months") return n === 1 ? t("chores.schedule.monthly") : t("chores.schedule.everyNMonths", { values: { n } });
