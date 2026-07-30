@@ -60,6 +60,11 @@ async function deleteHome(id: string): Promise<void> {
   }
 }
 
+async function resetModuleData(homeId: string, moduleId: string): Promise<void> {
+  const resp = await fetch(`/api/homes/${homeId}/modules/${moduleId}/reset`, { method: "POST" });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+}
+
 function setActiveHomeId(id: string): void {
   activeHomeId = id;
 }
@@ -79,6 +84,7 @@ export const homesStore = {
   createHome,
   patchHome,
   deleteHome,
+  resetModuleData,
   setActiveHomeId,
   _reset,
 };
