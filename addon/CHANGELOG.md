@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.11.0 - 2026-07-30
+
+- Added a per-module "Reset" option in Settings → General to clear one module's data (records and attachments) without deleting the whole home — categories and other shared config are kept
+- Fixed the Donetick import showing a generic "Failed" message instead of the actual error (wrong URL, DNS failure, bad token, unreachable server, etc.)
+
 ## 0.10.1 - 2026-07-29
 
 - Fixed the release build, which failed after an unrelated upstream dependency published a breaking major version (no user-facing changes; see 0.10.0 below for what's actually in this release)
