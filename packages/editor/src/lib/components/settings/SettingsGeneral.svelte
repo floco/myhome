@@ -69,6 +69,28 @@
     await homesStore.patchHome(home.id, { enabledModules: next });
   }
 
+  let resetModuleId = $state<string | null>(null);
+  let resetError = $state<string | null>(null);
+  let resetSuccessMessage = $state<string | null>(null);
+
+  function startReset(moduleId: string): void {
+    resetModuleId = moduleId;
+    resetError = null;
+  }
+
+  async function confirmReset(): Promise<void> {
+    const home = homesStore.activeHome;
+    if (!home || !resetModuleId) return;
+    const label = $_(`common.modules.${resetModuleId}`);
+    try {
+      await homesStore.resetModuleData(home.id, resetModuleId);
+      resetSuccessMessage = $_('settings.general.resetModuleSuccess', { values: { label } });
+      resetModuleId = null;
+    } catch {
+      resetError = $_('settings.general.resetModuleFailed', { values: { label } });
+    }
+  }
+
   async function confirmDeleteHome(): Promise<void> {
     const id = homesStore.activeHomeId;
     if (!id) return;
@@ -157,18 +179,27 @@
 
   <div class="module-group">
     {#each MODULES as mod (mod.id)}
-      <label class="module-row">
-        <input
-          type="checkbox"
-          checked={homesStore.activeHome?.enabledModules.includes(mod.id) ?? false}
-          onchange={() => toggleModule(mod.id)}
-        />
-        <span class="mod-icon">{mod.icon}</span>
-        <span class="mod-label">{$_(`common.modules.${mod.id}`)}</span>
-        {#if mod.placeholder}<span class="soon-tag">{$_('settings.general.placeholderTag')}</span>{/if}
-      </label>
+      <div class="module-row">
+        <label class="module-row-label">
+          <input
+            type="checkbox"
+            checked={homesStore.activeHome?.enabledModules.includes(mod.id) ?? false}
+            onchange={() => toggleModule(mod.id)}
+          />
+          <span class="mod-icon">{mod.icon}</span>
+          <span class="mod-label">{$_(`common.modules.${mod.id}`)}</span>
+          {#if mod.placeholder}<span class="soon-tag">{$_('settings.general.placeholderTag')}</span>{/if}
+        </label>
+        {#if mod.id !== "home" && mod.id !== "plan"}
+          <Button variant="ghost" onclick={() => startReset(mod.id)}>{$_('common.reset')}</Button>
+        {/if}
+      </div>
     {/each}
   </div>
+
+  {#if resetSuccessMessage}
+    <p class="module-success">{resetSuccessMessage}</p>
+  {/if}
 </Card>
 
 <Modal open={showDeleteConfirm} title={$_('settings.general.deleteHomeTitle')} onclose={() => { showDeleteConfirm = false; }}>
@@ -177,6 +208,19 @@
   {#snippet footer()}
     <Button variant="ghost" onclick={() => { showDeleteConfirm = false; }}>{$_('common.cancel')}</Button>
     <Button variant="danger" onclick={confirmDeleteHome}>{$_('common.delete')}</Button>
+  {/snippet}
+</Modal>
+
+<Modal
+  open={resetModuleId !== null}
+  title={resetModuleId ? $_('settings.general.resetModuleTitle', { values: { label: $_(`common.modules.${resetModuleId}`) } }) : ''}
+  onclose={() => { resetModuleId = null; }}
+>
+  <p>{resetModuleId ? $_('settings.general.resetModuleBody', { values: { label: $_(`common.modules.${resetModuleId}`) } }) : ''}</p>
+  {#if resetError}<p class="field-error">{resetError}</p>{/if}
+  {#snippet footer()}
+    <Button variant="ghost" onclick={() => { resetModuleId = null; }}>{$_('common.cancel')}</Button>
+    <Button variant="danger" onclick={confirmReset}>{$_('common.reset')}</Button>
   {/snippet}
 </Modal>
 
@@ -191,11 +235,13 @@
 
   .section-desc { font-size: 13px; color: var(--text-muted); margin: 0 0 12px; }
   .module-group { margin-bottom: 16px; }
-  .module-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; cursor: pointer; }
+  .module-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; }
+  .module-row-label { display: flex; align-items: center; gap: 10px; cursor: pointer; flex: 1; }
   .module-row input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; }
   .mod-icon { font-size: 16px; width: 20px; text-align: center; }
   .mod-label { font-size: 13px; color: var(--text); }
   .soon-tag { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: var(--surface-hover); color: var(--text-muted); border-radius: var(--radius-pill); padding: 1px 5px; }
   .module-warning { font-size: 12px; color: var(--text-muted); background: var(--surface-hover); border-radius: var(--radius); padding: 8px 10px; margin: 0 0 8px; }
+  .module-success { font-size: 12px; color: var(--text-muted); background: var(--surface-hover); border-radius: var(--radius); padding: 8px 10px; margin: 8px 0 0; }
   .lang-select { font-size: 13px; padding: 4px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
 </style>

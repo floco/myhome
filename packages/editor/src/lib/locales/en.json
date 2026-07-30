@@ -164,6 +164,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
+    "reset": "Reset",
     "edit": "Edit",
     "close": "Close",
     "add": "Add",
@@ -889,7 +890,11 @@
       "failedToSave": "Failed to save",
       "failedToUpdateType": "Failed to update type",
       "failedToDelete": "Failed to delete home",
-      "moduleHideWarning": "This hides {label} but does not delete your data."
+      "moduleHideWarning": "This hides {label} but does not delete your data.",
+      "resetModuleTitle": "Reset {label} data",
+      "resetModuleBody": "This permanently deletes all {label} data and attachments. Any shared configuration for this module (categories, etc.) is kept. This cannot be undone.",
+      "resetModuleSuccess": "{label} data has been reset.",
+      "resetModuleFailed": "Failed to reset {label} data"
     },
     "security": {
       "apiTokens": "API Tokens",

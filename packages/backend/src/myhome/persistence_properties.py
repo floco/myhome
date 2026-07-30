@@ -112,6 +112,13 @@ def delete_all_attachments(home_id: str, property_id: str) -> None:
         shutil.rmtree(path)
 
 
+def reset_properties(home_id: str) -> None:
+    save_properties(home_id, PropertiesDocument())
+    attachments_root = _home_dir(home_id) / "properties-attachments"
+    if attachments_root.exists():
+        shutil.rmtree(attachments_root)
+
+
 def generate_pdf_thumbnail(pdf_path: Path, thumb_path: Path) -> None:
     try:
         import fitz  # pymupdf

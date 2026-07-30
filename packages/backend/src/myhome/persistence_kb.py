@@ -301,6 +301,15 @@ def delete_attachment(home_id: str, entry_id: str, filename: str) -> bool:
     return True
 
 
+def reset_kb(home_id: str) -> None:
+    kb_dir = _kb_dir(home_id)
+    if kb_dir.exists():
+        shutil.rmtree(kb_dir)
+    attachments_root = _home_dir(home_id) / "kb-attachments"
+    if attachments_root.exists():
+        shutil.rmtree(attachments_root)
+
+
 def generate_pdf_thumbnail(pdf_path: Path, thumb_path: Path) -> None:
     try:
         import fitz

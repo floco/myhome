@@ -182,3 +182,17 @@ def test_clear_rating(client, home_id):
 def test_clear_rating_not_found(client, home_id):
     resp = client.delete(f"/api/homes/{home_id}/locations/ratings/loc1/crit1")
     assert resp.status_code == 404
+
+
+def test_reset_locations_preserves_criteria(client, home_id):
+    client.post(f"/api/homes/{home_id}/locations/criteria", json={"name": "Safety"})
+    client.post(f"/api/homes/{home_id}/locations/locations", json={"name": "Zagreb"})
+
+    from myhome.persistence_locations import reset_locations
+    reset_locations(home_id)
+
+    data = client.get(f"/api/homes/{home_id}/locations").json()
+    assert data["locations"] == []
+    assert data["ratings"] == []
+    assert len(data["criteria"]) == 1
+    assert data["criteria"][0]["name"] == "Safety"
