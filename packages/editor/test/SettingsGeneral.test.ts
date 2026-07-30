@@ -120,4 +120,54 @@ describe("SettingsGeneral", () => {
     expect(fetch).toHaveBeenCalledWith("/api/homes/h1", expect.objectContaining({ method: "DELETE" }));
     unmount(app);
   });
+
+  it("shows a Reset button for data modules but not for Home or Plan", () => {
+    seedHome({ enabledModules: ["home", "plan", "chores"] });
+    const app = mount(SettingsGeneral, { target, props: {} });
+    flushSync();
+    const choresRow = [...target.querySelectorAll(".module-row")].find((r) => r.textContent?.includes("Chores"))!;
+    expect([...choresRow.querySelectorAll("button")].some((b) => b.textContent?.trim() === "Reset")).toBe(true);
+    const homeRow = [...target.querySelectorAll(".module-row")].find((r) => r.querySelector(".mod-label")?.textContent?.trim() === "Home")!;
+    expect([...homeRow.querySelectorAll("button")].some((b) => b.textContent?.trim() === "Reset")).toBe(false);
+    unmount(app);
+  });
+
+  it("resetting a module shows a confirm modal and calls resetModuleData on confirm", async () => {
+    seedHome({ enabledModules: ["home", "plan", "chores"] });
+    vi.stubGlobal("fetch", makeFetch(204));
+    const app = mount(SettingsGeneral, { target, props: {} });
+    flushSync();
+    const choresRow = [...target.querySelectorAll(".module-row")].find((r) => r.textContent?.includes("Chores"))!;
+    const resetBtn = [...choresRow.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Reset")!;
+    resetBtn.click();
+    flushSync();
+    const modal = target.querySelector(".ui-modal")!;
+    expect(modal.textContent).toContain("Reset Chores data");
+    const confirmBtn = [...modal.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Reset")!;
+    confirmBtn.click();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(fetch).toHaveBeenCalledWith("/api/homes/h1/modules/chores/reset", { method: "POST" });
+    flushSync();
+    expect(target.querySelector(".ui-modal")).toBeNull();
+    expect(target.textContent).toContain("Chores data has been reset.");
+    unmount(app);
+  });
+
+  it("shows an error inline and keeps the modal open when reset fails", async () => {
+    seedHome({ enabledModules: ["home", "plan", "chores"] });
+    vi.stubGlobal("fetch", makeFetch(403));
+    const app = mount(SettingsGeneral, { target, props: {} });
+    flushSync();
+    const choresRow = [...target.querySelectorAll(".module-row")].find((r) => r.textContent?.includes("Chores"))!;
+    const resetBtn = [...choresRow.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Reset")!;
+    resetBtn.click();
+    flushSync();
+    const confirmBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Reset")!;
+    confirmBtn.click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(target.querySelector(".ui-modal")).not.toBeNull();
+    expect(target.textContent).toContain("Failed to reset Chores data");
+    unmount(app);
+  });
 });
