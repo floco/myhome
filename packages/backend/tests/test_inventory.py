@@ -340,3 +340,10 @@ def test_inv_get_jpeg_returns_image_content_type(client, home_id):
     resp = client.get(f"/api/homes/{home_id}/inventory/items/{iid}/attachments/photo.jpg")
     assert resp.status_code == 200
     assert "image/jpeg" in resp.headers["content-type"]
+
+
+def test_reset_inventory_clears_data(client, home_id):
+    client.post(f"/api/homes/{home_id}/inventory/items", json={"name": "Washing machine"})
+    from myhome.persistence_inventory import reset_inventory
+    reset_inventory(home_id)
+    assert client.get(f"/api/homes/{home_id}/inventory").json()["items"] == []

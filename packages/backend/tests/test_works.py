@@ -316,3 +316,10 @@ def test_delete_work_removes_attachments(client, tmp_path, home_id):
     client.delete(f"/api/homes/{home_id}/works/w1")
     attach_dir = tmp_path / "homes" / home_id / "works-attachments" / "w1"
     assert not attach_dir.exists()
+
+
+def test_reset_works_clears_data(client, home_id):
+    client.post(f"/api/homes/{home_id}/works", json={"title": "Roof repair", "status": "planned", "date": "2026-04-01"})
+    from myhome.persistence_works import reset_works
+    reset_works(home_id)
+    assert client.get(f"/api/homes/{home_id}/works").json()["works"] == []
