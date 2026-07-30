@@ -170,4 +170,38 @@ describe("SettingsGeneral", () => {
     expect(target.textContent).toContain("Failed to reset Chores data");
     unmount(app);
   });
+
+  it("calls reloadAllStores after a successful module reset", async () => {
+    seedHome({ enabledModules: ["home", "plan", "chores"] });
+    vi.stubGlobal("fetch", makeFetch(204));
+    const reloadAllStores = vi.fn();
+    const app = mount(SettingsGeneral, { target, props: { reloadAllStores } });
+    flushSync();
+    const choresRow = [...target.querySelectorAll(".module-row")].find((r) => r.textContent?.includes("Chores"))!;
+    const resetBtn = [...choresRow.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Reset")!;
+    resetBtn.click();
+    flushSync();
+    const confirmBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Reset")!;
+    confirmBtn.click();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(reloadAllStores).toHaveBeenCalledOnce();
+    unmount(app);
+  });
+
+  it("does not call reloadAllStores when reset fails", async () => {
+    seedHome({ enabledModules: ["home", "plan", "chores"] });
+    vi.stubGlobal("fetch", makeFetch(403));
+    const reloadAllStores = vi.fn();
+    const app = mount(SettingsGeneral, { target, props: { reloadAllStores } });
+    flushSync();
+    const choresRow = [...target.querySelectorAll(".module-row")].find((r) => r.textContent?.includes("Chores"))!;
+    const resetBtn = [...choresRow.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Reset")!;
+    resetBtn.click();
+    flushSync();
+    const confirmBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Reset")!;
+    confirmBtn.click();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(reloadAllStores).not.toHaveBeenCalled();
+    unmount(app);
+  });
 });

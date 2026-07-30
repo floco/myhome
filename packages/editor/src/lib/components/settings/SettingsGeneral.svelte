@@ -8,6 +8,11 @@
   import { homesStore } from "../../homesStore.svelte";
   import { getStoredLocale, setLocale, type Locale } from "../../locale";
 
+  interface Props {
+    reloadAllStores?: () => void;
+  }
+  let { reloadAllStores }: Props = $props();
+
   let currentLocale = $state<Locale>(getStoredLocale());
 
   function changeLocale(next: Locale): void {
@@ -86,6 +91,7 @@
       await homesStore.resetModuleData(home.id, resetModuleId);
       resetSuccessMessage = $_('settings.general.resetModuleSuccess', { values: { label } });
       resetModuleId = null;
+      reloadAllStores?.();
     } catch {
       resetError = $_('settings.general.resetModuleFailed', { values: { label } });
     }

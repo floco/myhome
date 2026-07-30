@@ -102,8 +102,7 @@
     }
   });
 
-  $effect(() => {
-    const _homeId = homesStore.activeHomeId;
+  function reloadAllStores(): void {
     floorStore.reload();
     choreStore.reload();
     inventoryStore.reload();
@@ -118,6 +117,11 @@
     contactsStore.reload();
     insuranceStore.reload();
     notificationStore.reload();
+  }
+
+  $effect(() => {
+    const _homeId = homesStore.activeHomeId;
+    reloadAllStores();
   });
 
   let theme = $state<Theme>(getStoredTheme());
@@ -1302,7 +1306,7 @@
         />
 
       {:else if currentRoute === "#/settings"}
-        <SettingsPage store={settingsStore} {authStore} importFromDonetick={choreStore.importFromDonetick} />
+        <SettingsPage store={settingsStore} {authStore} importFromDonetick={choreStore.importFromDonetick} {reloadAllStores} />
 
       {:else if currentRoute === "#/locations"}
         <LocationsPage store={locationsStore} />
