@@ -834,6 +834,32 @@ def test_day_of_month_respects_allowed_months(client, home_id, tmp_path):
     assert dt.day == 1
 
 
+def test_day_of_month_respects_allowed_months_as_donetick_month_names(client, home_id, tmp_path):
+    """Donetick stores `months` as full English month-name strings (e.g. "March"),
+    not ints -- a chore imported from Donetick must respect that restriction
+    the same way a manually-created chore with int months does."""
+    doc = ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="Quarterly service", emoji="🔧", periodDays=30,
+                frequencyType="day_of_the_month", frequency=15,
+                frequencyMetadata={"months": ["March", "June", "September", "December"]},
+                nextDueDate="2026-07-01T00:00:00Z",
+            )
+        ],
+        assignments=[],
+    )
+    save_chores(home_id, doc)
+    aid = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    resp = client.post(f"/api/homes/{home_id}/assignments/{aid}/complete")
+    assert resp.status_code == 200
+    next_due = resp.json()["nextDueDate"]
+    from datetime import datetime, timezone
+    dt = datetime.fromisoformat(next_due.replace("Z", "+00:00"))
+    assert (dt.year, dt.month) == (2026, 9), f"expected September 2026, got {dt.year}-{dt.month}"
+    assert dt.day == 15
+
+
 def test_day_of_month_no_month_filter_advances_one_month(client, home_id, tmp_path):
     """day_of_the_month with no months filter advances by exactly one calendar month."""
     from datetime import datetime, timezone

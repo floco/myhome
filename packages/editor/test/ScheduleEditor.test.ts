@@ -103,4 +103,24 @@ describe("ScheduleEditor", () => {
     expect(active).toEqual(["Mon", "Wed"]);
     unmount(comp);
   });
+
+  it("restores a Donetick-imported days_of_the_week chore's day-name strings on mount", () => {
+    // Donetick stores `days` as full English day-name strings (e.g. "Monday"),
+    // not ints -- an imported chore must still show the right days checked.
+    const { target, comp } = mountWrapper({ initialFrequencyType: "days_of_the_week", initialFrequency: 1, initialFrequencyMetadata: { days: ["Monday", "Wednesday"] } });
+    const active = Array.from(target.querySelectorAll(".day-toggle.active")).map((b) => b.textContent);
+    expect(active).toEqual(["Mon", "Wed"]);
+    unmount(comp);
+  });
+
+  it("restores a Donetick-imported day_of_the_month chore's month-name strings on mount", () => {
+    // Donetick stores `months` as full English month-name strings (e.g. "March"),
+    // not ints -- an imported restricted-months chore must show them checked.
+    const { target, comp } = mountWrapper({ initialFrequencyType: "day_of_the_month", initialFrequency: 15, initialFrequencyMetadata: { months: ["March", "June", "September", "December"] } });
+    const restrictCheckbox = target.querySelector("#se-restrict") as HTMLInputElement;
+    expect(restrictCheckbox.checked).toBe(true);
+    const active = Array.from(target.querySelectorAll(".month-toggles .day-toggle.active")).map((b) => b.textContent);
+    expect(active).toEqual(["March", "June", "September", "December"]);
+    unmount(comp);
+  });
 });
