@@ -1,6 +1,7 @@
 <!-- packages/editor/src/lib/components/DatePicker.svelte -->
 <script lang="ts">
   import { _, locale } from "svelte-i18n";
+  import { getWeekStart } from "../localization";
 
   interface Props {
     value?: string;
@@ -18,23 +19,26 @@
     );
   }
 
-  function dayHeaders(loc: string): string[] {
+  function dayHeaders(loc: string, weekStart: number): string[] {
     // Jan 7 2024 was a Sunday, matching Date#getDay()'s 0=Sunday convention
     // used below to index into this array.
-    return Array.from({ length: 7 }, (_unused, i) =>
+    const sundayFirst = Array.from({ length: 7 }, (_unused, i) =>
       new Intl.DateTimeFormat(loc, { weekday: "short" }).format(new Date(2024, 0, 7 + i))
     );
+    return [...sundayFirst.slice(weekStart), ...sundayFirst.slice(0, weekStart)];
   }
 
   const MONTH_NAMES = $derived(monthNames($locale ?? "en"));
-  const DAY_HEADERS = $derived(dayHeaders($locale ?? "en"));
+  const weekStart = $derived(getWeekStart());
+  const DAY_HEADERS = $derived(dayHeaders($locale ?? "en", weekStart));
   const effectivePlaceholder = $derived(placeholder ?? $_('datePicker.placeholder'));
 
   const monthGrid = $derived((() => {
     const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+    const leading = (firstDay - weekStart + 7) % 7;
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
     const cells: (number | null)[] = [];
-    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let i = 0; i < leading; i++) cells.push(null);
     for (let d = 1; d <= daysInMonth; d++) cells.push(d);
     while (cells.length % 7 !== 0) cells.push(null);
     return cells;
