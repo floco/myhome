@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 from mcp.server.fastmcp import Context
 
-from .chore_scheduling import next_due_from_schedule
+from .chore_scheduling import next_due_from_schedule, adaptive_period_days
 from .mcp_server import _require_role, _resolve_home_id, mcp
 from .models_chores import Chore, CompletionRecord
 from .persistence_chores import load_chores, save_chores
@@ -90,8 +90,6 @@ def _complete_chore_impl(home_id: str | None, chore_id: str, notes: str = "") ->
             from_dt = now
     else:
         from_dt = now
-    next_due = next_due_from_schedule(chore, from_dt)
-    next_due_str = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
     doc.completions.append(CompletionRecord(
         id=str(uuid.uuid4()),
         choreId=chore_id,
@@ -99,6 +97,11 @@ def _complete_chore_impl(home_id: str | None, chore_id: str, notes: str = "") ->
         scheduledDue=chore.nextDueDate,
         notes=notes,
     ))
+    completions_for_chore = [c for c in doc.completions if c.choreId == chore_id]
+    next_due = next_due_from_schedule(chore, from_dt, completions_for_chore)
+    next_due_str = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
+    if chore.frequencyType == "adaptive":
+        chore.periodDays = adaptive_period_days(chore, completions_for_chore)
     for a in doc.assignments:
         if a.choreId == chore_id:
             a.nextDueDate = next_due_str
