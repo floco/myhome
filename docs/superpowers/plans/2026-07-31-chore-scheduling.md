@@ -13,7 +13,7 @@
 - Full design at `docs/superpowers/specs/2026-07-31-chore-scheduling-design.md` — read it if anything below is ambiguous.
 - Date-only due dates everywhere (no time-of-day) — out of scope, do not add it.
 - `scheduleFromDue` (due-date vs. completion-date anchoring) is unrelated and untouched — do not modify its logic.
-- This codebase has **zero** Svelte component-render tests (no `@testing-library/svelte`, no `mount()`-based tests) — do not introduce that pattern for `ScheduleEditor.svelte`. Verify it via `svelte-check` (typecheck) and the manual browser pass in the final task, matching how every other component here is verified.
+- **Correction (found mid-execution):** the premise that this codebase has no Svelte component-render tests was wrong — an earlier research pass only looked under `src/lib` and missed the package's actual test directory, `packages/editor/test/`, which has 115+ files including `mount()`/`unmount()`/`flushSync()`-based component tests (e.g. `test/ChoresPage.test.ts`, `test/ChoreEditModal.test.ts`). **All new/updated component logic in this plan must get real tests in that `test/` directory following those files' existing pattern** — do not add new test files under `src/lib`. (A stray `src/lib/choreStore.test.ts` this plan's author created before catching this was merged into `test/choreStore.test.ts` and deleted.)
 - Follow existing i18n key naming (`chores.schedule.*`, `chores.newModal.*`, `chores.editModal.*`) for all new keys; add every new key to **both** `en.json` and `fr.json` in the same task that introduces it.
 - Run `cd /projects/myhome && pytest packages/backend` and `cd /projects/myhome/packages/editor && npx vitest run` before any commit that touches backend/frontend code respectively, to confirm nothing else broke.
 
@@ -1023,7 +1023,7 @@ git commit -m "feat(chores): add EN/FR natural-language schedule parser"
 
 **Interfaces:**
 - Consumes: `chores.scheduleEditor.*`, `chores.schedule.dayAbbrev.*`, `chores.newModal.unit*` i18n keys (Task 4 and pre-existing).
-- Produces: a component with bindable props `frequencyType: string`, `frequency: number`, `frequencyMetadata: Record<string, unknown>`, `periodDays: number`, `valid: boolean` (default `true`). Used by Tasks 9 and 10. No test file — see the Global Constraints note on this codebase having no Svelte component-test pattern; verified via typecheck + Task 11's manual browser pass.
+- Produces: a component with bindable props `frequencyType: string`, `frequency: number`, `frequencyMetadata: Record<string, unknown>`, `periodDays: number`, `valid: boolean` (default `true`). Used by Tasks 9 and 10. Gets a real `test/ScheduleEditor.test.ts` component test (see Global Constraints correction above) plus the Task 11 manual browser pass.
 
 - [ ] **Step 1: Implement**
 
