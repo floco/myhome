@@ -1,6 +1,7 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
   import type { Chore, Assignment } from "../choreStore.svelte";
+  import { formatDate } from "../dateFormat";
 
   interface Props {
     chore: Chore;
@@ -14,11 +15,6 @@
   }
 
   let { chore, assignment, screenX, screenY, oncomplete, oncompleteall, onremove, onclose }: Props = $props();
-
-  function formatDate(iso: string): string {
-    const d = new Date(iso);
-    return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-  }
 
   const overdue = $derived(new Date(assignment.nextDueDate).getTime() < Date.now());
 </script>
