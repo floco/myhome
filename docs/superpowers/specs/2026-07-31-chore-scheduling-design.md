@@ -106,6 +106,7 @@ parseScheduleText(text: string, locale: "en" | "fr"):
   - `routes/chores.py`: `complete_chore`/`complete_assignment` persist a refreshed `periodDays` for adaptive chores after completion, and leave it untouched for other types.
 - **Frontend** (`vitest`, editor package):
   - `scheduleLabel`: new `adaptive` branch, reading `chore.periodDays` directly.
-  - `ScheduleEditor.svelte`: one test per recurrence category (renders correct sub-controls, updates bound props, validation disables save appropriately).
+  - `scheduleCategory` (`ChoresPage.svelte`): note this function lives inline in a `.svelte` file with no existing test coverage (matches the rest of the codebase — there are no Svelte component-render tests anywhere in this package, only pure-logic/store tests); its `daily`/`adaptive` fixes are verified via the manual browser check below, not a unit test.
   - `scheduleParser.ts`: table-driven EN + FR input strings → expected `{name, schedule}`, plus the no-match fallback case.
-- **Manual browser check** (per project convention for UI changes): create one chore per new recurrence category, plus one quick-add phrase in each language, and confirm the resulting schedule label and next-due date look right.
+  - No isolated component-render tests for `ScheduleEditor.svelte` — this codebase has no `@testing-library/svelte`/`mount()`-based test pattern to follow, and introducing one is out of scope for this feature. It's covered by `svelte-check` (typecheck) plus the manual browser check below.
+- **Manual browser check** (per project convention for UI changes, and the only verification method for Svelte components in this codebase): create one chore per new recurrence category (including editing an existing chore to change its category), plus one quick-add phrase in each language, and confirm the resulting schedule label, filter dropdown, and next-due date all look right.
