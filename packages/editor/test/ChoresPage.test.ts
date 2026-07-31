@@ -148,6 +148,36 @@ describe("ChoresPage — schedule health summary", () => {
   });
 });
 
+describe("ChoresPage — schedule filter", () => {
+  it("matches a literal daily chore under the Daily filter and an adaptive chore under Adaptive", () => {
+    const dailyChore = makeChore({ id: "c1", name: "Water plants", frequencyType: "daily", frequency: 1, frequencyMetadata: {} });
+    const adaptiveChore = makeChore({ id: "c2", name: "Change filter", frequencyType: "adaptive", frequency: 1, frequencyMetadata: {} });
+    const store = makeStore([dailyChore, adaptiveChore]);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    const scheduleSelect = Array.from(target.querySelectorAll("select")).find(
+      (s) => Array.from(s.options).some((o) => o.value === "adaptive"),
+    ) as HTMLSelectElement;
+
+    scheduleSelect.value = "daily";
+    scheduleSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+    expect(target.querySelectorAll(".name-cell")).toHaveLength(1);
+    expect(target.querySelector(".name-cell")?.textContent).toContain("Water plants");
+
+    scheduleSelect.value = "adaptive";
+    scheduleSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+    expect(target.querySelectorAll(".name-cell")).toHaveLength(1);
+    expect(target.querySelector(".name-cell")?.textContent).toContain("Change filter");
+
+    unmount(comp);
+  });
+});
+
 describe("ChoresPage — unassigned chores stay visible by default", () => {
   it("shows a freshly imported chore with no room assignment under the default attention filter", () => {
     const chore = makeChore({ id: "c1", name: "Imported chore" });
