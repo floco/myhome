@@ -2,6 +2,7 @@
   import { _ } from "svelte-i18n";
   import type { createInsuranceStore, InsurancePolicy } from "../insuranceStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
+  import { formatDate } from "../dateFormat";
   import type { createContactsStore } from "../contactsStore.svelte";
   import InsuranceModal from "./InsuranceModal.svelte";
   import Button from "./ui/Button.svelte";
@@ -93,11 +94,7 @@
     return upcoming[0] ?? null;
   })());
 
-  const nextRenewalLabel = $derived(
-    nextRenewalDate
-      ? new Date(nextRenewalDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
-      : "—"
-  );
+  const nextRenewalLabel = $derived(formatDate(nextRenewalDate));
 </script>
 
 <div class="page">
