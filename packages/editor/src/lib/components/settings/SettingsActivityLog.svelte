@@ -1,6 +1,7 @@
 <!-- packages/editor/src/lib/components/settings/SettingsActivityLog.svelte -->
 <script lang="ts">
   import { _ } from "svelte-i18n";
+  import { formatDateTime } from "../../dateFormat";
   import Input from "../ui/Input.svelte";
   import Button from "../ui/Button.svelte";
   import Card from "../ui/Card.svelte";
@@ -107,7 +108,7 @@
           <tbody>
             {#each activityEntries as entry (entry.id)}
               <tr>
-                <td>{new Date(entry.timestamp).toLocaleString()}</td>
+                <td>{formatDateTime(entry.timestamp)}</td>
                 <td>{entry.username}</td>
                 <td>{entry.description}</td>
               </tr>

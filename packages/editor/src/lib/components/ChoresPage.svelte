@@ -11,6 +11,7 @@
   import Card from "./ui/Card.svelte";
   import HorizontalBarChart from "./HorizontalBarChart.svelte";
   import StatTile from "./ui/StatTile.svelte";
+  import { formatDate, formatDateTime } from "../dateFormat";
 
   type ChoreStore = ReturnType<typeof createChoreStore>;
   type Assignment = ChoreStore["assignments"][number];
@@ -155,16 +156,6 @@
     let name = chore.name.trim();
     if (chore.emoji && name.startsWith(chore.emoji)) name = name.slice(chore.emoji.length).trim();
     return name;
-  }
-
-  function formatDate(iso: string): string {
-    if (!iso) return "—";
-    return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-  }
-
-  function formatDateTime(iso: string): string {
-    if (!iso) return "—";
-    return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   }
 
   function earliestDue(assignments: Assignment[]): string | null {

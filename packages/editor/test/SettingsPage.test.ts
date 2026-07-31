@@ -60,11 +60,12 @@ describe("SettingsPage — nav shell", () => {
     unmount(app);
   });
 
-  it("shows all 8 groups for an admin, including Integrations, Activity Log, and About", () => {
+  it("shows all 9 groups for an admin, including Localization, Integrations, Activity Log, and About", () => {
     const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin"), importFromDonetick: vi.fn(async () => 0) } });
     flushSync();
     const labels = [...target.querySelectorAll(".nav-item")].map((b) => b.textContent);
     expect(labels.some((l) => l?.includes("General"))).toBe(true);
+    expect(labels.some((l) => l?.includes("Localization"))).toBe(true);
     expect(labels.some((l) => l?.includes("Categories"))).toBe(true);
     expect(labels.some((l) => l?.includes("Notifications"))).toBe(true);
     expect(labels.some((l) => l?.includes("Security & Access"))).toBe(true);
@@ -72,6 +73,26 @@ describe("SettingsPage — nav shell", () => {
     expect(labels.some((l) => l?.includes("Backup & Restore"))).toBe(true);
     expect(labels.some((l) => l?.includes("Activity Log"))).toBe(true);
     expect(labels.some((l) => l?.includes("About"))).toBe(true);
+    unmount(app);
+  });
+
+  it("places Localization immediately after General in the nav order", () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin"), importFromDonetick: vi.fn(async () => 0) } });
+    flushSync();
+    const labels = [...target.querySelectorAll(".nav-item")].map((b) => b.textContent?.trim());
+    const generalIdx = labels.findIndex((l) => l?.includes("General"));
+    expect(labels[generalIdx + 1]).toContain("Localization");
+    unmount(app);
+  });
+
+  it("switching to Localization via the nav shows the language and date format fields", () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore(), importFromDonetick: vi.fn(async () => 0) } });
+    flushSync();
+    const localizationBtn = [...target.querySelectorAll<HTMLButtonElement>(".nav-item")].find((b) => b.textContent?.includes("Localization"))!;
+    localizationBtn.click();
+    flushSync();
+    expect(target.textContent).toContain("Select your preferred language");
+    expect(target.textContent).toContain("Choose how dates should be displayed throughout the application");
     unmount(app);
   });
 

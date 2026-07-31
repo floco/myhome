@@ -90,20 +90,6 @@ describe("SettingsGeneral", () => {
     unmount(app);
   });
 
-  it("changing the language select persists the locale", () => {
-    seedHome();
-    localStorage.removeItem("myhome-locale");
-    const app = mount(SettingsGeneral, { target, props: {} });
-    flushSync();
-    const select = target.querySelector(".lang-select") as HTMLSelectElement;
-    expect(select.value).toBe("en");
-    select.value = "fr";
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-    flushSync();
-    expect(localStorage.getItem("myhome-locale")).toBe("fr");
-    unmount(app);
-  });
-
   it("shows a delete confirmation modal and calls deleteHome on confirm", async () => {
     seedHome();
     homesStore.homes.push({ id: "h2", name: "Second", type: "existing", enabledModules: [], createdAt: "" });

@@ -2,6 +2,7 @@
   import { _ } from "svelte-i18n";
   import type { createInventoryStore, InventoryItem } from "../inventoryStore.svelte";
   import type { createHouseStore } from "../houseStore.svelte";
+  import { formatDate } from "../dateFormat";
   import InventoryModal from "./InventoryModal.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
@@ -66,11 +67,6 @@
     if (days < 0) return { label: `✕ ${$_('inventory.page.expired')}`, color: "#f44336" };
     if (days <= 30) return { label: `⚠ ${days}d`, color: "#ff9800" };
     return { label: "✓", color: "#4caf50" };
-  }
-
-  function formatDate(d: string | null): string {
-    if (!d) return "—";
-    return d.slice(0, 10);
   }
 
   function formatPrice(p: number | null): string {

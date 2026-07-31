@@ -2,6 +2,7 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
   import type { KBEntry } from "../../kbStore.svelte";
+  import { formatDate } from "../../dateFormat";
   import Button from "./Button.svelte";
   import Modal from "./Modal.svelte";
 
@@ -20,7 +21,7 @@
   );
 
   function fmtDate(iso: string | null | undefined): string {
-    return iso ? new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
+    return formatDate(iso);
   }
 
   function handleConfirmEmpty(): void {

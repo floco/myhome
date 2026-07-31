@@ -1,6 +1,7 @@
 import { _ } from "svelte-i18n";
 import { get } from "svelte/store";
 import type { Chore } from "./choreStore.svelte";
+import { formatDate } from "./dateFormat";
 
 export function displayName(chore: Chore): string {
   let name = chore.name.trim();
@@ -19,5 +20,5 @@ export function formatDue(iso: string): string {
   if (diffDays === 0) return t("chores.dueLabel.today");
   if (diffDays === 1) return t("chores.dueLabel.tomorrow");
   if (diffDays <= 7) return t("chores.dueLabel.inDays", { values: { n: diffDays } });
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return formatDate(d);
 }

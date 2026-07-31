@@ -882,6 +882,7 @@
   "settings": {
     "nav": {
       "general": "Général",
+      "localization": "Localisation",
       "categories": "Catégories",
       "notifications": "Notifications",
       "security": "Sécurité et accès",
@@ -900,7 +901,6 @@
       "change": "Modifier",
       "cannotDeleteOnlyHome": "Impossible de supprimer le seul logement",
       "deleteThisHome": "Supprimer ce logement",
-      "language": "Langue",
       "modules": "Modules",
       "modulesDesc": "Choisissez les modules visibles dans la navigation pour ce logement.",
       "placeholderTag": "Provisoire",
@@ -916,6 +916,25 @@
       "resetModuleBody": "Cela supprime définitivement toutes les données et pièces jointes de {label}. La configuration partagée de ce module (catégories, etc.) est conservée. Cette action est irréversible.",
       "resetModuleSuccess": "Les données de {label} ont été réinitialisées.",
       "resetModuleFailed": "Échec de la réinitialisation des données de {label}"
+    },
+    "localization": {
+      "description": "Personnalisez la langue, le format de date et les préférences régionales de votre compte.",
+      "language": "Langue",
+      "languageDescription": "Choisissez votre langue préférée",
+      "dateFormat": "Format de date",
+      "dateFormatDescription": "Choisissez comment les dates doivent s'afficher dans l'application",
+      "timeFormat": "Format de l'heure",
+      "timeFormatDescription": "Choisissez le format 12 heures ou 24 heures",
+      "time12": "12 heures",
+      "time24": "24 heures",
+      "firstDayOfWeek": "Premier jour de la semaine",
+      "firstDayOfWeekDescription": "Choisissez le jour de début de votre semaine",
+      "preview": "Aperçu : {value}",
+      "weekday": {
+        "sunday": "Dimanche",
+        "monday": "Lundi",
+        "saturday": "Samedi"
+      }
     },
     "security": {
       "apiTokens": "Jetons API",

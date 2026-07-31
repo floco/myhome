@@ -2,6 +2,7 @@
   import { _ } from "svelte-i18n";
   import type { createConsumableStore, Consumable } from "../consumableStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
+  import { formatDateTime } from "../dateFormat";
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
@@ -124,14 +125,6 @@
     return delta >= 0 ? `+${delta}` : String(delta);
   }
 
-  function formatTs(iso: string): string {
-    return new Date(iso).toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
 </script>
 
 <Modal open={true} title={isCreate ? $_('consumables.page.addConsumable') : (consumable?.name ?? "")} {onclose}>
@@ -238,7 +231,7 @@
                 </span>
                 <span class="tx-after">→ {tx.quantityAfter}</span>
                 <span class="tx-note">{tx.note || "—"}</span>
-                <span class="tx-ts">{formatTs(tx.timestamp)}</span>
+                <span class="tx-ts">{formatDateTime(tx.timestamp)}</span>
                 <button class="tx-del" title={$_('common.delete')} onclick={() => store.deleteTransaction(tx.id)}>✕</button>
               </div>
             {/each}

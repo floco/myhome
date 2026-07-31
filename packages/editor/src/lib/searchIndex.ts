@@ -1,5 +1,6 @@
 import { _ } from "svelte-i18n";
 import { get } from "svelte/store";
+import { formatDate } from "./dateFormat";
 import type { Chore } from "./choreStore.svelte";
 import type { InventoryItem } from "./inventoryStore.svelte";
 import type { Consumable } from "./consumableStore.svelte";
@@ -38,10 +39,6 @@ export interface SearchStores {
   contactsStore: { contacts: Contact[] };
 }
 
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-}
-
 function statusLabel(status: Work["status"]): string {
   if (status === "in_progress") return get(_)("works.status.inProgress");
   if (status === "done") return get(_)("works.status.done");
@@ -61,7 +58,7 @@ export function buildSearchIndex(stores: SearchStores): SearchResult[] {
       id: chore.id,
       icon: chore.emoji,
       title: chore.name,
-      subtitle: fmtDate(chore.nextDueDate),
+      subtitle: formatDate(chore.nextDueDate),
       searchText: norm(chore.name, chore.description),
       titleText: chore.name.toLowerCase(),
     });
@@ -99,7 +96,7 @@ export function buildSearchIndex(stores: SearchStores): SearchResult[] {
       id: work.id,
       icon: category?.emoji ?? "🔧",
       title: work.title,
-      subtitle: `${statusLabel(work.status)} · ${fmtDate(work.date)}`,
+      subtitle: `${statusLabel(work.status)} · ${formatDate(work.date)}`,
       searchText: norm(work.title, work.description, work.notes),
       titleText: work.title.toLowerCase(),
     });

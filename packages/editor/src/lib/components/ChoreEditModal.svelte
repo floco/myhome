@@ -12,6 +12,7 @@
   import Lightbox from "./ui/Lightbox.svelte";
   import EmojiPicker from "./ui/EmojiPicker.svelte";
   import ScheduleEditor from "./ScheduleEditor.svelte";
+  import { formatDate, formatDateTime } from "../dateFormat";
 
   type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion">;
 
@@ -47,16 +48,6 @@
 
   const history = $derived(chore ? store.getCompletionsForChore(chore.id).slice().reverse() : []);
   let deletingCompletion = $state<string | null>(null);
-
-  function formatDate(iso: string): string {
-    if (!iso) return "—";
-    return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-  }
-
-  function formatDateTime(iso: string): string {
-    if (!iso) return "—";
-    return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-  }
 
   function getRoomName(assignmentId: string | null): string {
     if (!assignmentId) return `🏠 ${$_('chores.list.wholeHouse')}`;

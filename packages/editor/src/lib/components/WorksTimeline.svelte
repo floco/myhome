@@ -1,6 +1,7 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
   import type { Work } from "../worksStore.svelte";
+  import { formatDate } from "../dateFormat";
 
   interface Props {
     works: Work[];
@@ -103,10 +104,6 @@
     return xForTime(now);
   })());
 
-  function formatDate(iso: string): string {
-    if (!iso) return "—";
-    return new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-  }
 </script>
 
 <div class="timeline-wrap">
