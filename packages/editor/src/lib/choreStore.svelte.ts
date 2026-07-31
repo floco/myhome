@@ -40,6 +40,7 @@ export function scheduleLabel(chore: Chore): string {
   // multiplier only applies to the "interval" type. A chore imported with a
   // stray `frequency` value on one of these literal types must not be
   // multiplied here either (see chore_scheduling.py / _period_days).
+  if (ft === "daily") return t("chores.schedule.daily");
   if (ft === "weekly") return t("chores.schedule.weekly");
   if (ft === "monthly") return t("chores.schedule.monthly");
   if (ft === "yearly") return t("chores.schedule.yearly");
@@ -57,6 +58,7 @@ export function scheduleLabel(chore: Chore): string {
     if (n === 730) return t("chores.schedule.everyNYears", { values: { n: 2 } });
     return t("chores.schedule.everyNDays", { values: { n } });
   }
+  if (ft === "adaptive") return t("chores.schedule.adaptiveDays", { values: { n: Math.round(chore.periodDays) } });
   return `${chore.periodDays}d`;
 }
 

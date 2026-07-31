@@ -4,7 +4,7 @@ from __future__ import annotations
 import calendar
 from datetime import datetime, timedelta
 
-from .models_chores import Chore
+from .models_chores import Chore, CompletionRecord
 
 WEEKDAY_NAMES: dict[str, int] = {
     "monday": 1, "tuesday": 2, "wednesday": 3, "thursday": 4,
@@ -38,7 +38,23 @@ def to_weekday_num(d: object) -> int:
     return int(d)
 
 
-def next_due_from_schedule(chore: Chore, from_dt: datetime) -> datetime:
+def adaptive_period_days(chore: Chore, completions_for_chore: list[CompletionRecord]) -> float:
+    """Average of the gaps (in days) between the chore's last 5 completions.
+
+    Falls back to the chore's current `periodDays` (its seed value at
+    creation, or whatever this function last computed it to be) when there
+    are fewer than 2 completions to derive a gap from.
+    """
+    if len(completions_for_chore) < 2:
+        return chore.periodDays
+    ordered = sorted(completions_for_chore, key=lambda c: c.completedAt)
+    timestamps = [datetime.fromisoformat(c.completedAt.replace("Z", "+00:00")) for c in ordered]
+    gaps = [(timestamps[i] - timestamps[i - 1]).total_seconds() / 86400 for i in range(1, len(timestamps))]
+    recent = gaps[-5:]
+    return sum(recent) / len(recent)
+
+
+def next_due_from_schedule(chore: Chore, from_dt: datetime, completions: list[CompletionRecord] | None = None) -> datetime:
     ft = chore.frequencyType
     freq = chore.frequency
     meta: dict = chore.frequencyMetadata or {}
@@ -61,6 +77,8 @@ def next_due_from_schedule(chore: Chore, from_dt: datetime) -> datetime:
             if d > wd:
                 return from_dt + timedelta(days=d - wd)
         return from_dt + timedelta(days=7 - wd + days[0])
+    if ft == "daily":
+        return from_dt + timedelta(days=1)
     # Donetick's own scheduler always advances "daily"/"weekly"/"monthly"/"yearly"
     # chores by exactly 1 unit and ignores `frequency` for them entirely -- that
     # multiplier only applies to the "interval" type (see upstream
@@ -80,4 +98,6 @@ def next_due_from_schedule(chore: Chore, from_dt: datetime) -> datetime:
         if unit == "weeks":
             return from_dt + timedelta(weeks=freq)
         return from_dt + timedelta(days=freq)
+    if ft == "adaptive":
+        return from_dt + timedelta(days=adaptive_period_days(chore, completions or []))
     return from_dt + timedelta(days=chore.periodDays)

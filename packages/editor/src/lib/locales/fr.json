@@ -358,7 +358,9 @@
       "everyNYears": "Tous les {n} ans",
       "daily": "Quotidien",
       "quarterly": "Trimestriel",
-      "everyNDays": "Tous les {n} jours"
+      "everyNDays": "Tous les {n} jours",
+      "adaptive": "Adaptatif",
+      "adaptiveDays": "Adaptatif (~{n} jours)"
     },
     "badgePopup": {
       "overdueSince": "En retard depuis",
@@ -446,6 +448,25 @@
       "scheduleFromDueTitle": "Prochaine échéance = date prévue + période (pas date de réalisation + période)",
       "creating": "Création…",
       "failedToCreate": "Échec de la création"
+    },
+    "scheduleEditor": {
+      "category": "Récurrence",
+      "categoryInterval": "Intervalle personnalisé",
+      "categoryDaily": "Quotidien",
+      "categoryWeekly": "Hebdomadaire, jour(s) précis",
+      "categoryMonthly": "Mensuel, jour précis",
+      "categoryYearly": "Annuel",
+      "categoryAdaptive": "Adaptatif (apprend de l'historique)",
+      "dayOfMonth": "Jour du mois",
+      "restrictMonths": "Restreindre à des mois précis",
+      "periodDays": "Période (jours)",
+      "periodDaysHint": "S'ajuste automatiquement après chaque réalisation",
+      "selectAtLeastOneDay": "Sélectionnez au moins un jour"
+    },
+    "quickAdd": {
+      "label": "Ajout rapide",
+      "placeholder": "ex. « Changer le filtre à eau tous les 6 mois »",
+      "parse": "Analyser"
     }
   },
   "works": {

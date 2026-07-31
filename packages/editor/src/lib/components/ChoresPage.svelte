@@ -111,6 +111,8 @@
   function scheduleCategory(chore: Chore): string {
     const { frequencyType: ft, frequency: n, frequencyMetadata: meta } = chore;
     const unit = (meta as Record<string, string>)?.unit ?? "days";
+    if (ft === "daily") return "daily";
+    if (ft === "adaptive") return "adaptive";
     if (ft === "days_of_the_week" || ft === "weekly") return "weekly";
     if (ft === "day_of_the_month" || ft === "monthly") return "monthly";
     if (ft === "yearly") return "yearly";
@@ -223,6 +225,7 @@
         <option value="weekly">{$_('chores.schedule.weekly')}</option>
         <option value="monthly">{$_('chores.schedule.monthly')}</option>
         <option value="yearly">{$_('chores.schedule.yearly')}</option>
+        <option value="adaptive">{$_('chores.schedule.adaptive')}</option>
       </select>
       <div class="filter-toggle">
         <button class="toggle-btn" class:active={dueFilter === "all"} title={$_('chores.page.allChores')} onclick={() => { dueFilter = "all"; }}>☰</button>

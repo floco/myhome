@@ -968,3 +968,83 @@ def test_reset_chores_clears_data_and_attachments(client, tmp_path, home_id):
 
     assert client.get(f"/api/homes/{home_id}/chores").json()["chores"] == []
     assert not att_dir.exists()
+
+
+# --- Adaptive scheduling ---
+
+def test_complete_chore_adaptive_falls_back_to_period_days_with_no_history(client, home_id, tmp_path):
+    doc = ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="Change filter", emoji="🔧", periodDays=30.0,
+                frequencyType="adaptive", frequency=1, frequencyMetadata={},
+                nextDueDate="2027-01-01T00:00:00Z",
+            )
+        ],
+        assignments=[],
+    )
+    save_chores(home_id, doc)
+    resp = client.post(f"/api/homes/{home_id}/chores/c1/complete")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["periodDays"] == 30.0
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+    new_due = datetime.fromisoformat(data["nextDueDate"].replace("Z", "+00:00"))
+    expected = now + timedelta(days=30)
+    assert abs((new_due - expected).total_seconds()) < 5
+
+
+def test_complete_chore_adaptive_recomputes_period_days_from_history(client, home_id, tmp_path):
+    """Two completions 10 days apart are already recorded; completing a third
+    time now should average in the new gap and refresh periodDays to reflect
+    it, rather than leaving the original 30.0 seed value stale."""
+    doc = ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="Change filter", emoji="🔧", periodDays=30.0,
+                frequencyType="adaptive", frequency=1, frequencyMetadata={},
+                nextDueDate="2026-07-30T00:00:00Z",
+            )
+        ],
+        assignments=[],
+        completions=[
+            CompletionRecord(id="r1", choreId="c1", completedAt="2026-07-01T00:00:00Z", scheduledDue=""),
+            CompletionRecord(id="r2", choreId="c1", completedAt="2026-07-11T00:00:00Z", scheduledDue=""),
+        ],
+    )
+    save_chores(home_id, doc)
+    resp = client.post(f"/api/homes/{home_id}/chores/c1/complete")
+    assert resp.status_code == 200
+    assert resp.json()["periodDays"] != 30.0
+
+
+def test_complete_chore_non_adaptive_does_not_change_period_days(client, home_id, tmp_path):
+    save_chores(home_id, make_chore_doc())
+    resp = client.post(f"/api/homes/{home_id}/chores/c1/complete")
+    assert resp.status_code == 200
+    assert resp.json()["periodDays"] == 14
+
+
+def test_complete_assignment_adaptive_recomputes_period_days(client, home_id, tmp_path):
+    doc = ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="Change filter", emoji="🔧", periodDays=30.0,
+                frequencyType="adaptive", frequency=1, frequencyMetadata={},
+                nextDueDate="2026-07-30T00:00:00Z",
+            )
+        ],
+        assignments=[],
+        completions=[
+            CompletionRecord(id="r1", choreId="c1", completedAt="2026-07-01T00:00:00Z", scheduledDue=""),
+            CompletionRecord(id="r2", choreId="c1", completedAt="2026-07-11T00:00:00Z", scheduledDue=""),
+        ],
+    )
+    save_chores(home_id, doc)
+    aid = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    resp = client.post(f"/api/homes/{home_id}/assignments/{aid}/complete")
+    assert resp.status_code == 200
+    chores = client.get(f"/api/homes/{home_id}/chores").json()["chores"]
+    chore = next(c for c in chores if c["id"] == "c1")
+    assert chore["periodDays"] != 30.0

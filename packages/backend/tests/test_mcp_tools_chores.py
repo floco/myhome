@@ -66,3 +66,13 @@ def test_undo_unknown_completion_raises(home_id):
     from myhome.mcp_tools_chores import _undo_chore_completion_impl
     with pytest.raises(ValueError):
         _undo_chore_completion_impl(home_id, "nonexistent")
+
+
+def test_complete_chore_adaptive_falls_back_to_period_days_with_no_history(home_id):
+    from myhome.mcp_tools_chores import _complete_chore_impl, _create_chore_impl
+    chore = _create_chore_impl(
+        home_id, "Change filter", "🔧", 30.0, "2026-07-30T00:00:00Z",
+        frequency_type="adaptive", frequency=1, frequency_metadata={},
+    )
+    result = _complete_chore_impl(home_id, chore["id"])
+    assert result["periodDays"] == 30.0

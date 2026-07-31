@@ -107,4 +107,56 @@ describe("ChoreEditModal — tabs", () => {
     expect(store.deleteChore).toHaveBeenCalledWith("c1");
     target.remove();
   });
+
+  it("seeds the recurrence picker from the chore's existing schedule and saves changes to it", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore({ frequencyType: "yearly", frequency: 1, frequencyMetadata: {} }), store, rooms: NO_ROOMS, onclose: vi.fn() },
+    });
+    flushSync();
+
+    const categorySelect = target.querySelector("#se-category") as HTMLSelectElement;
+    expect(categorySelect.value).toBe("yearly");
+
+    categorySelect.value = "daily";
+    categorySelect.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+
+    const saveBtn = Array.from(target.querySelectorAll("button")).find(
+      b => b.textContent?.trim() === "Save",
+    ) as HTMLButtonElement;
+    saveBtn.click();
+    await tick();
+    expect(store.updateChore).toHaveBeenCalledWith("c1", expect.objectContaining({
+      frequencyType: "daily", frequency: 1, frequencyMetadata: {},
+    }));
+    unmount(app);
+    target.remove();
+  });
+
+  it("disables Save when the recurrence picker is in an invalid state", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore({ frequencyType: "days_of_the_week", frequency: 1, frequencyMetadata: { days: [1] } }), store, rooms: NO_ROOMS, onclose: vi.fn() },
+    });
+    flushSync();
+
+    // Deselect the only selected day -> no days selected -> invalid.
+    const monButton = Array.from(target.querySelectorAll(".day-toggle")).find((b) => b.textContent === "Mon") as HTMLButtonElement;
+    monButton.click();
+    flushSync();
+
+    const saveBtn = Array.from(target.querySelectorAll("button")).find(
+      b => b.textContent?.trim() === "Save",
+    ) as HTMLButtonElement;
+    expect(saveBtn.disabled).toBe(true);
+    unmount(app);
+    target.remove();
+  });
 });

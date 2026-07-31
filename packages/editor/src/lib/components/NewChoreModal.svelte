@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { _ } from "svelte-i18n";
+  import { _, locale } from "svelte-i18n";
   import type { createChoreStore } from "../choreStore.svelte";
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
   import EmojiPicker from "./ui/EmojiPicker.svelte";
+  import ScheduleEditor from "./ScheduleEditor.svelte";
+  import { parseScheduleText } from "../scheduleParser";
 
-  type ChoreStore = ReturnType<typeof createChoreStore>;
+  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "createChore">;
 
   interface Props {
     open: boolean;
@@ -17,27 +19,44 @@
 
   let name = $state("");
   let emoji = $state("📋");
-  let freqN = $state(30);
-  let freqUnit = $state<"days" | "weeks" | "months" | "years">("days");
+  let quickAddText = $state("");
+  let frequencyType = $state("interval");
+  let frequency = $state(30);
+  let frequencyMetadata = $state<Record<string, unknown>>({ unit: "days" });
+  let periodDays = $state(30);
+  let scheduleValid = $state(true);
+  let resetKey = $state(0);
   let nextDue = $state(new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10));
   let scheduleFromDue = $state(false);
   let saving = $state(false);
   let error = $state("");
 
-  const UNIT_DAYS: Record<string, number> = { days: 1, weeks: 7, months: 30, years: 365 };
+  function handleParse(): void {
+    const loc = ($locale ?? "en").startsWith("fr") ? "fr" : "en";
+    const result = parseScheduleText(quickAddText, loc);
+    if (!result) {
+      name = quickAddText.trim();
+      return;
+    }
+    name = result.name;
+    frequencyType = result.schedule.frequencyType;
+    frequency = result.schedule.frequency;
+    frequencyMetadata = result.schedule.frequencyMetadata;
+    resetKey += 1;
+  }
 
   async function handleCreate(): Promise<void> {
-    if (!name.trim()) return;
+    if (!name.trim() || !scheduleValid) return;
     saving = true;
     error = "";
     try {
       await store.createChore({
         name: name.trim(),
         emoji: emoji.trim() || "📋",
-        periodDays: freqN * UNIT_DAYS[freqUnit],
-        frequencyType: "interval",
-        frequency: freqN,
-        frequencyMetadata: { unit: freqUnit },
+        periodDays,
+        frequencyType,
+        frequency,
+        frequencyMetadata,
         scheduleFromDue,
         nextDueDate: new Date(nextDue).toISOString(),
         description: "",
@@ -53,7 +72,9 @@
   }
 
   function reset(): void {
-    name = ""; emoji = "📋"; freqN = 30; freqUnit = "days";
+    name = ""; emoji = "📋"; quickAddText = "";
+    frequencyType = "interval"; frequency = 30; frequencyMetadata = { unit: "days" }; periodDays = 30;
+    resetKey += 1;
     nextDue = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
     scheduleFromDue = false; error = "";
   }
@@ -72,9 +93,17 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="chore-form" onkeydown={handleFormKeydown} role="presentation">
     <div class="field">
+      <label for="chore-quickadd">{$_('chores.quickAdd.label')}</label>
+      <div class="quickadd-row">
+        <!-- svelte-ignore a11y_autofocus -->
+        <input id="chore-quickadd" class="native-input" bind:value={quickAddText} placeholder={$_('chores.quickAdd.placeholder')} autofocus />
+        <Button variant="secondary" onclick={handleParse}>{$_('chores.quickAdd.parse')}</Button>
+      </div>
+    </div>
+
+    <div class="field">
       <label for="chore-name">{$_('chores.editModal.name')}</label>
-      <!-- svelte-ignore a11y_autofocus -->
-      <input id="chore-name" class="native-input" bind:value={name} placeholder={$_('chores.editModal.choreName')} autofocus />
+      <input id="chore-name" class="native-input" bind:value={name} placeholder={$_('chores.editModal.choreName')} />
     </div>
 
     <div class="field">
@@ -82,18 +111,15 @@
       <EmojiPicker bind:value={emoji} />
     </div>
 
-    <div class="field">
-      <label>{$_('chores.newModal.repeatEvery')}</label>
-      <div class="freq-row">
-        <input type="number" class="native-input freq-n" bind:value={freqN} min="1" />
-        <select class="native-input" bind:value={freqUnit}>
-          <option value="days">{$_('chores.newModal.unitDays')}</option>
-          <option value="weeks">{$_('chores.newModal.unitWeeks')}</option>
-          <option value="months">{$_('chores.newModal.unitMonths')}</option>
-          <option value="years">{$_('chores.newModal.unitYears')}</option>
-        </select>
-      </div>
-    </div>
+    {#key resetKey}
+      <ScheduleEditor
+        bind:frequencyType
+        bind:frequency
+        bind:frequencyMetadata
+        bind:periodDays
+        bind:valid={scheduleValid}
+      />
+    {/key}
 
     <div class="field">
       <label for="chore-due">{$_('chores.newModal.firstDue')}</label>
@@ -112,7 +138,7 @@
 
   {#snippet footer()}
     <Button variant="secondary" onclick={handleClose}>{$_('common.cancel')}</Button>
-    <Button variant="primary" disabled={!name.trim() || saving} onclick={handleCreate}>
+    <Button variant="primary" disabled={!name.trim() || !scheduleValid || saving} onclick={handleCreate}>
       {saving ? $_('chores.newModal.creating') : $_('settings.security.create')}
     </Button>
   {/snippet}
@@ -124,6 +150,8 @@
   .field label { font-size: 11px; color: var(--text-muted); }
   .field-row { display: flex; align-items: center; gap: 8px; }
   .checkbox-label { font-size: 12px; color: var(--text-muted); cursor: pointer; }
+  .quickadd-row { display: flex; gap: 8px; align-items: center; }
+  .quickadd-row .native-input { flex: 1; }
 
   .native-input {
     background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
@@ -131,12 +159,8 @@
     font-size: 13px; font-family: var(--font-sans); width: 100%; box-sizing: border-box;
   }
   .native-input:focus { outline: none; border-color: var(--accent); }
-  select.native-input { cursor: pointer; }
   input[type="date"].native-input { width: 160px; }
   .emoji-input { width: 80px; }
-  .freq-row { display: flex; gap: 8px; }
-  .freq-n { width: 80px; }
-  .freq-row select { flex: 1; }
 
   .error { font-size: 11px; color: var(--danger); padding: 4px 0; }
 </style>
