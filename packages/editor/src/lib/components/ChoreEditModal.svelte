@@ -11,6 +11,7 @@
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
   import EmojiPicker from "./ui/EmojiPicker.svelte";
+  import ScheduleEditor from "./ScheduleEditor.svelte";
 
   type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion">;
 
@@ -28,6 +29,10 @@
   let draftName = $state("");
   let draftEmoji = $state("");
   let draftPeriodDays = $state(30);
+  let draftFrequencyType = $state("interval");
+  let draftFrequency = $state(1);
+  let draftFrequencyMetadata = $state<Record<string, unknown>>({});
+  let draftScheduleValid = $state(true);
   let draftNextDue = $state("");
   let draftScheduleFromDue = $state(false);
   let draftDescription = $state("");
@@ -67,11 +72,14 @@
     finally { deletingCompletion = null; }
   }
 
-  $effect(() => {
+  $effect.pre(() => {
     if (chore) {
       draftName = chore.name;
       draftEmoji = chore.emoji;
       draftPeriodDays = chore.periodDays;
+      draftFrequencyType = chore.frequencyType;
+      draftFrequency = chore.frequency;
+      draftFrequencyMetadata = chore.frequencyMetadata;
       draftNextDue = chore.nextDueDate.slice(0, 10);
       draftScheduleFromDue = chore.scheduleFromDue;
       draftDescription = chore.description ?? "";
@@ -91,12 +99,16 @@
   async function handleSave(): Promise<void> {
     if (!chore) return;
     if (!draftName.trim()) { error = $_('chores.editModal.nameEmpty'); return; }
+    if (!draftScheduleValid) return;
     saving = true; error = null;
     try {
       await store.updateChore(chore.id, {
         name: draftName.trim(),
         emoji: draftEmoji.trim() || "📋",
         periodDays: draftPeriodDays,
+        frequencyType: draftFrequencyType,
+        frequency: draftFrequency,
+        frequencyMetadata: draftFrequencyMetadata,
         nextDueDate: draftNextDue ? new Date(draftNextDue).toISOString() : chore.nextDueDate,
         scheduleFromDue: draftScheduleFromDue,
         description: draftDescription,
@@ -153,9 +165,15 @@
         <label>{$_('chores.editModal.emoji')}
           <EmojiPicker bind:value={draftEmoji} />
         </label>
-        <label>{$_('chores.editModal.periodDays')}
-          <input class="native-input" type="number" bind:value={draftPeriodDays} min="1" />
-        </label>
+        {#key chore.id}
+          <ScheduleEditor
+            bind:frequencyType={draftFrequencyType}
+            bind:frequency={draftFrequency}
+            bind:frequencyMetadata={draftFrequencyMetadata}
+            bind:periodDays={draftPeriodDays}
+            bind:valid={draftScheduleValid}
+          />
+        {/key}
         <label>{$_('chores.editModal.defaultDue')}
           <DatePicker bind:value={draftNextDue} />
         </label>
@@ -211,7 +229,7 @@
         <Button variant="secondary" onclick={() => { onplaceonmap!(chore!.id); }}>📍 {$_('chores.editModal.placeOnMap')}</Button>
       {/if}
       {#if activeTab === "info"}
-        <Button variant="primary" disabled={saving} onclick={handleSave}>
+        <Button variant="primary" disabled={saving || !draftScheduleValid} onclick={handleSave}>
           {saving ? $_('settings.security.saving') : $_('common.save')}
         </Button>
       {/if}
@@ -235,7 +253,6 @@
   }
   .native-input:focus { outline: none; border-color: var(--accent); }
   .emoji-field { width: 70px; }
-  .native-input[type="number"] { width: 100px; }
   .sfd-row { display: flex; align-items: center; gap: 6px; font-size: 12px; }
   .sfd-row input[type="checkbox"] { width: auto; }
   .notes-field { resize: vertical; min-height: 72px; font-family: inherit; line-height: 1.4; }
