@@ -882,6 +882,7 @@
   "settings": {
     "nav": {
       "general": "General",
+      "localization": "Localization",
       "categories": "Categories",
       "notifications": "Notifications",
       "security": "Security & Access",
@@ -900,7 +901,6 @@
       "change": "Change",
       "cannotDeleteOnlyHome": "Cannot delete the only home",
       "deleteThisHome": "Delete this home",
-      "language": "Language",
       "modules": "Modules",
       "modulesDesc": "Choose which modules are visible in the nav for this home.",
       "placeholderTag": "Placeholder",
@@ -916,6 +916,25 @@
       "resetModuleBody": "This permanently deletes all {label} data and attachments. Any shared configuration for this module (categories, etc.) is kept. This cannot be undone.",
       "resetModuleSuccess": "{label} data has been reset.",
       "resetModuleFailed": "Failed to reset {label} data"
+    },
+    "localization": {
+      "description": "Customize language, date format, and regional preferences for your account.",
+      "language": "Language",
+      "languageDescription": "Select your preferred language",
+      "dateFormat": "Date Format",
+      "dateFormatDescription": "Choose how dates should be displayed throughout the application",
+      "timeFormat": "Time Format",
+      "timeFormatDescription": "Select 12-hour or 24-hour time format",
+      "time12": "12-hour",
+      "time24": "24-hour",
+      "firstDayOfWeek": "First Day of Week",
+      "firstDayOfWeekDescription": "Select which day starts your week",
+      "preview": "Preview: {value}",
+      "weekday": {
+        "sunday": "Sunday",
+        "monday": "Monday",
+        "saturday": "Saturday"
+      }
     },
     "security": {
       "apiTokens": "API Tokens",
