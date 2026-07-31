@@ -13,7 +13,7 @@
 - Full design at `docs/superpowers/specs/2026-07-31-chore-scheduling-design.md` — read it if anything below is ambiguous.
 - Date-only due dates everywhere (no time-of-day) — out of scope, do not add it.
 - `scheduleFromDue` (due-date vs. completion-date anchoring) is unrelated and untouched — do not modify its logic.
-- **Correction (found mid-execution):** the premise that this codebase has no Svelte component-render tests was wrong — an earlier research pass only looked under `src/lib` and missed the package's actual test directory, `packages/editor/test/`, which has 115+ files including `mount()`/`unmount()`/`flushSync()`-based component tests (e.g. `test/ChoresPage.test.ts`, `test/ChoreEditModal.test.ts`). **All new/updated component logic in this plan must get real tests in that `test/` directory following those files' existing pattern** — do not add new test files under `src/lib`. (A stray `src/lib/choreStore.test.ts` this plan's author created before catching this was merged into `test/choreStore.test.ts` and deleted.)
+- **Correction (found mid-execution):** the premise that this codebase has no Svelte component-render tests was wrong — an earlier research pass only looked under `src/lib` and missed the package's actual test directory, `packages/editor/test/`, which has 115+ files, both `mount()`/`unmount()`/`flushSync()`-based component tests (e.g. `test/ChoresPage.test.ts`, `test/ChoreEditModal.test.ts`) *and* pure-logic tests (e.g. `test/choreFormat.test.ts`). **Every test file this plan adds — component or pure-logic — belongs under `packages/editor/test/`, never under `src/lib`.** (A stray `src/lib/choreStore.test.ts` this plan's author created before catching this was merged into `test/choreStore.test.ts` and deleted; `scheduleParser.test.ts` likewise goes in `test/`, not next to `scheduleParser.ts`.)
 - Follow existing i18n key naming (`chores.schedule.*`, `chores.newModal.*`, `chores.editModal.*`) for all new keys; add every new key to **both** `en.json` and `fr.json` in the same task that introduces it.
 - Run `cd /projects/myhome && pytest packages/backend` and `cd /projects/myhome/packages/editor && npx vitest run` before any commit that touches backend/frontend code respectively, to confirm nothing else broke.
 
@@ -761,14 +761,14 @@ git commit -m "fix(chores): recognize literal daily chores and adaptive chores i
 
 **Files:**
 - Create: `packages/editor/src/lib/scheduleParser.ts`
-- Test: `packages/editor/src/lib/scheduleParser.test.ts`
+- Test: `packages/editor/test/scheduleParser.test.ts`
 
 **Interfaces:**
 - Produces: `parseScheduleText(text: string, loc: "en" | "fr"): ParsedSchedule | null` where `ParsedSchedule = { name: string; schedule: { frequencyType: string; frequency: number; frequencyMetadata: Record<string, unknown> } }`. Used by Task 9.
 
 - [ ] **Step 1: Write the failing tests**
 
-Create `packages/editor/src/lib/scheduleParser.test.ts`:
+Create `packages/editor/test/scheduleParser.test.ts`:
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -889,7 +889,7 @@ describe("parseScheduleText (French)", () => {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd /projects/myhome/packages/editor && npx vitest run src/lib/scheduleParser.test.ts`
+Run: `cd /projects/myhome/packages/editor && npx vitest run test/scheduleParser.test.ts`
 Expected: FAIL with a module-not-found error (`scheduleParser.ts` doesn't exist yet).
 
 - [ ] **Step 3: Implement**
@@ -1003,14 +1003,14 @@ export function parseScheduleText(text: string, loc: "en" | "fr"): ParsedSchedul
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `cd /projects/myhome/packages/editor && npx vitest run src/lib/scheduleParser.test.ts`
+Run: `cd /projects/myhome/packages/editor && npx vitest run test/scheduleParser.test.ts`
 Expected: all tests PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 cd /projects/myhome
-git add packages/editor/src/lib/scheduleParser.ts packages/editor/src/lib/scheduleParser.test.ts
+git add packages/editor/src/lib/scheduleParser.ts packages/editor/test/scheduleParser.test.ts
 git commit -m "feat(chores): add EN/FR natural-language schedule parser"
 ```
 
