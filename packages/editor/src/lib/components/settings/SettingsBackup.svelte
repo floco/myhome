@@ -1,6 +1,7 @@
 <!-- packages/editor/src/lib/components/settings/SettingsBackup.svelte -->
 <script lang="ts">
   import { _ } from "svelte-i18n";
+  import { formatDateTime } from "../../dateFormat";
   import Button from "../ui/Button.svelte";
   import Input from "../ui/Input.svelte";
   import Card from "../ui/Card.svelte";
@@ -284,7 +285,7 @@
   {#if scheduledBackups.length > 0}
     <div class="table-wrapper" style="margin-top: var(--space-3)">
       {#snippet createdCell(backup: ScheduledBackupEntry)}
-        {new Date(backup.createdAt).toLocaleString()}
+        {formatDateTime(backup.createdAt)}
       {/snippet}
       {#snippet sizeCell(backup: ScheduledBackupEntry)}
         {formatBackupSize(backup.sizeBytes)}
