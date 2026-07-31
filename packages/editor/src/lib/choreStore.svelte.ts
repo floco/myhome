@@ -57,6 +57,7 @@ export function scheduleLabel(chore: Chore): string {
     if (n === 730) return t("chores.schedule.everyNYears", { values: { n: 2 } });
     return t("chores.schedule.everyNDays", { values: { n } });
   }
+  if (ft === "adaptive") return t("chores.schedule.adaptiveDays", { values: { n: Math.round(chore.periodDays) } });
   return `${chore.periodDays}d`;
 }
 

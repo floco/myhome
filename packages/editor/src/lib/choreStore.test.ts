@@ -51,4 +51,9 @@ describe("scheduleLabel", () => {
     expect(scheduleLabel(chore)).toBe("Annuel");
     locale.set("en");
   });
+
+  it("shows the current period for an adaptive chore", () => {
+    const chore = makeChore({ frequencyType: "adaptive", frequency: 1, frequencyMetadata: {}, periodDays: 42 });
+    expect(scheduleLabel(chore)).toBe("Adaptive (~42 days)");
+  });
 });
