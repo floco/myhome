@@ -358,7 +358,9 @@
       "everyNYears": "Every {n} years",
       "daily": "Daily",
       "quarterly": "Quarterly",
-      "everyNDays": "Every {n} days"
+      "everyNDays": "Every {n} days",
+      "adaptive": "Adaptive",
+      "adaptiveDays": "Adaptive (~{n} days)"
     },
     "badgePopup": {
       "overdueSince": "Overdue since",
@@ -446,6 +448,25 @@
       "scheduleFromDueTitle": "Next due = planned date + period (not completion date + period)",
       "creating": "Creating…",
       "failedToCreate": "Failed to create"
+    },
+    "scheduleEditor": {
+      "category": "Recurrence",
+      "categoryInterval": "Custom interval",
+      "categoryDaily": "Daily",
+      "categoryWeekly": "Weekly on specific day(s)",
+      "categoryMonthly": "Monthly on a specific day",
+      "categoryYearly": "Yearly",
+      "categoryAdaptive": "Adaptive (learns from history)",
+      "dayOfMonth": "Day of month",
+      "restrictMonths": "Restrict to specific months",
+      "periodDays": "Period (days)",
+      "periodDaysHint": "Adjusts automatically after each completion",
+      "selectAtLeastOneDay": "Select at least one day"
+    },
+    "quickAdd": {
+      "label": "Quick add",
+      "placeholder": "e.g. \"Change water filter every 6 months\"",
+      "parse": "Parse"
     }
   },
   "works": {
