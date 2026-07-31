@@ -2,6 +2,7 @@
   import { _ } from "svelte-i18n";
   import type { createWorksStore, Work } from "../worksStore.svelte";
   import Card from "./ui/Card.svelte";
+  import { formatDate } from "../dateFormat";
 
   type WorksStore = ReturnType<typeof createWorksStore>;
 
@@ -19,11 +20,6 @@
   const recentWorks = $derived(
     [...worksStore.works].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5)
   );
-
-  function formatDate(iso: string): string {
-    if (!iso) return "—";
-    return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-  }
 
   function statusLabel(status: Work["status"]): string {
     if (status === "in_progress") return $_("works.status.inProgress");

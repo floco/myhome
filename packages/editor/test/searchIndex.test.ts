@@ -1,5 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { buildSearchIndex, filterResults, MODULE_ORDER } from "../src/lib/searchIndex";
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 function makeStores(overrides: Partial<Parameters<typeof buildSearchIndex>[0]> = {}) {
   return {
@@ -31,7 +35,7 @@ describe("buildSearchIndex", () => {
         id: "c1",
         icon: "🧹",
         title: "Sweep kitchen",
-        subtitle: "Aug 1, 2026",
+        subtitle: "08/01/2026",
         searchText: "sweep kitchen daily sweep",
         titleText: "sweep kitchen",
       },
@@ -93,7 +97,7 @@ describe("buildSearchIndex", () => {
       id: "w1",
       icon: "🏠",
       title: "Fix roof leak",
-      subtitle: "In progress · Jun 10, 2026",
+      subtitle: "In progress · 06/10/2026",
       searchText: "fix roof leak patch near chimney",
       titleText: "fix roof leak",
     });
