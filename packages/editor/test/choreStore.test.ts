@@ -220,6 +220,16 @@ describe("scheduleLabel", () => {
     expect(scheduleLabel(chore)).toBe("Every 3 years");
   });
 
+  it("renders a literal daily chore as 'Daily', not a raw periodDays fallback", () => {
+    // Caught by manual browser testing: a chore created via the new "Daily"
+    // recurrence category (frequencyType: "daily") fell through to the
+    // generic `${periodDays}d` fallback since there was no explicit branch
+    // for it here (chore_scheduling.py and scheduleCategory both already had
+    // one; this file was the one place that got missed).
+    const chore = makeChore({ frequencyType: "daily", frequency: 1, frequencyMetadata: {}, periodDays: 1 });
+    expect(scheduleLabel(chore)).toBe("Daily");
+  });
+
   it("renders yearly correctly in French too", async () => {
     locale.set("fr");
     const chore = makeChore({ frequencyType: "yearly", frequency: 3 });
