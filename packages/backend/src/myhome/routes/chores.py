@@ -24,7 +24,7 @@ from ..models_chores import (
     ImportRequest,
     ImportResponse,
 )
-from ..chore_scheduling import next_due_from_schedule
+from ..chore_scheduling import next_due_from_schedule, adaptive_period_days
 from ..deps import get_current_user_id, require_auth
 from ..persistence_activity import log_activity
 from ..persistence_chores import (
@@ -101,7 +101,7 @@ def _period_days(chore: dict) -> float:
         return freq * UNIT_DAYS.get(unit, 1)
     elif freq_type in ("monthly", "month"):
         return 30.0
-    elif freq_type == "yearly":
+    elif freq_type in ("yearly", "year"):
         return 365.0
     elif freq_type == "day_of_the_month":
         return 30.0
@@ -304,8 +304,6 @@ def complete_chore(
             from_dt = now
     else:
         from_dt = now
-    next_due = next_due_from_schedule(chore, from_dt)
-    next_due_str = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
     doc.completions.append(CompletionRecord(
         id=str(uuid.uuid4()),
         choreId=chore_id,
@@ -313,6 +311,11 @@ def complete_chore(
         scheduledDue=chore.nextDueDate,
         notes=notes,
     ))
+    completions_for_chore = [c for c in doc.completions if c.choreId == chore_id]
+    next_due = next_due_from_schedule(chore, from_dt, completions_for_chore)
+    next_due_str = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
+    if chore.frequencyType == "adaptive":
+        chore.periodDays = adaptive_period_days(chore, completions_for_chore)
     for a in doc.assignments:
         if a.choreId == chore_id:
             a.nextDueDate = next_due_str
@@ -415,7 +418,6 @@ def complete_assignment(
             from_dt = now
     else:
         from_dt = now
-    next_due = next_due_from_schedule(chore, from_dt)
     doc.completions.append(CompletionRecord(
         id=str(uuid.uuid4()),
         choreId=chore.id,
@@ -424,6 +426,10 @@ def complete_assignment(
         scheduledDue=assignment.nextDueDate,
         notes=notes,
     ))
+    completions_for_chore = [c for c in doc.completions if c.choreId == chore.id]
+    next_due = next_due_from_schedule(chore, from_dt, completions_for_chore)
+    if chore.frequencyType == "adaptive":
+        chore.periodDays = adaptive_period_days(chore, completions_for_chore)
     assignment.nextDueDate = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
     save_chores(home_id, doc)
     log_activity(home_id, current_user_id, "chores", "complete", chore.name, chore.id)
