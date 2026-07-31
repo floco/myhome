@@ -6,19 +6,11 @@
   import Card from "../ui/Card.svelte";
   import Modal from "../ui/Modal.svelte";
   import { homesStore } from "../../homesStore.svelte";
-  import { getStoredLocale, setLocale, type Locale } from "../../locale";
 
   interface Props {
     reloadAllStores?: () => void;
   }
   let { reloadAllStores }: Props = $props();
-
-  let currentLocale = $state<Locale>(getStoredLocale());
-
-  function changeLocale(next: Locale): void {
-    currentLocale = next;
-    setLocale(next);
-  }
 
   let editingHomeName = $state(false);
   let homeNameDraft = $state("");
@@ -165,17 +157,6 @@
 </Card>
 
 <Card>
-  <h2 class="section-title">{$_('settings.general.language')}</h2>
-  <div class="home-row">
-    <span class="home-label">{$_('settings.general.language')}</span>
-    <select class="lang-select" value={currentLocale} onchange={(e) => changeLocale((e.target as HTMLSelectElement).value as Locale)}>
-      <option value="en">English</option>
-      <option value="fr">Français</option>
-    </select>
-  </div>
-</Card>
-
-<Card>
   <h2 class="section-title">{$_('settings.general.modules')}</h2>
   <p class="section-desc">{$_('settings.general.modulesDesc')}</p>
 
@@ -249,5 +230,4 @@
   .soon-tag { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: var(--surface-hover); color: var(--text-muted); border-radius: var(--radius-pill); padding: 1px 5px; }
   .module-warning { font-size: 12px; color: var(--text-muted); background: var(--surface-hover); border-radius: var(--radius); padding: 8px 10px; margin: 0 0 8px; }
   .module-success { font-size: 12px; color: var(--text-muted); background: var(--surface-hover); border-radius: var(--radius); padding: 8px 10px; margin: 8px 0 0; }
-  .lang-select { font-size: 13px; padding: 4px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
 </style>

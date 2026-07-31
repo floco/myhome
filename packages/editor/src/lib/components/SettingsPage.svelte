@@ -5,6 +5,7 @@
   import type { createAuthStore } from "../authStore.svelte";
   import SettingsNav from "./settings/SettingsNav.svelte";
   import SettingsGeneral from "./settings/SettingsGeneral.svelte";
+  import SettingsLocalization from "./settings/SettingsLocalization.svelte";
   import SettingsCategories from "./settings/SettingsCategories.svelte";
   import SettingsNotifications from "./settings/SettingsNotifications.svelte";
   import SettingsSecurity from "./settings/SettingsSecurity.svelte";
@@ -32,6 +33,7 @@
 
   const ALL_GROUPS: SettingsGroupDef[] = [
     { id: "general", icon: "⚙️" },
+    { id: "localization", icon: "🌐" },
     { id: "categories", icon: "🏷️" },
     { id: "notifications", icon: "🔔" },
     { id: "security", icon: "🔐" },
@@ -65,6 +67,8 @@
     <div class="content">
       {#if activeGroup === "general"}
         <SettingsGeneral {reloadAllStores} />
+      {:else if activeGroup === "localization"}
+        <SettingsLocalization />
       {:else if activeGroup === "categories"}
         <SettingsCategories {store} />
       {:else if activeGroup === "notifications"}
