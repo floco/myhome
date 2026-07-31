@@ -20,8 +20,7 @@ This spec adds, on top of that existing engine, three things modeled on Donetick
 
 No breaking/new columns. Everything reuses the existing `Chore.frequencyType` / `frequency` / `frequencyMetadata` fields (`frequency_metadata` is already a free-form JSON-in-`Text` column).
 
-- New `frequencyType` value: `"adaptive"`.
-  - `frequencyMetadata.initialPeriodDays` (number, optional, default 30): the period to use before there's enough completion history to compute an average.
+- New `frequencyType` value: `"adaptive"`. Uses `frequencyMetadata: {}` (no new metadata keys) — `periodDays` itself doubles as both the seed value (set by the client at creation, same way `interval` already computes and sends its own `periodDays`) and the fallback used whenever there isn't yet enough completion history to compute a real average. This avoids introducing a redundant field that would just duplicate `periodDays`.
 - No other model changes. The `yearly` and `daily` types already exist in the type system; they simply weren't reachable from manual creation and (for `daily`) weren't fully implemented in the scheduler.
 
 ## Backend changes
@@ -35,13 +34,13 @@ No breaking/new columns. Everything reuses the existing `Chore.frequencyType` / 
   1. Filter/sort this chore's completions by `completedAt`.
   2. Compute gaps in days between consecutive completions.
   3. Average the last 5 gaps (fewer if that's all there is).
-  4. If there are 0 or 1 completions (no gap available), return `chore.frequencyMetadata.get("initialPeriodDays", 30)`.
+  4. If there are 0 or 1 completions (no gap available), return `chore.periodDays` unchanged (the seed value set at creation, or whatever it was last computed to be).
 
 ### `routes/chores.py`
 
 - `_period_days(chore)` (import-time only — Donetick never emits an "adaptive" type, so no case needed there): fix the `"yearly"` branch to also match `"year"`, matching the alias `next_due_from_schedule` already accepts.
 - **`periodDays` staleness fix for adaptive chores**: `periodDays` is a stored column, only refreshed at specific write points (create/import) — `GET /chores` returns it as-is, it's never recomputed on read. For `interval`/`weekly`/etc. this is fine since their period never changes after creation, but `adaptive`'s whole point is that the period *does* change as history accrues. So `complete_chore` and `complete_assignment`, right after appending the new `CompletionRecord` to `doc.completions`, must also do: if `chore.frequencyType == "adaptive"`, recompute `chore.periodDays = adaptive_period_days(chore, [c for c in doc.completions if c.choreId == chore.id])` and persist it alongside the new `nextDueDate`. This keeps the progress bar and the "Adaptive (~N days)" label (which just reads `chore.periodDays` — see below) always in sync with the same next-due computation, with no separate frontend recomputation needed.
-- At creation time, an adaptive chore has no history yet, so the client sends `periodDays = initialPeriodDays` directly in the `POST /chores` body — same pattern `interval` already uses (client computes `periodDays` from its own inputs and sends it along); no backend change needed for `create_chore` itself.
+- At creation time, an adaptive chore has no history yet, so the client sends its chosen starting `periodDays` directly in the `POST /chores` body — same pattern `interval` already uses (client computes `periodDays` from its own inputs and sends it along); no backend change needed for `create_chore` itself.
 
 ### `mcp_tools_chores.py`
 
@@ -51,7 +50,7 @@ No breaking/new columns. Everything reuses the existing `Chore.frequencyType` / 
 
 ### `scheduleLabel` (`choreStore.svelte.ts`)
 
-- No signature change needed. New `"adaptive"` branch reads the chore's own (backend-kept-fresh, per above) `periodDays` directly: renders "Adaptive (~{periodDays} days)". A chore with zero completions yet shows its `initialPeriodDays` this way too, since that's what `periodDays` was seeded to at creation — no separate "learning" wording needed, the number itself is honest either way.
+- No signature change needed. New `"adaptive"` branch reads the chore's own (backend-kept-fresh, per above) `periodDays` directly: renders "Adaptive (~{periodDays} days)". A chore with zero completions yet shows its seed value this way too, since that's what `periodDays` holds until the first gap can be computed — no separate "learning" wording needed, the number itself is honest either way.
 - Existing branches unchanged.
 
 ### `ScheduleEditor.svelte` (new, `packages/editor/src/lib/components/`)
@@ -67,9 +66,10 @@ Shared component bound via `frequencyType` / `frequency` / `frequencyMetadata` p
 | Weekly on day(s) | `days_of_the_week` | weekday multi-select checkboxes, reusing `chores.schedule.dayAbbrev.*` i18n keys |
 | Monthly on day N | `day_of_the_month` | day-of-month number (1–31) + optional "restrict to specific months" multi-select (off by default = all months) |
 | Yearly | `yearly` | none (advances by exactly 1 year from the anchor due date) |
-| Adaptive | `adaptive` | read-only current-average note + number input for `initialPeriodDays`, shown only pre-history |
+| Adaptive | `adaptive` | editable "Period (days)" number input bound to `periodDays` — the same value the backend auto-recomputes after each completion; editing it manually re-seeds the average (e.g. to correct drift or start a new cadence) |
 
 - Validation: disable the parent modal's Save when `days_of_the_week` has zero days selected, or `day_of_the_month` day is outside 1–31.
+- `ChoresPage.svelte`'s existing `scheduleCategory()` filter-bucketing function gets two small fixes while touching this area: an explicit `if (ft === "daily") return "daily"` branch (today a literal `daily` chore — reachable via Donetick import already — falls through to an unfiltered `"other"` bucket that no dropdown option matches) and a new `if (ft === "adaptive") return "adaptive"` branch plus a matching `<option value="adaptive">` in the schedule filter dropdown.
 
 ### `NewChoreModal.svelte`
 
