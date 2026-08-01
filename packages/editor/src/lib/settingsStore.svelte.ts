@@ -47,6 +47,16 @@ export interface InsuranceCategory {
   emoji: string;
 }
 
+export interface Owner {
+  id: string;
+  name: string;
+}
+
+export interface Store {
+  id: string;
+  name: string;
+}
+
 export interface NotificationSettings {
   enabled: boolean;
   choresDueSoonThreshold: number;
@@ -65,6 +75,8 @@ export interface SettingsDocument {
   consumableUnits: string[];
   consumableCategories: ConsumableCategory[];
   insuranceCategories: InsuranceCategory[];
+  owners: Owner[];
+  stores: Store[];
   notifications: NotificationSettings;
 }
 
@@ -76,6 +88,8 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
   const consumableUnits = $state<string[]>([]);
   const consumableCategories = $state<ConsumableCategory[]>([]);
   const insuranceCategories = $state<InsuranceCategory[]>([]);
+  const owners = $state<Owner[]>([]);
+  const stores = $state<Store[]>([]);
   const notificationSettings = $state<NotificationSettings>({
     enabled: true, choresDueSoonThreshold: 0.25, warrantyDaysThreshold: 30,
     haPushEnabled: false, haNotifyService: null, haPushTime: "08:00",
@@ -104,6 +118,10 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
       for (const c of (doc.consumableCategories ?? [])) consumableCategories.push(c);
       insuranceCategories.length = 0;
       for (const c of (doc.insuranceCategories ?? [])) insuranceCategories.push(c);
+      owners.length = 0;
+      for (const o of (doc.owners ?? [])) owners.push(o);
+      stores.length = 0;
+      for (const s of (doc.stores ?? [])) stores.push(s);
       if (doc.notifications) Object.assign(notificationSettings, doc.notifications);
     } catch (e) {
       loadError = e instanceof Error ? e.message : String(e);
@@ -196,6 +214,48 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
     await init();
   }
 
+  async function updateOwners(list: Owner[]): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/settings/owners`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(list),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
+  async function updateStores(list: Store[]): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/settings/stores`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(list),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
+  async function createOwner(name: string): Promise<Owner> {
+    const created: Owner = { id: crypto.randomUUID(), name };
+    await updateOwners([...owners, created]);
+    return created;
+  }
+
+  async function createStore(name: string): Promise<Store> {
+    const created: Store = { id: crypto.randomUUID(), name };
+    await updateStores([...stores, created]);
+    return created;
+  }
+
+  async function createInventoryCategory(name: string): Promise<InventoryCategory> {
+    const created: InventoryCategory = { id: crypto.randomUUID(), name };
+    await updateInventoryCategories([...inventoryCategories, created]);
+    return created;
+  }
+
   async function updateNotificationSettings(settings: NotificationSettings): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
@@ -235,6 +295,8 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
     get consumableUnits() { return consumableUnits as string[]; },
     get consumableCategories() { return consumableCategories as ConsumableCategory[]; },
     get insuranceCategories() { return insuranceCategories as InsuranceCategory[]; },
+    get owners() { return owners as Owner[]; },
+    get stores() { return stores as Store[]; },
     get notificationSettings() { return notificationSettings as NotificationSettings; },
     get loaded() { return loaded; },
     get loadError() { return loadError; },
@@ -245,6 +307,11 @@ export function createSettingsStore(getHomeId: () => string | null = () => null)
     updateConsumableUnits,
     updateConsumableCategories,
     updateInsuranceCategories,
+    updateOwners,
+    updateStores,
+    createOwner,
+    createStore,
+    createInventoryCategory,
     updateNotificationSettings,
     placeCostCategory,
     reload: init,
