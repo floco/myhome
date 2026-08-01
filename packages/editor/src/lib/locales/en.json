@@ -622,6 +622,8 @@
     "page": {
       "expired": "expired",
       "uncategorized": "Uncategorized",
+      "allOwners": "All owners",
+      "allStores": "All stores",
       "emptyCharts": "No items yet — click ＋ Add item to get started.",
       "byCategory": "By category",
       "items": "Items",

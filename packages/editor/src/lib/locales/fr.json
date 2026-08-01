@@ -622,6 +622,8 @@
     "page": {
       "expired": "expirée",
       "uncategorized": "Sans catégorie",
+      "allOwners": "Tous les propriétaires",
+      "allStores": "Tous les magasins",
       "emptyCharts": "Aucun article pour l'instant — cliquez sur ＋ Ajouter un article pour commencer.",
       "byCategory": "Par catégorie",
       "items": "Articles",
