@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.0 - 2026-08-01
+
+- Added Owner and Store fields to Inventory items — pick an existing one from the dropdown or type a new name to create it on the spot, no need to visit Settings first
+- Added Owner and Store filters and columns to the Inventory list, and management tabs for both under Settings → Categories
+- Fixed the Inventory item form's Category field: typing a brand-new category previously didn't actually save it to Settings → Categories, so it silently disappeared next time you opened the list — it now creates the category for real, the same way Owner and Store do
+
 ## 0.12.0 - 2026-08-01
 
 - Added a new "Localization" settings category (Settings → Localization) with Date Format, Time Format, and First Day of Week preferences, alongside the existing Language selector — these now control how dates and times render throughout the app, including the date picker's calendar grid
