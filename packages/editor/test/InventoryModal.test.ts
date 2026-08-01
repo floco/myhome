@@ -7,7 +7,8 @@ afterEach(() => { document.body.innerHTML = ""; });
 
 function makeItem(overrides: Partial<InventoryItem> = {}): InventoryItem {
   return {
-    id: "i1", name: "Samsung TV", emoji: "📺", category: "Electronics",
+    id: "i1", name: "Samsung TV", emoji: "📺",
+    categoryId: "cat-electronics", ownerId: null, storeId: null,
     brand: null, model: null, serialNumber: null, purchaseDate: null,
     purchasePrice: null, warrantyExpiryDate: null, notes: "", attachments: [],
     placement: null, ...overrides,
@@ -39,7 +40,11 @@ describe("InventoryModal — Media tab", () => {
     const store = makeStore(item);
     const app = mount(InventoryModal, {
       target,
-      props: { item, store, inventoryCategories: [], onclose: vi.fn() },
+      props: {
+        item, store, onclose: vi.fn(),
+        inventoryCategories: [], owners: [], stores: [],
+        oncreatecategory: vi.fn(), oncreateowner: vi.fn(), oncreatestore: vi.fn(),
+      },
     });
     flushSync();
     const tabs = Array.from(target.querySelectorAll(".tab")).map(t => t.textContent?.trim());
@@ -54,7 +59,11 @@ describe("InventoryModal — Media tab", () => {
     const store = makeStore();
     const app = mount(InventoryModal, {
       target,
-      props: { item: null, store, inventoryCategories: [], onclose: vi.fn() },
+      props: {
+        item: null, store, onclose: vi.fn(),
+        inventoryCategories: [], owners: [], stores: [],
+        oncreatecategory: vi.fn(), oncreateowner: vi.fn(), oncreatestore: vi.fn(),
+      },
     });
     flushSync();
     const mediaTab = Array.from(target.querySelectorAll(".tab"))
@@ -70,7 +79,11 @@ describe("InventoryModal — Media tab", () => {
     const store = makeStore(item);
     const app = mount(InventoryModal, {
       target,
-      props: { item, store, inventoryCategories: [], onclose: vi.fn() },
+      props: {
+        item, store, onclose: vi.fn(),
+        inventoryCategories: [], owners: [], stores: [],
+        oncreatecategory: vi.fn(), oncreateowner: vi.fn(), oncreatestore: vi.fn(),
+      },
     });
     flushSync();
     const mediaTab = Array.from(target.querySelectorAll(".tab"))
@@ -88,12 +101,46 @@ describe("InventoryModal — Media tab", () => {
     const store = makeStore(item);
     const app = mount(InventoryModal, {
       target,
-      props: { item, store, inventoryCategories: [], onclose: vi.fn() },
+      props: {
+        item, store, onclose: vi.fn(),
+        inventoryCategories: [], owners: [], stores: [],
+        oncreatecategory: vi.fn(), oncreateowner: vi.fn(), oncreatestore: vi.fn(),
+      },
     });
     flushSync();
     const mediaTab = Array.from(target.querySelectorAll(".tab"))
       .find(t => t.textContent?.includes("Media")) as HTMLButtonElement;
     expect(mediaTab.textContent).toContain("2");
+    unmount(app);
+  });
+});
+
+describe("InventoryModal — category/owner/store", () => {
+  it("saves the selected categoryId/ownerId/storeId", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const item = makeItem();
+    const store = makeStore(item);
+    const app = mount(InventoryModal, {
+      target,
+      props: {
+        item, store, onclose: vi.fn(),
+        inventoryCategories: [{ id: "cat-electronics", name: "Electronics" }],
+        owners: [{ id: "o1", name: "Alice" }],
+        stores: [{ id: "s1", name: "Ikea" }],
+        oncreatecategory: vi.fn(),
+        oncreateowner: vi.fn(),
+        oncreatestore: vi.fn(),
+      },
+    });
+    flushSync();
+    const saveButton = Array.from(target.querySelectorAll("button")).find((b) => b.textContent?.trim() === "Save")!;
+    saveButton.click();
+    flushSync();
+    expect(store.updateItem).toHaveBeenCalledWith(
+      "i1",
+      expect.objectContaining({ categoryId: "cat-electronics", ownerId: null, storeId: null }),
+    );
     unmount(app);
   });
 });

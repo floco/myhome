@@ -144,11 +144,16 @@ def generate_demo_inventory(house: HouseDocument, settings: SettingsDocument, rn
         warranty_expiry = purchase_date + timedelta(days=warranty_days)
         cx, cy = room_centroid(room)
 
+        owner_id = rng.choice(settings.owners).id if settings.owners and rng.random() < 0.7 else None
+        store_id = rng.choice(settings.stores).id if settings.stores and rng.random() < 0.6 else None
+
         items.append(InventoryItem(
             id=str(uuid.uuid4()),
             name=name,
             emoji=emoji,
-            category=category_id,
+            categoryId=category_id,
+            ownerId=owner_id,
+            storeId=store_id,
             purchaseDate=purchase_date.isoformat(),
             purchasePrice=round(rng.uniform(price_min, price_max), 2),
             warrantyExpiryDate=warranty_expiry.isoformat(),

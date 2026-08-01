@@ -61,7 +61,7 @@ def test_get_static_system_info_shape(tmp_path, monkeypatch):
     info = system_info.get_static_system_info()
     assert info["version"] == "0.8.0"
     assert info["deploymentMode"] == "standalone"
-    assert info["dbSchemaVersion"] == 6
+    assert info["dbSchemaVersion"] == 7
     assert info["homeCount"] == 0
     # get_home_count() above already opened the DB engine, which runs schema
     # migrations on first connect -- so the file is non-empty even with zero

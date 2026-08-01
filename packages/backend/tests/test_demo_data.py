@@ -76,7 +76,7 @@ def test_generate_demo_inventory_items_have_valid_category_and_placement():
     floor_ids = {f.id for f in house.floors}
     room_ids = {r.id for f in house.floors for r in f.rooms}
     for item in doc.items:
-        assert item.category in category_ids
+        assert item.categoryId in category_ids
         assert item.placement is not None
         assert item.placement.floorId in floor_ids
         assert item.placement.roomId in room_ids
@@ -90,6 +90,20 @@ def test_generate_demo_inventory_some_warranties_already_expired():
     today = date.today().isoformat()
     expired = [i for i in doc.items if i.warrantyExpiryDate and i.warrantyExpiryDate < today]
     assert len(expired) > 0
+
+
+def test_generate_demo_inventory_items_have_valid_owner_and_store_when_set():
+    house = generate_demo_house()
+    settings = generate_demo_settings()
+    doc = generate_demo_inventory(house, settings, random.Random(42))
+    owner_ids = {o.id for o in settings.owners}
+    store_ids = {s.id for s in settings.stores}
+    owned = [i for i in doc.items if i.ownerId is not None]
+    stored = [i for i in doc.items if i.storeId is not None]
+    assert len(owned) > 0
+    assert len(stored) > 0
+    assert all(i.ownerId in owner_ids for i in owned)
+    assert all(i.storeId in store_ids for i in stored)
 
 
 from myhome.demo_content import generate_demo_contacts

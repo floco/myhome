@@ -15,7 +15,9 @@ from .models_settings import (
     InventoryCategory,
     InsuranceCategory,
     NotificationSettings,
+    Owner,
     SettingsDocument,
+    Store,
     ContactType,
     WorkCategory,
     _default_cost_categories,
@@ -29,8 +31,10 @@ from .schema import (
     consumable_categories as consumable_categories_table,
     cost_categories as cost_categories_table,
     inventory_categories as inventory_categories_table,
+    owners as owners_table,
     settings as settings_table,
     contact_types as contact_types_table,
+    stores as stores_table,
     work_categories as work_categories_table,
     insurance_categories as insurance_categories_table,
 )
@@ -73,6 +77,14 @@ def load_settings(home_id: str) -> SettingsDocument:
             select(insurance_categories_table).where(insurance_categories_table.c.home_id == home_id)
             .order_by(insurance_categories_table.c.order_index)
         ).mappings().all()
+        owner_rows = conn.execute(
+            select(owners_table).where(owners_table.c.home_id == home_id)
+            .order_by(owners_table.c.order_index)
+        ).mappings().all()
+        store_rows = conn.execute(
+            select(stores_table).where(stores_table.c.home_id == home_id)
+            .order_by(stores_table.c.order_index)
+        ).mappings().all()
 
     return SettingsDocument(
         costCategories=[
@@ -98,6 +110,8 @@ def load_settings(home_id: str) -> SettingsDocument:
         insuranceCategories=[
             InsuranceCategory(id=r["id"], name=r["name"], emoji=r["emoji"]) for r in insurance_cat_rows
         ],
+        owners=[Owner(id=r["id"], name=r["name"]) for r in owner_rows],
+        stores=[Store(id=r["id"], name=r["name"]) for r in store_rows],
         notifications=NotificationSettings(
             enabled=bool(row["notif_enabled"]),
             choresDueSoonThreshold=row["notif_chores_due_soon_threshold"],
@@ -182,4 +196,18 @@ def save_settings(home_id: str, doc: SettingsDocument) -> None:
             conn.execute(insurance_categories_table.insert(), [
                 {"id": c.id, "home_id": home_id, "order_index": i, "name": c.name, "emoji": c.emoji}
                 for i, c in enumerate(doc.insuranceCategories)
+            ])
+
+        conn.execute(owners_table.delete().where(owners_table.c.home_id == home_id))
+        if doc.owners:
+            conn.execute(owners_table.insert(), [
+                {"id": o.id, "home_id": home_id, "order_index": i, "name": o.name}
+                for i, o in enumerate(doc.owners)
+            ])
+
+        conn.execute(stores_table.delete().where(stores_table.c.home_id == home_id))
+        if doc.stores:
+            conn.execute(stores_table.insert(), [
+                {"id": s.id, "home_id": home_id, "order_index": i, "name": s.name}
+                for i, s in enumerate(doc.stores)
             ])

@@ -17,10 +17,20 @@
   type InvStore = ReturnType<typeof createInventoryStore>;
   type HouseStore = ReturnType<typeof createHouseStore>;
 
+  interface Option {
+    id: string;
+    name: string;
+  }
+
   interface Props {
     store: InvStore;
     floorStore: HouseStore;
-    inventoryCategories?: string[];
+    inventoryCategories?: Option[];
+    owners?: Option[];
+    stores?: Option[];
+    oncreatecategory: (name: string) => Promise<Option>;
+    oncreateowner: (name: string) => Promise<Option>;
+    oncreatestore: (name: string) => Promise<Option>;
     selectedItemId?: string | null;
     onclearselection?: () => void;
     onplaceonmap?: (itemId: string) => void;
@@ -30,6 +40,11 @@
     store,
     floorStore,
     inventoryCategories = [],
+    owners = [],
+    stores = [],
+    oncreatecategory,
+    oncreateowner,
+    oncreatestore,
     selectedItemId = null,
     onclearselection,
     onplaceonmap,
@@ -39,6 +54,8 @@
   let searchQuery = $state("");
   let roomFilter = $state("");
   let categoryFilter = $state("");
+  let ownerFilter = $state("");
+  let storeFilter = $state("");
 
   $effect(() => {
     if (selectedItemId) {
@@ -75,8 +92,29 @@
   }
 
   const allRooms = $derived(floorStore.floors.flatMap((f: { rooms: { id: string; label: string }[] }) => f.rooms));
+
+  const categoryNameById = $derived(new Map(inventoryCategories.map((c) => [c.id, c.name])));
+  const ownerNameById = $derived(new Map(owners.map((o) => [o.id, o.name])));
+  const storeNameById = $derived(new Map(stores.map((s) => [s.id, s.name])));
+
+  function categoryName(id: string | null): string {
+    return (id && categoryNameById.get(id)) || "";
+  }
+  function ownerName(id: string | null): string {
+    return (id && ownerNameById.get(id)) || "";
+  }
+  function storeName(id: string | null): string {
+    return (id && storeNameById.get(id)) || "";
+  }
+
   const allCategories = $derived(
-    [...new Set(store.items.map((i) => i.category).filter(Boolean))]
+    [...new Set(store.items.map((i) => i.categoryId).filter((id): id is string => !!id))]
+  );
+  const allOwnerIds = $derived(
+    [...new Set(store.items.map((i) => i.ownerId).filter((id): id is string => !!id))]
+  );
+  const allStoreIds = $derived(
+    [...new Set(store.items.map((i) => i.storeId).filter((id): id is string => !!id))]
   );
 
   interface CategoryCount {
@@ -87,7 +125,7 @@
   const categoryCounts = $derived((() => {
     const counts = new Map<string, number>();
     for (const item of store.items) {
-      const key = item.category || $_('inventory.page.uncategorized');
+      const key = categoryName(item.categoryId) || $_('inventory.page.uncategorized');
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
     return [...counts.entries()]
@@ -119,7 +157,9 @@
         if (!i.placement?.roomId) return false;
         if (i.placement.roomId !== roomFilter) return false;
       }
-      if (categoryFilter && i.category !== categoryFilter) return false;
+      if (categoryFilter && i.categoryId !== categoryFilter) return false;
+      if (ownerFilter && i.ownerId !== ownerFilter) return false;
+      if (storeFilter && i.storeId !== storeFilter) return false;
       return true;
     })
   );
@@ -171,8 +211,20 @@
       </select>
       <select class="native-input" bind:value={categoryFilter}>
         <option value="">{$_('costs.page.allCategories')}</option>
-        {#each allCategories as cat}
-          <option value={cat}>{cat}</option>
+        {#each allCategories as id}
+          <option value={id}>{categoryName(id)}</option>
+        {/each}
+      </select>
+      <select class="native-input" bind:value={ownerFilter}>
+        <option value="">{$_('inventory.page.allOwners')}</option>
+        {#each allOwnerIds as id}
+          <option value={id}>{ownerName(id)}</option>
+        {/each}
+      </select>
+      <select class="native-input" bind:value={storeFilter}>
+        <option value="">{$_('inventory.page.allStores')}</option>
+        {#each allStoreIds as id}
+          <option value={id}>{storeName(id)}</option>
         {/each}
       </select>
       <Button onclick={() => { modalItem = "create"; }}>＋ {$_('inventory.page.addItem')}</Button>
@@ -186,7 +238,13 @@
         {item.name}
       {/snippet}
       {#snippet categoryCell(item: InventoryItem)}
-        {item.category || "—"}
+        {categoryName(item.categoryId) || "—"}
+      {/snippet}
+      {#snippet ownerCell(item: InventoryItem)}
+        {ownerName(item.ownerId) || "—"}
+      {/snippet}
+      {#snippet storeCell(item: InventoryItem)}
+        {storeName(item.storeId) || "—"}
       {/snippet}
       {#snippet roomCell(item: InventoryItem)}
         {roomName(item.placement?.roomId)}
@@ -206,7 +264,9 @@
         columns={[
           { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
           { key: "name", label: $_('chores.editModal.name'), sortValue: (i) => i.name, cellClass: "name-cell", cell: nameCell },
-          { key: "category", label: $_('costs.page.category'), sortValue: (i) => i.category || null, cell: categoryCell },
+          { key: "category", label: $_('costs.page.category'), sortValue: (i) => categoryName(i.categoryId) || null, cell: categoryCell },
+          { key: "owner", label: $_('inventory.modal.owner'), sortValue: (i) => ownerName(i.ownerId) || null, cell: ownerCell },
+          { key: "store", label: $_('inventory.modal.store'), sortValue: (i) => storeName(i.storeId) || null, cell: storeCell },
           { key: "room", label: $_('costs.page.room'), sortValue: (i) => roomName(i.placement?.roomId), cell: roomCell },
           { key: "purchased", label: $_('inventory.page.purchased'), sortValue: (i) => (i.purchaseDate ? new Date(i.purchaseDate) : null), cell: purchasedCell },
           { key: "cost", label: $_('inventory.page.cost'), sortValue: (i) => i.purchasePrice, cell: costCell },
@@ -236,6 +296,11 @@
     item={modalItem === "create" ? null : modalItem}
     {store}
     {inventoryCategories}
+    {owners}
+    {stores}
+    {oncreatecategory}
+    {oncreateowner}
+    {oncreatestore}
     onclose={() => { modalItem = null; }}
     onplaceonmap={onplaceonmap
       ? (id) => { modalItem = null; onplaceonmap!(id); }

@@ -5,10 +5,12 @@ from ..models_settings import (
     CostCategoryPlacement,
     InventoryCategory,
     NotificationSettings,
+    Owner,
     WorkCategory,
     ContactType,
     InsuranceCategory,
     SettingsDocument,
+    Store,
 )
 from ..persistence_settings import load_settings, save_settings
 
@@ -86,6 +88,20 @@ def put_consumable_categories(home_id: str, body: list[ConsumableCategory]) -> N
 def put_insurance_categories(home_id: str, body: list[InsuranceCategory]) -> None:
     doc = load_settings(home_id)
     doc.insuranceCategories = body
+    save_settings(home_id, doc)
+
+
+@router.put("/api/homes/{home_id}/settings/owners", status_code=204)
+def put_owners(home_id: str, body: list[Owner]) -> None:
+    doc = load_settings(home_id)
+    doc.owners = body
+    save_settings(home_id, doc)
+
+
+@router.put("/api/homes/{home_id}/settings/stores", status_code=204)
+def put_stores(home_id: str, body: list[Store]) -> None:
+    doc = load_settings(home_id)
+    doc.stores = body
     save_settings(home_id, doc)
 
 
