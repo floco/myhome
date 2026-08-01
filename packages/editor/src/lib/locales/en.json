@@ -168,6 +168,7 @@
     "edit": "Edit",
     "close": "Close",
     "add": "Add",
+    "createOption": "+ Create \"{name}\"",
     "loading": "Loading…",
     "confirm": "Confirm",
     "openPdf": "Open PDF ↗",
@@ -621,6 +622,8 @@
     "page": {
       "expired": "expired",
       "uncategorized": "Uncategorized",
+      "allOwners": "All owners",
+      "allStores": "All stores",
       "emptyCharts": "No items yet — click ＋ Add item to get started.",
       "byCategory": "By category",
       "items": "Items",
@@ -640,6 +643,10 @@
       "editItem": "Edit item",
       "namePlaceholder": "e.g. Samsung TV 65\"",
       "categoryPlaceholder": "Electronics, Furniture…",
+      "owner": "Owner",
+      "store": "Store",
+      "ownerPlaceholder": "e.g. Alex, Both of us…",
+      "storePlaceholder": "e.g. IKEA, Amazon…",
       "brand": "Brand",
       "model": "Model",
       "serialNumber": "Serial #",
@@ -1022,7 +1029,9 @@
         "work": "Work categories",
         "contactTypes": "Contact Types",
         "consumables": "Consumables",
-        "insurance": "Insurance categories"
+        "insurance": "Insurance categories",
+        "owners": "Owners",
+        "stores": "Stores"
       },
       "deleteConfirm": "Delete?",
       "name": "Name",

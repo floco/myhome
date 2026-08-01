@@ -10,6 +10,7 @@ databases created before a given migration was added actually run it.
 """
 from __future__ import annotations
 
+import uuid
 from collections.abc import Callable
 
 from sqlalchemy import text
@@ -23,7 +24,7 @@ from .schema import (
     work_categories,
 )
 
-CURRENT_VERSION = 6
+CURRENT_VERSION = 7
 
 
 def _drop_kb_folders_table(conn: Connection) -> None:
@@ -132,12 +133,59 @@ def _add_insurance_support(conn: Connection) -> None:
             )
 
 
+def _add_inventory_owner_store_and_category_id(conn: Connection) -> None:
+    # inventory_items.category (free-text) becomes category_id, referencing
+    # inventory_categories the same way Works/Costs/Consumables already
+    # reference their categories. owner_id/store_id are brand new, always
+    # NULL for pre-existing rows -- see the design spec at
+    # docs/superpowers/specs/2026-08-01-inventory-owner-store-design.md.
+    conn.execute(text("ALTER TABLE inventory_items ADD COLUMN owner_id VARCHAR"))
+    conn.execute(text("ALTER TABLE inventory_items ADD COLUMN store_id VARCHAR"))
+    conn.execute(text("ALTER TABLE inventory_items ADD COLUMN category_id VARCHAR"))
+
+    home_ids = [r[0] for r in conn.execute(text("SELECT id FROM homes")).all()]
+    for home_id in home_ids:
+        existing = conn.execute(
+            text("SELECT id, name FROM inventory_categories WHERE home_id = :h"),
+            {"h": home_id},
+        ).all()
+        by_name = {name.strip().lower(): cat_id for cat_id, name in existing}
+        next_order = len(existing)
+
+        rows = conn.execute(
+            text("SELECT id, category FROM inventory_items WHERE home_id = :h"),
+            {"h": home_id},
+        ).all()
+        for item_id, category_text in rows:
+            text_val = (category_text or "").strip()
+            if not text_val:
+                continue
+            key = text_val.lower()
+            cat_id = by_name.get(key)
+            if cat_id is None:
+                cat_id = str(uuid.uuid4())
+                conn.execute(
+                    text(
+                        "INSERT INTO inventory_categories (id, home_id, order_index, name) "
+                        "VALUES (:id, :h, :i, :name)"
+                    ),
+                    {"id": cat_id, "h": home_id, "i": next_order, "name": text_val},
+                )
+                by_name[key] = cat_id
+                next_order += 1
+            conn.execute(
+                text("UPDATE inventory_items SET category_id = :cid WHERE id = :iid"),
+                {"cid": cat_id, "iid": item_id},
+            )
+
+
 MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (2, _drop_kb_folders_table),
     (3, _add_ha_user_id_column),
     (4, _scope_category_tables_by_home),
     (5, _absorb_suppliers_into_contacts),
     (6, _add_insurance_support),
+    (7, _add_inventory_owner_store_and_category_id),
 ]
 
 

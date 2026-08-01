@@ -13,7 +13,9 @@ export interface InventoryItem {
   id: string;
   name: string;
   emoji: string;
-  category: string;
+  categoryId: string | null;
+  ownerId: string | null;
+  storeId: string | null;
   brand: string | null;
   model: string | null;
   serialNumber: string | null;

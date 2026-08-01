@@ -46,3 +46,33 @@ def test_delete_item_unknown_id_raises(home_id):
     from myhome.mcp_tools_inventory import _delete_inventory_item_impl
     with pytest.raises(ValueError):
         _delete_inventory_item_impl(home_id, "nonexistent")
+
+
+def test_create_item_resolves_category_owner_store_by_name(home_id):
+    from myhome.mcp_tools_inventory import _create_inventory_item_impl
+    from myhome.persistence_settings import load_settings
+
+    item = _create_inventory_item_impl(home_id, "Drill", category="Tools", owner="Alice", store="Ikea")
+    settings_doc = load_settings(home_id)
+    assert item["categoryId"] == next(c.id for c in settings_doc.inventoryCategories if c.name == "Tools")
+    assert item["ownerId"] == next(o.id for o in settings_doc.owners if o.name == "Alice")
+    assert item["storeId"] == next(s.id for s in settings_doc.stores if s.name == "Ikea")
+
+
+def test_create_item_reuses_existing_owner_on_second_call(home_id):
+    from myhome.mcp_tools_inventory import _create_inventory_item_impl
+    from myhome.persistence_settings import load_settings
+
+    _create_inventory_item_impl(home_id, "Drill", owner="Alice")
+    _create_inventory_item_impl(home_id, "Sander", owner="Alice")
+    settings_doc = load_settings(home_id)
+    assert len([o for o in settings_doc.owners if o.name == "Alice"]) == 1
+
+
+def test_create_item_blank_category_owner_store_stays_none(home_id):
+    from myhome.mcp_tools_inventory import _create_inventory_item_impl
+
+    item = _create_inventory_item_impl(home_id, "Mystery Box")
+    assert item["categoryId"] is None
+    assert item["ownerId"] is None
+    assert item["storeId"] is None

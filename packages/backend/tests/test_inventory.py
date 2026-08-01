@@ -10,7 +10,7 @@ def make_doc() -> InventoryDocument:
                 id="i1",
                 name="Samsung TV",
                 emoji="📺",
-                category="Electronics",
+                categoryId="cat-electronics",
                 purchasePrice=1200.0,
                 warrantyExpiryDate="2026-05-12",
             )
@@ -39,7 +39,7 @@ def test_create_item(client, home_id):
     payload = {
         "name": "Washing machine",
         "emoji": "🧺",
-        "category": "Appliance",
+        "categoryId": "cat-appliance",
         "purchasePrice": 650.0,
     }
     resp = client.post(f"/api/homes/{home_id}/inventory/items", json=payload)
@@ -60,7 +60,9 @@ def test_create_item_defaults(client, home_id):
     assert resp.status_code == 201
     data = resp.json()
     assert data["emoji"] == "📦"
-    assert data["category"] == ""
+    assert data["categoryId"] is None
+    assert data["ownerId"] is None
+    assert data["storeId"] is None
     assert data["placement"] is None
 
 
@@ -74,7 +76,7 @@ def test_update_item_partial(client, tmp_path, home_id):
     assert item["name"] == "LG TV"
     assert item["purchasePrice"] == 900.0
     assert item["emoji"] == "📺"          # unchanged
-    assert item["category"] == "Electronics"  # unchanged
+    assert item["categoryId"] == "cat-electronics"  # unchanged
 
 
 def test_update_item_404(client, home_id):

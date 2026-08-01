@@ -49,6 +49,16 @@ class InsuranceCategory(BaseModel):
     emoji: str
 
 
+class Owner(BaseModel):
+    id: str
+    name: str
+
+
+class Store(BaseModel):
+    id: str
+    name: str
+
+
 class NotificationSettings(BaseModel):
     enabled: bool = True
     choresDueSoonThreshold: float = 0.25
@@ -126,4 +136,6 @@ class SettingsDocument(BaseModel):
     consumableUnits: list[str] = []
     consumableCategories: list[ConsumableCategory] = []
     insuranceCategories: list[InsuranceCategory] = []
+    owners: list[Owner] = []
+    stores: list[Store] = []
     notifications: NotificationSettings = NotificationSettings()

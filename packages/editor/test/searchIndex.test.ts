@@ -13,7 +13,7 @@ function makeStores(overrides: Partial<Parameters<typeof buildSearchIndex>[0]> =
     worksStore: { works: [] },
     costsStore: { entries: [] },
     kbStore: { entries: [] },
-    settingsStore: { costCategories: [], workCategories: [] },
+    settingsStore: { costCategories: [], workCategories: [], inventoryCategories: [] },
     contactsStore: { contacts: [] },
     ...overrides,
   };
@@ -46,9 +46,10 @@ describe("buildSearchIndex", () => {
     const stores = makeStores({
       inventoryStore: {
         items: [
-          { id: "i1", name: "Samsung TV", emoji: "📺", category: "Electronics", brand: "Samsung", model: "QE65", serialNumber: "XYZ", notes: "Living room" } as any,
+          { id: "i1", name: "Samsung TV", emoji: "📺", categoryId: "cat-electronics", brand: "Samsung", model: "QE65", serialNumber: "XYZ", notes: "Living room" } as any,
         ],
       },
+      settingsStore: { costCategories: [], workCategories: [], inventoryCategories: [{ id: "cat-electronics", name: "Electronics" }] },
     });
     const index = buildSearchIndex(stores);
     expect(index[0]).toEqual({
@@ -64,7 +65,7 @@ describe("buildSearchIndex", () => {
 
   it("falls back to a default subtitle when an inventory item has no category", () => {
     const stores = makeStores({
-      inventoryStore: { items: [{ id: "i1", name: "Ladder", emoji: "🪜", category: "", brand: null, model: null, serialNumber: null, notes: "" } as any] },
+      inventoryStore: { items: [{ id: "i1", name: "Ladder", emoji: "🪜", categoryId: null, brand: null, model: null, serialNumber: null, notes: "" } as any] },
     });
     const index = buildSearchIndex(stores);
     expect(index[0].subtitle).toBe("Inventory");
@@ -89,7 +90,7 @@ describe("buildSearchIndex", () => {
   it("maps a work using a humanized status and date as subtitle, with its category emoji", () => {
     const stores = makeStores({
       worksStore: { works: [{ id: "w1", title: "Fix roof leak", description: "Patch near chimney", notes: "", status: "in_progress", categoryId: "wcat-roofing", date: "2026-06-10T12:00:00.000Z" } as any] },
-      settingsStore: { costCategories: [], workCategories: [{ id: "wcat-roofing", name: "Roofing", emoji: "🏠" }] },
+      settingsStore: { costCategories: [], workCategories: [{ id: "wcat-roofing", name: "Roofing", emoji: "🏠" }], inventoryCategories: [] },
     });
     const index = buildSearchIndex(stores);
     expect(index[0]).toEqual({
@@ -117,6 +118,7 @@ describe("buildSearchIndex", () => {
       settingsStore: {
         costCategories: [{ id: "cat-electricity", name: "Electricity", emoji: "💡", unit: "kWh", color: "#4466cc" }],
         workCategories: [],
+        inventoryCategories: [],
       },
       contactsStore: { contacts: [{ id: "sup1", name: "PowerCo", companyName: null, typeId: "ctype-supplier", phone: null, email: null, address: null, website: null, notes: "" }] },
     });

@@ -168,6 +168,7 @@
     "edit": "Modifier",
     "close": "Fermer",
     "add": "Ajouter",
+    "createOption": "+ Créer « {name} »",
     "loading": "Chargement…",
     "confirm": "Confirmer",
     "openPdf": "Ouvrir le PDF ↗",
@@ -621,6 +622,8 @@
     "page": {
       "expired": "expirée",
       "uncategorized": "Sans catégorie",
+      "allOwners": "Tous les propriétaires",
+      "allStores": "Tous les magasins",
       "emptyCharts": "Aucun article pour l'instant — cliquez sur ＋ Ajouter un article pour commencer.",
       "byCategory": "Par catégorie",
       "items": "Articles",
@@ -640,6 +643,10 @@
       "editItem": "Modifier l'article",
       "namePlaceholder": "ex. TV Samsung 65\"",
       "categoryPlaceholder": "Électronique, Meubles…",
+      "owner": "Propriétaire",
+      "store": "Magasin",
+      "ownerPlaceholder": "ex. Alex, Nous deux…",
+      "storePlaceholder": "ex. IKEA, Amazon…",
       "brand": "Marque",
       "model": "Modèle",
       "serialNumber": "N° de série",
@@ -1022,7 +1029,9 @@
         "work": "Catégories de travaux",
         "contactTypes": "Types de contact",
         "consumables": "Consommables",
-        "insurance": "Catégories d'assurance"
+        "insurance": "Catégories d'assurance",
+        "owners": "Propriétaires",
+        "stores": "Magasins"
       },
       "deleteConfirm": "Supprimer ?",
       "name": "Nom",

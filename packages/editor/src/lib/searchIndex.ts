@@ -7,7 +7,7 @@ import type { Consumable } from "./consumableStore.svelte";
 import type { Work } from "./worksStore.svelte";
 import type { CostEntry } from "./costsStore.svelte";
 import type { KBEntry } from "./kbStore.svelte";
-import type { CostCategory, WorkCategory } from "./settingsStore.svelte";
+import type { CostCategory, InventoryCategory, WorkCategory } from "./settingsStore.svelte";
 import type { Contact } from "./contactsStore.svelte";
 
 export type SearchModule = "chores" | "inventory" | "consumables" | "works" | "costs" | "kb";
@@ -35,7 +35,7 @@ export interface SearchStores {
   worksStore: { works: Work[] };
   costsStore: { entries: CostEntry[] };
   kbStore: { entries: KBEntry[] };
-  settingsStore: { costCategories: CostCategory[]; workCategories: WorkCategory[] };
+  settingsStore: { costCategories: CostCategory[]; workCategories: WorkCategory[]; inventoryCategories: InventoryCategory[] };
   contactsStore: { contacts: Contact[] };
 }
 
@@ -64,13 +64,15 @@ export function buildSearchIndex(stores: SearchStores): SearchResult[] {
     });
   }
 
+  const inventoryCategoryNameById = new Map(stores.settingsStore.inventoryCategories.map((c) => [c.id, c.name]));
+
   for (const item of stores.inventoryStore.items) {
     results.push({
       module: "inventory",
       id: item.id,
       icon: item.emoji,
       title: item.name,
-      subtitle: item.category || moduleLabel("inventory"),
+      subtitle: (item.categoryId && inventoryCategoryNameById.get(item.categoryId)) || moduleLabel("inventory"),
       searchText: norm(item.name, item.brand, item.model, item.serialNumber, item.notes),
       titleText: item.name.toLowerCase(),
     });

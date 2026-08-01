@@ -4,13 +4,14 @@
 
   interface Props {
     item: InventoryItem;
+    categoryName: string | null;
     screenX: number;
     screenY: number;
     onedit: () => void;
     onremove: () => void;
     onclose: () => void;
   }
-  let { item, screenX, screenY, onedit, onremove, onclose }: Props = $props();
+  let { item, categoryName, screenX, screenY, onedit, onremove, onclose }: Props = $props();
 
   function warrantyLabel(): string {
     if (!item.warrantyExpiryDate) return "—";
@@ -39,8 +40,8 @@
   onclick={(e) => e.stopPropagation()}
 >
   <div class="popup-name">{item.emoji} {item.name}</div>
-  {#if item.category}
-    <div class="popup-row">{item.category}</div>
+  {#if categoryName}
+    <div class="popup-row">{categoryName}</div>
   {/if}
   <div class="popup-row" style="color:{warrantyColor()}">
     {$_('inventory.pinPopup.warranty')}: {warrantyLabel()}

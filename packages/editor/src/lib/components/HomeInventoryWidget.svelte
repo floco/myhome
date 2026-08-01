@@ -1,27 +1,32 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
   import type { createInventoryStore } from "../inventoryStore.svelte";
+  import type { createSettingsStore } from "../settingsStore.svelte";
   import Card from "./ui/Card.svelte";
   import DonutChart from "./DonutChart.svelte";
   import { assignCategoryColors } from "../colorAssignment";
 
   type InventoryStore = ReturnType<typeof createInventoryStore>;
+  type SettingsStore = ReturnType<typeof createSettingsStore>;
 
   interface Props {
     inventoryStore: InventoryStore;
+    settingsStore: SettingsStore;
     onnavigate: () => void;
   }
-  let { inventoryStore, onnavigate }: Props = $props();
+  let { inventoryStore, settingsStore, onnavigate }: Props = $props();
 
   interface CategoryCount {
     category: string;
     count: number;
   }
 
+  const categoryNameById = $derived(new Map(settingsStore.inventoryCategories.map((c) => [c.id, c.name])));
+
   const categoryCounts = $derived((() => {
     const counts = new Map<string, number>();
     for (const item of inventoryStore.items) {
-      const key = item.category || $_('inventory.page.uncategorized');
+      const key = (item.categoryId && categoryNameById.get(item.categoryId)) || $_('inventory.page.uncategorized');
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
     return [...counts.entries()]

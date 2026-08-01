@@ -17,7 +17,9 @@ class InventoryItem(BaseModel):
     id: str
     name: str
     emoji: str = "📦"
-    category: str = ""
+    categoryId: str | None = None
+    ownerId: str | None = None
+    storeId: str | None = None
     brand: str | None = None
     model: str | None = None
     serialNumber: str | None = None
@@ -37,7 +39,9 @@ class InventoryDocument(BaseModel):
 class InventoryItemCreate(BaseModel):
     name: str
     emoji: str = "📦"
-    category: str = ""
+    categoryId: str | None = None
+    ownerId: str | None = None
+    storeId: str | None = None
     brand: str | None = None
     model: str | None = None
     serialNumber: str | None = None
@@ -50,7 +54,9 @@ class InventoryItemCreate(BaseModel):
 class InventoryItemUpdate(BaseModel):
     name: str | None = None
     emoji: str | None = None
-    category: str | None = None
+    categoryId: str | None = None
+    ownerId: str | None = None
+    storeId: str | None = None
     brand: str | None = None
     model: str | None = None
     serialNumber: str | None = None
