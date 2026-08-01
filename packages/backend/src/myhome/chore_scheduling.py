@@ -12,6 +12,13 @@ WEEKDAY_NAMES: dict[str, int] = {
     "mon": 1, "tue": 2, "wed": 3, "thu": 4, "fri": 5, "sat": 6, "sun": 7,
 }
 
+MONTH_NAMES: dict[str, int] = {
+    "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
+    "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12,
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "jun": 6, "jul": 7, "aug": 8,
+    "sep": 9, "sept": 9, "oct": 10, "nov": 11, "dec": 12,
+}
+
 
 def add_months(dt: datetime, months: int) -> datetime:
     total = dt.month - 1 + months
@@ -38,6 +45,50 @@ def to_weekday_num(d: object) -> int:
     return int(d)
 
 
+def to_month_num(m: object) -> int:
+    """Convert a Donetick month value (int, or full/abbreviated name string) to a 1-based int.
+
+    Donetick's own `FrequencyMetadata.Months` field is `[]*string` of full
+    English month names (e.g. "March"), compared case-insensitively -- never
+    ints -- so imported `day_of_the_month` chores need this same conversion
+    the scheduler already does for weekday names via `to_weekday_num`.
+    """
+    if isinstance(m, str):
+        name = m.lower().strip()
+        if name in MONTH_NAMES:
+            return MONTH_NAMES[name]
+        return int(name)
+    return int(m)
+
+
+def nth_weekday_occurrence(date: datetime, period_start: datetime) -> int:
+    """1-based count of how many times `date`'s weekday has occurred from
+    `period_start` (inclusive) through `date` (inclusive)."""
+    count = 0
+    d = period_start
+    while d <= date:
+        if d.weekday() == date.weekday():
+            count += 1
+        d += timedelta(days=1)
+    return count
+
+
+def is_last_weekday_in_month(date: datetime) -> bool:
+    """True if `date + 7 days` falls in the next calendar month."""
+    return (date + timedelta(days=7)).month != date.month
+
+
+def quarter_start(date: datetime) -> datetime:
+    """First day of the quarter (Jan/Apr/Jul/Oct 1) containing `date`."""
+    q_month = ((date.month - 1) // 3) * 3 + 1
+    return date.replace(month=q_month, day=1)
+
+
+def is_last_weekday_in_quarter(date: datetime) -> bool:
+    """True if `date + 7 days` falls in the next calendar quarter."""
+    return quarter_start(date + timedelta(days=7)) != quarter_start(date)
+
+
 def adaptive_period_days(chore: Chore, completions_for_chore: list[CompletionRecord]) -> float:
     """Average of the gaps (in days) between the chore's last 5 completions.
 
@@ -60,7 +111,8 @@ def next_due_from_schedule(chore: Chore, from_dt: datetime, completions: list[Co
     meta: dict = chore.frequencyMetadata or {}
     unit = meta.get("unit", "days")
     if ft == "day_of_the_month":
-        allowed_months: set[int] = set(meta.get("months") or range(1, 13))
+        raw_months = meta.get("months")
+        allowed_months: set[int] = {to_month_num(m) for m in raw_months} if raw_months else set(range(1, 13))
         next_m = add_months(from_dt.replace(day=1), 1)
         for _ in range(12):
             if next_m.month in allowed_months:
@@ -69,6 +121,22 @@ def next_due_from_schedule(chore: Chore, from_dt: datetime, completions: list[Co
         day = min(freq, calendar.monthrange(next_m.year, next_m.month)[1])
         return next_m.replace(day=day)
     if ft == "days_of_the_week":
+        week_pattern = meta.get("weekPattern")
+        if week_pattern in ("week_of_month", "week_of_quarter"):
+            allowed_weekdays = {(to_weekday_num(d) - 1) % 7 for d in (meta.get("days") or [])}
+            occurrences = {int(o) for o in (meta.get("occurrences") or [])}
+            wants_last = -1 in occurrences
+            is_monthly = week_pattern == "week_of_month"
+            candidate = from_dt + timedelta(days=1)
+            for _ in range(730):  # Donetick's own 2-year safety cap
+                if candidate.weekday() in allowed_weekdays:
+                    period_start = candidate.replace(day=1) if is_monthly else quarter_start(candidate)
+                    occurrence = nth_weekday_occurrence(candidate, period_start)
+                    is_last = is_last_weekday_in_month(candidate) if is_monthly else is_last_weekday_in_quarter(candidate)
+                    if occurrence in occurrences or (wants_last and is_last):
+                        return candidate
+                candidate += timedelta(days=1)
+            return candidate
         days = sorted((to_weekday_num(d) - 1) % 7 for d in (meta.get("days") or []))
         if not days:
             return from_dt + timedelta(weeks=1)

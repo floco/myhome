@@ -360,7 +360,15 @@
       "quarterly": "Quarterly",
       "everyNDays": "Every {n} days",
       "adaptive": "Adaptive",
-      "adaptiveDays": "Adaptive (~{n} days)"
+      "adaptiveDays": "Adaptive (~{n} days)",
+      "occurrence1st": "1st",
+      "occurrence2nd": "2nd",
+      "occurrence3rd": "3rd",
+      "occurrence4th": "4th",
+      "occurrenceLast": "Last",
+      "nthWeekdayOfMonth": "{occurrence} {weekday} of the month",
+      "nthWeekdayOfQuarter": "{occurrence} {weekday} of the quarter",
+      "nthWeekday": "Nth weekday"
     },
     "badgePopup": {
       "overdueSince": "Overdue since",
@@ -461,7 +469,14 @@
       "restrictMonths": "Restrict to specific months",
       "periodDays": "Period (days)",
       "periodDaysHint": "Adjusts automatically after each completion",
-      "selectAtLeastOneDay": "Select at least one day"
+      "selectAtLeastOneDay": "Select at least one day",
+      "categoryNthWeekday": "Nth weekday of month/quarter",
+      "period": "Period",
+      "periodMonth": "Month",
+      "periodQuarter": "Quarter",
+      "weekday": "Weekday",
+      "occurrence": "Occurrence",
+      "selectAtLeastOneOccurrence": "Select at least one occurrence"
     },
     "quickAdd": {
       "label": "Quick add",

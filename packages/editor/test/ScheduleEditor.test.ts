@@ -103,4 +103,79 @@ describe("ScheduleEditor", () => {
     expect(active).toEqual(["Mon", "Wed"]);
     unmount(comp);
   });
+
+  it("restores a Donetick-imported days_of_the_week chore's day-name strings on mount", () => {
+    // Donetick stores `days` as full English day-name strings (e.g. "Monday"),
+    // not ints -- an imported chore must still show the right days checked.
+    const { target, comp } = mountWrapper({ initialFrequencyType: "days_of_the_week", initialFrequency: 1, initialFrequencyMetadata: { days: ["Monday", "Wednesday"] } });
+    const active = Array.from(target.querySelectorAll(".day-toggle.active")).map((b) => b.textContent);
+    expect(active).toEqual(["Mon", "Wed"]);
+    unmount(comp);
+  });
+
+  it("restores a Donetick-imported day_of_the_month chore's month-name strings on mount", () => {
+    // Donetick stores `months` as full English month-name strings (e.g. "March"),
+    // not ints -- an imported restricted-months chore must show them checked.
+    const { target, comp } = mountWrapper({ initialFrequencyType: "day_of_the_month", initialFrequency: 15, initialFrequencyMetadata: { months: ["March", "June", "September", "December"] } });
+    const restrictCheckbox = target.querySelector("#se-restrict") as HTMLInputElement;
+    expect(restrictCheckbox.checked).toBe(true);
+    const active = Array.from(target.querySelectorAll(".month-toggles .day-toggle.active")).map((b) => b.textContent);
+    expect(active).toEqual(["March", "June", "September", "December"]);
+    unmount(comp);
+  });
+
+  it("switching to Nth-weekday defaults to week_of_month, Monday, and is invalid until an occurrence is picked", () => {
+    const { target, comp } = mountWrapper();
+    const select = target.querySelector("#se-category") as HTMLSelectElement;
+    select.value = "nth_weekday";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+    const state = readState(target);
+    expect(state.frequencyType).toBe("days_of_the_week");
+    expect(state.frequencyMetadata).toEqual({ days: [1], weekPattern: "week_of_month", occurrences: [] });
+    expect(state.valid).toBe(false);
+    unmount(comp);
+  });
+
+  it("picking an occurrence and switching to Quarter for Nth-weekday sets the right metadata", () => {
+    const { target, comp } = mountWrapper();
+    const select = target.querySelector("#se-category") as HTMLSelectElement;
+    select.value = "nth_weekday";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+
+    const quarterBtn = Array.from(target.querySelectorAll(".period-toggle .day-toggle")).find((b) => b.textContent === "Quarter") as HTMLButtonElement;
+    quarterBtn.click();
+    flushSync();
+
+    const weekdaySelect = target.querySelector("#se-nth-weekday") as HTMLSelectElement;
+    weekdaySelect.value = "5"; // Friday
+    weekdaySelect.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+
+    const lastBtn = Array.from(target.querySelectorAll(".occurrence-toggles .day-toggle")).find((b) => b.textContent === "Last") as HTMLButtonElement;
+    lastBtn.click();
+    flushSync();
+
+    const state = readState(target);
+    expect(state.frequencyType).toBe("days_of_the_week");
+    expect(state.frequencyMetadata).toEqual({ days: [5], weekPattern: "week_of_quarter", occurrences: [-1] });
+    expect(state.periodDays).toBe(91);
+    expect(state.valid).toBe(true);
+    unmount(comp);
+  });
+
+  it("restores an existing Donetick-imported Nth-weekday chore (string day name) on mount", () => {
+    const { target, comp } = mountWrapper({
+      initialFrequencyType: "days_of_the_week", initialFrequency: 1,
+      initialFrequencyMetadata: { days: ["Tuesday"], weekPattern: "week_of_month", occurrences: [2] },
+    });
+    const state = readState(target);
+    expect(state.frequencyType).toBe("days_of_the_week");
+    const weekdaySelect = target.querySelector("#se-nth-weekday") as HTMLSelectElement;
+    expect(weekdaySelect.value).toBe("2");
+    const active = Array.from(target.querySelectorAll(".occurrence-toggles .day-toggle.active")).map((b) => b.textContent);
+    expect(active).toEqual(["2nd"]);
+    unmount(comp);
+  });
 });
