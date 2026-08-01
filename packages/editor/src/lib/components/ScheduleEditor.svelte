@@ -2,7 +2,7 @@
   import { _, locale } from "svelte-i18n";
   import { toWeekdayNum, toMonthNum } from "../scheduleNames";
 
-  type Category = "interval" | "daily" | "days_of_the_week" | "day_of_the_month" | "yearly" | "adaptive";
+  type Category = "interval" | "daily" | "days_of_the_week" | "day_of_the_month" | "nth_weekday" | "yearly" | "adaptive";
 
   interface Props {
     frequencyType: string;
@@ -23,7 +23,8 @@
   const UNIT_DAYS: Record<string, number> = { days: 1, weeks: 7, months: 30, years: 365 };
   const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
-  function categoryFor(ft: string): Category {
+  function categoryFor(ft: string, meta: Record<string, unknown>): Category {
+    if (ft === "days_of_the_week" && (meta?.weekPattern === "week_of_month" || meta?.weekPattern === "week_of_quarter")) return "nth_weekday";
     if (ft === "days_of_the_week") return "days_of_the_week";
     if (ft === "day_of_the_month") return "day_of_the_month";
     if (ft === "yearly") return "yearly";
@@ -39,7 +40,7 @@
     .map(toMonthNum)
     .filter((n): n is number => n !== null);
 
-  let cat = $state<Category>(categoryFor(frequencyType));
+  let cat = $state<Category>(categoryFor(frequencyType, frequencyMetadata));
   let intervalN = $state(frequencyType === "interval" ? frequency : 30);
   let intervalUnit = $state<"days" | "weeks" | "months" | "years">(
     (frequencyMetadata?.unit as "days" | "weeks" | "months" | "years" | undefined) ?? "days"
@@ -49,6 +50,13 @@
   let restrictMonths = $state(frequencyType === "day_of_the_month" && initialMonths.length > 0);
   let selectedMonths = $state<number[]>(frequencyType === "day_of_the_month" ? initialMonths : []);
   let adaptivePeriod = $state(frequencyType === "adaptive" ? periodDays : 30);
+  let nthPeriod = $state<"week_of_month" | "week_of_quarter">(
+    (frequencyMetadata?.weekPattern as "week_of_month" | "week_of_quarter" | undefined) ?? "week_of_month"
+  );
+  let nthWeekday = $state<number>(initialDays[0] ?? 1);
+  let nthOccurrences = $state<number[]>(
+    cat === "nth_weekday" ? ((frequencyMetadata?.occurrences as number[] | undefined) ?? []) : []
+  );
 
   function monthNames(loc: string): string[] {
     return Array.from({ length: 12 }, (_unused, i) =>
@@ -62,6 +70,9 @@
   }
   function toggleMonth(m: number): void {
     selectedMonths = selectedMonths.includes(m) ? selectedMonths.filter((x) => x !== m) : [...selectedMonths, m].sort((a, b) => a - b);
+  }
+  function toggleOccurrence(o: number): void {
+    nthOccurrences = nthOccurrences.includes(o) ? nthOccurrences.filter((x) => x !== o) : [...nthOccurrences, o].sort((a, b) => a - b);
   }
 
   $effect(() => {
@@ -89,6 +100,12 @@
       frequencyMetadata = restrictMonths && selectedMonths.length > 0 ? { months: selectedMonths } : {};
       periodDays = 30;
       valid = dayOfMonth >= 1 && dayOfMonth <= 31;
+    } else if (cat === "nth_weekday") {
+      frequencyType = "days_of_the_week";
+      frequency = 1;
+      frequencyMetadata = { days: [nthWeekday], weekPattern: nthPeriod, occurrences: nthOccurrences };
+      periodDays = nthPeriod === "week_of_month" ? 30 : 91;
+      valid = nthOccurrences.length > 0;
     } else if (cat === "yearly") {
       frequencyType = "yearly";
       frequency = 1;
@@ -113,6 +130,7 @@
       <option value="daily">{$_('chores.scheduleEditor.categoryDaily')}</option>
       <option value="days_of_the_week">{$_('chores.scheduleEditor.categoryWeekly')}</option>
       <option value="day_of_the_month">{$_('chores.scheduleEditor.categoryMonthly')}</option>
+      <option value="nth_weekday">{$_('chores.scheduleEditor.categoryNthWeekday')}</option>
       <option value="yearly">{$_('chores.scheduleEditor.categoryYearly')}</option>
       <option value="adaptive">{$_('chores.scheduleEditor.categoryAdaptive')}</option>
     </select>
@@ -163,6 +181,33 @@
         {/each}
       </div>
     {/if}
+  {:else if cat === "nth_weekday"}
+    <div class="field period-toggle">
+      <button type="button" class="day-toggle" class:active={nthPeriod === "week_of_month"} onclick={() => (nthPeriod = "week_of_month")}>{$_('chores.scheduleEditor.periodMonth')}</button>
+      <button type="button" class="day-toggle" class:active={nthPeriod === "week_of_quarter"} onclick={() => (nthPeriod = "week_of_quarter")}>{$_('chores.scheduleEditor.periodQuarter')}</button>
+    </div>
+    <div class="field">
+      <label for="se-nth-weekday">{$_('chores.scheduleEditor.weekday')}</label>
+      <select id="se-nth-weekday" class="native-input" bind:value={nthWeekday}>
+        {#each DAY_KEYS as key, i (key)}
+          <option value={i + 1}>{$_(`chores.schedule.dayAbbrev.${key}`)}</option>
+        {/each}
+      </select>
+    </div>
+    <div class="field">
+      <span class="field-label">{$_('chores.scheduleEditor.occurrence')}</span>
+      <div class="day-toggles occurrence-toggles">
+        {#each [1, 2, 3, 4, -1] as o (o)}
+          <button
+            type="button"
+            class="day-toggle"
+            class:active={nthOccurrences.includes(o)}
+            onclick={() => toggleOccurrence(o)}
+          >{o === -1 ? $_('chores.schedule.occurrenceLast') : $_(`chores.schedule.occurrence${["1st", "2nd", "3rd", "4th"][o - 1]}`)}</button>
+        {/each}
+      </div>
+      {#if nthOccurrences.length === 0}<div class="hint-error">{$_('chores.scheduleEditor.selectAtLeastOneOccurrence')}</div>{/if}
+    </div>
   {:else if cat === "adaptive"}
     <div class="field">
       <label for="se-adaptive">{$_('chores.scheduleEditor.periodDays')}</label>
@@ -176,6 +221,8 @@
   .schedule-editor { display: flex; flex-direction: column; gap: var(--space-3); }
   .field { display: flex; flex-direction: column; gap: 4px; }
   .field label { font-size: 11px; color: var(--text-muted); }
+  .field-label { font-size: 11px; color: var(--text-muted); }
+  .period-toggle { flex-direction: row; gap: 8px; }
   .field-row { display: flex; align-items: center; gap: 8px; }
   .checkbox-label { font-size: 12px; color: var(--text-muted); cursor: pointer; }
   .native-input {
