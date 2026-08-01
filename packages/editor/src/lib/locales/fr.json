@@ -1029,7 +1029,9 @@
         "work": "Catégories de travaux",
         "contactTypes": "Types de contact",
         "consumables": "Consommables",
-        "insurance": "Catégories d'assurance"
+        "insurance": "Catégories d'assurance",
+        "owners": "Propriétaires",
+        "stores": "Magasins"
       },
       "deleteConfirm": "Supprimer ?",
       "name": "Nom",

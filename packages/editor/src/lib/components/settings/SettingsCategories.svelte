@@ -1,7 +1,7 @@
 <!-- packages/editor/src/lib/components/settings/SettingsCategories.svelte -->
 <script lang="ts">
   import { _ } from "svelte-i18n";
-  import type { createSettingsStore, CostCategory, ConsumableCategory, InventoryCategory, WorkCategory, ContactType, InsuranceCategory } from "../../settingsStore.svelte";
+  import type { createSettingsStore, CostCategory, ConsumableCategory, InventoryCategory, WorkCategory, ContactType, InsuranceCategory, Owner, Store } from "../../settingsStore.svelte";
   import Button from "../ui/Button.svelte";
   import Input from "../ui/Input.svelte";
   import EmojiPicker from "../ui/EmojiPicker.svelte";
@@ -17,7 +17,7 @@
   }
   let { store }: Props = $props();
 
-  type CategoryTab = "cost" | "inventory" | "work" | "contactTypes" | "consumables" | "insurance";
+  type CategoryTab = "cost" | "inventory" | "work" | "contactTypes" | "consumables" | "insurance" | "owners" | "stores";
   let activeTab = $state<CategoryTab>("cost");
 
   // --- Cost categories ---
@@ -197,6 +197,84 @@
     contactTypeError = null;
   }
 
+  // --- Owners ---
+  let editingOwnerId = $state<string | null>(null);
+  let ownerDraft = $state<Owner>({ id: "", name: "" });
+  let showNewOwnerForm = $state(false);
+  let newOwnerDraft = $state({ name: "" });
+  let confirmDeleteOwnerId = $state<string | null>(null);
+  let ownerError = $state<string | null>(null);
+
+  function startEditOwner(o: Owner): void {
+    editingOwnerId = o.id;
+    ownerDraft = { ...o };
+    ownerError = null;
+  }
+
+  function cancelEditOwner(): void { editingOwnerId = null; ownerError = null; }
+
+  async function saveEditOwner(): Promise<void> {
+    if (!ownerDraft.name.trim()) { ownerError = $_('settings.general.nameRequired'); return; }
+    const updated = store.owners.map(o =>
+      o.id === editingOwnerId ? { ...ownerDraft, name: ownerDraft.name.trim() } : o
+    );
+    await store.updateOwners(updated);
+    editingOwnerId = null; ownerError = null;
+  }
+
+  async function deleteOwner(id: string): Promise<void> {
+    await store.updateOwners(store.owners.filter(o => o.id !== id));
+    confirmDeleteOwnerId = null;
+  }
+
+  async function addOwner(): Promise<void> {
+    if (!newOwnerDraft.name.trim()) { ownerError = $_('settings.general.nameRequired'); return; }
+    const newOwner: Owner = { id: crypto.randomUUID(), name: newOwnerDraft.name.trim() };
+    await store.updateOwners([...store.owners, newOwner]);
+    newOwnerDraft = { name: "" };
+    showNewOwnerForm = false;
+    ownerError = null;
+  }
+
+  // --- Stores ---
+  let editingStoreId = $state<string | null>(null);
+  let storeDraft = $state<Store>({ id: "", name: "" });
+  let showNewStoreForm = $state(false);
+  let newStoreDraft = $state({ name: "" });
+  let confirmDeleteStoreId = $state<string | null>(null);
+  let storeError = $state<string | null>(null);
+
+  function startEditStore(s: Store): void {
+    editingStoreId = s.id;
+    storeDraft = { ...s };
+    storeError = null;
+  }
+
+  function cancelEditStore(): void { editingStoreId = null; storeError = null; }
+
+  async function saveEditStore(): Promise<void> {
+    if (!storeDraft.name.trim()) { storeError = $_('settings.general.nameRequired'); return; }
+    const updated = store.stores.map(s =>
+      s.id === editingStoreId ? { ...storeDraft, name: storeDraft.name.trim() } : s
+    );
+    await store.updateStores(updated);
+    editingStoreId = null; storeError = null;
+  }
+
+  async function deleteStore(id: string): Promise<void> {
+    await store.updateStores(store.stores.filter(s => s.id !== id));
+    confirmDeleteStoreId = null;
+  }
+
+  async function addStore(): Promise<void> {
+    if (!newStoreDraft.name.trim()) { storeError = $_('settings.general.nameRequired'); return; }
+    const newStore: Store = { id: crypto.randomUUID(), name: newStoreDraft.name.trim() };
+    await store.updateStores([...store.stores, newStore]);
+    newStoreDraft = { name: "" };
+    showNewStoreForm = false;
+    storeError = null;
+  }
+
   // --- Consumable units ---
   let newUnit = $state("");
   let unitError = $state<string | null>(null);
@@ -308,6 +386,8 @@
     { id: "contactTypes", label: $_('settings.categories.tabs.contactTypes') },
     { id: "consumables", label: $_('settings.categories.tabs.consumables') },
     { id: "insurance", label: $_('settings.categories.tabs.insurance') },
+    { id: "owners", label: $_('settings.categories.tabs.owners') },
+    { id: "stores", label: $_('settings.categories.tabs.stores') },
   ]}
   active={activeTab}
   onchange={(id) => { activeTab = id as CategoryTab; }}
@@ -680,6 +760,104 @@
       />
     </div>
     {#if insuranceError}<div class="error">{insuranceError}</div>{/if}
+  </Card>
+{/if}
+
+{#if activeTab === "owners"}
+  <Card>
+    <div class="section-header">
+      <h2>{$_('settings.categories.tabs.owners')}</h2>
+      <Button onclick={() => { showNewOwnerForm = true; ownerError = null; }}>＋ {$_('common.add')}</Button>
+    </div>
+    <div class="table-wrapper">
+      {#snippet ownerNameCell(o: Owner)}
+        {#if editingOwnerId === o.id}
+          <Input bind:value={ownerDraft.name} placeholder={$_('settings.categories.name')} />
+        {:else}
+          {o.name}
+        {/if}
+      {/snippet}
+      {#snippet ownerActionsCell(o: Owner)}
+        {#if editingOwnerId === o.id}
+          <button class="icon-action ok" onclick={saveEditOwner} title={$_('common.save')}>✓</button>
+          <button class="icon-action" onclick={cancelEditOwner} title={$_('common.cancel')}>✕</button>
+        {:else if confirmDeleteOwnerId === o.id}
+          <span class="confirm-text">{$_('settings.categories.deleteConfirm')}</span>
+          <button class="icon-action danger" onclick={() => deleteOwner(o.id)}>✓</button>
+          <button class="icon-action" onclick={() => { confirmDeleteOwnerId = null; }}>✕</button>
+        {:else}
+          <button class="icon-action" onclick={() => startEditOwner(o)} title={$_('common.edit')}>✏</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteOwnerId = o.id; }} title={$_('common.delete')}>🗑</button>
+        {/if}
+      {/snippet}
+      {#snippet ownerNewRow()}
+        <td class="name-cell-input wide"><Input bind:value={newOwnerDraft.name} placeholder={$_('settings.categories.nameRequiredPlaceholder')} /></td>
+        <td class="actions">
+          <button class="icon-action ok" onclick={addOwner} title={$_('common.add')}>✓</button>
+          <button class="icon-action" onclick={() => { showNewOwnerForm = false; ownerError = null; }} title={$_('common.cancel')}>✕</button>
+        </td>
+      {/snippet}
+      <SortableTable
+        columns={[
+          { key: "name", label: $_('settings.categories.name'), sortValue: (o) => o.name, cellClass: (o) => editingOwnerId === o.id ? "name-cell-input wide" : "", cell: ownerNameCell },
+          { key: "actions", label: "", sortable: false, cellClass: "actions", cell: ownerActionsCell },
+        ] as Column<Owner>[]}
+        rows={store.owners}
+        rowKey={(o) => o.id}
+        rowClass={(o) => editingOwnerId === o.id ? "editing-row" : ""}
+        extraRow={showNewOwnerForm ? ownerNewRow : undefined}
+      />
+    </div>
+    {#if ownerError}<div class="error">{ownerError}</div>{/if}
+  </Card>
+{/if}
+
+{#if activeTab === "stores"}
+  <Card>
+    <div class="section-header">
+      <h2>{$_('settings.categories.tabs.stores')}</h2>
+      <Button onclick={() => { showNewStoreForm = true; storeError = null; }}>＋ {$_('common.add')}</Button>
+    </div>
+    <div class="table-wrapper">
+      {#snippet storeNameCell(s: Store)}
+        {#if editingStoreId === s.id}
+          <Input bind:value={storeDraft.name} placeholder={$_('settings.categories.name')} />
+        {:else}
+          {s.name}
+        {/if}
+      {/snippet}
+      {#snippet storeActionsCell(s: Store)}
+        {#if editingStoreId === s.id}
+          <button class="icon-action ok" onclick={saveEditStore} title={$_('common.save')}>✓</button>
+          <button class="icon-action" onclick={cancelEditStore} title={$_('common.cancel')}>✕</button>
+        {:else if confirmDeleteStoreId === s.id}
+          <span class="confirm-text">{$_('settings.categories.deleteConfirm')}</span>
+          <button class="icon-action danger" onclick={() => deleteStore(s.id)}>✓</button>
+          <button class="icon-action" onclick={() => { confirmDeleteStoreId = null; }}>✕</button>
+        {:else}
+          <button class="icon-action" onclick={() => startEditStore(s)} title={$_('common.edit')}>✏</button>
+          <button class="icon-action danger" onclick={() => { confirmDeleteStoreId = s.id; }} title={$_('common.delete')}>🗑</button>
+        {/if}
+      {/snippet}
+      {#snippet storeNewRow()}
+        <td class="name-cell-input wide"><Input bind:value={newStoreDraft.name} placeholder={$_('settings.categories.nameRequiredPlaceholder')} /></td>
+        <td class="actions">
+          <button class="icon-action ok" onclick={addStore} title={$_('common.add')}>✓</button>
+          <button class="icon-action" onclick={() => { showNewStoreForm = false; storeError = null; }} title={$_('common.cancel')}>✕</button>
+        </td>
+      {/snippet}
+      <SortableTable
+        columns={[
+          { key: "name", label: $_('settings.categories.name'), sortValue: (s) => s.name, cellClass: (s) => editingStoreId === s.id ? "name-cell-input wide" : "", cell: storeNameCell },
+          { key: "actions", label: "", sortable: false, cellClass: "actions", cell: storeActionsCell },
+        ] as Column<Store>[]}
+        rows={store.stores}
+        rowKey={(s) => s.id}
+        rowClass={(s) => editingStoreId === s.id ? "editing-row" : ""}
+        extraRow={showNewStoreForm ? storeNewRow : undefined}
+      />
+    </div>
+    {#if storeError}<div class="error">{storeError}</div>{/if}
   </Card>
 {/if}
 

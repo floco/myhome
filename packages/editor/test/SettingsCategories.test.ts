@@ -11,6 +11,8 @@ function makeStore() {
     consumableUnits: ["tablets"],
     consumableCategories: [{ id: "cc1", name: "Cleaning", emoji: "🧼" }],
     insuranceCategories: [{ id: "icat-home", name: "Home", emoji: "🏠" }],
+    owners: [{ id: "o1", name: "Alice" }],
+    stores: [{ id: "s1", name: "Ikea" }],
     notificationSettings: {
       enabled: true, choresDueSoonThreshold: 0.25, warrantyDaysThreshold: 30,
       haPushEnabled: false, haNotifyService: null, haPushTime: "08:00",
@@ -24,6 +26,8 @@ function makeStore() {
     updateConsumableUnits: vi.fn(),
     updateConsumableCategories: vi.fn(),
     updateInsuranceCategories: vi.fn(),
+    updateOwners: vi.fn(),
+    updateStores: vi.fn(),
     updateNotificationSettings: vi.fn(),
     placeCostCategory: vi.fn(),
     reload: vi.fn(),
@@ -156,6 +160,26 @@ describe("SettingsCategories", () => {
     flushSync();
     expect(target.textContent).toContain("tablets");
     expect(target.textContent).toContain("Cleaning");
+    unmount(app);
+  });
+
+  it("switches to the Owners tab and shows existing owners", () => {
+    const app = mount(SettingsCategories, { target, props: { store: makeStore() } });
+    flushSync();
+    const tab = [...target.querySelectorAll(".tab")].find((b) => b.textContent === "Owners")!;
+    (tab as HTMLButtonElement).click();
+    flushSync();
+    expect(target.textContent).toContain("Alice");
+    unmount(app);
+  });
+
+  it("switches to the Stores tab and shows existing stores", () => {
+    const app = mount(SettingsCategories, { target, props: { store: makeStore() } });
+    flushSync();
+    const tab = [...target.querySelectorAll(".tab")].find((b) => b.textContent === "Stores")!;
+    (tab as HTMLButtonElement).click();
+    flushSync();
+    expect(target.textContent).toContain("Ikea");
     unmount(app);
   });
 });

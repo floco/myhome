@@ -1029,7 +1029,9 @@
         "work": "Work categories",
         "contactTypes": "Contact Types",
         "consumables": "Consumables",
-        "insurance": "Insurance categories"
+        "insurance": "Insurance categories",
+        "owners": "Owners",
+        "stores": "Stores"
       },
       "deleteConfirm": "Delete?",
       "name": "Name",
