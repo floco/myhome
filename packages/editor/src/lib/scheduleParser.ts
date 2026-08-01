@@ -12,6 +12,14 @@ const WEEKDAY_NUM: Record<string, number> = {
   lundi: 1, mardi: 2, mercredi: 3, jeudi: 4, vendredi: 5, samedi: 6, dimanche: 7,
 };
 
+const ORDINAL_NUM: Record<string, number> = {
+  "1st": 1, first: 1, "1er": 1, premier: 1, première: 1, premiere: 1,
+  "2nd": 2, second: 2, seconde: 2, "2e": 2, deuxième: 2, deuxieme: 2,
+  "3rd": 3, third: 3, "3e": 3, troisième: 3, troisieme: 3,
+  "4th": 4, fourth: 4, "4e": 4, quatrième: 4, quatrieme: 4,
+  last: -1, dernier: -1, dernière: -1, derniere: -1,
+};
+
 const UNIT_WORDS: Record<string, "days" | "weeks" | "months" | "years"> = {
   day: "days", days: "days", jour: "days", jours: "days",
   week: "weeks", weeks: "weeks", semaine: "weeks", semaines: "weeks",
@@ -68,6 +76,25 @@ export function parseScheduleText(text: string, loc: "en" | "fr"): ParsedSchedul
       .sort((a, b) => a - b);
     if (days.length > 0) {
       return { name: stripMatch(trimmed, weekdayMatch), schedule: { frequencyType: "days_of_the_week", frequency: 1, frequencyMetadata: { days } } };
+    }
+  }
+
+  const ordinalWords = Object.keys(ORDINAL_NUM).join("|");
+  const periodWords = loc === "fr" ? "mois|trimestre" : "month|quarter";
+  const nthWeekdayRe = loc === "fr"
+    ? new RegExp(`\\ble\\s+(${ordinalWords})\\s+(${dayNames})\\s+(?:du|de\\s+chaque)\\s+(${periodWords})\\b`, "i")
+    : new RegExp(`\\b(?:every|the)\\s+(${ordinalWords})\\s+(${dayNames})\\s+of\\s+(?:the|every)\\s+(${periodWords})\\b`, "i");
+  const nthWeekdayMatch = trimmed.match(nthWeekdayRe);
+  if (nthWeekdayMatch) {
+    const occurrence = ORDINAL_NUM[nthWeekdayMatch[1].toLowerCase()];
+    const day = normalizeDayToken(nthWeekdayMatch[2]);
+    const periodWord = nthWeekdayMatch[3].toLowerCase();
+    const weekPattern = periodWord === "month" || periodWord === "mois" ? "week_of_month" : "week_of_quarter";
+    if (occurrence !== undefined && day !== null) {
+      return {
+        name: stripMatch(trimmed, nthWeekdayMatch),
+        schedule: { frequencyType: "days_of_the_week", frequency: 1, frequencyMetadata: { days: [day], weekPattern, occurrences: [occurrence] } },
+      };
     }
   }
 
