@@ -360,7 +360,15 @@
       "quarterly": "Trimestriel",
       "everyNDays": "Tous les {n} jours",
       "adaptive": "Adaptatif",
-      "adaptiveDays": "Adaptatif (~{n} jours)"
+      "adaptiveDays": "Adaptatif (~{n} jours)",
+      "occurrence1st": "1er",
+      "occurrence2nd": "2e",
+      "occurrence3rd": "3e",
+      "occurrence4th": "4e",
+      "occurrenceLast": "Dernier",
+      "nthWeekdayOfMonth": "{occurrence} {weekday} du mois",
+      "nthWeekdayOfQuarter": "{occurrence} {weekday} du trimestre",
+      "nthWeekday": "N-ième jour"
     },
     "badgePopup": {
       "overdueSince": "En retard depuis",
@@ -461,7 +469,14 @@
       "restrictMonths": "Restreindre à des mois précis",
       "periodDays": "Période (jours)",
       "periodDaysHint": "S'ajuste automatiquement après chaque réalisation",
-      "selectAtLeastOneDay": "Sélectionnez au moins un jour"
+      "selectAtLeastOneDay": "Sélectionnez au moins un jour",
+      "categoryNthWeekday": "Nième jour de la semaine (mois/trimestre)",
+      "period": "Période",
+      "periodMonth": "Mois",
+      "periodQuarter": "Trimestre",
+      "weekday": "Jour de la semaine",
+      "occurrence": "Occurrence",
+      "selectAtLeastOneOccurrence": "Sélectionnez au moins une occurrence"
     },
     "quickAdd": {
       "label": "Ajout rapide",

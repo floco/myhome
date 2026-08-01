@@ -112,8 +112,10 @@
   function scheduleCategory(chore: Chore): string {
     const { frequencyType: ft, frequency: n, frequencyMetadata: meta } = chore;
     const unit = (meta as Record<string, string>)?.unit ?? "days";
+    const weekPattern = (meta as Record<string, string>)?.weekPattern;
     if (ft === "daily") return "daily";
     if (ft === "adaptive") return "adaptive";
+    if (ft === "days_of_the_week" && (weekPattern === "week_of_month" || weekPattern === "week_of_quarter")) return "nth_weekday";
     if (ft === "days_of_the_week" || ft === "weekly") return "weekly";
     if (ft === "day_of_the_month" || ft === "monthly") return "monthly";
     if (ft === "yearly") return "yearly";
@@ -215,6 +217,7 @@
         <option value="daily">{$_('chores.schedule.daily')}</option>
         <option value="weekly">{$_('chores.schedule.weekly')}</option>
         <option value="monthly">{$_('chores.schedule.monthly')}</option>
+        <option value="nth_weekday">{$_('chores.schedule.nthWeekday')}</option>
         <option value="yearly">{$_('chores.schedule.yearly')}</option>
         <option value="adaptive">{$_('chores.schedule.adaptive')}</option>
       </select>

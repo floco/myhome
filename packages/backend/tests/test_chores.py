@@ -860,6 +860,73 @@ def test_day_of_month_respects_allowed_months_as_donetick_month_names(client, ho
     assert dt.day == 15
 
 
+def test_days_of_the_week_nth_occurrence_with_donetick_shaped_import(client, home_id, tmp_path):
+    """A chore shaped exactly like Donetick's own week_of_month JSON (string
+    day name, weekPattern, occurrences) must schedule to the correct Nth
+    occurrence end-to-end through the /complete route -- this is the direct
+    regression test for the gap that motivated this feature (Donetick's
+    Nth-weekday pattern wasn't modeled at all before this)."""
+    doc = ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="Board meeting prep", emoji="📋", periodDays=30,
+                frequencyType="days_of_the_week", frequency=1,
+                frequencyMetadata={"days": ["Tuesday"], "weekPattern": "week_of_month", "occurrences": [2]},
+                scheduleFromDue=True,
+                nextDueDate="2026-07-01T00:00:00Z",
+            )
+        ],
+        assignments=[],
+    )
+    save_chores(home_id, doc)
+    aid = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    resp = client.post(f"/api/homes/{home_id}/assignments/{aid}/complete")
+    assert resp.status_code == 200
+    next_due = resp.json()["nextDueDate"]
+    from datetime import datetime, timezone
+    dt = datetime.fromisoformat(next_due.replace("Z", "+00:00"))
+    assert (dt.year, dt.month, dt.day) == (2026, 7, 14), f"expected 2nd Tuesday of July 2026, got {dt}"
+
+
+def test_import_period_days_estimate_for_days_of_the_week_variants(client, home_id, monkeypatch):
+    """_period_days must distinguish plain weekly-on-days (~7d) from the two
+    Nth-weekday patterns (~30d/91d) instead of falling through to the generic
+    30.0 default for all of them."""
+    donetick_response = {
+        "res": [
+            {"id": 1, "name": "Plain weekly", "frequencyType": "days_of_the_week", "frequency": 1,
+             "frequencyMetadata": {"days": ["Monday"]}, "nextDueDate": "2027-01-01T00:00:00Z"},
+            {"id": 2, "name": "Nth of month", "frequencyType": "days_of_the_week", "frequency": 1,
+             "frequencyMetadata": {"days": ["Tuesday"], "weekPattern": "week_of_month", "occurrences": [2]},
+             "nextDueDate": "2027-01-01T00:00:00Z"},
+            {"id": 3, "name": "Nth of quarter", "frequencyType": "days_of_the_week", "frequency": 1,
+             "frequencyMetadata": {"days": ["Friday"], "weekPattern": "week_of_quarter", "occurrences": [-1]},
+             "nextDueDate": "2027-01-01T00:00:00Z"},
+        ]
+    }
+    import respx
+    import httpx
+    _mock_public_dns(monkeypatch)
+    with respx.mock:
+        respx.get("https://donetick.example.com/api/v1/chores/").mock(
+            return_value=httpx.Response(200, json=donetick_response)
+        )
+        for chore_id in (1, 2, 3):
+            respx.get(f"https://donetick.example.com/api/v1/chores/{chore_id}/history").mock(
+                return_value=httpx.Response(200, json={"res": []})
+            )
+        resp = client.post(
+            f"/api/homes/{home_id}/chores/import",
+            json={"token": "test-token", "url": "https://donetick.example.com"},
+        )
+    assert resp.status_code == 200
+    chores = client.get(f"/api/homes/{home_id}/chores").json()["chores"]
+    by_id = {c["donetickId"]: c for c in chores}
+    assert by_id[1]["periodDays"] == 7.0
+    assert by_id[2]["periodDays"] == 30.0
+    assert by_id[3]["periodDays"] == 91.0
+
+
 def test_day_of_month_no_month_filter_advances_one_month(client, home_id, tmp_path):
     """day_of_the_month with no months filter advances by exactly one calendar month."""
     from datetime import datetime, timezone

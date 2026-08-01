@@ -73,6 +73,88 @@ def test_adaptive_period_days_averages_last_five_gaps():
     assert adaptive_period_days(chore, completions) == 40.0
 
 
+def test_nth_weekday_occurrence_counts_within_month():
+    from myhome.chore_scheduling import nth_weekday_occurrence
+    period_start = datetime(2026, 7, 1)
+    date = datetime(2026, 7, 14)  # 2nd Tuesday of July 2026
+    assert nth_weekday_occurrence(date, period_start) == 2
+
+
+def test_nth_weekday_occurrence_first_of_period_is_occurrence_one():
+    from myhome.chore_scheduling import nth_weekday_occurrence
+    period_start = datetime(2026, 7, 1)  # a Wednesday
+    assert nth_weekday_occurrence(period_start, period_start) == 1
+
+
+def test_is_last_weekday_in_month_true_at_month_boundary():
+    from myhome.chore_scheduling import is_last_weekday_in_month
+    assert is_last_weekday_in_month(datetime(2026, 12, 29)) is True  # +7d crosses into January
+
+
+def test_is_last_weekday_in_month_false_mid_month():
+    from myhome.chore_scheduling import is_last_weekday_in_month
+    assert is_last_weekday_in_month(datetime(2026, 12, 22)) is False  # +7d stays in December
+
+
+def test_quarter_start_for_each_quarter():
+    from myhome.chore_scheduling import quarter_start
+    assert quarter_start(datetime(2026, 2, 15)) == datetime(2026, 1, 1)
+    assert quarter_start(datetime(2026, 5, 1)) == datetime(2026, 4, 1)
+    assert quarter_start(datetime(2026, 8, 31)) == datetime(2026, 7, 1)
+    assert quarter_start(datetime(2026, 12, 25)) == datetime(2026, 10, 1)
+
+
+def test_is_last_weekday_in_quarter_true_at_year_boundary():
+    from myhome.chore_scheduling import is_last_weekday_in_quarter
+    assert is_last_weekday_in_quarter(datetime(2026, 12, 25)) is True  # +7d crosses into Q1 2027
+
+
+def test_is_last_weekday_in_quarter_false_mid_quarter():
+    from myhome.chore_scheduling import is_last_weekday_in_quarter
+    assert is_last_weekday_in_quarter(datetime(2026, 8, 7)) is False  # +7d stays in Q3
+
+
+def test_days_of_the_week_nth_occurrence_of_month():
+    chore = _chore(
+        frequencyType="days_of_the_week", frequency=1,
+        frequencyMetadata={"days": [2], "weekPattern": "week_of_month", "occurrences": [2]},  # Tuesday, 2nd occurrence
+    )
+    from_dt = datetime(2026, 7, 1, tzinfo=timezone.utc)
+    result = next_due_from_schedule(chore, from_dt)
+    assert result == datetime(2026, 7, 14, tzinfo=timezone.utc)
+
+
+def test_days_of_the_week_last_occurrence_of_quarter():
+    chore = _chore(
+        frequencyType="days_of_the_week", frequency=1,
+        frequencyMetadata={"days": [5], "weekPattern": "week_of_quarter", "occurrences": [-1]},  # Friday, last occurrence
+    )
+    from_dt = datetime(2026, 7, 1, tzinfo=timezone.utc)
+    result = next_due_from_schedule(chore, from_dt)
+    assert result == datetime(2026, 9, 25, tzinfo=timezone.utc)  # last Friday of Q3 2026
+
+
+def test_days_of_the_week_plain_weekly_unaffected_by_new_branch():
+    """Regression guard: a plain days_of_the_week chore (no weekPattern) must
+    keep using the existing fast-path logic, not the new occurrence search."""
+    chore = _chore(frequencyType="days_of_the_week", frequency=1, frequencyMetadata={"days": [3]})  # Wednesday
+    from_dt = datetime(2026, 7, 4, tzinfo=timezone.utc)  # a Saturday
+    result = next_due_from_schedule(chore, from_dt)
+    assert result == datetime(2026, 7, 8, tzinfo=timezone.utc)  # next Wednesday
+
+
+def test_days_of_the_week_nth_occurrence_with_donetick_day_name_string():
+    """Donetick stores `days` as full English day-name strings (e.g. "Tuesday"),
+    not ints, for this pattern just like plain days_of_the_week."""
+    chore = _chore(
+        frequencyType="days_of_the_week", frequency=1,
+        frequencyMetadata={"days": ["Tuesday"], "weekPattern": "week_of_month", "occurrences": [2]},
+    )
+    from_dt = datetime(2026, 7, 1, tzinfo=timezone.utc)
+    result = next_due_from_schedule(chore, from_dt)
+    assert result == datetime(2026, 7, 14, tzinfo=timezone.utc)
+
+
 def test_adaptive_next_due_uses_averaged_gap():
     chore = _chore(frequencyType="adaptive", periodDays=21.0, frequencyMetadata={})
     completions = [

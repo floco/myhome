@@ -61,6 +61,34 @@ def to_month_num(m: object) -> int:
     return int(m)
 
 
+def nth_weekday_occurrence(date: datetime, period_start: datetime) -> int:
+    """1-based count of how many times `date`'s weekday has occurred from
+    `period_start` (inclusive) through `date` (inclusive)."""
+    count = 0
+    d = period_start
+    while d <= date:
+        if d.weekday() == date.weekday():
+            count += 1
+        d += timedelta(days=1)
+    return count
+
+
+def is_last_weekday_in_month(date: datetime) -> bool:
+    """True if `date + 7 days` falls in the next calendar month."""
+    return (date + timedelta(days=7)).month != date.month
+
+
+def quarter_start(date: datetime) -> datetime:
+    """First day of the quarter (Jan/Apr/Jul/Oct 1) containing `date`."""
+    q_month = ((date.month - 1) // 3) * 3 + 1
+    return date.replace(month=q_month, day=1)
+
+
+def is_last_weekday_in_quarter(date: datetime) -> bool:
+    """True if `date + 7 days` falls in the next calendar quarter."""
+    return quarter_start(date + timedelta(days=7)) != quarter_start(date)
+
+
 def adaptive_period_days(chore: Chore, completions_for_chore: list[CompletionRecord]) -> float:
     """Average of the gaps (in days) between the chore's last 5 completions.
 
@@ -93,6 +121,22 @@ def next_due_from_schedule(chore: Chore, from_dt: datetime, completions: list[Co
         day = min(freq, calendar.monthrange(next_m.year, next_m.month)[1])
         return next_m.replace(day=day)
     if ft == "days_of_the_week":
+        week_pattern = meta.get("weekPattern")
+        if week_pattern in ("week_of_month", "week_of_quarter"):
+            allowed_weekdays = {(to_weekday_num(d) - 1) % 7 for d in (meta.get("days") or [])}
+            occurrences = {int(o) for o in (meta.get("occurrences") or [])}
+            wants_last = -1 in occurrences
+            is_monthly = week_pattern == "week_of_month"
+            candidate = from_dt + timedelta(days=1)
+            for _ in range(730):  # Donetick's own 2-year safety cap
+                if candidate.weekday() in allowed_weekdays:
+                    period_start = candidate.replace(day=1) if is_monthly else quarter_start(candidate)
+                    occurrence = nth_weekday_occurrence(candidate, period_start)
+                    is_last = is_last_weekday_in_month(candidate) if is_monthly else is_last_weekday_in_quarter(candidate)
+                    if occurrence in occurrences or (wants_last and is_last):
+                        return candidate
+                candidate += timedelta(days=1)
+            return candidate
         days = sorted((to_weekday_num(d) - 1) % 7 for d in (meta.get("days") or []))
         if not days:
             return from_dt + timedelta(weeks=1)

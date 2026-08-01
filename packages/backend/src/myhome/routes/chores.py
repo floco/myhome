@@ -105,6 +105,13 @@ def _period_days(chore: dict) -> float:
         return 365.0
     elif freq_type == "day_of_the_month":
         return 30.0
+    elif freq_type == "days_of_the_week":
+        week_pattern = meta.get("weekPattern")
+        if week_pattern == "week_of_month":
+            return 30.0
+        if week_pattern == "week_of_quarter":
+            return 91.0
+        return 7.0
     return 30.0
 
 
