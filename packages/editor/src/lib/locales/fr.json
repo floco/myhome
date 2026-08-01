@@ -168,6 +168,7 @@
     "edit": "Modifier",
     "close": "Fermer",
     "add": "Ajouter",
+    "createOption": "+ Créer « {name} »",
     "loading": "Chargement…",
     "confirm": "Confirmer",
     "openPdf": "Ouvrir le PDF ↗",
