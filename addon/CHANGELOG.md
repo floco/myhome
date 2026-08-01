@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.0 - 2026-08-01
+
+- Added a new "Localization" settings category (Settings → Localization) with Date Format, Time Format, and First Day of Week preferences, alongside the existing Language selector — these now control how dates and times render throughout the app, including the date picker's calendar grid
+- Added a new "Nth weekday of month/quarter" chore recurrence (e.g. "2nd Tuesday of every month", "last Friday of every quarter"), available in the schedule picker, Donetick import, and the quick-add box
+- Fixed a Donetick-imported chore with a "day of the month" recurrence restricted to specific months (e.g. a quarterly service) scheduling almost a year late, because Donetick sends month names as text (e.g. "March") rather than numbers
+
 ## 0.11.1 - 2026-07-30
 
 - Fixed a Donetick-imported chore with a "yearly"/"monthly"/"weekly" recurrence showing the wrong interval (e.g. "Every 3 years" instead of "Yearly") when Donetick attached a stray, unused frequency value to the import
