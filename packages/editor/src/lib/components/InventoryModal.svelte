@@ -11,25 +11,42 @@
   import Tabs from "./ui/Tabs.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
+  import CreatableSelect from "./ui/CreatableSelect.svelte";
 
   type InvStore = ReturnType<typeof createInventoryStore>;
+
+  interface Option {
+    id: string;
+    name: string;
+  }
 
   interface Props {
     item: InventoryItem | null;
     store: InvStore;
-    inventoryCategories: string[];
+    inventoryCategories: Option[];
+    owners: Option[];
+    stores: Option[];
+    oncreatecategory: (name: string) => Promise<Option>;
+    oncreateowner: (name: string) => Promise<Option>;
+    oncreatestore: (name: string) => Promise<Option>;
     onclose: () => void;
     onplaceonmap?: (itemId: string) => void;
   }
 
-  let { item, store, inventoryCategories, onclose, onplaceonmap }: Props = $props();
+  let {
+    item, store, inventoryCategories, owners, stores,
+    oncreatecategory, oncreateowner, oncreatestore,
+    onclose, onplaceonmap,
+  }: Props = $props();
 
   const isCreate = item === null;
 
   let activeTab = $state<"info" | "media">("info");
   let name = $state(item?.name ?? "");
   let emoji = $state(item?.emoji ?? "📦");
-  let category = $state(item?.category ?? "");
+  let categoryId = $state<string | null>(item?.categoryId ?? null);
+  let ownerId = $state<string | null>(item?.ownerId ?? null);
+  let storeId = $state<string | null>(item?.storeId ?? null);
   let brand = $state(item?.brand ?? "");
   let model = $state(item?.model ?? "");
   let serialNumber = $state(item?.serialNumber ?? "");
@@ -69,7 +86,9 @@
     const patch = {
       name: name.trim(),
       emoji: emoji || "📦",
-      category: category.trim(),
+      categoryId,
+      ownerId,
+      storeId,
       brand: brand.trim() || null,
       model: model.trim() || null,
       serialNumber: serialNumber.trim() || null,
@@ -150,15 +169,19 @@
     </div>
     <div class="row">
       <label>{$_('costs.page.category')}</label>
-      <input
-        class="native-input flex-grow"
-        bind:value={category}
-        list="inv-cat-list"
-        placeholder={$_('inventory.modal.categoryPlaceholder')}
-      />
-      <datalist id="inv-cat-list">
-        {#each inventoryCategories as s}<option value={s} />{/each}
-      </datalist>
+      <div class="flex-grow">
+        <CreatableSelect bind:value={categoryId} options={inventoryCategories} oncreate={oncreatecategory} placeholder={$_('inventory.modal.categoryPlaceholder')} />
+      </div>
+    </div>
+    <div class="row">
+      <label>{$_('inventory.modal.owner')}</label>
+      <div class="flex-grow">
+        <CreatableSelect bind:value={ownerId} options={owners} oncreate={oncreateowner} placeholder={$_('inventory.modal.ownerPlaceholder')} />
+      </div>
+      <label style="margin-left:12px">{$_('inventory.modal.store')}</label>
+      <div class="flex-grow">
+        <CreatableSelect bind:value={storeId} options={stores} oncreate={oncreatestore} placeholder={$_('inventory.modal.storePlaceholder')} />
+      </div>
     </div>
     <div class="row">
       <label>{$_('inventory.modal.brand')}</label>
