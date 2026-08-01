@@ -249,4 +249,19 @@ describe("scheduleLabel", () => {
     const chore = makeChore({ frequencyType: "days_of_the_week", frequency: 1, frequencyMetadata: { days: ["Monday", "Wednesday"] } });
     expect(scheduleLabel(chore)).toBe("Weekly on Mon, Wed");
   });
+
+  it("renders a 2nd-Tuesday-of-the-month schedule", () => {
+    const chore = makeChore({ frequencyType: "days_of_the_week", frequency: 1, frequencyMetadata: { days: [2], weekPattern: "week_of_month", occurrences: [2] } });
+    expect(scheduleLabel(chore)).toBe("2nd Tue of the month");
+  });
+
+  it("renders a last-Friday-of-the-quarter schedule", () => {
+    const chore = makeChore({ frequencyType: "days_of_the_week", frequency: 1, frequencyMetadata: { days: [5], weekPattern: "week_of_quarter", occurrences: [-1] } });
+    expect(scheduleLabel(chore)).toBe("Last Fri of the quarter");
+  });
+
+  it("renders a Donetick-imported Nth-weekday schedule with a string day name", () => {
+    const chore = makeChore({ frequencyType: "days_of_the_week", frequency: 1, frequencyMetadata: { days: ["Tuesday"], weekPattern: "week_of_month", occurrences: [2] } });
+    expect(scheduleLabel(chore)).toBe("2nd Tue of the month");
+  });
 });
