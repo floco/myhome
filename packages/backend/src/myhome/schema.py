@@ -119,6 +119,22 @@ inventory_categories = Table(
     Column("name", String, nullable=False),
 )
 
+owners = Table(
+    "owners", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+)
+
+stores = Table(
+    "stores", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
+    Column("order_index", Integer, nullable=False),
+    Column("name", String, nullable=False),
+)
+
 work_categories = Table(
     "work_categories", metadata,
     Column("id", String, primary_key=True),

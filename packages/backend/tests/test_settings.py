@@ -60,6 +60,36 @@ def test_put_inventory_categories(client, home_id):
     assert data["inventoryCategories"][1]["name"] == "Clothing"
 
 
+def test_put_owners(client, home_id):
+    new_owners = [
+        {"id": "o1", "name": "Alice"},
+        {"id": "o2", "name": "Bob"},
+    ]
+    resp = client.put(f"/api/homes/{home_id}/settings/owners", json=new_owners)
+    assert resp.status_code == 204
+    data = client.get(f"/api/homes/{home_id}/settings").json()
+    assert len(data["owners"]) == 2
+    assert data["owners"][1]["name"] == "Bob"
+
+
+def test_put_stores(client, home_id):
+    new_stores = [
+        {"id": "s1", "name": "Ikea"},
+        {"id": "s2", "name": "Amazon"},
+    ]
+    resp = client.put(f"/api/homes/{home_id}/settings/stores", json=new_stores)
+    assert resp.status_code == 204
+    data = client.get(f"/api/homes/{home_id}/settings").json()
+    assert len(data["stores"]) == 2
+    assert data["stores"][1]["name"] == "Amazon"
+
+
+def test_get_settings_owners_stores_default_empty(client, home_id):
+    data = client.get(f"/api/homes/{home_id}/settings").json()
+    assert data["owners"] == []
+    assert data["stores"] == []
+
+
 def test_put_cost_category_placement(client, home_id):
     resp = client.put(f"/api/homes/{home_id}/settings/cost-categories/cat-fuel/placement", json={
         "floorId": "floor-1",
