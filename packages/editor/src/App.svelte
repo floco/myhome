@@ -1238,7 +1238,12 @@
         <InventoryPage
           store={inventoryStore}
           {floorStore}
-          inventoryCategories={settingsStore.inventoryCategories.map(c => c.name)}
+          inventoryCategories={settingsStore.inventoryCategories}
+          owners={settingsStore.owners}
+          stores={settingsStore.stores}
+          oncreatecategory={settingsStore.createInventoryCategory}
+          oncreateowner={settingsStore.createOwner}
+          oncreatestore={settingsStore.createStore}
           selectedItemId={selectedInventoryItemId}
           onclearselection={() => { selectedInventoryItemId = null; }}
           onplaceonmap={(id) => {
