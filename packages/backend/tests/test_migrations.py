@@ -91,6 +91,17 @@ def _create_legacy_category_tables(conn) -> None:
         "CREATE TABLE insurance_categories (id VARCHAR NOT NULL, home_id VARCHAR NOT NULL, "
         "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, PRIMARY KEY (id, home_id))"
     ))
+    # inventory_items pre-dates migration 7 (which adds category_id/owner_id/
+    # store_id and backfills category_id from this legacy `category` column),
+    # so every migration test's snapshot needs it in this old shape too.
+    conn.execute(text(
+        "CREATE TABLE inventory_items (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+        "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+        "category VARCHAR NOT NULL, brand VARCHAR, model VARCHAR, serial_number VARCHAR, "
+        "purchase_date VARCHAR, purchase_price FLOAT, warranty_expiry_date VARCHAR, "
+        "notes VARCHAR NOT NULL, attachments TEXT NOT NULL, placement_floor_id VARCHAR, "
+        "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
+    ))
 
 
 def test_run_migrations_scopes_cost_categories_by_home(tmp_path):
@@ -230,6 +241,21 @@ def test_run_migrations_adds_insurance_support(tmp_path):
             "CREATE TABLE insurance_categories (id VARCHAR NOT NULL, home_id VARCHAR NOT NULL, "
             "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, PRIMARY KEY (id, home_id))"
         ))
+        # inventory_categories/inventory_items are needed too since this
+        # snapshot now also runs migration 7 (_add_inventory_owner_store_and_category_id)
+        # on its way to CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE inventory_categories (id VARCHAR NOT NULL, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, PRIMARY KEY (id, home_id))"
+        ))
+        conn.execute(text(
+            "CREATE TABLE inventory_items (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+            "category VARCHAR NOT NULL, brand VARCHAR, model VARCHAR, serial_number VARCHAR, "
+            "purchase_date VARCHAR, purchase_price FLOAT, warranty_expiry_date VARCHAR, "
+            "notes VARCHAR NOT NULL, attachments TEXT NOT NULL, placement_floor_id VARCHAR, "
+            "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
+        ))
         # cost_entries already has contact_id (post-migration-5 shape) but not
         # the new source_module/source_id columns yet.
         conn.execute(text(
@@ -274,3 +300,62 @@ def test_run_migrations_adds_insurance_support(tmp_path):
     assert h1_insurance_cats[0]["emoji"] == "🏠"
     assert len(h2_insurance_cats) == 6
     assert [c["id"] for c in h1_cost_cats] == ["cat-fuel", "cat-insurance"]
+
+
+def test_run_migrations_backfills_inventory_category_id(tmp_path):
+    db_path = tmp_path / "legacy.db"
+    engine = create_engine(f"sqlite:///{db_path}")
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE homes (id VARCHAR PRIMARY KEY, name VARCHAR, type VARCHAR, created_at VARCHAR)"
+        ))
+        conn.execute(text("INSERT INTO homes (id, name, type, created_at) VALUES ('h1', 'Home 1', 'existing', '2026-01-01')"))
+        conn.execute(text(
+            "CREATE TABLE inventory_categories (id VARCHAR NOT NULL, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, PRIMARY KEY (id, home_id))"
+        ))
+        conn.execute(text(
+            "INSERT INTO inventory_categories (id, home_id, order_index, name) VALUES ('inv-electronics', 'h1', 0, 'Electronics')"
+        ))
+        conn.execute(text(
+            "CREATE TABLE inventory_items (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+            "category VARCHAR NOT NULL, brand VARCHAR, model VARCHAR, serial_number VARCHAR, "
+            "purchase_date VARCHAR, purchase_price FLOAT, warranty_expiry_date VARCHAR, "
+            "notes VARCHAR NOT NULL, attachments TEXT NOT NULL, placement_floor_id VARCHAR, "
+            "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
+        ))
+        conn.execute(text(
+            "INSERT INTO inventory_items (id, home_id, order_index, name, emoji, category, notes, attachments) "
+            "VALUES ('i1', 'h1', 0, 'TV', '📺', 'Electronics', '', '[]')"
+        ))
+        conn.execute(text(
+            "INSERT INTO inventory_items (id, home_id, order_index, name, emoji, category, notes, attachments) "
+            "VALUES ('i2', 'h1', 1, 'Drill', '🔩', 'Tools', '', '[]')"
+        ))
+        conn.execute(text(
+            "INSERT INTO inventory_items (id, home_id, order_index, name, emoji, category, notes, attachments) "
+            "VALUES ('i3', 'h1', 2, 'Misc', '📦', '', '', '[]')"
+        ))
+        conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
+        conn.execute(text("INSERT INTO schema_version (version) VALUES (6)"))
+
+    run_migrations(engine)
+
+    with engine.connect() as conn:
+        version = conn.execute(text("SELECT version FROM schema_version")).scalar()
+        cats = conn.execute(
+            text("SELECT id, name FROM inventory_categories WHERE home_id = 'h1' ORDER BY order_index")
+        ).mappings().all()
+        items = conn.execute(
+            text("SELECT id, category_id, owner_id, store_id FROM inventory_items WHERE home_id = 'h1' ORDER BY order_index")
+        ).mappings().all()
+
+    assert version == CURRENT_VERSION
+    assert [c["name"] for c in cats] == ["Electronics", "Tools"]
+    tools_id = next(c["id"] for c in cats if c["name"] == "Tools")
+    assert items[0]["category_id"] == "inv-electronics"
+    assert items[1]["category_id"] == tools_id
+    assert items[2]["category_id"] is None
+    assert items[0]["owner_id"] is None
+    assert items[0]["store_id"] is None

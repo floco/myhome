@@ -26,7 +26,7 @@ def make_doc() -> InventoryDocument:
                 id="i1",
                 name="Samsung TV",
                 emoji="📺",
-                category="Electronics",
+                categoryId="cat-electronics",
                 purchasePrice=1200.0,
                 warrantyExpiryDate="2026-05-12",
                 placement=InventoryPlacement(

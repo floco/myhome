@@ -76,7 +76,7 @@ def test_generate_demo_inventory_items_have_valid_category_and_placement():
     floor_ids = {f.id for f in house.floors}
     room_ids = {r.id for f in house.floors for r in f.rooms}
     for item in doc.items:
-        assert item.category in category_ids
+        assert item.categoryId in category_ids
         assert item.placement is not None
         assert item.placement.floorId in floor_ids
         assert item.placement.roomId in room_ids

@@ -56,7 +56,8 @@ def load_inventory(home_id: str) -> InventoryDocument:
         ).mappings().all()
     return InventoryDocument(items=[
         InventoryItem(
-            id=r["id"], name=r["name"], emoji=r["emoji"], category=r["category"], brand=r["brand"],
+            id=r["id"], name=r["name"], emoji=r["emoji"], categoryId=r["category_id"],
+            ownerId=r["owner_id"], storeId=r["store_id"], brand=r["brand"],
             model=r["model"], serialNumber=r["serial_number"], purchaseDate=r["purchase_date"],
             purchasePrice=r["purchase_price"], warrantyExpiryDate=r["warranty_expiry_date"],
             notes=r["notes"], attachments=json.loads(r["attachments"]),
@@ -80,7 +81,8 @@ def save_inventory(home_id: str, doc: InventoryDocument) -> None:
             conn.execute(inventory_items_table.insert(), [
                 {
                     "id": it.id, "home_id": home_id, "order_index": i, "name": it.name, "emoji": it.emoji,
-                    "category": it.category, "brand": it.brand, "model": it.model,
+                    "category_id": it.categoryId, "owner_id": it.ownerId, "store_id": it.storeId,
+                    "brand": it.brand, "model": it.model,
                     "serial_number": it.serialNumber, "purchase_date": it.purchaseDate,
                     "purchase_price": it.purchasePrice, "warranty_expiry_date": it.warrantyExpiryDate,
                     "notes": it.notes, "attachments": json.dumps(it.attachments),

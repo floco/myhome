@@ -148,7 +148,7 @@ def generate_demo_inventory(house: HouseDocument, settings: SettingsDocument, rn
             id=str(uuid.uuid4()),
             name=name,
             emoji=emoji,
-            category=category_id,
+            categoryId=category_id,
             purchaseDate=purchase_date.isoformat(),
             purchasePrice=round(rng.uniform(price_min, price_max), 2),
             warrantyExpiryDate=warranty_expiry.isoformat(),

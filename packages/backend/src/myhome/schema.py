@@ -276,6 +276,11 @@ cost_entries = Table(
     Column("source_id", String),
 )
 
+# category_id/owner_id/store_id are plain columns, no ForeignKey -- same
+# convention as cost_entries.category_id/contact_id (schema.py:242-244).
+# Upgraded databases keep a legacy `category` TEXT column from before
+# migration 7, undeclared here (dead) rather than dropped -- this codebase
+# avoids DROP COLUMN DDL, see migrations.py's _add_inventory_owner_store_and_category_id.
 inventory_items = Table(
     "inventory_items", metadata,
     Column("id", String, primary_key=True),
@@ -283,7 +288,9 @@ inventory_items = Table(
     Column("order_index", Integer, nullable=False),
     Column("name", String, nullable=False),
     Column("emoji", String, nullable=False),
-    Column("category", String, nullable=False),
+    Column("category_id", String),
+    Column("owner_id", String),
+    Column("store_id", String),
     Column("brand", String),
     Column("model", String),
     Column("serial_number", String),
