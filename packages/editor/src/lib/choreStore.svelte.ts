@@ -1,5 +1,6 @@
 import { _ } from "svelte-i18n";
 import { get } from "svelte/store";
+import { toWeekdayNum } from "./scheduleNames";
 
 export interface Chore {
   id: string;
@@ -32,7 +33,8 @@ export function scheduleLabel(chore: Chore): string {
   if (ft === "day_of_the_month") return t("chores.schedule.monthlyOnDay", { values: { n } });
   if (ft === "days_of_the_week") {
     const dayKeys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
-    const days = ((meta as Record<string, number[]>)?.days ?? []).map((d) => t(`chores.schedule.dayAbbrev.${dayKeys[(d - 1) % 7]}`));
+    const dayNums = ((meta as Record<string, unknown[]>)?.days ?? []).map(toWeekdayNum).filter((d): d is number => d !== null);
+    const days = dayNums.map((d) => t(`chores.schedule.dayAbbrev.${dayKeys[(d - 1) % 7]}`));
     return days.length ? t("chores.schedule.weeklyOn", { values: { days: days.join(", ") } }) : t("chores.schedule.weekly");
   }
   // Donetick's own scheduler always advances "weekly"/"monthly"/"yearly" chores

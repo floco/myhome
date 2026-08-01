@@ -241,4 +241,12 @@ describe("scheduleLabel", () => {
     const chore = makeChore({ frequencyType: "adaptive", frequency: 1, frequencyMetadata: {}, periodDays: 42 });
     expect(scheduleLabel(chore)).toBe("Adaptive (~42 days)");
   });
+
+  it("renders a plain days_of_the_week label from Donetick-shaped string day names", () => {
+    // Donetick stores `days` as full English day-name strings (e.g. "Monday"),
+    // not ints -- (`"Monday" - 1`) is NaN in JS, so this silently broke before
+    // the shared toWeekdayNum normalizer was wired in here.
+    const chore = makeChore({ frequencyType: "days_of_the_week", frequency: 1, frequencyMetadata: { days: ["Monday", "Wednesday"] } });
+    expect(scheduleLabel(chore)).toBe("Weekly on Mon, Wed");
+  });
 });
