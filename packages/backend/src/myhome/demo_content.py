@@ -6,7 +6,9 @@ from .models_settings import (
     CostCategory,
     InsuranceCategory,
     InventoryCategory,
+    Owner,
     SettingsDocument,
+    Store,
     WorkCategory,
     _default_consumable_units,
     _default_contact_types,
@@ -48,6 +50,17 @@ _INVENTORY_CATEGORIES = [
     InventoryCategory(id="inv-bedroom", name="Bedroom"),
     InventoryCategory(id="inv-office", name="Office"),
     InventoryCategory(id="inv-decor", name="Décor"),
+]
+
+_OWNERS = [
+    Owner(id="owner-alex", name="Alex"),
+    Owner(id="owner-jordan", name="Jordan"),
+]
+
+_STORES = [
+    Store(id="store-ikea", name="IKEA"),
+    Store(id="store-amazon", name="Amazon"),
+    Store(id="store-local", name="Local Hardware Store"),
 ]
 
 _CONSUMABLE_CATEGORIES = [
@@ -100,6 +113,8 @@ def generate_demo_settings() -> SettingsDocument:
         insuranceCategories=list(_INSURANCE_CATEGORIES),
         contactTypes=_default_contact_types(),
         consumableUnits=_default_consumable_units(),
+        owners=list(_OWNERS),
+        stores=list(_STORES),
     )
 
 
