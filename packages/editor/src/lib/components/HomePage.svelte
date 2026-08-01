@@ -64,7 +64,7 @@
   </div>
   <div class="col-side">
     <HomeCostsWidget {costsStore} {settingsStore} onnavigate={() => navigate("#/costs")} />
-    <HomeInventoryWidget {inventoryStore} onnavigate={() => navigate("#/inventory")} />
+    <HomeInventoryWidget {inventoryStore} {settingsStore} onnavigate={() => navigate("#/inventory")} />
     <HomeWorksWidget {worksStore} onnavigate={() => navigate("#/works")} />
     <HomeConsumablesWidget {consumableStore} onnavigate={() => navigate("#/consumables")} />
     <HomeLocationsWidget {locationsStore} onnavigate={() => navigate("#/locations")} />

@@ -5,11 +5,16 @@ import { createInventoryStore } from "../src/lib/inventoryStore.svelte";
 
 const sampleDoc = {
   items: [
-    { id: "i1", name: "Drill", emoji: "🔧", category: "Tools", brand: null, model: null, serialNumber: null, purchaseDate: null, purchasePrice: null, warrantyExpiryDate: null, notes: "", attachments: [], placement: null },
-    { id: "i2", name: "Saw", emoji: "🪚", category: "Tools", brand: null, model: null, serialNumber: null, purchaseDate: null, purchasePrice: null, warrantyExpiryDate: null, notes: "", attachments: [], placement: null },
-    { id: "i3", name: "Sofa", emoji: "🛋️", category: "Furniture", brand: null, model: null, serialNumber: null, purchaseDate: null, purchasePrice: null, warrantyExpiryDate: null, notes: "", attachments: [], placement: null },
+    { id: "i1", name: "Drill", emoji: "🔧", categoryId: "cat-tools", ownerId: null, storeId: null, brand: null, model: null, serialNumber: null, purchaseDate: null, purchasePrice: null, warrantyExpiryDate: null, notes: "", attachments: [], placement: null },
+    { id: "i2", name: "Saw", emoji: "🪚", categoryId: "cat-tools", ownerId: null, storeId: null, brand: null, model: null, serialNumber: null, purchaseDate: null, purchasePrice: null, warrantyExpiryDate: null, notes: "", attachments: [], placement: null },
+    { id: "i3", name: "Sofa", emoji: "🛋️", categoryId: "cat-furniture", ownerId: null, storeId: null, brand: null, model: null, serialNumber: null, purchaseDate: null, purchasePrice: null, warrantyExpiryDate: null, notes: "", attachments: [], placement: null },
   ],
 };
+
+const SAMPLE_CATEGORIES = [
+  { id: "cat-tools", name: "Tools" },
+  { id: "cat-furniture", name: "Furniture" },
+];
 
 const HOME = "home-123";
 const getHomeId = () => HOME;
@@ -26,6 +31,10 @@ function makeStore(empty = false) {
   return createInventoryStore(getHomeId);
 }
 
+function makeSettingsStore(inventoryCategories: { id: string; name: string }[] = SAMPLE_CATEGORIES) {
+  return { inventoryCategories };
+}
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe("HomeInventoryWidget", () => {
@@ -34,7 +43,10 @@ describe("HomeInventoryWidget", () => {
     await makeTick();
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const comp = mount(HomeInventoryWidget, { target, props: { inventoryStore, onnavigate: vi.fn() } });
+    const comp = mount(HomeInventoryWidget, {
+      target,
+      props: { inventoryStore, settingsStore: makeSettingsStore(), onnavigate: vi.fn() },
+    });
     await tick();
     flushSync();
 
@@ -49,7 +61,10 @@ describe("HomeInventoryWidget", () => {
     await makeTick();
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const comp = mount(HomeInventoryWidget, { target, props: { inventoryStore, onnavigate: vi.fn() } });
+    const comp = mount(HomeInventoryWidget, {
+      target,
+      props: { inventoryStore, settingsStore: makeSettingsStore(), onnavigate: vi.fn() },
+    });
     await tick();
     flushSync();
 
@@ -68,7 +83,10 @@ describe("HomeInventoryWidget", () => {
     await makeTick();
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const comp = mount(HomeInventoryWidget, { target, props: { inventoryStore, onnavigate: vi.fn() } });
+    const comp = mount(HomeInventoryWidget, {
+      target,
+      props: { inventoryStore, settingsStore: makeSettingsStore(), onnavigate: vi.fn() },
+    });
     await tick();
     flushSync();
 
@@ -79,9 +97,10 @@ describe("HomeInventoryWidget", () => {
   });
 
   it("gives every category a distinct color, even with more than 8 categories", async () => {
+    const manyCategories = Array.from({ length: 10 }, (_, i) => ({ id: `cat-${i}`, name: `Category ${i}` }));
     const manyDoc = {
       items: Array.from({ length: 10 }, (_, i) => ({
-        id: `i${i}`, name: `Item ${i}`, emoji: "📦", category: `Category ${i}`,
+        id: `i${i}`, name: `Item ${i}`, emoji: "📦", categoryId: `cat-${i}`, ownerId: null, storeId: null,
         brand: null, model: null, serialNumber: null, purchaseDate: null,
         purchasePrice: null, warrantyExpiryDate: null, notes: "", attachments: [], placement: null,
       })),
@@ -91,7 +110,10 @@ describe("HomeInventoryWidget", () => {
     await makeTick();
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const comp = mount(HomeInventoryWidget, { target, props: { inventoryStore, onnavigate: vi.fn() } });
+    const comp = mount(HomeInventoryWidget, {
+      target,
+      props: { inventoryStore, settingsStore: makeSettingsStore(manyCategories), onnavigate: vi.fn() },
+    });
     await tick();
     flushSync();
 
@@ -109,7 +131,10 @@ describe("HomeInventoryWidget", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const onnavigate = vi.fn();
-    const comp = mount(HomeInventoryWidget, { target, props: { inventoryStore, onnavigate } });
+    const comp = mount(HomeInventoryWidget, {
+      target,
+      props: { inventoryStore, settingsStore: makeSettingsStore(), onnavigate },
+    });
     await tick();
     flushSync();
 

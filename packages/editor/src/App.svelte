@@ -988,6 +988,7 @@
               >
                 <InventoryPinPopup
                   item={pin.item}
+                  categoryName={settingsStore.inventoryCategories.find((c) => c.id === pin.item.categoryId)?.name ?? null}
                   screenX={pin.screenX}
                   screenY={pin.screenY}
                   onedit={() => {
