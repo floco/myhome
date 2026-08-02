@@ -41,3 +41,7 @@ class KBUpdate(BaseModel):
 class KBReorder(BaseModel):
     parentId: str | None = None
     orderedIds: list[str]
+
+
+class KBLinkPreviewRequest(BaseModel):
+    url: str

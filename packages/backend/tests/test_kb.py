@@ -1,4 +1,8 @@
+import socket
+
 import pytest
+import respx
+from httpx import Response
 from myhome.models_kb import KBEntry
 from myhome.persistence_kb import save_entry
 
@@ -339,3 +343,29 @@ def test_reset_kb_clears_entries_and_attachments(client, tmp_path, home_id):
     assert client.get(f"/api/homes/{home_id}/kb").json()["entries"] == []
     assert not kb_dir.exists()
     assert not att_dir.exists()
+
+
+def _fake_getaddrinfo(*args, **kwargs):
+    return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
+
+
+def test_kb_link_preview_returns_html_and_fields(client, home_id, monkeypatch):
+    monkeypatch.setattr(socket, "getaddrinfo", _fake_getaddrinfo)
+    with respx.mock:
+        respx.get("http://93.184.216.34/page").mock(
+            return_value=Response(
+                200,
+                headers={"content-type": "text/html"},
+                html='<meta property="og:title" content="OG Title">',
+            )
+        )
+        resp = client.post(f"/api/homes/{home_id}/kb/link-preview", json={"url": "http://example.com/page"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["title"] == "OG Title"
+    assert 'class="kb-bookmark"' in data["html"]
+
+
+def test_kb_link_preview_rejects_malformed_url(client, home_id):
+    resp = client.post(f"/api/homes/{home_id}/kb/link-preview", json={"url": "not-a-url"})
+    assert resp.status_code == 400
