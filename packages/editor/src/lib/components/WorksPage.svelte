@@ -218,6 +218,10 @@
   @media (max-width: 700px) {
     .chart-card-wrap { flex-direction: column; }
     .chart-card-wrap :global(.ui-stat-row.column) { width: auto; }
+    .page { overflow-y: auto; }
+    .table-card-wrap { flex: none; min-height: auto; }
+    .table-card-wrap :global(.ui-card) { flex: none !important; overflow: visible !important; min-height: auto !important; }
+    .table-wrapper { flex: none !important; overflow-y: visible !important; }
   }
 
   .toolbar {

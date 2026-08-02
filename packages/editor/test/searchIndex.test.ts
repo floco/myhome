@@ -144,7 +144,7 @@ describe("buildSearchIndex", () => {
       id: "kb1",
       icon: "🔧",
       title: "Boiler manual",
-      subtitle: "Knowledge Base",
+      subtitle: "Wiki",
       searchText: "boiler manual reset procedure is...",
       titleText: "boiler manual",
     });

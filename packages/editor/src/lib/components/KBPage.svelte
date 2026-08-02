@@ -46,6 +46,7 @@
   let bookmarkFetching = $state(false);
   let bookmarkError = $state<string | null>(null);
   let bookmarkResolve: ((html: string | null) => void) | null = null;
+  let sidebarExpanded = $state(false);
 
   const selectedEntry = $derived(
     selectedId ? (store.entries.find((e) => e.id === selectedId) ?? null) : null,
@@ -84,6 +85,7 @@
 
   function handleTreeSelect(entry: KBEntry): void {
     navigate(entry);
+    sidebarExpanded = false;
   }
 
   // Reconciles the selectedItemId prop (sourced from the URL, e.g. deep
@@ -123,6 +125,7 @@
       const entry = await store.createEntry({ title: $_('kb.page.newPageTitle'), content: "" });
       navigate(entry);
       editing = true;
+      sidebarExpanded = false;
     } catch (e) {
       error = e instanceof Error ? e.message : $_('kb.page.createFailed');
     }
@@ -144,6 +147,7 @@
       collapsedIds = next;
       navigate(entry);
       editing = true;
+      sidebarExpanded = false;
     } catch (e) {
       error = e instanceof Error ? e.message : $_('kb.page.createFailed');
     }
@@ -335,6 +339,7 @@
   async function openTrash(): Promise<void> {
     contentMode = "trash";
     selectedId = null;
+    sidebarExpanded = false;
     try { await store.loadTrash(); }
     catch (e) { error = e instanceof Error ? e.message : $_('kb.page.loadTrashFailed'); }
   }
@@ -356,8 +361,12 @@
 </script>
 
 <div class="page">
-<Card style="display:flex; padding:0; overflow:hidden; flex:1; min-height:0; font-family: var(--font-sans);">
-  <div class="kb-sidebar">
+<Card style="display:flex; padding:0; overflow:hidden; flex:1; min-height:0; font-family: var(--font-sans); position:relative;">
+  {#if sidebarExpanded}
+    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
+    <div class="kb-backdrop" role="presentation" onclick={() => { sidebarExpanded = false; }}></div>
+  {/if}
+  <div class="kb-sidebar" class:expanded={sidebarExpanded}>
     <div class="sidebar-toolbar">
       <Input placeholder={$_('floorPlan.itemPicker.search')} bind:value={searchQuery} />
       <Button onclick={handleNewPage}>＋ {$_('kb.page.newPage')}</Button>
@@ -395,6 +404,13 @@
   </div>
 
   <div class="kb-content">
+    <div class="kb-mobile-bar">
+      <button
+        class="kb-hamburger"
+        onclick={() => { sidebarExpanded = !sidebarExpanded; }}
+        title={sidebarExpanded ? $_('app.topbar.closeMenu') : $_('app.topbar.openMenu')}
+      >{sidebarExpanded ? "✕" : "☰"}</button>
+    </div>
     {#if contentMode === "trash"}
       <KBTrash
         entries={store.trash}
@@ -508,6 +524,27 @@
     display: flex; flex-direction: column;
     border-right: 1px solid var(--border);
   }
+
+  .kb-backdrop {
+    display: none;
+  }
+
+  @media (max-width: 700px) {
+    .kb-backdrop {
+      display: block;
+      position: fixed; inset: 0; z-index: 19;
+      background: rgba(0, 0, 0, 0.45);
+    }
+    .kb-sidebar {
+      position: fixed; top: 48px; bottom: 0; left: 0; z-index: 20;
+      width: 0; border-right: none;
+      background: var(--surface); box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      transition: width 0.18s ease;
+    }
+    .kb-sidebar.expanded { width: 260px; border-right: 1px solid var(--border); }
+  }
+
   .sidebar-toolbar {
     display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
     background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
@@ -528,6 +565,24 @@
   .trash-link.drop-target { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
 
   .kb-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .kb-mobile-bar { display: none; }
+
+  @media (max-width: 700px) {
+    .kb-mobile-bar {
+      display: flex; align-items: center;
+      padding: var(--space-2) var(--space-3);
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .kb-hamburger {
+      width: 32px; height: 32px;
+      border: none; background: transparent; color: var(--text-muted);
+      font-size: 16px; cursor: pointer; border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .kb-hamburger:hover { background: var(--surface-hover); color: var(--text); }
+  }
+
   .content-empty {
     flex: 1; display: flex; align-items: center; justify-content: center;
     color: var(--text-faint); font-size: 13px;

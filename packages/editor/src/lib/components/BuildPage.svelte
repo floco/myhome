@@ -90,4 +90,10 @@
   .stat-row-wrap { padding: var(--space-4); flex-shrink: 0; }
 
   .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
+
+  @media (max-width: 700px) {
+    .page { overflow-y: auto; }
+    .table-card-wrap { flex: none; min-height: auto; }
+    .table-card-wrap :global(.ui-card) { flex: none !important; overflow: visible !important; min-height: auto !important; }
+  }
 </style>

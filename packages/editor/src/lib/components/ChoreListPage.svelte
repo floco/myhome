@@ -92,6 +92,11 @@
 
   .list { flex: 1; overflow-y: auto; }
 
+  @media (max-width: 700px) {
+    .page { overflow-y: auto; }
+    .list { flex: none; overflow-y: visible; }
+  }
+
   .group-header {
     padding: 8px 16px 4px;
     font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;

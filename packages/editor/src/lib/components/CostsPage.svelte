@@ -397,6 +397,13 @@
     .stats-under-bar { grid-column: 1; grid-row: 3; }
   }
 
+  @media (max-width: 700px) {
+    .page { overflow-y: auto; }
+    .table-card-wrap { flex: none; min-height: auto; }
+    .table-card-wrap :global(.ui-card) { flex: none !important; overflow: visible !important; min-height: auto !important; }
+    .table-wrapper { flex: none !important; overflow-y: visible !important; }
+  }
+
   .toolbar {
     display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
     background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;

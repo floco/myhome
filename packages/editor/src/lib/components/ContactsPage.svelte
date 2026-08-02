@@ -127,6 +127,13 @@
   .stat-row-wrap { padding: var(--space-4); flex-shrink: 0; }
   .chart-label { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
   .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
+
+  @media (max-width: 700px) {
+    .page { overflow-y: auto; }
+    .table-card-wrap { flex: none; min-height: auto; }
+    .table-card-wrap :global(.ui-card) { flex: none !important; overflow: visible !important; min-height: auto !important; }
+    .table-wrapper { flex: none !important; overflow-y: visible !important; }
+  }
   .toolbar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
   .toolbar :global(.ui-input) { flex: 1; }
   .native-input {
