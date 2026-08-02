@@ -539,10 +539,10 @@
       position: fixed; top: 48px; bottom: 0; left: 0; z-index: 20;
       width: 0; border-right: none;
       background: var(--surface); box-shadow: var(--shadow-lg);
-      overflow: hidden;
+      overflow: hidden; visibility: hidden;
       transition: width 0.18s ease;
     }
-    .kb-sidebar.expanded { width: 260px; border-right: 1px solid var(--border); }
+    .kb-sidebar.expanded { width: 260px; border-right: 1px solid var(--border); visibility: visible; }
   }
 
   .sidebar-toolbar {
