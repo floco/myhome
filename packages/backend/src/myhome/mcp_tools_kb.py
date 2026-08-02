@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import uuid
 from datetime import datetime, timezone
 
@@ -232,4 +233,7 @@ async def add_kb_bookmark(
     content. Automatically fetches the target page's title/description/image;
     title/description override the fetched values if given."""
     await _require_role(ctx.request_context.request, "normal")
-    return _add_kb_bookmark_impl(home_id, entry_id, url, title, description)
+    # fetch_link_preview() is a blocking HTTP/DNS call (up to a few seconds across
+    # redirects); run it off the event loop so one slow bookmark doesn't stall
+    # other MCP requests.
+    return await asyncio.to_thread(_add_kb_bookmark_impl, home_id, entry_id, url, title, description)

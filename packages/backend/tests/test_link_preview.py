@@ -20,6 +20,14 @@ def _fake_getaddrinfo_unresolvable(*args, **kwargs):
     raise socket.gaierror("Name or service not known")
 
 
+def _fake_getaddrinfo_cgnat(*args, **kwargs):
+    # 100.64.0.0/10 (Shared Address Space / CGNAT, also used by Tailscale) is not
+    # flagged by is_private/is_loopback/is_link_local/is_reserved/is_multicast/
+    # is_unspecified, so a deny-list of those misses it -- only is_global correctly
+    # excludes it.
+    return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("100.64.0.5", 0))]
+
+
 @pytest.fixture(autouse=True)
 def _public_dns(monkeypatch):
     monkeypatch.setattr(socket, "getaddrinfo", _fake_getaddrinfo_public)
@@ -107,6 +115,14 @@ def test_fetch_link_preview_pins_connection_to_validated_ip_with_original_host_h
 
 def test_fetch_link_preview_rejects_private_address(monkeypatch):
     monkeypatch.setattr(socket, "getaddrinfo", _fake_getaddrinfo_private)
+    with respx.mock:
+        preview = fetch_link_preview("http://internal.example/page")
+    assert preview.title == "internal.example"
+    assert preview.description == ""
+
+
+def test_fetch_link_preview_rejects_cgnat_address(monkeypatch):
+    monkeypatch.setattr(socket, "getaddrinfo", _fake_getaddrinfo_cgnat)
     with respx.mock:
         preview = fetch_link_preview("http://internal.example/page")
     assert preview.title == "internal.example"

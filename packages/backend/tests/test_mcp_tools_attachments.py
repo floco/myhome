@@ -98,6 +98,19 @@ def test_upload_attachment_disallowed_extension_raises(home_id):
         _upload_attachment_impl(home_id, "inventory", item_id, "malware.exe", data)
 
 
+def test_upload_attachment_sanitizes_to_leading_dot_raises(home_id):
+    from myhome.mcp_tools_attachments import _upload_attachment_impl
+    from myhome.mcp_tools_inventory import _create_inventory_item_impl
+    item_id = _create_inventory_item_impl(home_id, "Drill")["id"]
+    data = base64.b64encode(b"x").decode()
+    # "???.pdf" keeps a real ".pdf" extension (passing the extension check),
+    # but sanitise_filename() strips the "?" characters and leaves ".pdf" --
+    # a hidden filename that get/delete would later reject. Must be caught
+    # at upload time instead of silently saving an orphaned attachment.
+    with pytest.raises(ValueError, match="Invalid filename"):
+        _upload_attachment_impl(home_id, "inventory", item_id, "???.pdf", data)
+
+
 def test_upload_attachment_invalid_base64_raises(home_id):
     from myhome.mcp_tools_attachments import _upload_attachment_impl
     from myhome.mcp_tools_inventory import _create_inventory_item_impl

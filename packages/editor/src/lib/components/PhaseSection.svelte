@@ -113,6 +113,10 @@
   .toolbar :global(.ui-input) { flex: 1; min-width: 140px; max-width: 320px; }
 
   .table-wrapper { flex: 1; overflow-y: auto; }
+
+  @media (max-width: 700px) {
+    .table-wrapper { flex: none; overflow-y: visible; }
+  }
   :global(.expand-cell) { width: 20px; padding: 0 4px; text-align: center; }
   .expand-btn { background: none; border: none; cursor: pointer; color: var(--text-faint); font-size: 9px; padding: 2px 4px; line-height: 1; }
   .expand-btn:hover { color: var(--text); }
