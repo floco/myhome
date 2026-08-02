@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 from mcp.server.fastmcp import Context
 
+from .link_preview import fetch_link_preview, render_bookmark_html
 from .mcp_server import _require_role, _resolve_home_id, mcp
 from .models_kb import KBEntry
 from .persistence_kb import (
@@ -94,6 +95,26 @@ def _delete_kb_entry_impl(home_id: str | None, entry_id: str) -> dict:
         raise ValueError(f"Unknown entry_id {entry_id!r}")
     deleted_ids = soft_delete_subtree(resolved, entry_id)
     return {"deleted": entry_id, "deletedCount": len(deleted_ids)}
+
+
+def _add_kb_bookmark_impl(
+    home_id: str | None, entry_id: str, url: str,
+    title: str | None = None, description: str | None = None,
+) -> dict:
+    resolved = _resolve_home_id(home_id)
+    entry = _live_entry(resolved, entry_id)
+    if entry is None:
+        raise ValueError(f"Unknown entry_id {entry_id!r}")
+    preview = fetch_link_preview(url)
+    if title is not None:
+        preview.title = title
+    if description is not None:
+        preview.description = description
+    card_html = render_bookmark_html(preview)
+    entry.content = f"{entry.content}\n\n{card_html}\n"
+    entry.updatedAt = _now()
+    save_entry(resolved, entry)
+    return entry.model_dump()
 
 
 def _list_kb_trash_impl(home_id: str | None) -> dict:
@@ -200,3 +221,15 @@ async def empty_kb_trash(ctx: Context, home_id: str | None = None) -> dict:
     """Permanently delete every knowledge base page currently in Trash. This cannot be undone."""
     await _require_role(ctx.request_context.request, "normal")
     return _empty_kb_trash_impl(home_id)
+
+
+@mcp.tool()
+async def add_kb_bookmark(
+    ctx: Context, entry_id: str, url: str,
+    title: str | None = None, description: str | None = None, home_id: str | None = None,
+) -> dict:
+    """Add a web-bookmark card to a knowledge base page, appended to the end of its
+    content. Automatically fetches the target page's title/description/image;
+    title/description override the fetched values if given."""
+    await _require_role(ctx.request_context.request, "normal")
+    return _add_kb_bookmark_impl(home_id, entry_id, url, title, description)
