@@ -568,3 +568,75 @@ describe("MarkdownEditor — /page slash command", () => {
     target.remove();
   });
 });
+
+describe("MarkdownEditor — bookmark insert", () => {
+  it("does not show 🔖 button when onInsertBookmark is omitted", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true } });
+    flushSync();
+    expect(target.querySelector('[title="Insert bookmark"]')).toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("shows 🔖 button when onInsertBookmark is provided", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const onInsertBookmark = async () => null;
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true, onInsertBookmark } });
+    flushSync();
+    expect(target.querySelector('[title="Insert bookmark"]')).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking 🔖 button inserts the resolved HTML at the cursor", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const onInsertBookmark = async () => '<a class="kb-bookmark" href="https://example.com">Example</a>';
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true, onInsertBookmark } });
+    flushSync();
+    (target.querySelector('[title="Insert bookmark"]') as HTMLButtonElement).click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe('<a class="kb-bookmark" href="https://example.com">Example</a>');
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking 🔖 button does nothing when onInsertBookmark resolves to null", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const onInsertBookmark = async () => null;
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true, onInsertBookmark } });
+    flushSync();
+    (target.querySelector('[title="Insert bookmark"]') as HTMLButtonElement).click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("");
+    unmount(app);
+    target.remove();
+  });
+});
+
+describe("MarkdownEditor — DOMPurify target attribute", () => {
+  it('preserves target="_blank" on rendered links (needed for bookmark cards to open in a new tab)', () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: {
+        value: '<a class="kb-bookmark" href="https://example.com" target="_blank" rel="noopener noreferrer">Example</a>',
+        editing: false,
+      },
+    });
+    flushSync();
+    const link = target.querySelector("a.kb-bookmark");
+    expect(link?.getAttribute("target")).toBe("_blank");
+    unmount(app);
+    target.remove();
+  });
+});

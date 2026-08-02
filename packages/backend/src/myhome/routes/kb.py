@@ -8,7 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 from ..deps import get_current_user_id
-from ..models_kb import KBCreate, KBDocument, KBEntry, KBReorder, KBTrashDocument, KBUpdate
+from ..link_preview import fetch_link_preview, render_bookmark_html
+from ..models_kb import (
+    KBCreate, KBDocument, KBEntry, KBLinkPreviewRequest, KBReorder, KBTrashDocument, KBUpdate,
+)
 from ..persistence_activity import log_activity
 from ..persistence_kb import (
     delete_attachment,
@@ -227,3 +230,19 @@ def delete_kb_attachment(home_id: str, id: str, filename: str) -> None:
     entry.attachments = [a for a in entry.attachments if a != filename]
     entry.updatedAt = _now()
     save_entry(home_id, entry)
+
+
+@router.post("/api/homes/{home_id}/kb/link-preview")
+def get_kb_link_preview(home_id: str, body: KBLinkPreviewRequest) -> dict:
+    # home_id is unused -- kept for URL-namespace consistency with the rest of this
+    # router; this endpoint isn't entry- or home-scoped, it's a stateless URL lookup.
+    try:
+        preview = fetch_link_preview(body.url)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {
+        "html": render_bookmark_html(preview),
+        "title": preview.title,
+        "description": preview.description,
+        "image": preview.image,
+    }

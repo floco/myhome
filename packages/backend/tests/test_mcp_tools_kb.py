@@ -162,3 +162,63 @@ def test_empty_kb_trash(home_id):
     result = _empty_kb_trash_impl(home_id)
     assert result["deletedCount"] == 2
     assert _list_kb_trash_impl(home_id)["entries"] == []
+
+
+def test_add_kb_bookmark_appends_card_and_bumps_updated_at(home_id, monkeypatch):
+    import socket
+
+    import respx
+    from httpx import Response
+    from myhome.mcp_tools_kb import _add_kb_bookmark_impl, _create_kb_entry_impl
+
+    monkeypatch.setattr(
+        socket, "getaddrinfo",
+        lambda *a, **k: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))],
+    )
+    entry = _create_kb_entry_impl(home_id, "Notes", content="Existing content")
+    with respx.mock:
+        respx.get("http://93.184.216.34/page").mock(
+            return_value=Response(
+                200, headers={"content-type": "text/html"},
+                html='<meta property="og:title" content="OG Title">',
+            )
+        )
+        result = _add_kb_bookmark_impl(home_id, entry["id"], "http://example.com/page")
+    assert "Existing content" in result["content"]
+    assert 'class="kb-bookmark"' in result["content"]
+    assert "OG Title" in result["content"]
+    assert result["updatedAt"] != entry["updatedAt"]
+
+
+def test_add_kb_bookmark_title_and_description_override_fetched_values(home_id, monkeypatch):
+    import socket
+
+    import respx
+    from httpx import Response
+    from myhome.mcp_tools_kb import _add_kb_bookmark_impl, _create_kb_entry_impl
+
+    monkeypatch.setattr(
+        socket, "getaddrinfo",
+        lambda *a, **k: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))],
+    )
+    entry = _create_kb_entry_impl(home_id, "Notes")
+    with respx.mock:
+        respx.get("http://93.184.216.34/page").mock(
+            return_value=Response(
+                200, headers={"content-type": "text/html"},
+                html='<meta property="og:title" content="Fetched Title">',
+            )
+        )
+        result = _add_kb_bookmark_impl(
+            home_id, entry["id"], "http://example.com/page",
+            title="Custom Title", description="Custom Desc",
+        )
+    assert "Custom Title" in result["content"]
+    assert "Custom Desc" in result["content"]
+    assert "Fetched Title" not in result["content"]
+
+
+def test_add_kb_bookmark_unknown_entry_id_raises(home_id):
+    from myhome.mcp_tools_kb import _add_kb_bookmark_impl
+    with pytest.raises(ValueError):
+        _add_kb_bookmark_impl(home_id, "nonexistent", "http://example.com")

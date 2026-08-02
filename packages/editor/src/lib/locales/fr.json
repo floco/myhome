@@ -1186,7 +1186,13 @@
       "deletePrefix": "Supprimer",
       "andSubPages": "et {n, plural, one {# sous-page} other {# sous-pages}}",
       "restoreThemNote": "Vous pourrez les restaurer depuis la corbeille par la suite.",
-      "restoreItNote": "Vous pourrez la restaurer depuis la corbeille par la suite."
+      "restoreItNote": "Vous pourrez la restaurer depuis la corbeille par la suite.",
+      "bookmarkModalTitle": "Insérer un favori",
+      "bookmarkUrlPlaceholder": "https://example.com",
+      "bookmarkUrlRequired": "Une URL est requise",
+      "bookmarkFetchFailed": "Échec de la récupération de l'aperçu",
+      "bookmarkFetching": "Récupération…",
+      "bookmarkInsert": "Insérer"
     }
   },
   "markdownEditor": {
@@ -1208,6 +1214,7 @@
     "horizontalRule": "Ligne horizontale",
     "insertMedia": "Insérer un média",
     "insertMediaAttachment": "Insérer une pièce jointe média",
+    "insertBookmark": "Insérer un favori",
     "writeInMarkdown": "Écrire en Markdown…",
     "clickToEdit": "Cliquer pour modifier"
   },

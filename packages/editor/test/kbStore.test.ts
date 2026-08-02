@@ -300,3 +300,29 @@ describe("kbStore — trash", () => {
     expect(emptyCall[0]).toBe(`/api/homes/${HOME}/kb/trash/empty`);
   });
 });
+
+describe("kbStore — fetchLinkPreview", () => {
+  it("posts the url and returns the response body", async () => {
+    const fetchFn = stubRoutedFetch([
+      {
+        match: methodAt("POST", "/kb/link-preview"),
+        respond: () => ok(200, { html: '<a class="kb-bookmark">Example</a>', title: "Example", description: "", image: null }),
+      },
+    ]);
+    const store = createKBStore(getHomeId);
+    const result = await store.fetchLinkPreview("https://example.com");
+    expect(result.html).toBe('<a class="kb-bookmark">Example</a>');
+    expect(fetchFn).toHaveBeenCalledWith(
+      `/api/homes/${HOME}/kb/link-preview`,
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ url: "https://example.com" }) }),
+    );
+  });
+
+  it("throws on a non-ok response", async () => {
+    stubRoutedFetch([
+      { match: methodAt("POST", "/kb/link-preview"), respond: () => fail(400) },
+    ]);
+    const store = createKBStore(getHomeId);
+    await expect(store.fetchLinkPreview("not-a-url")).rejects.toThrow("HTTP 400");
+  });
+});
