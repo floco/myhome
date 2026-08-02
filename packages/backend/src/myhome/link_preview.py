@@ -35,7 +35,11 @@ def _resolve_allowed_ip(hostname: str) -> str:
         raise ValueError(f"Cannot resolve host {hostname!r}") from exc
     ips = [ipaddress.ip_address(sockaddr[0]) for *_rest, sockaddr in infos]
     for ip in ips:
-        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast or ip.is_unspecified:
+        # Allow-list globally-routable addresses rather than denying specific
+        # non-global ranges -- a deny-list (is_private/is_loopback/etc.) misses
+        # ranges like 100.64.0.0/10 (CGNAT / Tailscale), which is_global correctly
+        # excludes but none of the individual flags catch.
+        if not ip.is_global:
             raise ValueError(f"Refusing to fetch private/internal address {ip}")
     return str(ips[0])
 

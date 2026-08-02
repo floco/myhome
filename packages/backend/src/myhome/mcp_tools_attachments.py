@@ -164,6 +164,7 @@ def _upload_attachment_impl(
     if ext not in ALLOWED_EXTENSIONS:
         raise ValueError(f"File type {ext!r} not supported. Allowed: {sorted(ALLOWED_EXTENSIONS)}")
     safe_filename = sanitise_filename(filename)
+    validate_filename(safe_filename)
     try:
         data = base64.b64decode(data_base64, validate=True)
     except (binascii.Error, ValueError) as exc:
