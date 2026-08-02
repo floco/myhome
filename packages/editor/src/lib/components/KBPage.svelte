@@ -425,7 +425,12 @@
           </div>
         </div>
         <div class="header-actions">
-          {#if contentTab === "content" && !editing}
+          {#if contentTab === "content" && editing}
+            <Button variant="primary" disabled={saving} onclick={handleSave}>
+              {saving ? $_('settings.security.saving') : $_('common.save')}
+            </Button>
+            <Button variant="secondary" onclick={handleCancel}>{$_('common.cancel')}</Button>
+          {:else if contentTab === "content" && !editing}
             <Button variant="secondary" onclick={() => { editing = true; }}>{$_('common.edit')}</Button>
           {/if}
           <Button variant="ghost" onclick={() => handleAskDelete(selectedEntry.id)} title={$_('kb.page.deletePage')}>🗑</Button>
@@ -458,15 +463,6 @@
 
       {#if error}
         <div class="content-error">{error}</div>
-      {/if}
-
-      {#if editing && contentTab === "content"}
-        <div class="content-footer">
-          <Button variant="primary" disabled={saving} onclick={handleSave}>
-            {saving ? $_('settings.security.saving') : $_('common.save')}
-          </Button>
-          <Button variant="secondary" onclick={handleCancel}>{$_('common.cancel')}</Button>
-        </div>
       {/if}
     {/if}
   </div>
@@ -568,11 +564,6 @@
   .content-body :global(.md-editor) { flex: 1; }
 
   .content-error { padding: 0 var(--space-4); font-size: 11px; color: var(--danger); }
-  .content-footer {
-    display: flex; gap: var(--space-2);
-    padding: var(--space-3) var(--space-4);
-    border-top: 1px solid var(--border); flex-shrink: 0;
-  }
 
   .bookmark-error { color: var(--danger); font-size: 12px; margin: 6px 0 0; }
 </style>
