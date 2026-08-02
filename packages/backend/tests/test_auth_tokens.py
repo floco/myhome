@@ -105,3 +105,39 @@ def test_bearer_token_updates_last_used_at(tmp_path, monkeypatch):
     doc = load_tokens()
     used = next(t for t in doc.tokens if t.name == "Tracker")
     assert used.last_used_at is not None
+
+
+def test_bearer_token_auth_does_not_rewrite_whole_token_table(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("SECRET_KEY", "test-secret-key-for-tests-only")
+    from passlib.context import CryptContext
+    from myhome.models_auth import User, UserDocument
+    from myhome.persistence_auth import load_tokens, save_users
+    from fastapi.testclient import TestClient
+    from myhome.main import app
+    pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    save_users(UserDocument(users=[
+        User(id="u1", username="admin", password_hash=pwd_ctx.hash("admin123"),
+             role="admin", created_at="2026-01-01T00:00:00+00:00")
+    ]))
+    tc = TestClient(app)
+    tc.post("/api/auth/login", json={"username": "admin", "password": "admin123"})
+    hid = tc.post("/api/homes", json={"name": "Test Home", "type": "existing"}).json()["id"]
+    other_id = tc.post("/api/auth/tokens", json={"name": "Other", "role": "ro"}).json()["info"]["id"]
+    raw_token = tc.post("/api/auth/tokens", json={"name": "Tracker", "role": "ro"}).json()["token"]
+
+    calls = []
+    monkeypatch.setattr(
+        "myhome.persistence_auth.save_tokens",
+        lambda doc: calls.append(doc),
+    )
+    bare = TestClient(app)
+    resp = bare.get(f"/api/homes/{hid}/settings", headers={"Authorization": f"Bearer {raw_token}"})
+    assert resp.status_code == 200
+    assert calls == []  # a bearer-token request must not trigger a full-table rewrite
+
+    doc = load_tokens()
+    used = next(t for t in doc.tokens if t.name == "Tracker")
+    other = next(t for t in doc.tokens if t.id == other_id)
+    assert used.last_used_at is not None
+    assert other.last_used_at is None  # untouched token unaffected by the targeted update

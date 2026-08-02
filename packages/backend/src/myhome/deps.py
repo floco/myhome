@@ -69,15 +69,14 @@ def _decode_refresh(token: str) -> dict | None:
 
 def _bearer_lookup(raw_token: str) -> tuple[str, str] | None:
     """Check opaque bearer token. Returns (user_id, role) or None."""
-    from .persistence_auth import load_tokens, save_tokens
+    from .persistence_auth import load_tokens, touch_token_last_used
 
     token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
     doc = load_tokens()
     api_token = next((t for t in doc.tokens if t.token_hash == token_hash), None)
     if api_token is None:
         return None
-    api_token.last_used_at = datetime.now(timezone.utc).isoformat()
-    save_tokens(doc)
+    touch_token_last_used(api_token.id, datetime.now(timezone.utc).isoformat())
     return (api_token.owner_id, api_token.role)
 
 

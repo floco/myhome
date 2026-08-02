@@ -84,6 +84,20 @@ def save_tokens(doc: TokenDocument) -> None:
             ])
 
 
+def touch_token_last_used(token_id: str, last_used_at: str) -> None:
+    """Update a single token's last_used_at. Called on every bearer-token-
+    authenticated request, so this must be a targeted UPDATE -- not the
+    delete-everything-then-reinsert-everything that save_tokens() does, which
+    would otherwise rewrite the whole api_tokens table on every request."""
+    engine = get_engine()
+    with engine.begin() as conn:
+        conn.execute(
+            api_tokens_table.update()
+            .where(api_tokens_table.c.id == token_id)
+            .values(last_used_at=last_used_at)
+        )
+
+
 def load_oidc_config() -> OidcConfig:
     engine = get_engine()
     with engine.connect() as conn:
