@@ -16,6 +16,7 @@
     clickToEdit?: boolean;
     resolveKbLink?: (id: string) => { title: string; icon: string } | null;
     onSlashPage?: () => Promise<{ id: string; title: string } | null>;
+    onInsertBookmark?: () => Promise<string | null>;
   }
 
   let {
@@ -27,6 +28,7 @@
     clickToEdit = true,
     resolveKbLink,
     onSlashPage,
+    onInsertBookmark,
   }: Props = $props();
 
   const effectivePlaceholder = $derived(placeholder ?? $_('markdownEditor.defaultPlaceholder'));
@@ -67,8 +69,12 @@
   }
 
   // marked() is sync here (no async extensions); cast to string is safe.
+  // ADD_ATTR: DOMPurify strips target="_blank" by default -- needed so bookmark
+  // cards (and any other link) open in a new tab instead of navigating the SPA away.
   const renderedHtml = $derived(
-    value.trim() ? resolveKbLinksInHtml(DOMPurify.sanitize(marked(value) as string)) : "",
+    value.trim()
+      ? resolveKbLinksInHtml(DOMPurify.sanitize(marked(value) as string, { ADD_ATTR: ["target"] }))
+      : "",
   );
 
   /** Wrap the current selection (or insert placeholder text) with before/after. */
@@ -131,6 +137,12 @@
     insert(md);
     pickerOpen = false;
   }
+
+  async function handleInsertBookmark(): Promise<void> {
+    if (!onInsertBookmark) return;
+    const bookmarkHtml = await onInsertBookmark();
+    if (bookmarkHtml) insert(bookmarkHtml);
+  }
 </script>
 
 {#if editing}
@@ -182,6 +194,15 @@
           </div>
         {/if}
       </div>
+    {/if}
+    {#if onInsertBookmark}
+      <span class="tb-sep" aria-hidden="true"></span>
+      <button
+        class="tb-btn"
+        type="button"
+        title={$_('markdownEditor.insertBookmark')}
+        onclick={handleInsertBookmark}
+      >🔖</button>
     {/if}
   </div>
   <textarea
@@ -313,4 +334,27 @@
   .md-preview :global(table) { border-collapse: collapse; width: 100%; margin: 0.5em 0; font-size: 12px; }
   .md-preview :global(th), .md-preview :global(td) { border: 1px solid var(--border); padding: 4px 8px; }
   .md-preview :global(th) { background: var(--surface-hover); }
+
+  .md-preview :global(a.kb-bookmark) {
+    display: flex; align-items: stretch;
+    border: 1px solid var(--border); border-radius: var(--radius-md);
+    overflow: hidden; text-decoration: none; margin: 0.5em 0;
+    background: var(--surface-alt);
+  }
+  .md-preview :global(a.kb-bookmark:hover) { border-color: var(--accent); }
+  .md-preview :global(.kb-bookmark-text) {
+    flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;
+    padding: 10px 12px; justify-content: center;
+  }
+  .md-preview :global(.kb-bookmark-title) { color: var(--text); font-weight: 600; font-size: 13px; }
+  .md-preview :global(.kb-bookmark-desc) {
+    color: var(--text-muted); font-size: 12px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .md-preview :global(.kb-bookmark-domain) {
+    color: var(--text-faint); font-size: 11px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .md-preview :global(.kb-bookmark-favicon) { width: 14px; height: 14px; border-radius: 2px; }
+  .md-preview :global(.kb-bookmark-image) { width: 120px; flex-shrink: 0; object-fit: cover; }
 </style>

@@ -124,6 +124,20 @@ export function createKBStore(getHomeId: () => string | null = () => null) {
     await init();
   }
 
+  async function fetchLinkPreview(
+    url: string,
+  ): Promise<{ html: string; title: string; description: string; image: string | null }> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/kb/link-preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    return resp.json();
+  }
+
   async function loadTrash(): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) return;
@@ -171,6 +185,7 @@ export function createKBStore(getHomeId: () => string | null = () => null) {
     deleteEntry,
     uploadAttachment,
     deleteAttachment,
+    fetchLinkPreview,
     loadTrash,
     restoreEntry,
     permanentlyDeleteEntry,
