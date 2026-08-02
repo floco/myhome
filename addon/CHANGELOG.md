@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.0 - 2026-08-02
+
+- Added web bookmark cards to the Knowledge Base editor — paste a URL to insert a rich preview card (title, description, thumbnail, favicon+domain) instead of a plain link, plus a matching `add_kb_bookmark` MCP tool
+- Added MCP tools to upload, delete, and fetch attachments across all 8 attachment-capable modules (Inventory, Chores, Costs, Works, Consumables, KB, Contacts, Properties)
+- Moved the Knowledge Base editor's Save/Cancel buttons next to the Edit button at the top of the page, instead of a footer below the editor
+
 ## 0.13.0 - 2026-08-01
 
 - Added Owner and Store fields to Inventory items — pick an existing one from the dropdown or type a new name to create it on the spot, no need to visit Settings first
