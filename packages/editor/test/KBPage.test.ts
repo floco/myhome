@@ -67,6 +67,15 @@ function createFakeKbBackend(initial: KBEntry[]) {
     if (url.endsWith("/kb/trash") && method === "GET") {
       return { ok: true, status: 200, json: async () => ({ entries: trashed() }) };
     }
+    if (url.endsWith("/kb/link-preview") && method === "POST") {
+      return {
+        ok: true, status: 200,
+        json: async () => ({
+          html: `<a class="kb-bookmark" href="${body.url}">${body.url}</a>`,
+          title: body.url, description: "", image: null,
+        }),
+      };
+    }
     if (url.endsWith("/trash/empty") && method === "POST") {
       const ids = trashed().map((e) => e.id);
       entries = live();
@@ -323,6 +332,50 @@ describe("KBPage — trash", () => {
     confirmBtn.click();
     await tick(); flushSync(); await tick(); flushSync();
     expect(store.entries.some((e) => e.id === "e1")).toBe(false);
+    unmount(comp); target.remove();
+  });
+});
+
+describe("KBPage — insert bookmark", () => {
+  it("fetches a link preview and inserts the returned HTML at the cursor", async () => {
+    const entries = [makeEntry({ content: "" })];
+    const { target, comp } = await setup(entries, { selectedItemId: "e1" });
+    const editBtn = Array.from(target.querySelectorAll("button")).find((b) => b.textContent === "Edit") as HTMLElement;
+    editBtn.click();
+    flushSync();
+    (target.querySelector('[title="Insert bookmark"]') as HTMLButtonElement).click();
+    flushSync();
+    const modal = target.querySelector(".ui-modal") as HTMLElement;
+    expect(modal).not.toBeNull();
+    const urlInput = modal.querySelector(".ui-input") as HTMLInputElement;
+    urlInput.value = "https://example.com";
+    urlInput.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    const insertBtn = Array.from(modal.querySelectorAll("button")).find((b) => b.textContent?.includes("Insert")) as HTMLElement;
+    insertBtn.click();
+    await tick(); flushSync(); await tick(); flushSync();
+    expect(target.querySelector(".ui-modal")).toBeNull();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toContain("kb-bookmark");
+    expect(textarea.value).toContain("https://example.com");
+    unmount(comp); target.remove();
+  });
+
+  it("Cancel closes the modal without inserting anything", async () => {
+    const entries = [makeEntry({ content: "" })];
+    const { target, comp } = await setup(entries, { selectedItemId: "e1" });
+    const editBtn = Array.from(target.querySelectorAll("button")).find((b) => b.textContent === "Edit") as HTMLElement;
+    editBtn.click();
+    flushSync();
+    (target.querySelector('[title="Insert bookmark"]') as HTMLButtonElement).click();
+    flushSync();
+    const modal = target.querySelector(".ui-modal") as HTMLElement;
+    const cancelBtn = Array.from(modal.querySelectorAll("button")).find((b) => b.textContent === "Cancel") as HTMLElement;
+    cancelBtn.click();
+    flushSync();
+    expect(target.querySelector(".ui-modal")).toBeNull();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("");
     unmount(comp); target.remove();
   });
 });

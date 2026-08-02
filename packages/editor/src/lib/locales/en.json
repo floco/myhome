@@ -1186,7 +1186,13 @@
       "deletePrefix": "Delete",
       "andSubPages": "and {n, plural, one {# sub-page} other {# sub-pages}}",
       "restoreThemNote": "You can restore them from Trash afterward.",
-      "restoreItNote": "You can restore it from Trash afterward."
+      "restoreItNote": "You can restore it from Trash afterward.",
+      "bookmarkModalTitle": "Insert bookmark",
+      "bookmarkUrlPlaceholder": "https://example.com",
+      "bookmarkUrlRequired": "A URL is required",
+      "bookmarkFetchFailed": "Failed to fetch preview",
+      "bookmarkFetching": "Fetching…",
+      "bookmarkInsert": "Insert"
     }
   },
   "markdownEditor": {

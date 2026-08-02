@@ -41,6 +41,11 @@
   let renamingId = $state<string | null>(null);
   let dragging = $state<string | null>(null);
   let trashDragOver = $state(false);
+  let bookmarkModalOpen = $state(false);
+  let bookmarkUrl = $state("");
+  let bookmarkFetching = $state(false);
+  let bookmarkError = $state<string | null>(null);
+  let bookmarkResolve: ((html: string | null) => void) | null = null;
 
   const selectedEntry = $derived(
     selectedId ? (store.entries.find((e) => e.id === selectedId) ?? null) : null,
@@ -155,6 +160,34 @@
     } catch (e) {
       error = e instanceof Error ? e.message : $_('kb.page.createFailed');
       return null;
+    }
+  }
+
+  function handleInsertBookmark(): Promise<string | null> {
+    bookmarkUrl = "";
+    bookmarkError = null;
+    bookmarkModalOpen = true;
+    return new Promise((resolve) => { bookmarkResolve = resolve; });
+  }
+
+  function closeBookmarkModal(result: string | null): void {
+    bookmarkModalOpen = false;
+    bookmarkResolve?.(result);
+    bookmarkResolve = null;
+  }
+
+  async function handleConfirmBookmark(): Promise<void> {
+    const url = bookmarkUrl.trim();
+    if (!url) { bookmarkError = $_('kb.page.bookmarkUrlRequired'); return; }
+    bookmarkFetching = true;
+    bookmarkError = null;
+    try {
+      const { html } = await store.fetchLinkPreview(url);
+      closeBookmarkModal(html);
+    } catch (e) {
+      bookmarkError = e instanceof Error ? e.message : $_('kb.page.bookmarkFetchFailed');
+    } finally {
+      bookmarkFetching = false;
     }
   }
 
@@ -409,6 +442,7 @@
             placeholder={$_('kb.page.startWritingPlaceholder')}
             {resolveKbLink}
             onSlashPage={handleSlashPage}
+            onInsertBookmark={handleInsertBookmark}
           />
         {:else}
           <MediaGallery
@@ -451,6 +485,19 @@
   {#snippet footer()}
     <Button variant="ghost" onclick={() => { confirmDelete = null; }}>{$_('common.cancel')}</Button>
     <Button variant="danger" onclick={handleConfirmDelete}>{$_('common.delete')}</Button>
+  {/snippet}
+</Modal>
+
+<Modal open={bookmarkModalOpen} title={$_('kb.page.bookmarkModalTitle')} onclose={() => closeBookmarkModal(null)} width="420px">
+  <Input placeholder={$_('kb.page.bookmarkUrlPlaceholder')} bind:value={bookmarkUrl} />
+  {#if bookmarkError}
+    <p class="bookmark-error">{bookmarkError}</p>
+  {/if}
+  {#snippet footer()}
+    <Button variant="ghost" onclick={() => closeBookmarkModal(null)}>{$_('common.cancel')}</Button>
+    <Button variant="primary" disabled={bookmarkFetching} onclick={handleConfirmBookmark}>
+      {bookmarkFetching ? $_('kb.page.bookmarkFetching') : $_('kb.page.bookmarkInsert')}
+    </Button>
   {/snippet}
 </Modal>
 
@@ -526,4 +573,6 @@
     padding: var(--space-3) var(--space-4);
     border-top: 1px solid var(--border); flex-shrink: 0;
   }
+
+  .bookmark-error { color: var(--danger); font-size: 12px; margin: 6px 0 0; }
 </style>
