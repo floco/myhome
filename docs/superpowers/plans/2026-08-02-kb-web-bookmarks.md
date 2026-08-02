@@ -13,7 +13,8 @@ Design doc: `docs/superpowers/specs/2026-08-02-kb-web-bookmarks-design.md`.
 ## Global Constraints
 
 - `fetch_link_preview(url)` **never raises for network/fetch/parse failure** — timeout, connection error, non-2xx, blocked private address, unresolvable host, non-HTML content-type, or no metadata found all fall back to `title=<hostname>, description="", image=None, favicon=None`. It raises `ValueError` **only** when `url` isn't an absolute `http`/`https` URL. Every caller (REST endpoint, MCP tool) relies on this: only the malformed-URL case needs its own error branch.
-- SSRF guard: before fetching a URL (including every redirect hop), resolve its hostname via `socket.getaddrinfo` and reject (via `ValueError`, caught internally per the point above) if any resolved address is private/loopback/link-local/reserved/multicast (stdlib `ipaddress` predicates). Redirects are followed manually (`httpx.Client(follow_redirects=False)`, max 3 hops) specifically so each hop gets re-validated — plain `follow_redirects=True` would skip this and reopen a DNS-rebinding-style hole.
+- SSRF guard: before fetching a URL (including every redirect hop), resolve its hostname via `socket.getaddrinfo` and reject (via `ValueError`, caught internally per the point above) if any resolved address is private/loopback/link-local/reserved/multicast/unspecified (stdlib `ipaddress` predicates). Redirects are followed manually (`httpx.Client(follow_redirects=False)`, max 3 hops) specifically so each hop gets re-validated — plain `follow_redirects=True` would skip this and reopen a DNS-rebinding-style hole.
+- **The validated IP must be the one actually connected to** (added after an automated security review caught this as a HIGH-severity DNS-rebinding TOCTOU gap in an earlier draft of this module): resolving+validating a hostname and then handing httpx the hostname-based URL lets httpx re-resolve it independently at connect time, so a rebinding-capable DNS server could pass the check with a public IP and serve a private one moments later for the real connection. The fix: `_resolve_allowed_ip` returns the specific validated IP, `_pin_host` rewrites the request URL's host to that literal IP, and the request is sent with `headers={"Host": hostname}` + `extensions={"sni_hostname": hostname}` so the origin server still sees the correct virtual host/SNI. Tests must mock `respx.get()` against the pinned IP URL (e.g. `http://93.184.216.34/page`), not the hostname URL — respx matches the actual request URL, which is now IP-based.
 - **Tests must never depend on real DNS/network.** Every test that exercises `fetch_link_preview` (directly, via the REST endpoint, or via the MCP tool) must `monkeypatch.setattr(socket, "getaddrinfo", ...)` to a fake resolver returning a fixed public IP (`93.184.216.34`), and use `respx.mock` to intercept the `httpx` calls. Verified empirically during design that this sandbox's real DNS happens to work, but tests must not rely on that being true everywhere (CI, offline dev environments, etc).
 - No new runtime dependency. HTML parsing uses stdlib `html.parser.HTMLParser`; no favicon service, no HTML-parsing library.
 - Follow the existing `_xxx_impl(...)` / `@mcp.tool() async def xxx(ctx, ...)` split in `mcp_tools_kb.py`: the plain function does the work and raises `ValueError` on error; the tool wrapper does the role check then delegates.
@@ -82,7 +83,7 @@ def _public_dns(monkeypatch):
 
 def test_fetch_link_preview_extracts_og_tags():
     with respx.mock:
-        respx.get("http://example.com/page").mock(
+        respx.get("http://93.184.216.34/page").mock(
             return_value=Response(
                 200,
                 headers={"content-type": "text/html; charset=utf-8"},
@@ -103,7 +104,7 @@ def test_fetch_link_preview_extracts_og_tags():
 
 def test_fetch_link_preview_falls_back_to_title_tag_and_meta_description():
     with respx.mock:
-        respx.get("http://example.com/page").mock(
+        respx.get("http://93.184.216.34/page").mock(
             return_value=Response(
                 200,
                 headers={"content-type": "text/html"},
@@ -119,7 +120,7 @@ def test_fetch_link_preview_falls_back_to_title_tag_and_meta_description():
 
 def test_fetch_link_preview_falls_back_to_hostname_when_nothing_found():
     with respx.mock:
-        respx.get("http://example.com/page").mock(
+        respx.get("http://93.184.216.34/page").mock(
             return_value=Response(200, headers={"content-type": "text/html"}, html="<html></html>")
         )
         preview = fetch_link_preview("http://example.com/page")
@@ -129,10 +130,10 @@ def test_fetch_link_preview_falls_back_to_hostname_when_nothing_found():
 
 def test_fetch_link_preview_follows_redirect_and_revalidates_host():
     with respx.mock:
-        respx.get("http://example.com/page").mock(
+        respx.get("http://93.184.216.34/page").mock(
             return_value=Response(301, headers={"location": "http://example.com/final"})
         )
-        respx.get("http://example.com/final").mock(
+        respx.get("http://93.184.216.34/final").mock(
             return_value=Response(
                 200,
                 headers={"content-type": "text/html"},
@@ -141,6 +142,23 @@ def test_fetch_link_preview_follows_redirect_and_revalidates_host():
         )
         preview = fetch_link_preview("http://example.com/page")
     assert preview.title == "Final Page"
+
+
+def test_fetch_link_preview_pins_connection_to_validated_ip_with_original_host_header():
+    # Regression test for a DNS-rebinding TOCTOU gap: the request must be sent to
+    # the specific IP already validated, not to whatever the hostname re-resolves
+    # to at connect time (which httpx would do on its own if given the
+    # hostname-based URL directly). The Host header/SNI must still carry the
+    # original hostname so the origin server sees the right virtual host.
+    with respx.mock:
+        route = respx.get("http://93.184.216.34/page").mock(
+            return_value=Response(200, headers={"content-type": "text/html"}, html="<title>T</title>")
+        )
+        fetch_link_preview("http://example.com/page")
+    assert route.called
+    sent_request = route.calls[0].request
+    assert sent_request.url.host == "93.184.216.34"
+    assert sent_request.headers.get("host") == "example.com"
 
 
 def test_fetch_link_preview_rejects_private_address(monkeypatch):
@@ -160,7 +178,7 @@ def test_fetch_link_preview_falls_back_when_host_unresolvable(monkeypatch):
 
 def test_fetch_link_preview_falls_back_on_non_html_content_type():
     with respx.mock:
-        respx.get("http://example.com/file.pdf").mock(
+        respx.get("http://93.184.216.34/file.pdf").mock(
             return_value=Response(200, headers={"content-type": "application/pdf"}, content=b"%PDF-1.4")
         )
         preview = fetch_link_preview("http://example.com/file.pdf")
@@ -169,7 +187,7 @@ def test_fetch_link_preview_falls_back_on_non_html_content_type():
 
 def test_fetch_link_preview_falls_back_on_connection_error():
     with respx.mock:
-        respx.get("http://example.com/page").mock(side_effect=httpx.ConnectError("boom"))
+        respx.get("http://93.184.216.34/page").mock(side_effect=httpx.ConnectError("boom"))
         preview = fetch_link_preview("http://example.com/page")
     assert preview.title == "example.com"
 
@@ -226,7 +244,7 @@ import ipaddress
 import socket
 from dataclasses import dataclass
 from html.parser import HTMLParser
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urlunparse
 
 import httpx
 
@@ -244,26 +262,44 @@ class LinkPreview:
     favicon: str | None
 
 
-def _check_host_allowed(hostname: str) -> None:
+def _resolve_allowed_ip(hostname: str) -> str:
     try:
         infos = socket.getaddrinfo(hostname, None)
     except socket.gaierror as exc:
         raise ValueError(f"Cannot resolve host {hostname!r}") from exc
-    for _family, _type, _proto, _canonname, sockaddr in infos:
-        ip = ipaddress.ip_address(sockaddr[0])
-        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+    ips = [ipaddress.ip_address(sockaddr[0]) for *_rest, sockaddr in infos]
+    for ip in ips:
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast or ip.is_unspecified:
             raise ValueError(f"Refusing to fetch private/internal address {ip}")
+    return str(ips[0])
+
+
+def _pin_host(url: str, ip: str) -> str:
+    """Rewrite url's host to the literal, pre-validated ip -- the caller sends the
+    real hostname separately via the Host header + sni_hostname extension. This
+    closes a DNS-rebinding TOCTOU gap: without pinning, _resolve_allowed_ip
+    validates one address but httpx would independently re-resolve the hostname
+    itself at connect time, so an attacker-controlled DNS server could return a
+    public IP for the validation lookup and a private one moments later for the
+    real connection."""
+    parsed = urlparse(url)
+    host_part = f"[{ip}]" if ":" in ip else ip
+    netloc = f"{host_part}:{parsed.port}" if parsed.port else host_part
+    return urlunparse(parsed._replace(netloc=netloc))
 
 
 def _fetch_html(url: str) -> tuple[str, str]:
-    current = url
+    current = url  # logical (hostname-based) URL; updated to the redirect target each hop
     with httpx.Client(follow_redirects=False, timeout=_TIMEOUT) as client:
         for _ in range(_MAX_REDIRECTS + 1):
             hostname = urlparse(current).hostname
             if not hostname:
                 raise ValueError(f"Invalid URL {current!r}")
-            _check_host_allowed(hostname)
-            with client.stream("GET", current) as resp:
+            ip = _resolve_allowed_ip(hostname)
+            pinned_url = _pin_host(current, ip)
+            with client.stream(
+                "GET", pinned_url, headers={"Host": hostname}, extensions={"sni_hostname": hostname},
+            ) as resp:
                 if resp.is_redirect:
                     location = resp.headers.get("location")
                     if not location:
@@ -382,7 +418,7 @@ def render_bookmark_html(preview: LinkPreview) -> str:
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `pytest packages/backend/tests/test_link_preview.py -v`
-Expected: PASS (12 tests)
+Expected: PASS (13 tests)
 
 - [ ] **Step 5: Run the full backend suite to check nothing else broke**
 
@@ -430,7 +466,7 @@ def _fake_getaddrinfo(*args, **kwargs):
 def test_kb_link_preview_returns_html_and_fields(client, home_id, monkeypatch):
     monkeypatch.setattr(socket, "getaddrinfo", _fake_getaddrinfo)
     with respx.mock:
-        respx.get("http://example.com/page").mock(
+        respx.get("http://93.184.216.34/page").mock(
             return_value=Response(
                 200,
                 headers={"content-type": "text/html"},
@@ -538,7 +574,7 @@ def test_add_kb_bookmark_appends_card_and_bumps_updated_at(home_id, monkeypatch)
     )
     entry = _create_kb_entry_impl(home_id, "Notes", content="Existing content")
     with respx.mock:
-        respx.get("http://example.com/page").mock(
+        respx.get("http://93.184.216.34/page").mock(
             return_value=Response(
                 200, headers={"content-type": "text/html"},
                 html='<meta property="og:title" content="OG Title">',
@@ -564,7 +600,7 @@ def test_add_kb_bookmark_title_and_description_override_fetched_values(home_id, 
     )
     entry = _create_kb_entry_impl(home_id, "Notes")
     with respx.mock:
-        respx.get("http://example.com/page").mock(
+        respx.get("http://93.184.216.34/page").mock(
             return_value=Response(
                 200, headers={"content-type": "text/html"},
                 html='<meta property="og:title" content="Fetched Title">',
