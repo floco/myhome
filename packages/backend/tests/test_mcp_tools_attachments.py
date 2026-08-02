@@ -149,3 +149,51 @@ def test_delete_attachment_missing_file_raises(home_id):
     item_id = _create_inventory_item_impl(home_id, "Drill")["id"]
     with pytest.raises(ValueError, match="not found"):
         _delete_attachment_impl(home_id, "inventory", item_id, "nonexistent.jpg")
+
+
+def test_get_attachment_image_returns_image(home_id):
+    from mcp.server.fastmcp import Image
+    from myhome.mcp_tools_attachments import _get_attachment_impl, _upload_attachment_impl
+    from myhome.mcp_tools_inventory import _create_inventory_item_impl
+
+    item_id = _create_inventory_item_impl(home_id, "Drill")["id"]
+    original = b"\xff\xd8\xff-fake-jpeg-bytes"
+    _upload_attachment_impl(home_id, "inventory", item_id, "photo.jpg", base64.b64encode(original).decode())
+
+    result = _get_attachment_impl(home_id, "inventory", item_id, "photo.jpg")
+
+    assert isinstance(result, Image)
+    assert result.data == original
+    content = result.to_image_content()
+    assert content.mimeType == "image/jpeg"
+    assert base64.b64decode(content.data) == original
+
+
+def test_get_attachment_pdf_returns_metadata_dict(home_id):
+    from myhome.mcp_tools_attachments import _get_attachment_impl, _upload_attachment_impl
+    from myhome.mcp_tools_inventory import _create_inventory_item_impl
+
+    item_id = _create_inventory_item_impl(home_id, "Drill")["id"]
+    original = b"%PDF-1.4 fake pdf bytes"
+    _upload_attachment_impl(home_id, "inventory", item_id, "manual.pdf", base64.b64encode(original).decode())
+
+    result = _get_attachment_impl(home_id, "inventory", item_id, "manual.pdf")
+
+    assert result["filename"] == "manual.pdf"
+    assert result["mimeType"] == "application/pdf"
+    assert result["size"] == len(original)
+    assert "web UI" in result["note"]
+
+
+def test_get_attachment_missing_file_raises(home_id):
+    from myhome.mcp_tools_attachments import _get_attachment_impl
+    from myhome.mcp_tools_inventory import _create_inventory_item_impl
+    item_id = _create_inventory_item_impl(home_id, "Drill")["id"]
+    with pytest.raises(ValueError, match="not found"):
+        _get_attachment_impl(home_id, "inventory", item_id, "nonexistent.jpg")
+
+
+def test_get_attachment_unknown_module_raises(home_id):
+    from myhome.mcp_tools_attachments import _get_attachment_impl
+    with pytest.raises(ValueError, match="Unknown module"):
+        _get_attachment_impl(home_id, "not-a-module", "x", "photo.jpg")

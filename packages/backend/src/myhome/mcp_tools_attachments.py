@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import base64
 import binascii
+import mimetypes
 import os
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from mcp.server.fastmcp import Context
+from mcp.server.fastmcp import Context, Image
 
 from . import persistence_build as _bld
 from . import persistence_chores as _chr
@@ -32,6 +33,9 @@ from .attachment_validation import (
     validate_id,
 )
 from .mcp_server import _require_role, _resolve_home_id, mcp
+
+
+_IMAGE_FORMATS = {".jpg": "jpeg", ".jpeg": "jpeg", ".png": "png", ".webp": "webp"}
 
 
 def _now_iso() -> str:
@@ -190,6 +194,29 @@ def _delete_attachment_impl(home_id: str | None, module: str, item_id: str, file
     return {"deleted": filename}
 
 
+def _get_attachment_impl(home_id: str | None, module: str, item_id: str, filename: str):
+    resolved = _resolve_home_id(home_id)
+    adapter = _get_adapter(module)
+    validate_id(item_id)
+    validate_filename(filename)
+    item, _find_save = adapter.find(resolved, item_id)
+    if item is None:
+        raise ValueError(f"Unknown item_id {item_id!r} for module {module!r}")
+    path = adapter.get_attachment_path(resolved, item_id, filename)
+    if not path.is_file():
+        raise ValueError(f"Attachment {filename!r} not found")
+    ext = os.path.splitext(filename.lower())[1]
+    if ext in _IMAGE_FORMATS:
+        return Image(data=path.read_bytes(), format=_IMAGE_FORMATS[ext])
+    mime, _ = mimetypes.guess_type(filename)
+    return {
+        "filename": filename,
+        "mimeType": mime or "application/octet-stream",
+        "size": path.stat().st_size,
+        "note": "Binary preview isn't supported over MCP for this file type; view or download it from the web UI.",
+    }
+
+
 @mcp.tool()
 async def upload_attachment(
     ctx: Context, module: str, item_id: str, filename: str, data_base64: str,
@@ -212,3 +239,13 @@ async def delete_attachment(
     values."""
     await _require_role(ctx.request_context.request, "normal")
     return _delete_attachment_impl(home_id, module, item_id, filename)
+
+
+@mcp.tool()
+async def get_attachment(ctx: Context, module: str, item_id: str, filename: str, home_id: str | None = None):
+    """Fetch an item's attachment. Images (.jpg/.jpeg/.png/.webp) are returned as an
+    inline image; PDFs return metadata only (filename/mimeType/size) since there's no
+    way to preview a PDF inline over MCP -- view or download PDFs via the web UI. See
+    upload_attachment for valid module values."""
+    await _require_role(ctx.request_context.request, "ro")
+    return _get_attachment_impl(home_id, module, item_id, filename)
