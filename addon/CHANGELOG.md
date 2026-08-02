@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.15.0 - 2026-08-02
+
+- Added whole-page scrolling on mobile for Chores, Contacts, Costs, Consumables, Insurance, Inventory, Properties, Works, and Build — previously only the inner table scrolled, leaving the toolbar and charts pinned above it
+- Added a collapsible sidebar (tap the menu icon) to the Knowledge Base editor on mobile, freeing up space to actually edit a page
+- Renamed "Knowledge Base" to "Wiki" throughout the app
+- Fixed an MCP attachment upload with certain filenames (e.g. punctuation stripped down to just a leading-dot extension) silently saving a file that could never be fetched or deleted afterward
+- Hardened the Knowledge Base bookmark preview fetch against an SSRF gap that didn't block a shared/carrier-grade-NAT address range
+
 ## 0.14.0 - 2026-08-02
 
 - Added web bookmark cards to the Knowledge Base editor — paste a URL to insert a rich preview card (title, description, thumbnail, favicon+domain) instead of a plain link, plus a matching `add_kb_bookmark` MCP tool
