@@ -115,3 +115,37 @@ def test_upload_attachment_bumps_kb_updated_at(home_id):
     _upload_attachment_impl(home_id, "kb", entry["id"], "photo.jpg", data)
     reloaded = load_entry(home_id, entry["id"])
     assert reloaded.updatedAt != entry["updatedAt"]
+
+
+@pytest.mark.parametrize("module", _ALL_MODULES)
+def test_delete_attachment_removes_filename_and_file(home_id, module):
+    from myhome.mcp_tools_attachments import (
+        _MODULES,
+        _delete_attachment_impl,
+        _upload_attachment_impl,
+    )
+    item_id = _make_item(home_id, module)
+    data = base64.b64encode(b"fake-bytes").decode()
+    _upload_attachment_impl(home_id, module, item_id, "photo.jpg", data)
+
+    result = _delete_attachment_impl(home_id, module, item_id, "photo.jpg")
+
+    assert result == {"deleted": "photo.jpg"}
+    item, _save = _MODULES[module].find(home_id, item_id)
+    assert "photo.jpg" not in item.attachments
+    path = _MODULES[module].get_attachment_path(home_id, item_id, "photo.jpg")
+    assert not path.is_file()
+
+
+def test_delete_attachment_unknown_item_id_raises(home_id):
+    from myhome.mcp_tools_attachments import _delete_attachment_impl
+    with pytest.raises(ValueError, match="Unknown item_id"):
+        _delete_attachment_impl(home_id, "inventory", "nonexistent", "photo.jpg")
+
+
+def test_delete_attachment_missing_file_raises(home_id):
+    from myhome.mcp_tools_attachments import _delete_attachment_impl
+    from myhome.mcp_tools_inventory import _create_inventory_item_impl
+    item_id = _create_inventory_item_impl(home_id, "Drill")["id"]
+    with pytest.raises(ValueError, match="not found"):
+        _delete_attachment_impl(home_id, "inventory", item_id, "nonexistent.jpg")

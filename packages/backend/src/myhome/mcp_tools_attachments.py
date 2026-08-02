@@ -175,6 +175,21 @@ def _upload_attachment_impl(
     return {"filename": safe_filename}
 
 
+def _delete_attachment_impl(home_id: str | None, module: str, item_id: str, filename: str) -> dict:
+    resolved = _resolve_home_id(home_id)
+    adapter = _get_adapter(module)
+    validate_id(item_id)
+    validate_filename(filename)
+    item, save = adapter.find(resolved, item_id)
+    if item is None:
+        raise ValueError(f"Unknown item_id {item_id!r} for module {module!r}")
+    if not adapter.delete_attachment(resolved, item_id, filename):
+        raise ValueError(f"Attachment {filename!r} not found")
+    item.attachments = [a for a in item.attachments if a != filename]
+    save()
+    return {"deleted": filename}
+
+
 @mcp.tool()
 async def upload_attachment(
     ctx: Context, module: str, item_id: str, filename: str, data_base64: str,
@@ -187,3 +202,13 @@ async def upload_attachment(
     bytes, base64-encoded (no data: URI prefix)."""
     await _require_role(ctx.request_context.request, "normal")
     return _upload_attachment_impl(home_id, module, item_id, filename, data_base64)
+
+
+@mcp.tool()
+async def delete_attachment(
+    ctx: Context, module: str, item_id: str, filename: str, home_id: str | None = None,
+) -> dict:
+    """Remove an attachment from an item. See upload_attachment for valid module
+    values."""
+    await _require_role(ctx.request_context.request, "normal")
+    return _delete_attachment_impl(home_id, module, item_id, filename)
