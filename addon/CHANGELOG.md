@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.16.0 - 2026-08-03
+
+- Added a fast upload/download path for MCP attachment tools (Claude/AI assistant integrations) — large photos and PDFs used to have to be sent as inline text, which could take minutes to hours; they're now transferred directly, cutting that down to seconds
+- Fixed attachment photo/PDF previews not loading in the Works, Inventory, Chores, Costs, and Knowledge Base edit panels, and the House Build task panel — a URL bug meant thumbnails silently failed to appear
+
 ## 0.15.0 - 2026-08-02
 
 - Added whole-page scrolling on mobile for Chores, Contacts, Costs, Consumables, Insurance, Inventory, Properties, Works, and Build — previously only the inner table scrolled, leaving the toolbar and charts pinned above it
