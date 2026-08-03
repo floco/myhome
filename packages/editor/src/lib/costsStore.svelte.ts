@@ -95,7 +95,7 @@ export function createCostsStore(getHomeId: () => string | null = () => null) {
     if (!homeId) throw new Error("No active home");
     const form = new FormData();
     form.append("file", file);
-    const resp = await fetch(`/api/homes/${homeId}/costs/entries/${id}/attachments`, { method: "POST", body: form });
+    const resp = await fetch(`/api/homes/${homeId}/attachments/costs/${id}`, { method: "POST", body: form });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const result = await resp.json();
     await init();
@@ -105,7 +105,7 @@ export function createCostsStore(getHomeId: () => string | null = () => null) {
   async function deleteAttachment(id: string, filename: string): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
-    const resp = await fetch(`/api/homes/${homeId}/costs/entries/${id}/attachments/${filename}`, { method: "DELETE" });
+    const resp = await fetch(`/api/homes/${homeId}/attachments/costs/${id}/${filename}`, { method: "DELETE" });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }

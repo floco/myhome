@@ -5,6 +5,7 @@
   import type { createContactsStore } from "../contactsStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
   import { apiUrl } from "../apiUrl";
+  import { homesStore } from "../homesStore.svelte";
   import DatePicker from "./DatePicker.svelte";
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
@@ -130,7 +131,7 @@
 
   const mediaItems = $derived<MediaItem[]>(
     (currentTask?.attachments ?? []).map((name) => {
-      const url = apiUrl(`/api/homes/${store.project?.id ?? ""}/build/tasks/${task!.id}/attachments/${name}`);
+      const url = apiUrl(`/api/homes/${homesStore.activeHomeId}/attachments/build/${task!.id}/${name}`);
       const isPdf = name.toLowerCase().endsWith(".pdf");
       return { id: name, name, url, thumbnailUrl: isPdf ? `${url}.thumb.jpg` : url, type: isPdf ? "document" : "image" };
     })

@@ -83,22 +83,22 @@ def test_delete_work_404(client, home_id):
 
 def test_get_attachment_traversal_rejected(client, tmp_path, home_id):
     save_works(home_id, make_doc())
-    resp = client.get(f"/api/homes/{home_id}/works/w1/attachments/.hidden")
+    resp = client.get(f"/api/homes/{home_id}/attachments/works/w1/.hidden")
     assert resp.status_code == 400
 
 
 def test_delete_attachment_traversal_rejected(client, tmp_path, home_id):
     save_works(home_id, make_doc())
-    resp = client.delete(f"/api/homes/{home_id}/works/w1/attachments/.hidden")
+    resp = client.delete(f"/api/homes/{home_id}/attachments/works/w1/.hidden")
     assert resp.status_code == 400
 
 
 def test_get_attachment_invalid_id_rejected(client, tmp_path, home_id):
     save_works(home_id, make_doc())
-    resp = client.get(f"/api/homes/{home_id}/works/../attachments/invoice.pdf")
+    resp = client.get(f"/api/homes/{home_id}/attachments/works/../invoice.pdf")
     # FastAPI won't route ".." as a path param, but validate_id rejects non-UUID chars like "/"
     # Test with a dot-only id that would otherwise traverse
-    resp2 = client.get(f"/api/homes/{home_id}/works/w1/attachments/invoice.pdf")
+    resp2 = client.get(f"/api/homes/{home_id}/attachments/works/w1/invoice.pdf")
     assert resp2.status_code == 404  # work exists but file not uploaded yet — id "w1" passes validation
 
 
@@ -106,7 +106,7 @@ def test_upload_invalid_id_rejected(client, tmp_path, home_id):
     save_works(home_id, make_doc())
     # IDs with characters outside [A-Za-z0-9_-] should be rejected with 400
     resp = client.post(
-        f"/api/homes/{home_id}/works/w!1/attachments",
+        f"/api/homes/{home_id}/attachments/works/w!1",
         files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")},
     )
     assert resp.status_code == 400
@@ -115,7 +115,7 @@ def test_upload_invalid_id_rejected(client, tmp_path, home_id):
 def test_upload_attachment(client, tmp_path, home_id):
     save_works(home_id, make_doc())
     resp = client.post(
-        f"/api/homes/{home_id}/works/w1/attachments",
+        f"/api/homes/{home_id}/attachments/works/w1",
         files={"file": ("invoice.pdf", b"%PDF-1.4 test", "application/pdf")},
     )
     assert resp.status_code == 201
@@ -127,7 +127,7 @@ def test_upload_attachment(client, tmp_path, home_id):
 def test_upload_sanitises_filename(client, tmp_path, home_id):
     save_works(home_id, make_doc())
     resp = client.post(
-        f"/api/homes/{home_id}/works/w1/attachments",
+        f"/api/homes/{home_id}/attachments/works/w1",
         files={"file": ("my invoice 2025.pdf", b"%PDF test", "application/pdf")},
     )
     assert resp.status_code == 201
@@ -137,7 +137,7 @@ def test_upload_sanitises_filename(client, tmp_path, home_id):
 def test_upload_unsupported_type_rejected(client, tmp_path, home_id):
     save_works(home_id, make_doc())
     resp = client.post(
-        f"/api/homes/{home_id}/works/w1/attachments",
+        f"/api/homes/{home_id}/attachments/works/w1",
         files={"file": ("notes.txt", b"hello", "text/plain")},
     )
     assert resp.status_code == 400
@@ -146,7 +146,7 @@ def test_upload_unsupported_type_rejected(client, tmp_path, home_id):
 def test_upload_image_jpeg_accepted(client, tmp_path, home_id):
     save_works(home_id, make_doc())
     resp = client.post(
-        f"/api/homes/{home_id}/works/w1/attachments",
+        f"/api/homes/{home_id}/attachments/works/w1",
         files={"file": ("photo.jpg", b"\xff\xd8\xff\xe0" + b"\x00" * 100, "image/jpeg")},
     )
     assert resp.status_code == 201
@@ -158,7 +158,7 @@ def test_upload_image_jpeg_accepted(client, tmp_path, home_id):
 def test_upload_image_png_accepted(client, tmp_path, home_id):
     save_works(home_id, make_doc())
     resp = client.post(
-        f"/api/homes/{home_id}/works/w1/attachments",
+        f"/api/homes/{home_id}/attachments/works/w1",
         files={"file": ("shot.png", b"\x89PNG\r\n" + b"\x00" * 100, "image/png")},
     )
     assert resp.status_code == 201
@@ -168,7 +168,7 @@ def test_upload_image_png_accepted(client, tmp_path, home_id):
 def test_upload_image_webp_accepted(client, tmp_path, home_id):
     save_works(home_id, make_doc())
     resp = client.post(
-        f"/api/homes/{home_id}/works/w1/attachments",
+        f"/api/homes/{home_id}/attachments/works/w1",
         files={"file": ("photo.webp", b"RIFF" + b"\x00" * 100, "image/webp")},
     )
     assert resp.status_code == 201
@@ -178,7 +178,7 @@ def test_upload_image_webp_accepted(client, tmp_path, home_id):
 def test_sanitise_preserves_image_extension(client, tmp_path, home_id):
     save_works(home_id, make_doc())
     resp = client.post(
-        f"/api/homes/{home_id}/works/w1/attachments",
+        f"/api/homes/{home_id}/attachments/works/w1",
         files={"file": ("my photo 2025.jpg", b"\xff\xd8\xff\xe0" + b"\x00" * 100, "image/jpeg")},
     )
     assert resp.status_code == 201
@@ -188,17 +188,17 @@ def test_sanitise_preserves_image_extension(client, tmp_path, home_id):
 def test_get_image_attachment_returns_correct_content_type(client, tmp_path, home_id):
     save_works(home_id, make_doc())
     client.post(
-        f"/api/homes/{home_id}/works/w1/attachments",
+        f"/api/homes/{home_id}/attachments/works/w1",
         files={"file": ("photo.png", b"\x89PNG\r\n" + b"\x00" * 100, "image/png")},
     )
-    resp = client.get(f"/api/homes/{home_id}/works/w1/attachments/photo.png")
+    resp = client.get(f"/api/homes/{home_id}/attachments/works/w1/photo.png")
     assert resp.status_code == 200
     assert "image/png" in resp.headers["content-type"]
 
 
 def test_upload_attachment_work_not_found(client, home_id):
     resp = client.post(
-        f"/api/homes/{home_id}/works/nope/attachments",
+        f"/api/homes/{home_id}/attachments/works/nope",
         files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")},
     )
     assert resp.status_code == 404
@@ -207,27 +207,27 @@ def test_upload_attachment_work_not_found(client, home_id):
 def test_get_attachment(client, tmp_path, home_id):
     save_works(home_id, make_doc())
     client.post(
-        f"/api/homes/{home_id}/works/w1/attachments",
+        f"/api/homes/{home_id}/attachments/works/w1",
         files={"file": ("invoice.pdf", b"%PDF-1.4 test content", "application/pdf")},
     )
-    resp = client.get(f"/api/homes/{home_id}/works/w1/attachments/invoice.pdf")
+    resp = client.get(f"/api/homes/{home_id}/attachments/works/w1/invoice.pdf")
     assert resp.status_code == 200
     assert "pdf" in resp.headers["content-type"]
 
 
 def test_get_attachment_not_found(client, tmp_path, home_id):
     save_works(home_id, make_doc())
-    resp = client.get(f"/api/homes/{home_id}/works/w1/attachments/nope.pdf")
+    resp = client.get(f"/api/homes/{home_id}/attachments/works/w1/nope.pdf")
     assert resp.status_code == 404
 
 
 def test_delete_attachment(client, tmp_path, home_id):
     save_works(home_id, make_doc())
     client.post(
-        f"/api/homes/{home_id}/works/w1/attachments",
+        f"/api/homes/{home_id}/attachments/works/w1",
         files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")},
     )
-    resp = client.delete(f"/api/homes/{home_id}/works/w1/attachments/invoice.pdf")
+    resp = client.delete(f"/api/homes/{home_id}/attachments/works/w1/invoice.pdf")
     assert resp.status_code == 204
     work = client.get(f"/api/homes/{home_id}/works").json()["works"][0]
     assert "invoice.pdf" not in work["attachments"]
@@ -235,7 +235,7 @@ def test_delete_attachment(client, tmp_path, home_id):
 
 def test_delete_attachment_not_found(client, tmp_path, home_id):
     save_works(home_id, make_doc())
-    resp = client.delete(f"/api/homes/{home_id}/works/w1/attachments/nope.pdf")
+    resp = client.delete(f"/api/homes/{home_id}/attachments/works/w1/nope.pdf")
     assert resp.status_code == 404
 
 
@@ -275,7 +275,7 @@ def test_upload_pdf_creates_thumbnail(client, tmp_path, home_id):
     save_works(home_id, make_doc())
     pdf_bytes = _make_valid_pdf()
     resp = client.post(
-        f"/api/homes/{home_id}/works/w1/attachments",
+        f"/api/homes/{home_id}/attachments/works/w1",
         files={"file": ("invoice.pdf", pdf_bytes, "application/pdf")},
     )
     assert resp.status_code == 201
@@ -286,7 +286,7 @@ def test_upload_pdf_creates_thumbnail(client, tmp_path, home_id):
 def test_upload_corrupt_pdf_still_succeeds(client, tmp_path, home_id):
     save_works(home_id, make_doc())
     resp = client.post(
-        f"/api/homes/{home_id}/works/w1/attachments",
+        f"/api/homes/{home_id}/attachments/works/w1",
         files={"file": ("bad.pdf", b"%PDF corrupt garbage", "application/pdf")},
     )
     assert resp.status_code == 201
@@ -298,19 +298,19 @@ def test_delete_pdf_removes_thumbnail(client, tmp_path, home_id):
     save_works(home_id, make_doc())
     pdf_bytes = _make_valid_pdf()
     client.post(
-        f"/api/homes/{home_id}/works/w1/attachments",
+        f"/api/homes/{home_id}/attachments/works/w1",
         files={"file": ("invoice.pdf", pdf_bytes, "application/pdf")},
     )
     thumb = tmp_path / "homes" / home_id / "works-attachments" / "w1" / "invoice.pdf.thumb.jpg"
     assert thumb.exists()
-    client.delete(f"/api/homes/{home_id}/works/w1/attachments/invoice.pdf")
+    client.delete(f"/api/homes/{home_id}/attachments/works/w1/invoice.pdf")
     assert not thumb.exists(), "thumbnail should be removed when PDF is deleted"
 
 
 def test_delete_work_removes_attachments(client, tmp_path, home_id):
     save_works(home_id, make_doc())
     client.post(
-        f"/api/homes/{home_id}/works/w1/attachments",
+        f"/api/homes/{home_id}/attachments/works/w1",
         files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")},
     )
     client.delete(f"/api/homes/{home_id}/works/w1")

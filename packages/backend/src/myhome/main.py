@@ -17,7 +17,7 @@ from .mcp_app import mcp_asgi_app
 from .mcp_server import mcp
 from .notification_scheduler import notification_digest_loop
 from .persistence_mcp import load_mcp_config
-from .routes import activity, auth, backup, build, chores, consumables, contacts, costs, ha, homes, house, insurance, inventory, kb, locations, mcp_config, modules, notifications, properties, settings, svg, system, works
+from .routes import activity, attachments, attachments_tokens, auth, backup, build, chores, consumables, contacts, costs, ha, homes, house, insurance, inventory, kb, locations, mcp_config, modules, notifications, properties, settings, svg, system, works
 
 
 @asynccontextmanager
@@ -96,11 +96,18 @@ _EXEMPT_PATHS = {
     "/api/auth/oidc/status", "/api/auth/oidc/login", "/api/auth/oidc/callback",
 }
 
+# Token-authenticated attachment routes (routes/attachments_tokens.py) --
+# the short-lived single-use token in the path *is* the credential, checked
+# by the route itself via attachment_tokens.consume_token, so these are
+# exempt from the normal cookie/Bearer auth middleware. Prefix match (not
+# exact, unlike _EXEMPT_PATHS above) since the token is part of the path.
+_EXEMPT_PATH_PREFIXES = ("/api/attachments/upload/", "/api/attachments/download/")
+
 
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
     path = request.url.path
-    if path in _EXEMPT_PATHS:
+    if path in _EXEMPT_PATHS or path.startswith(_EXEMPT_PATH_PREFIXES):
         return await call_next(request)
     if not (path.startswith("/api/") or path.startswith("/mcp")):
         # Static frontend assets (including the SPA shell at "/") are public --
@@ -150,6 +157,8 @@ async def _gated_mcp_app(scope, receive, send):
 # ── Routers ───────────────────────────────────────────────────────────────
 
 app.include_router(auth.router)
+app.include_router(attachments.router)
+app.include_router(attachments_tokens.router)
 app.include_router(homes.router)
 app.include_router(house.router)
 app.include_router(svg.router)

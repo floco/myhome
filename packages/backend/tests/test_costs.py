@@ -115,7 +115,7 @@ def test_costs_attachments_empty_by_default(client, home_id):
 def test_costs_upload_jpeg_accepted(client, home_id):
     eid = _entry_id(client, home_id)
     resp = client.post(
-        f"/api/homes/{home_id}/costs/entries/{eid}/attachments",
+        f"/api/homes/{home_id}/attachments/costs/{eid}",
         files={"file": ("receipt.jpg", b"\xff\xd8\xff" + b"\x00" * 50, "image/jpeg")},
     )
     assert resp.status_code == 201
@@ -127,7 +127,7 @@ def test_costs_upload_jpeg_accepted(client, home_id):
 def test_costs_upload_unsupported_rejected(client, home_id):
     eid = _entry_id(client, home_id)
     resp = client.post(
-        f"/api/homes/{home_id}/costs/entries/{eid}/attachments",
+        f"/api/homes/{home_id}/attachments/costs/{eid}",
         files={"file": ("x.exe", b"\x4d\x5a", "application/octet-stream")},
     )
     assert resp.status_code == 400
@@ -136,7 +136,7 @@ def test_costs_upload_unsupported_rejected(client, home_id):
 def test_costs_upload_pdf_creates_thumbnail(client, tmp_path, home_id):
     eid = _entry_id(client, home_id)
     resp = client.post(
-        f"/api/homes/{home_id}/costs/entries/{eid}/attachments",
+        f"/api/homes/{home_id}/attachments/costs/{eid}",
         files={"file": ("invoice.pdf", _make_valid_pdf(), "application/pdf")},
     )
     assert resp.status_code == 201
@@ -146,19 +146,19 @@ def test_costs_upload_pdf_creates_thumbnail(client, tmp_path, home_id):
 
 def test_costs_delete_attachment_removes_thumb(client, tmp_path, home_id):
     eid = _entry_id(client, home_id)
-    client.post(f"/api/homes/{home_id}/costs/entries/{eid}/attachments",
+    client.post(f"/api/homes/{home_id}/attachments/costs/{eid}",
         files={"file": ("invoice.pdf", _make_valid_pdf(), "application/pdf")})
     thumb = tmp_path / "homes" / home_id / "costs-attachments" / eid / "invoice.pdf.thumb.jpg"
     assert thumb.exists()
-    client.delete(f"/api/homes/{home_id}/costs/entries/{eid}/attachments/invoice.pdf")
+    client.delete(f"/api/homes/{home_id}/attachments/costs/{eid}/invoice.pdf")
     assert not thumb.exists()
 
 
 def test_costs_get_jpeg_returns_image_content_type(client, home_id):
     eid = _entry_id(client, home_id)
-    client.post(f"/api/homes/{home_id}/costs/entries/{eid}/attachments",
+    client.post(f"/api/homes/{home_id}/attachments/costs/{eid}",
         files={"file": ("receipt.jpg", b"\xff\xd8\xff" + b"\x00" * 50, "image/jpeg")})
-    resp = client.get(f"/api/homes/{home_id}/costs/entries/{eid}/attachments/receipt.jpg")
+    resp = client.get(f"/api/homes/{home_id}/attachments/costs/{eid}/receipt.jpg")
     assert resp.status_code == 200
     assert "image/jpeg" in resp.headers["content-type"]
 

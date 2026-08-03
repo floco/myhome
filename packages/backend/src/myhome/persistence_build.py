@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 import json
-import logging
-import os
-import shutil
 from pathlib import Path
 
 from sqlalchemy import select
 
+from . import attachment_storage
+from .attachment_storage import generate_pdf_thumbnail
 from .db import get_engine
-from .ids import InvalidIdError
 from .models_build import BuildDocument, BuildPhase, BuildProject, BuildTask, BuildTaskDependency
 from .schema import (
     build_phases as build_phases_table,
@@ -18,23 +16,7 @@ from .schema import (
     build_tasks as build_tasks_table,
 )
 
-_log = logging.getLogger(__name__)
-
-
-def _home_dir(home_id: str) -> Path:
-    homes_root = os.path.normpath(os.path.join(os.environ.get("DATA_DIR", "/data"), "homes"))
-    candidate = os.path.normpath(os.path.join(homes_root, home_id))
-    if not candidate.startswith(homes_root + os.sep):
-        raise InvalidIdError(f"Invalid home_id: {home_id!r}")
-    return Path(candidate)
-
-
-def _attachments_dir(home_id: str, task_id: str) -> Path:
-    base = os.path.normpath(str(_home_dir(home_id) / "build-attachments"))
-    candidate = os.path.normpath(os.path.join(base, task_id))
-    if not candidate.startswith(base + os.sep):
-        raise InvalidIdError(f"Invalid task_id: {task_id!r}")
-    return Path(candidate)
+_MODULE = "build"
 
 
 def load_build(home_id: str) -> BuildDocument:
@@ -149,57 +131,20 @@ def save_build(home_id: str, doc: BuildDocument) -> None:
 
 def delete_build_project(home_id: str) -> None:
     save_build(home_id, BuildDocument())
-    attachments_root = _home_dir(home_id) / "build-attachments"
-    if attachments_root.exists():
-        shutil.rmtree(attachments_root)
+    attachment_storage.delete_all_module_attachments(home_id, _MODULE)
 
 
 def get_attachment_path(home_id: str, task_id: str, filename: str) -> Path:
-    base = os.path.normpath(str(_attachments_dir(home_id, task_id)))
-    candidate = os.path.normpath(os.path.join(base, filename))
-    if not candidate.startswith(base + os.sep):
-        raise InvalidIdError(f"Invalid filename: {filename!r}")
-    return Path(candidate)
+    return attachment_storage.get_attachment_path(home_id, _MODULE, task_id, filename)
 
 
 def save_attachment(home_id: str, task_id: str, filename: str, data: bytes) -> None:
-    path = _attachments_dir(home_id, task_id)
-    base = os.path.normpath(str(path))
-    candidate = os.path.normpath(os.path.join(base, filename))
-    if not candidate.startswith(base + os.sep):
-        raise InvalidIdError(f"Invalid filename: {filename!r}")
-    path.mkdir(parents=True, exist_ok=True)
-    Path(candidate).write_bytes(data)
+    attachment_storage.save_attachment(home_id, _MODULE, task_id, filename, data)
 
 
 def delete_attachment(home_id: str, task_id: str, filename: str) -> bool:
-    base = os.path.normpath(str(_attachments_dir(home_id, task_id)))
-    candidate = os.path.normpath(os.path.join(base, filename))
-    if not candidate.startswith(base + os.sep):
-        raise InvalidIdError(f"Invalid filename: {filename!r}")
-    path = Path(candidate)
-    if not path.exists():
-        return False
-    path.unlink()
-    thumb = path.with_name(path.name + ".thumb.jpg")
-    if thumb.exists():
-        thumb.unlink()
-    return True
+    return attachment_storage.delete_attachment(home_id, _MODULE, task_id, filename)
 
 
 def delete_all_attachments(home_id: str, task_id: str) -> None:
-    path = _attachments_dir(home_id, task_id)
-    if path.exists():
-        shutil.rmtree(path)
-
-
-def generate_pdf_thumbnail(pdf_path: Path, thumb_path: Path) -> None:
-    try:
-        import fitz  # pymupdf
-        doc = fitz.open(str(pdf_path))
-        page = doc[0]
-        mat = fitz.Matrix(1.5, 1.5)
-        pix = page.get_pixmap(matrix=mat)
-        pix.save(str(thumb_path))
-    except Exception as exc:
-        _log.warning("PDF thumbnail generation failed for %s: %s", pdf_path, exc)
+    attachment_storage.delete_all_attachments(home_id, _MODULE, task_id)

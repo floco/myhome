@@ -138,7 +138,7 @@ def test_upload_and_get_task_attachment(client, home_id):
     data = client.post(f"/api/homes/{home_id}/build/start", json={}).json()
     task_id = data["tasks"][0]["id"]
     resp = client.post(
-        f"/api/homes/{home_id}/build/tasks/{task_id}/attachments",
+        f"/api/homes/{home_id}/attachments/build/{task_id}",
         files={"file": ("photo.jpg", b"\xff\xd8\xff\xe0" + b"\x00" * 100, "image/jpeg")},
     )
     assert resp.status_code == 201
@@ -147,7 +147,7 @@ def test_upload_and_get_task_attachment(client, home_id):
     task = next(t for t in updated["tasks"] if t["id"] == task_id)
     assert "photo.jpg" in task["attachments"]
 
-    get_resp = client.get(f"/api/homes/{home_id}/build/tasks/{task_id}/attachments/photo.jpg")
+    get_resp = client.get(f"/api/homes/{home_id}/attachments/build/{task_id}/photo.jpg")
     assert get_resp.status_code == 200
 
 
@@ -155,7 +155,7 @@ def test_upload_attachment_unsupported_type_rejected(client, home_id):
     data = client.post(f"/api/homes/{home_id}/build/start", json={}).json()
     task_id = data["tasks"][0]["id"]
     resp = client.post(
-        f"/api/homes/{home_id}/build/tasks/{task_id}/attachments",
+        f"/api/homes/{home_id}/attachments/build/{task_id}",
         files={"file": ("notes.txt", b"hello", "text/plain")},
     )
     assert resp.status_code == 400
@@ -165,10 +165,10 @@ def test_delete_task_attachment(client, home_id):
     data = client.post(f"/api/homes/{home_id}/build/start", json={}).json()
     task_id = data["tasks"][0]["id"]
     client.post(
-        f"/api/homes/{home_id}/build/tasks/{task_id}/attachments",
+        f"/api/homes/{home_id}/attachments/build/{task_id}",
         files={"file": ("photo.jpg", b"\xff\xd8\xff\xe0" + b"\x00" * 100, "image/jpeg")},
     )
-    resp = client.delete(f"/api/homes/{home_id}/build/tasks/{task_id}/attachments/photo.jpg")
+    resp = client.delete(f"/api/homes/{home_id}/attachments/build/{task_id}/photo.jpg")
     assert resp.status_code == 204
     updated = client.get(f"/api/homes/{home_id}/build").json()
     task = next(t for t in updated["tasks"] if t["id"] == task_id)
@@ -179,7 +179,7 @@ def test_delete_task_removes_attachments_dir(client, tmp_path, home_id):
     data = client.post(f"/api/homes/{home_id}/build/start", json={}).json()
     task_id = data["tasks"][0]["id"]
     client.post(
-        f"/api/homes/{home_id}/build/tasks/{task_id}/attachments",
+        f"/api/homes/{home_id}/attachments/build/{task_id}",
         files={"file": ("photo.jpg", b"\xff\xd8\xff\xe0" + b"\x00" * 100, "image/jpeg")},
     )
     client.delete(f"/api/homes/{home_id}/build/tasks/{task_id}")

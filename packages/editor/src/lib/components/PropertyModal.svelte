@@ -167,7 +167,7 @@
   const mediaItems = $derived<MediaItem[]>(
     (currentProperty?.attachments ?? []).map((fname) => {
       const homeId = homesStore.activeHomeId;
-      const url = apiUrl(`/api/homes/${homeId}/properties/${property!.id}/attachments/${fname}`);
+      const url = apiUrl(`/api/homes/${homeId}/attachments/properties/${property!.id}/${fname}`);
       const isPdf = fname.toLowerCase().endsWith(".pdf");
       return { id: fname, name: fname, url, thumbnailUrl: isPdf ? `${url}.thumb.jpg` : url, type: isPdf ? "document" : "image" };
     })
