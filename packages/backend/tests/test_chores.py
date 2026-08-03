@@ -961,7 +961,7 @@ def test_day_of_month_no_month_filter_advances_one_month(client, home_id, tmp_pa
 
 def test_chore_upload_jpeg_accepted(client, home_id):
     cid = _chore_id(client, home_id)
-    resp = client.post(f"/api/homes/{home_id}/chores/{cid}/attachments",
+    resp = client.post(f"/api/homes/{home_id}/attachments/chores/{cid}",
                        files={"file": ("photo.jpg", b"\xff\xd8\xff" + b"\x00" * 10, "image/jpeg")})
     assert resp.status_code == 201
     assert resp.json()["filename"] == "photo.jpg"
@@ -969,14 +969,14 @@ def test_chore_upload_jpeg_accepted(client, home_id):
 
 def test_chore_upload_unsupported_rejected(client, home_id):
     cid = _chore_id(client, home_id)
-    resp = client.post(f"/api/homes/{home_id}/chores/{cid}/attachments",
+    resp = client.post(f"/api/homes/{home_id}/attachments/chores/{cid}",
                        files={"file": ("script.exe", b"\x4d\x5a", "application/octet-stream")})
     assert resp.status_code == 400
 
 
 def test_chore_upload_pdf_creates_thumbnail(client, home_id, tmp_path):
     cid = _chore_id(client, home_id)
-    resp = client.post(f"/api/homes/{home_id}/chores/{cid}/attachments",
+    resp = client.post(f"/api/homes/{home_id}/attachments/chores/{cid}",
                        files={"file": ("doc.pdf", _make_valid_pdf(), "application/pdf")})
     assert resp.status_code == 201
     thumb = tmp_path / "homes" / home_id / "chores-attachments" / cid / "doc.pdf.thumb.jpg"
@@ -989,7 +989,7 @@ def test_chore_delete_removes_thumbnail(client, home_id, tmp_path):
     thumb_dir.mkdir(parents=True, exist_ok=True)
     (thumb_dir / "doc.pdf").write_bytes(b"x")
     (thumb_dir / "doc.pdf.thumb.jpg").write_bytes(b"y")
-    resp = client.delete(f"/api/homes/{home_id}/chores/{cid}/attachments/doc.pdf")
+    resp = client.delete(f"/api/homes/{home_id}/attachments/chores/{cid}/doc.pdf")
     assert resp.status_code == 204
     assert not (thumb_dir / "doc.pdf").exists()
     assert not (thumb_dir / "doc.pdf.thumb.jpg").exists()
@@ -997,9 +997,9 @@ def test_chore_delete_removes_thumbnail(client, home_id, tmp_path):
 
 def test_chore_get_attachment_returns_image_content_type(client, home_id):
     cid = _chore_id(client, home_id)
-    client.post(f"/api/homes/{home_id}/chores/{cid}/attachments",
+    client.post(f"/api/homes/{home_id}/attachments/chores/{cid}",
                 files={"file": ("shot.jpg", b"\xff\xd8\xff" + b"\x00" * 10, "image/jpeg")})
-    resp = client.get(f"/api/homes/{home_id}/chores/{cid}/attachments/shot.jpg")
+    resp = client.get(f"/api/homes/{home_id}/attachments/chores/{cid}/shot.jpg")
     assert resp.status_code == 200
     assert "image" in resp.headers.get("content-type", "")
 
@@ -1051,7 +1051,7 @@ def test_delete_completion_404(client, home_id):
 
 def test_reset_chores_clears_data_and_attachments(client, tmp_path, home_id):
     cid = _chore_id(client, home_id)
-    client.post(f"/api/homes/{home_id}/chores/{cid}/attachments",
+    client.post(f"/api/homes/{home_id}/attachments/chores/{cid}",
                 files={"file": ("photo.jpg", b"\xff\xd8\xff" + b"\x00" * 10, "image/jpeg")})
     att_dir = tmp_path / "homes" / home_id / "chores-attachments" / cid
     assert att_dir.exists()

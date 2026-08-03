@@ -3,6 +3,7 @@
   import type { createInventoryStore, InventoryItem } from "../inventoryStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
   import { apiUrl } from "../apiUrl";
+  import { homesStore } from "../homesStore.svelte";
   import DatePicker from "./DatePicker.svelte";
   import Modal from "./ui/Modal.svelte";
   import Input from "./ui/Input.svelte";
@@ -73,7 +74,7 @@
 
   const mediaItems = $derived<MediaItem[]>(
     (currentItem?.attachments ?? []).map(fname => {
-      const url = apiUrl(`/api/inventory/items/${item!.id}/attachments/${fname}`);
+      const url = apiUrl(`/api/homes/${homesStore.activeHomeId}/attachments/inventory/${item!.id}/${fname}`);
       const isPdf = fname.toLowerCase().endsWith(".pdf");
       return { id: fname, name: fname, url, thumbnailUrl: isPdf ? `${url}.thumb.jpg` : url, type: isPdf ? "document" : "image" };
     })

@@ -83,7 +83,7 @@ def test_delete_policy_404(client, home_id):
 def test_upload_attachment(client, home_id):
     save_insurance(home_id, make_doc())
     resp = client.post(
-        f"/api/homes/{home_id}/insurance/ins1/attachments",
+        f"/api/homes/{home_id}/attachments/insurance/ins1",
         files={"file": ("policy.pdf", b"%PDF-1.4 test", "application/pdf")},
     )
     assert resp.status_code == 201
@@ -95,7 +95,7 @@ def test_upload_attachment(client, home_id):
 def test_upload_unsupported_type_rejected(client, home_id):
     save_insurance(home_id, make_doc())
     resp = client.post(
-        f"/api/homes/{home_id}/insurance/ins1/attachments",
+        f"/api/homes/{home_id}/attachments/insurance/ins1",
         files={"file": ("notes.txt", b"hello", "text/plain")},
     )
     assert resp.status_code == 400
@@ -104,10 +104,10 @@ def test_upload_unsupported_type_rejected(client, home_id):
 def test_get_attachment(client, home_id):
     save_insurance(home_id, make_doc())
     client.post(
-        f"/api/homes/{home_id}/insurance/ins1/attachments",
+        f"/api/homes/{home_id}/attachments/insurance/ins1",
         files={"file": ("policy.pdf", b"%PDF-1.4 test content", "application/pdf")},
     )
-    resp = client.get(f"/api/homes/{home_id}/insurance/ins1/attachments/policy.pdf")
+    resp = client.get(f"/api/homes/{home_id}/attachments/insurance/ins1/policy.pdf")
     assert resp.status_code == 200
     assert "pdf" in resp.headers["content-type"]
 
@@ -115,10 +115,10 @@ def test_get_attachment(client, home_id):
 def test_delete_attachment(client, home_id):
     save_insurance(home_id, make_doc())
     client.post(
-        f"/api/homes/{home_id}/insurance/ins1/attachments",
+        f"/api/homes/{home_id}/attachments/insurance/ins1",
         files={"file": ("policy.pdf", b"%PDF test", "application/pdf")},
     )
-    resp = client.delete(f"/api/homes/{home_id}/insurance/ins1/attachments/policy.pdf")
+    resp = client.delete(f"/api/homes/{home_id}/attachments/insurance/ins1/policy.pdf")
     assert resp.status_code == 204
     policy = client.get(f"/api/homes/{home_id}/insurance").json()["policies"][0]
     assert "policy.pdf" not in policy["attachments"]
@@ -127,7 +127,7 @@ def test_delete_attachment(client, home_id):
 def test_delete_policy_removes_attachments(client, tmp_path, home_id):
     save_insurance(home_id, make_doc())
     client.post(
-        f"/api/homes/{home_id}/insurance/ins1/attachments",
+        f"/api/homes/{home_id}/attachments/insurance/ins1",
         files={"file": ("policy.pdf", b"%PDF test", "application/pdf")},
     )
     client.delete(f"/api/homes/{home_id}/insurance/ins1")

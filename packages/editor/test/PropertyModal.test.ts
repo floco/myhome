@@ -81,7 +81,7 @@ describe("PropertyModal", () => {
     flushSync();
 
     const anySrcEl = target.querySelector("[src*='attachments']") as HTMLImageElement | null;
-    expect(anySrcEl?.getAttribute("src")).toContain("/api/homes/home-1/properties/p1/attachments/photo.jpg");
+    expect(anySrcEl?.getAttribute("src")).toContain("/api/homes/home-1/attachments/properties/p1/photo.jpg");
 
     unmount(comp);
   });

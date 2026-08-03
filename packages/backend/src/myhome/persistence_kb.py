@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import logging
 import os
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
+from . import attachment_storage
+from .attachment_storage import generate_pdf_thumbnail
 from .ids import InvalidIdError
 from .models_kb import KBEntry
 
-_log = logging.getLogger(__name__)
+_MODULE = "kb"
 
 _MISSING_ORDER = -1
 
@@ -40,18 +41,6 @@ def _entry_path(home_id: str, id: str) -> Path:
     candidate = os.path.normpath(os.path.join(base, f"{id}.md"))
     if not candidate.startswith(base + os.sep):
         raise InvalidIdError(f"Invalid id: {id!r}")
-    return Path(candidate)
-
-
-def _attachments_dir(home_id: str, entry_id: str) -> Path:
-    # Same inline lexical-normalize-then-verify-containment shape as
-    # _home_dir() above -- entry_id is validated at the route layer too, but
-    # CodeQL's taint tracker doesn't credit a separate validator function as
-    # sanitizing the value used here.
-    base = os.path.normpath(str(_home_dir(home_id) / "kb-attachments"))
-    candidate = os.path.normpath(os.path.join(base, entry_id))
-    if not candidate.startswith(base + os.sep):
-        raise InvalidIdError(f"Invalid entry_id: {entry_id!r}")
     return Path(candidate)
 
 
@@ -168,9 +157,7 @@ def delete_entry(home_id: str, id: str) -> bool:
     if not path.exists():
         return False
     path.unlink()
-    att_dir = _attachments_dir(home_id, id)
-    if att_dir.exists():
-        shutil.rmtree(att_dir)
+    delete_all_attachments(home_id, id)
     return True
 
 
@@ -269,54 +256,23 @@ def reorder_siblings(home_id: str, parent_id: str | None, ordered_ids: list[str]
 
 
 def get_attachment_path(home_id: str, entry_id: str, filename: str) -> Path:
-    base = os.path.normpath(str(_attachments_dir(home_id, entry_id)))
-    candidate = os.path.normpath(os.path.join(base, filename))
-    if not candidate.startswith(base + os.sep):
-        raise InvalidIdError(f"Invalid filename: {filename!r}")
-    return Path(candidate)
+    return attachment_storage.get_attachment_path(home_id, _MODULE, entry_id, filename)
 
 
 def save_attachment(home_id: str, entry_id: str, filename: str, data: bytes) -> None:
-    path = _attachments_dir(home_id, entry_id)
-    base = os.path.normpath(str(path))
-    candidate = os.path.normpath(os.path.join(base, filename))
-    if not candidate.startswith(base + os.sep):
-        raise InvalidIdError(f"Invalid filename: {filename!r}")
-    path.mkdir(parents=True, exist_ok=True)
-    Path(candidate).write_bytes(data)
+    attachment_storage.save_attachment(home_id, _MODULE, entry_id, filename, data)
 
 
 def delete_attachment(home_id: str, entry_id: str, filename: str) -> bool:
-    base = os.path.normpath(str(_attachments_dir(home_id, entry_id)))
-    candidate = os.path.normpath(os.path.join(base, filename))
-    if not candidate.startswith(base + os.sep):
-        raise InvalidIdError(f"Invalid filename: {filename!r}")
-    path = Path(candidate)
-    if not path.exists():
-        return False
-    path.unlink()
-    thumb = path.with_name(path.name + ".thumb.jpg")
-    if thumb.exists():
-        thumb.unlink()
-    return True
+    return attachment_storage.delete_attachment(home_id, _MODULE, entry_id, filename)
+
+
+def delete_all_attachments(home_id: str, entry_id: str) -> None:
+    attachment_storage.delete_all_attachments(home_id, _MODULE, entry_id)
 
 
 def reset_kb(home_id: str) -> None:
     kb_dir = _kb_dir(home_id)
     if kb_dir.exists():
         shutil.rmtree(kb_dir)
-    attachments_root = _home_dir(home_id) / "kb-attachments"
-    if attachments_root.exists():
-        shutil.rmtree(attachments_root)
-
-
-def generate_pdf_thumbnail(pdf_path: Path, thumb_path: Path) -> None:
-    try:
-        import fitz
-        doc = fitz.open(str(pdf_path))
-        page = doc[0]
-        mat = fitz.Matrix(1.5, 1.5)
-        pix = page.get_pixmap(matrix=mat)
-        pix.save(str(thumb_path))
-    except Exception as exc:
-        _log.warning("PDF thumbnail generation failed for %s: %s", pdf_path, exc)
+    attachment_storage.delete_all_module_attachments(home_id, _MODULE)

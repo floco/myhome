@@ -107,7 +107,7 @@ describe("propertiesStore — deleteProperty", () => {
 });
 
 describe("propertiesStore — uploadAttachment", () => {
-  it("POSTs FormData to /api/homes/{homeId}/properties/{id}/attachments", async () => {
+  it("POSTs FormData to /api/homes/{homeId}/attachments/properties/{id}", async () => {
     const fetchFn = vi.fn()
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => emptyDoc })
       .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ filename: "listing.pdf" }) })
@@ -117,7 +117,7 @@ describe("propertiesStore — uploadAttachment", () => {
     await tick();
     const file = new File(["%PDF"], "listing.pdf", { type: "application/pdf" });
     const filename = await store.uploadAttachment("p1", file);
-    expect(fetchFn.mock.calls[1][0]).toBe(`/api/homes/${HOME}/properties/p1/attachments`);
+    expect(fetchFn.mock.calls[1][0]).toBe(`/api/homes/${HOME}/attachments/properties/p1`);
     expect(filename).toBe("listing.pdf");
   });
 });

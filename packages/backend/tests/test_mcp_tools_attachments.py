@@ -55,23 +55,25 @@ def _make_item(home_id: str, module: str) -> str:
 
 @pytest.mark.parametrize("module", _ALL_MODULES)
 def test_upload_attachment_adds_filename_to_item(home_id, module):
-    from myhome.mcp_tools_attachments import _MODULES, _upload_attachment_impl
+    from myhome.attachment_modules import MODULES
+    from myhome.mcp_tools_attachments import _upload_attachment_impl
     item_id = _make_item(home_id, module)
     data = base64.b64encode(b"fake-bytes").decode()
     result = _upload_attachment_impl(home_id, module, item_id, "photo.jpg", data)
     assert result == {"filename": "photo.jpg"}
-    item, _save = _MODULES[module].find(home_id, item_id)
+    item, _save = MODULES[module].find(home_id, item_id)
     assert "photo.jpg" in item.attachments
 
 
 @pytest.mark.parametrize("module", _ALL_MODULES)
 def test_upload_attachment_writes_original_bytes_to_disk(home_id, module):
-    from myhome.mcp_tools_attachments import _MODULES, _upload_attachment_impl
+    from myhome.attachment_modules import MODULES
+    from myhome.mcp_tools_attachments import _upload_attachment_impl
     item_id = _make_item(home_id, module)
     original = b"fake-bytes-for-" + module.encode()
     data = base64.b64encode(original).decode()
     _upload_attachment_impl(home_id, module, item_id, "doc.pdf", data)
-    path = _MODULES[module].get_attachment_path(home_id, item_id, "doc.pdf")
+    path = MODULES[module].get_attachment_path(home_id, item_id, "doc.pdf")
     assert path.read_bytes() == original
 
 
@@ -119,6 +121,47 @@ def test_upload_attachment_invalid_base64_raises(home_id):
         _upload_attachment_impl(home_id, "inventory", item_id, "photo.jpg", "not valid base64!!")
 
 
+def test_request_attachment_upload_returns_usable_upload_url(home_id):
+    from myhome.attachment_tokens import consume_token
+    from myhome.mcp_tools_attachments import _request_attachment_upload_impl
+    from myhome.mcp_tools_inventory import _create_inventory_item_impl
+    item_id = _create_inventory_item_impl(home_id, "Drill")["id"]
+
+    result = _request_attachment_upload_impl(None, home_id, "inventory", item_id, "photo.jpg")
+
+    assert result["filename"] == "photo.jpg"
+    assert "expires_at" in result
+    token = result["upload_url"].rsplit("/", 1)[1]
+    assert result["upload_url"] == f"/api/attachments/upload/{token}"
+    scope = consume_token(token, "upload")
+    assert scope.home_id == home_id
+    assert scope.module == "inventory"
+    assert scope.item_id == item_id
+    assert scope.filename == "photo.jpg"
+
+
+def test_request_attachment_upload_sanitizes_to_leading_dot_raises(home_id):
+    from myhome.mcp_tools_attachments import _request_attachment_upload_impl
+    from myhome.mcp_tools_inventory import _create_inventory_item_impl
+    item_id = _create_inventory_item_impl(home_id, "Drill")["id"]
+    with pytest.raises(ValueError, match="Invalid filename"):
+        _request_attachment_upload_impl(None, home_id, "inventory", item_id, "???.pdf")
+
+
+def test_request_attachment_upload_unknown_item_id_raises(home_id):
+    from myhome.mcp_tools_attachments import _request_attachment_upload_impl
+    with pytest.raises(ValueError, match="Unknown item_id"):
+        _request_attachment_upload_impl(None, home_id, "inventory", "nonexistent", "photo.jpg")
+
+
+def test_request_attachment_upload_disallowed_extension_raises(home_id):
+    from myhome.mcp_tools_attachments import _request_attachment_upload_impl
+    from myhome.mcp_tools_inventory import _create_inventory_item_impl
+    item_id = _create_inventory_item_impl(home_id, "Drill")["id"]
+    with pytest.raises(ValueError, match="not supported"):
+        _request_attachment_upload_impl(None, home_id, "inventory", item_id, "malware.exe")
+
+
 def test_upload_attachment_bumps_kb_updated_at(home_id):
     from myhome.mcp_tools_attachments import _upload_attachment_impl
     from myhome.mcp_tools_kb import _create_kb_entry_impl
@@ -132,11 +175,8 @@ def test_upload_attachment_bumps_kb_updated_at(home_id):
 
 @pytest.mark.parametrize("module", _ALL_MODULES)
 def test_delete_attachment_removes_filename_and_file(home_id, module):
-    from myhome.mcp_tools_attachments import (
-        _MODULES,
-        _delete_attachment_impl,
-        _upload_attachment_impl,
-    )
+    from myhome.attachment_modules import MODULES
+    from myhome.mcp_tools_attachments import _delete_attachment_impl, _upload_attachment_impl
     item_id = _make_item(home_id, module)
     data = base64.b64encode(b"fake-bytes").decode()
     _upload_attachment_impl(home_id, module, item_id, "photo.jpg", data)
@@ -144,9 +184,9 @@ def test_delete_attachment_removes_filename_and_file(home_id, module):
     result = _delete_attachment_impl(home_id, module, item_id, "photo.jpg")
 
     assert result == {"deleted": "photo.jpg"}
-    item, _save = _MODULES[module].find(home_id, item_id)
+    item, _save = MODULES[module].find(home_id, item_id)
     assert "photo.jpg" not in item.attachments
-    path = _MODULES[module].get_attachment_path(home_id, item_id, "photo.jpg")
+    path = MODULES[module].get_attachment_path(home_id, item_id, "photo.jpg")
     assert not path.is_file()
 
 
@@ -173,7 +213,7 @@ def test_get_attachment_image_returns_image(home_id):
     original = b"\xff\xd8\xff-fake-jpeg-bytes"
     _upload_attachment_impl(home_id, "inventory", item_id, "photo.jpg", base64.b64encode(original).decode())
 
-    result = _get_attachment_impl(home_id, "inventory", item_id, "photo.jpg")
+    result = _get_attachment_impl(None, home_id, "inventory", item_id, "photo.jpg")
 
     assert isinstance(result, Image)
     assert result.data == original
@@ -182,7 +222,7 @@ def test_get_attachment_image_returns_image(home_id):
     assert base64.b64decode(content.data) == original
 
 
-def test_get_attachment_pdf_returns_metadata_dict(home_id):
+def test_get_attachment_pdf_returns_metadata_and_download_url(home_id):
     from myhome.mcp_tools_attachments import _get_attachment_impl, _upload_attachment_impl
     from myhome.mcp_tools_inventory import _create_inventory_item_impl
 
@@ -190,12 +230,29 @@ def test_get_attachment_pdf_returns_metadata_dict(home_id):
     original = b"%PDF-1.4 fake pdf bytes"
     _upload_attachment_impl(home_id, "inventory", item_id, "manual.pdf", base64.b64encode(original).decode())
 
-    result = _get_attachment_impl(home_id, "inventory", item_id, "manual.pdf")
+    result = _get_attachment_impl(None, home_id, "inventory", item_id, "manual.pdf")
 
     assert result["filename"] == "manual.pdf"
     assert result["mimeType"] == "application/pdf"
     assert result["size"] == len(original)
-    assert "web UI" in result["note"]
+    assert result["download_url"] == "/api/attachments/download/" + result["download_url"].rsplit("/", 1)[1]
+    assert "expires_at" in result
+
+
+def test_get_attachment_large_image_returns_download_url_not_inline(home_id):
+    from myhome.mcp_tools_attachments import _get_attachment_impl, _upload_attachment_impl
+    from myhome.mcp_tools_inventory import _create_inventory_item_impl
+
+    item_id = _create_inventory_item_impl(home_id, "Drill")["id"]
+    original = b"\xff\xd8\xff" + (b"x" * 60_000)  # over the 50KB inline threshold
+    _upload_attachment_impl(home_id, "inventory", item_id, "big.jpg", base64.b64encode(original).decode())
+
+    result = _get_attachment_impl(None, home_id, "inventory", item_id, "big.jpg")
+
+    assert isinstance(result, dict)
+    assert result["filename"] == "big.jpg"
+    assert result["size"] == len(original)
+    assert "download_url" in result
 
 
 def test_get_attachment_missing_file_raises(home_id):
@@ -203,10 +260,10 @@ def test_get_attachment_missing_file_raises(home_id):
     from myhome.mcp_tools_inventory import _create_inventory_item_impl
     item_id = _create_inventory_item_impl(home_id, "Drill")["id"]
     with pytest.raises(ValueError, match="not found"):
-        _get_attachment_impl(home_id, "inventory", item_id, "nonexistent.jpg")
+        _get_attachment_impl(None, home_id, "inventory", item_id, "nonexistent.jpg")
 
 
 def test_get_attachment_unknown_module_raises(home_id):
     from myhome.mcp_tools_attachments import _get_attachment_impl
     with pytest.raises(ValueError, match="Unknown module"):
-        _get_attachment_impl(home_id, "not-a-module", "x", "photo.jpg")
+        _get_attachment_impl(None, home_id, "not-a-module", "x", "photo.jpg")

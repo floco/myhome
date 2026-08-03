@@ -143,7 +143,7 @@
   const mediaItems = $derived<MediaItem[]>(
     (currentPolicy?.attachments ?? []).map(fname => {
       const homeId = homesStore.activeHomeId;
-      const url = apiUrl(`/api/homes/${homeId}/insurance/${policy!.id}/attachments/${fname}`);
+      const url = apiUrl(`/api/homes/${homeId}/attachments/insurance/${policy!.id}/${fname}`);
       const isPdf = fname.toLowerCase().endsWith(".pdf");
       return {
         id: fname,

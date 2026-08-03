@@ -94,7 +94,7 @@ describe("insuranceStore — deletePolicy", () => {
 });
 
 describe("insuranceStore — uploadAttachment", () => {
-  it("posts multipart form to /api/homes/{homeId}/insurance/{id}/attachments", async () => {
+  it("posts multipart form to /api/homes/{homeId}/attachments/insurance/{id}", async () => {
     const fetchFn = vi.fn()
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => emptyDoc })
       .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ filename: "policy.pdf" }) })
@@ -105,6 +105,6 @@ describe("insuranceStore — uploadAttachment", () => {
     const file = new File(["%PDF"], "policy.pdf", { type: "application/pdf" });
     const filename = await store.uploadAttachment("ins1", file);
     expect(filename).toBe("policy.pdf");
-    expect(fetchFn.mock.calls[1][0]).toBe(`/api/homes/${HOME}/insurance/ins1/attachments`);
+    expect(fetchFn.mock.calls[1][0]).toBe(`/api/homes/${HOME}/attachments/insurance/ins1`);
   });
 });

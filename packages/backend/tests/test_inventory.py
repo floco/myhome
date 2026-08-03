@@ -141,7 +141,7 @@ def test_placement_404(client, home_id):
 def test_upload_attachment(client, tmp_path, home_id):
     save_inventory(home_id, make_doc())
     resp = client.post(
-        f"/api/homes/{home_id}/inventory/items/i1/attachments",
+        f"/api/homes/{home_id}/attachments/inventory/i1",
         files={"file": ("invoice.pdf", b"%PDF-1.4 content", "application/pdf")},
     )
     assert resp.status_code == 201
@@ -153,7 +153,7 @@ def test_upload_attachment(client, tmp_path, home_id):
 def test_upload_attachment_sanitises_filename(client, tmp_path, home_id):
     save_inventory(home_id, make_doc())
     resp = client.post(
-        f"/api/homes/{home_id}/inventory/items/i1/attachments",
+        f"/api/homes/{home_id}/attachments/inventory/i1",
         files={"file": ("my invoice 2025.pdf", b"%PDF test", "application/pdf")},
     )
     assert resp.status_code == 201
@@ -162,8 +162,8 @@ def test_upload_attachment_sanitises_filename(client, tmp_path, home_id):
 
 def test_upload_attachment_multiple(client, tmp_path, home_id):
     save_inventory(home_id, make_doc())
-    client.post(f"/api/homes/{home_id}/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF v1", "application/pdf")})
-    client.post(f"/api/homes/{home_id}/inventory/items/i1/attachments", files={"file": ("manual.pdf", b"%PDF v2", "application/pdf")})
+    client.post(f"/api/homes/{home_id}/attachments/inventory/i1", files={"file": ("invoice.pdf", b"%PDF v1", "application/pdf")})
+    client.post(f"/api/homes/{home_id}/attachments/inventory/i1", files={"file": ("manual.pdf", b"%PDF v2", "application/pdf")})
     item = client.get(f"/api/homes/{home_id}/inventory").json()["items"][0]
     assert "invoice.pdf" in item["attachments"]
     assert "manual.pdf" in item["attachments"]
@@ -172,8 +172,8 @@ def test_upload_attachment_multiple(client, tmp_path, home_id):
 
 def test_upload_attachment_no_duplicate(client, tmp_path, home_id):
     save_inventory(home_id, make_doc())
-    client.post(f"/api/homes/{home_id}/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF v1", "application/pdf")})
-    client.post(f"/api/homes/{home_id}/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF v2", "application/pdf")})
+    client.post(f"/api/homes/{home_id}/attachments/inventory/i1", files={"file": ("invoice.pdf", b"%PDF v1", "application/pdf")})
+    client.post(f"/api/homes/{home_id}/attachments/inventory/i1", files={"file": ("invoice.pdf", b"%PDF v2", "application/pdf")})
     item = client.get(f"/api/homes/{home_id}/inventory").json()["items"][0]
     assert item["attachments"].count("invoice.pdf") == 1
 
@@ -181,7 +181,7 @@ def test_upload_attachment_no_duplicate(client, tmp_path, home_id):
 def test_upload_attachment_rejects_unsupported_type(client, tmp_path, home_id):
     save_inventory(home_id, make_doc())
     resp = client.post(
-        f"/api/homes/{home_id}/inventory/items/i1/attachments",
+        f"/api/homes/{home_id}/attachments/inventory/i1",
         files={"file": ("malware.exe", b"\x4d\x5a", "application/octet-stream")},
     )
     assert resp.status_code == 400
@@ -189,7 +189,7 @@ def test_upload_attachment_rejects_unsupported_type(client, tmp_path, home_id):
 
 def test_upload_attachment_item_not_found(client, home_id):
     resp = client.post(
-        f"/api/homes/{home_id}/inventory/items/nope/attachments",
+        f"/api/homes/{home_id}/attachments/inventory/nope",
         files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")},
     )
     assert resp.status_code == 404
@@ -197,7 +197,7 @@ def test_upload_attachment_item_not_found(client, home_id):
 
 def test_upload_attachment_invalid_id(client, home_id):
     resp = client.post(
-        f"/api/homes/{home_id}/inventory/items/i!1/attachments",
+        f"/api/homes/{home_id}/attachments/inventory/i!1",
         files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")},
     )
     assert resp.status_code == 400
@@ -205,33 +205,33 @@ def test_upload_attachment_invalid_id(client, home_id):
 
 def test_get_attachment(client, tmp_path, home_id):
     save_inventory(home_id, make_doc())
-    client.post(f"/api/homes/{home_id}/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF-1.4 content", "application/pdf")})
-    resp = client.get(f"/api/homes/{home_id}/inventory/items/i1/attachments/invoice.pdf")
+    client.post(f"/api/homes/{home_id}/attachments/inventory/i1", files={"file": ("invoice.pdf", b"%PDF-1.4 content", "application/pdf")})
+    resp = client.get(f"/api/homes/{home_id}/attachments/inventory/i1/invoice.pdf")
     assert resp.status_code == 200
     assert "pdf" in resp.headers["content-type"]
 
 
 def test_get_attachment_not_found(client, tmp_path, home_id):
     save_inventory(home_id, make_doc())
-    resp = client.get(f"/api/homes/{home_id}/inventory/items/i1/attachments/nope.pdf")
+    resp = client.get(f"/api/homes/{home_id}/attachments/inventory/i1/nope.pdf")
     assert resp.status_code == 404
 
 
 def test_get_attachment_invalid_id(client, home_id):
-    resp = client.get(f"/api/homes/{home_id}/inventory/items/i!1/attachments/invoice.pdf")
+    resp = client.get(f"/api/homes/{home_id}/attachments/inventory/i!1/invoice.pdf")
     assert resp.status_code == 400
 
 
 def test_get_attachment_traversal_rejected(client, tmp_path, home_id):
     save_inventory(home_id, make_doc())
-    resp = client.get(f"/api/homes/{home_id}/inventory/items/i1/attachments/.hidden")
+    resp = client.get(f"/api/homes/{home_id}/attachments/inventory/i1/.hidden")
     assert resp.status_code == 400
 
 
 def test_delete_attachment(client, tmp_path, home_id):
     save_inventory(home_id, make_doc())
-    client.post(f"/api/homes/{home_id}/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")})
-    resp = client.delete(f"/api/homes/{home_id}/inventory/items/i1/attachments/invoice.pdf")
+    client.post(f"/api/homes/{home_id}/attachments/inventory/i1", files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")})
+    resp = client.delete(f"/api/homes/{home_id}/attachments/inventory/i1/invoice.pdf")
     assert resp.status_code == 204
     item = client.get(f"/api/homes/{home_id}/inventory").json()["items"][0]
     assert "invoice.pdf" not in item["attachments"]
@@ -239,19 +239,19 @@ def test_delete_attachment(client, tmp_path, home_id):
 
 def test_delete_attachment_not_found(client, tmp_path, home_id):
     save_inventory(home_id, make_doc())
-    resp = client.delete(f"/api/homes/{home_id}/inventory/items/i1/attachments/nope.pdf")
+    resp = client.delete(f"/api/homes/{home_id}/attachments/inventory/i1/nope.pdf")
     assert resp.status_code == 404
 
 
 def test_delete_attachment_traversal_rejected(client, tmp_path, home_id):
     save_inventory(home_id, make_doc())
-    resp = client.delete(f"/api/homes/{home_id}/inventory/items/i1/attachments/.hidden")
+    resp = client.delete(f"/api/homes/{home_id}/attachments/inventory/i1/.hidden")
     assert resp.status_code == 400
 
 
 def test_delete_item_cascades_attachments(client, tmp_path, home_id):
     save_inventory(home_id, make_doc())
-    client.post(f"/api/homes/{home_id}/inventory/items/i1/attachments", files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")})
+    client.post(f"/api/homes/{home_id}/attachments/inventory/i1", files={"file": ("invoice.pdf", b"%PDF test", "application/pdf")})
     client.delete(f"/api/homes/{home_id}/inventory/items/i1")
     attach_dir = tmp_path / "homes" / home_id / "inventory-attachments" / "i1"
     assert not attach_dir.exists()
@@ -272,7 +272,7 @@ def _item_id(client, home_id) -> str:
 def test_inv_upload_jpeg_accepted(client, home_id):
     iid = _item_id(client, home_id)
     resp = client.post(
-        f"/api/homes/{home_id}/inventory/items/{iid}/attachments",
+        f"/api/homes/{home_id}/attachments/inventory/{iid}",
         files={"file": ("photo.jpg", b"\xff\xd8\xff" + b"\x00" * 50, "image/jpeg")},
     )
     assert resp.status_code == 201
@@ -284,7 +284,7 @@ def test_inv_upload_jpeg_accepted(client, home_id):
 def test_inv_upload_png_accepted(client, home_id):
     iid = _item_id(client, home_id)
     resp = client.post(
-        f"/api/homes/{home_id}/inventory/items/{iid}/attachments",
+        f"/api/homes/{home_id}/attachments/inventory/{iid}",
         files={"file": ("shot.png", b"\x89PNG" + b"\x00" * 50, "image/png")},
     )
     assert resp.status_code == 201
@@ -294,7 +294,7 @@ def test_inv_upload_png_accepted(client, home_id):
 def test_inv_upload_webp_accepted(client, home_id):
     iid = _item_id(client, home_id)
     resp = client.post(
-        f"/api/homes/{home_id}/inventory/items/{iid}/attachments",
+        f"/api/homes/{home_id}/attachments/inventory/{iid}",
         files={"file": ("photo.webp", b"RIFF" + b"\x00" * 50, "image/webp")},
     )
     assert resp.status_code == 201
@@ -303,7 +303,7 @@ def test_inv_upload_webp_accepted(client, home_id):
 def test_inv_sanitise_preserves_extension(client, home_id):
     iid = _item_id(client, home_id)
     resp = client.post(
-        f"/api/homes/{home_id}/inventory/items/{iid}/attachments",
+        f"/api/homes/{home_id}/attachments/inventory/{iid}",
         files={"file": ("my photo 2025.jpg", b"\xff\xd8\xff" + b"\x00" * 50, "image/jpeg")},
     )
     assert resp.status_code == 201
@@ -313,7 +313,7 @@ def test_inv_sanitise_preserves_extension(client, home_id):
 def test_inv_upload_pdf_creates_thumbnail(client, tmp_path, home_id):
     iid = _item_id(client, home_id)
     resp = client.post(
-        f"/api/homes/{home_id}/inventory/items/{iid}/attachments",
+        f"/api/homes/{home_id}/attachments/inventory/{iid}",
         files={"file": ("manual.pdf", _make_valid_pdf(), "application/pdf")},
     )
     assert resp.status_code == 201
@@ -324,22 +324,22 @@ def test_inv_upload_pdf_creates_thumbnail(client, tmp_path, home_id):
 def test_inv_delete_pdf_removes_thumbnail(client, tmp_path, home_id):
     iid = _item_id(client, home_id)
     client.post(
-        f"/api/homes/{home_id}/inventory/items/{iid}/attachments",
+        f"/api/homes/{home_id}/attachments/inventory/{iid}",
         files={"file": ("manual.pdf", _make_valid_pdf(), "application/pdf")},
     )
     thumb = tmp_path / "homes" / home_id / "inventory-attachments" / iid / "manual.pdf.thumb.jpg"
     assert thumb.exists()
-    client.delete(f"/api/homes/{home_id}/inventory/items/{iid}/attachments/manual.pdf")
+    client.delete(f"/api/homes/{home_id}/attachments/inventory/{iid}/manual.pdf")
     assert not thumb.exists()
 
 
 def test_inv_get_jpeg_returns_image_content_type(client, home_id):
     iid = _item_id(client, home_id)
     client.post(
-        f"/api/homes/{home_id}/inventory/items/{iid}/attachments",
+        f"/api/homes/{home_id}/attachments/inventory/{iid}",
         files={"file": ("photo.jpg", b"\xff\xd8\xff" + b"\x00" * 50, "image/jpeg")},
     )
-    resp = client.get(f"/api/homes/{home_id}/inventory/items/{iid}/attachments/photo.jpg")
+    resp = client.get(f"/api/homes/{home_id}/attachments/inventory/{iid}/photo.jpg")
     assert resp.status_code == 200
     assert "image/jpeg" in resp.headers["content-type"]
 

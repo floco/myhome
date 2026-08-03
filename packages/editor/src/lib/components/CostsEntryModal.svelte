@@ -6,6 +6,7 @@
   import type { createHouseStore } from "../houseStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
   import { apiUrl } from "../apiUrl";
+  import { homesStore } from "../homesStore.svelte";
   import DatePicker from "./DatePicker.svelte";
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
@@ -79,7 +80,7 @@
 
   const mediaItems = $derived<MediaItem[]>(
     (currentEntry?.attachments ?? []).map(fname => {
-      const url = apiUrl(`/api/costs/entries/${entry!.id}/attachments/${fname}`);
+      const url = apiUrl(`/api/homes/${homesStore.activeHomeId}/attachments/costs/${entry!.id}/${fname}`);
       const isPdf = fname.toLowerCase().endsWith(".pdf");
       return { id: fname, name: fname, url, thumbnailUrl: isPdf ? `${url}.thumb.jpg` : url, type: isPdf ? "document" : "image" };
     })

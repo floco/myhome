@@ -1,15 +1,11 @@
 import asyncio
 import ipaddress
-import mimetypes
-import os
-import re
 import socket
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException
 
 from ..models_chores import (
     Assignment,
@@ -28,29 +24,12 @@ from ..chore_scheduling import next_due_from_schedule, adaptive_period_days
 from ..deps import get_current_user_id, require_auth
 from ..persistence_activity import log_activity
 from ..persistence_chores import (
-    get_attachment_path,
     delete_all_attachments,
-    delete_attachment,
-    generate_pdf_thumbnail,
     load_chores,
-    save_attachment,
     save_chores,
 )
 
 router = APIRouter()
-
-_ALLOWED_EXTENSIONS = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
-_ID_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")
-
-
-def _validate_id(chore_id: str) -> None:
-    if not _ID_RE.fullmatch(chore_id):
-        raise HTTPException(status_code=400, detail="Invalid id")
-
-
-def _validate_filename(filename: str) -> None:
-    if not re.fullmatch(r"[A-Za-z0-9._-]+", filename) or filename.startswith("."):
-        raise HTTPException(status_code=400, detail="Invalid filename")
 
 
 async def _validate_donetick_url(raw_url: str) -> str:
@@ -74,11 +53,6 @@ async def _validate_donetick_url(raw_url: str) -> str:
             raise HTTPException(status_code=400, detail="Donetick URL resolves to a disallowed address")
     return raw_url.rstrip("/")
 
-
-def _sanitise_filename(name: str) -> str:
-    name = name.replace(" ", "_")
-    name = re.sub(r"[^a-zA-Z0-9._-]", "", name)
-    return name or "attachment"
 
 UNIT_DAYS: dict[str, float] = {"days": 1, "weeks": 7, "months": 30, "years": 365}
 
@@ -330,57 +304,6 @@ def complete_chore(
     save_chores(home_id, doc)
     log_activity(home_id, current_user_id, "chores", "complete", chore.name, chore_id)
     return chore
-
-
-# --- Chore attachment routes ---
-
-@router.post("/api/homes/{home_id}/chores/{chore_id}/attachments", status_code=201)
-async def upload_chore_attachment(home_id: str, chore_id: str, file: UploadFile) -> dict:
-    _validate_id(chore_id)
-    doc = load_chores(home_id)
-    chore = next((c for c in doc.chores if c.id == chore_id), None)
-    if chore is None:
-        raise HTTPException(status_code=404, detail="Chore not found")
-    original = file.filename or ""
-    ext = os.path.splitext(original.lower())[1]
-    if ext not in _ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="File type not supported")
-    filename = _sanitise_filename(original)
-    data = await file.read()
-    save_attachment(home_id, chore_id, filename, data)
-    if ext == ".pdf":
-        pdf_path = get_attachment_path(home_id, chore_id, filename)
-        thumb_path = pdf_path.with_name(pdf_path.name + ".thumb.jpg")
-        generate_pdf_thumbnail(pdf_path, thumb_path)
-    if filename not in chore.attachments:
-        chore.attachments.append(filename)
-    save_chores(home_id, doc)
-    return {"filename": filename}
-
-
-@router.get("/api/homes/{home_id}/chores/{chore_id}/attachments/{filename}")
-def get_chore_attachment(home_id: str, chore_id: str, filename: str) -> FileResponse:
-    _validate_id(chore_id)
-    _validate_filename(filename)
-    path = get_attachment_path(home_id, chore_id, filename)
-    if not path.is_file():
-        raise HTTPException(status_code=404)
-    media_type, _ = mimetypes.guess_type(filename)
-    return FileResponse(str(path), media_type=media_type or "application/octet-stream", content_disposition_type="inline")
-
-
-@router.delete("/api/homes/{home_id}/chores/{chore_id}/attachments/{filename}", status_code=204)
-def delete_chore_attachment(home_id: str, chore_id: str, filename: str) -> None:
-    _validate_id(chore_id)
-    _validate_filename(filename)
-    doc = load_chores(home_id)
-    chore = next((c for c in doc.chores if c.id == chore_id), None)
-    if chore is None:
-        raise HTTPException(status_code=404, detail="Chore not found")
-    if not delete_attachment(home_id, chore_id, filename):
-        raise HTTPException(status_code=404)
-    chore.attachments = [a for a in chore.attachments if a != filename]
-    save_chores(home_id, doc)
 
 
 # --- Assignment routes ---

@@ -1,31 +1,27 @@
 """Generic MCP tools for uploading, deleting, and fetching attachments across every
 module that supports them. MCP tool arguments must be JSON, so file bytes travel as
 a base64 string (data_base64) rather than the multipart upload the REST routes use;
-this module base64-decodes and then calls the exact same persistence functions
-(save_attachment/delete_attachment/get_attachment_path/generate_pdf_thumbnail) those
-REST routes already use, so a file attached via MCP is indistinguishable on disk from
-one uploaded through the web UI."""
+this module base64-decodes and then calls the exact same per-module adapters
+(attachment_modules.py) those REST routes use, so a file attached via MCP is
+indistinguishable on disk from one uploaded through the web UI.
+
+For anything but a small payload, prefer request_attachment_upload (a two-phase
+flow: mint a short-lived upload URL here, then curl the file to it directly) --
+inlining a whole file as base64 in a tool-call argument means the calling model
+has to generate every base64 character as an output token, which is fine for a
+few KB but becomes minutes-to-hours of generation time for a multi-MB photo."""
 from __future__ import annotations
 
 import base64
 import binascii
 import mimetypes
 import os
-from collections.abc import Callable
-from dataclasses import dataclass
-from datetime import datetime, timezone
-from pathlib import Path
 
 from mcp.server.fastmcp import Context, Image
+from starlette.requests import Request
 
-from . import persistence_build as _bld
-from . import persistence_chores as _chr
-from . import persistence_costs as _cst
-from . import persistence_insurance as _ins
-from . import persistence_inventory as _inv
-from . import persistence_kb as _kb
-from . import persistence_properties as _prop
-from . import persistence_works as _wrk
+from .attachment_modules import get_adapter
+from .attachment_tokens import mint_download_token, mint_upload_token
 from .attachment_validation import (
     ALLOWED_EXTENSIONS,
     sanitise_filename,
@@ -37,125 +33,29 @@ from .mcp_server import _require_role, _resolve_home_id, mcp
 
 _IMAGE_FORMATS = {".jpg": "jpeg", ".jpeg": "jpeg", ".png": "png", ".webp": "webp"}
 
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
-Finder = Callable[[str, str], tuple[object | None, Callable[[], None]]]
+# Below this size, get_attachment still inlines the image directly (cheap and
+# convenient); at or above it, a download_url is returned instead so the
+# agent fetches the bytes itself rather than paying to receive them as tokens.
+_INLINE_IMAGE_MAX_BYTES = 50_000
 
 
-@dataclass
-class _ModuleAdapter:
-    find: Finder
-    save_attachment: Callable[[str, str, str, bytes], None]
-    get_attachment_path: Callable[[str, str, str], Path]
-    delete_attachment: Callable[[str, str, str], bool]
-    generate_pdf_thumbnail: Callable[[Path, Path], None]
-
-
-def _inventory_find(home_id: str, item_id: str):
-    doc = _inv.load_inventory(home_id)
-    item = next((i for i in doc.items if i.id == item_id), None)
-    return item, (lambda: _inv.save_inventory(home_id, doc))
-
-
-def _kb_find(home_id: str, item_id: str):
-    entry = _kb.load_entry(home_id, item_id)
-    if entry is None:
-        return None, (lambda: None)
-
-    def _save() -> None:
-        entry.updatedAt = _now_iso()
-        _kb.save_entry(home_id, entry)
-
-    return entry, _save
-
-
-def _works_find(home_id: str, item_id: str):
-    doc = _wrk.load_works(home_id)
-    item = next((w for w in doc.works if w.id == item_id), None)
-    return item, (lambda: _wrk.save_works(home_id, doc))
-
-
-def _costs_find(home_id: str, item_id: str):
-    doc = _cst.load_costs(home_id)
-    item = next((e for e in doc.entries if e.id == item_id), None)
-    return item, (lambda: _cst.save_costs(home_id, doc))
-
-
-def _properties_find(home_id: str, item_id: str):
-    doc = _prop.load_properties(home_id)
-    item = next((p for p in doc.properties if p.id == item_id), None)
-    return item, (lambda: _prop.save_properties(home_id, doc))
-
-
-def _build_find(home_id: str, item_id: str):
-    doc = _bld.load_build(home_id)
-    item = next((t for t in doc.tasks if t.id == item_id), None)
-    return item, (lambda: _bld.save_build(home_id, doc))
-
-
-def _chores_find(home_id: str, item_id: str):
-    doc = _chr.load_chores(home_id)
-    item = next((c for c in doc.chores if c.id == item_id), None)
-    return item, (lambda: _chr.save_chores(home_id, doc))
-
-
-def _insurance_find(home_id: str, item_id: str):
-    doc = _ins.load_insurance(home_id)
-    item = next((p for p in doc.policies if p.id == item_id), None)
-    return item, (lambda: _ins.save_insurance(home_id, doc))
-
-
-_MODULES: dict[str, _ModuleAdapter] = {
-    "inventory": _ModuleAdapter(
-        _inventory_find, _inv.save_attachment, _inv.get_attachment_path,
-        _inv.delete_attachment, _inv.generate_pdf_thumbnail,
-    ),
-    "kb": _ModuleAdapter(
-        _kb_find, _kb.save_attachment, _kb.get_attachment_path,
-        _kb.delete_attachment, _kb.generate_pdf_thumbnail,
-    ),
-    "works": _ModuleAdapter(
-        _works_find, _wrk.save_attachment, _wrk.get_attachment_path,
-        _wrk.delete_attachment, _wrk.generate_pdf_thumbnail,
-    ),
-    "costs": _ModuleAdapter(
-        _costs_find, _cst.save_attachment, _cst.get_attachment_path,
-        _cst.delete_attachment, _cst.generate_pdf_thumbnail,
-    ),
-    "properties": _ModuleAdapter(
-        _properties_find, _prop.save_attachment, _prop.get_attachment_path,
-        _prop.delete_attachment, _prop.generate_pdf_thumbnail,
-    ),
-    "build": _ModuleAdapter(
-        _build_find, _bld.save_attachment, _bld.get_attachment_path,
-        _bld.delete_attachment, _bld.generate_pdf_thumbnail,
-    ),
-    "chores": _ModuleAdapter(
-        _chores_find, _chr.save_attachment, _chr.get_attachment_path,
-        _chr.delete_attachment, _chr.generate_pdf_thumbnail,
-    ),
-    "insurance": _ModuleAdapter(
-        _insurance_find, _ins.save_attachment, _ins.get_attachment_path,
-        _ins.delete_attachment, _ins.generate_pdf_thumbnail,
-    ),
-}
-
-
-def _get_adapter(module: str) -> _ModuleAdapter:
-    adapter = _MODULES.get(module)
-    if adapter is None:
-        raise ValueError(f"Unknown module {module!r}. Valid modules: {sorted(_MODULES)}")
-    return adapter
+def _base_url(request: Request | None) -> str:
+    """Best-effort origin for building an absolute attachment upload/download
+    URL from the incoming MCP request. Correct for a direct connection; behind
+    a reverse proxy (e.g. Home Assistant ingress) that doesn't forward
+    X-Forwarded-* headers, the scheme/host here may not match what's actually
+    reachable from outside -- callers should substitute whatever host they
+    used to reach this MCP server if this doesn't work, keeping the path."""
+    if request is None:
+        return ""
+    return str(request.base_url).rstrip("/")
 
 
 def _upload_attachment_impl(
     home_id: str | None, module: str, item_id: str, filename: str, data_base64: str,
 ) -> dict:
     resolved = _resolve_home_id(home_id)
-    adapter = _get_adapter(module)
+    adapter = get_adapter(module)
     validate_id(item_id)
     item, save = adapter.find(resolved, item_id)
     if item is None:
@@ -180,9 +80,31 @@ def _upload_attachment_impl(
     return {"filename": safe_filename}
 
 
+def _request_attachment_upload_impl(
+    request: Request | None, home_id: str | None, module: str, item_id: str, filename: str,
+) -> dict:
+    resolved = _resolve_home_id(home_id)
+    adapter = get_adapter(module)
+    validate_id(item_id)
+    item, _save = adapter.find(resolved, item_id)
+    if item is None:
+        raise ValueError(f"Unknown item_id {item_id!r} for module {module!r}")
+    ext = os.path.splitext(filename.lower())[1]
+    if ext not in ALLOWED_EXTENSIONS:
+        raise ValueError(f"File type {ext!r} not supported. Allowed: {sorted(ALLOWED_EXTENSIONS)}")
+    safe_filename = sanitise_filename(filename)
+    validate_filename(safe_filename)
+    token, expires_at = mint_upload_token(resolved, module, item_id, safe_filename)
+    return {
+        "upload_url": f"{_base_url(request)}/api/attachments/upload/{token}",
+        "filename": safe_filename,
+        "expires_at": expires_at.isoformat(),
+    }
+
+
 def _delete_attachment_impl(home_id: str | None, module: str, item_id: str, filename: str) -> dict:
     resolved = _resolve_home_id(home_id)
-    adapter = _get_adapter(module)
+    adapter = get_adapter(module)
     validate_id(item_id)
     validate_filename(filename)
     item, save = adapter.find(resolved, item_id)
@@ -195,9 +117,9 @@ def _delete_attachment_impl(home_id: str | None, module: str, item_id: str, file
     return {"deleted": filename}
 
 
-def _get_attachment_impl(home_id: str | None, module: str, item_id: str, filename: str):
+def _get_attachment_impl(request: Request | None, home_id: str | None, module: str, item_id: str, filename: str):
     resolved = _resolve_home_id(home_id)
-    adapter = _get_adapter(module)
+    adapter = get_adapter(module)
     validate_id(item_id)
     validate_filename(filename)
     item, _find_save = adapter.find(resolved, item_id)
@@ -206,15 +128,18 @@ def _get_attachment_impl(home_id: str | None, module: str, item_id: str, filenam
     path = adapter.get_attachment_path(resolved, item_id, filename)
     if not path.is_file():
         raise ValueError(f"Attachment {filename!r} not found")
+    size = path.stat().st_size
     ext = os.path.splitext(filename.lower())[1]
-    if ext in _IMAGE_FORMATS:
+    if ext in _IMAGE_FORMATS and size < _INLINE_IMAGE_MAX_BYTES:
         return Image(data=path.read_bytes(), format=_IMAGE_FORMATS[ext])
     mime, _ = mimetypes.guess_type(filename)
+    token, expires_at = mint_download_token(resolved, module, item_id, filename)
     return {
         "filename": filename,
         "mimeType": mime or "application/octet-stream",
-        "size": path.stat().st_size,
-        "note": "Binary preview isn't supported over MCP for this file type; view or download it from the web UI.",
+        "size": size,
+        "download_url": f"{_base_url(request)}/api/attachments/download/{token}",
+        "expires_at": expires_at.isoformat(),
     }
 
 
@@ -223,13 +148,40 @@ async def upload_attachment(
     ctx: Context, module: str, item_id: str, filename: str, data_base64: str,
     home_id: str | None = None,
 ) -> dict:
-    """Attach a file (photo or PDF) to an item. module: one of "inventory", "kb",
-    "works", "costs", "properties", "build", "chores", "insurance" -- for "build",
-    item_id is the task id (see list_build_tasks). filename must include its
-    extension (.pdf, .jpg, .jpeg, .png, or .webp). data_base64 is the raw file
-    bytes, base64-encoded (no data: URI prefix)."""
+    """Attach a file (photo or PDF) to an item by sending its bytes inline as
+    base64. Only use this for small files (well under 1MB) -- data_base64 is a
+    tool-call argument you have to generate character-by-character, so a
+    multi-MB photo can take minutes to hours to produce this way. For anything
+    bigger, call request_attachment_upload instead and curl the file directly.
+
+    module: one of "inventory", "kb", "works", "costs", "properties", "build",
+    "chores", "insurance" -- for "build", item_id is the task id (see
+    list_build_tasks). filename must include its extension (.pdf, .jpg, .jpeg,
+    .png, or .webp). data_base64 is the raw file bytes, base64-encoded (no
+    data: URI prefix)."""
     await _require_role(ctx.request_context.request, "normal")
     return _upload_attachment_impl(home_id, module, item_id, filename, data_base64)
+
+
+@mcp.tool()
+async def request_attachment_upload(
+    ctx: Context, module: str, item_id: str, filename: str, home_id: str | None = None,
+) -> dict:
+    """Get a one-time upload link for attaching a file to an item, without
+    sending its bytes through this tool call -- the preferred way to attach
+    anything but a tiny file (see upload_attachment for why).
+
+    Returns upload_url, valid once for 10 minutes for exactly this file. From
+    a shell, run: curl -X POST --data-binary @/path/to/file "<upload_url>"
+    -- bytes go straight from local disk to the server. If that request
+    fails to connect, your MCP client may be reaching this server through a
+    proxy/tunnel with a different externally-visible host than the one in
+    upload_url; retry with the scheme+host you use to reach this MCP server
+    instead, keeping the rest of the URL as returned.
+
+    See upload_attachment for valid module values and filename requirements."""
+    await _require_role(ctx.request_context.request, "normal")
+    return _request_attachment_upload_impl(ctx.request_context.request, home_id, module, item_id, filename)
 
 
 @mcp.tool()
@@ -244,9 +196,12 @@ async def delete_attachment(
 
 @mcp.tool()
 async def get_attachment(ctx: Context, module: str, item_id: str, filename: str, home_id: str | None = None):
-    """Fetch an item's attachment. Images (.jpg/.jpeg/.png/.webp) are returned as an
-    inline image; PDFs return metadata only (filename/mimeType/size) since there's no
-    way to preview a PDF inline over MCP -- view or download PDFs via the web UI. See
-    upload_attachment for valid module values."""
+    """Fetch an item's attachment. Small images (under 50KB) are returned inline;
+    everything else (larger images, PDFs, etc.) returns metadata plus a
+    download_url instead of inlining bytes -- run `curl -o <local_path>
+    "<download_url>"` from a shell to fetch it (valid once, for 10 minutes). See
+    upload_attachment for valid module values, and request_attachment_upload's
+    docstring for what to do if download_url isn't reachable from where you're
+    running (e.g. behind a proxy/tunnel)."""
     await _require_role(ctx.request_context.request, "ro")
-    return _get_attachment_impl(home_id, module, item_id, filename)
+    return _get_attachment_impl(ctx.request_context.request, home_id, module, item_id, filename)
