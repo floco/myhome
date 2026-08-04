@@ -1,6 +1,7 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
   import DatePicker from "./DatePicker.svelte";
+  import { todayIso } from "../dateFormat";
 
   interface Props {
     emoji: string;
@@ -11,11 +12,6 @@
     oncomplete: (notes: string, completedOn?: string) => void;
   }
   let { emoji, name, location, dueLabel, dueColor, oncomplete }: Props = $props();
-
-  function todayIso(): string {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  }
 
   let completing = $state(false);
   let notes = $state("");

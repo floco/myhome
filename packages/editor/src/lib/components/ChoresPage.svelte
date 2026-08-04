@@ -11,7 +11,8 @@
   import Card from "./ui/Card.svelte";
   import HorizontalBarChart from "./HorizontalBarChart.svelte";
   import StatTile from "./ui/StatTile.svelte";
-  import { formatDate, formatDateTime } from "../dateFormat";
+  import { formatDate, formatDateTime, todayIso } from "../dateFormat";
+  import DatePicker from "./DatePicker.svelte";
 
   type ChoreStore = ReturnType<typeof createChoreStore>;
   type Assignment = ChoreStore["assignments"][number];
@@ -51,7 +52,9 @@
     return assignments.some((a) => a.nextDueDate && new Date(a.nextDueDate) <= cutoff);
   }
 
-  type CompletingState = { kind: "chore"; id: string; notes: string } | { kind: "assignment"; id: string; notes: string };
+  type CompletingState =
+    | { kind: "chore"; id: string; notes: string; completedOn: string }
+    | { kind: "assignment"; id: string; notes: string; completedOn: string };
   let completing = $state<CompletingState | null>(null);
 
   const allRooms = $derived(floorStore.floors.flatMap((f) => f.rooms));
@@ -178,8 +181,14 @@
     if (!completing) return;
     const c = completing;
     completing = null;
-    if (c.kind === "chore") await store.completeChore(c.id, c.notes);
-    else await store.completeAssignment(c.id, c.notes);
+    const backdated = c.completedOn !== todayIso();
+    if (c.kind === "chore") {
+      if (backdated) await store.completeChore(c.id, c.notes, c.completedOn);
+      else await store.completeChore(c.id, c.notes);
+    } else {
+      if (backdated) await store.completeAssignment(c.id, c.notes, c.completedOn);
+      else await store.completeAssignment(c.id, c.notes);
+    }
   }
 </script>
 
@@ -260,10 +269,13 @@
             placeholder={$_('chores.row.notePlaceholder')}
             onkeydown={(e) => { if (e.key === "Enter") confirmComplete(); if (e.key === "Escape") completing = null; }}
           />
+          <div class="date-field">
+            <DatePicker bind:value={completingChore.completedOn} max={todayIso()} />
+          </div>
           <button class="icon-btn confirm-btn" onclick={confirmComplete}>✓</button>
           <button class="icon-btn" onclick={() => { completing = null; }}>✕</button>
         {:else}
-          <button class="icon-btn" title={$_('chores.page.markAllDone')} onclick={() => { completing = { kind: "chore", id: chore.id, notes: "" }; }}>✓</button>
+          <button class="icon-btn" title={$_('chores.page.markAllDone')} onclick={() => { completing = { kind: "chore", id: chore.id, notes: "", completedOn: todayIso() }; }}>✓</button>
         {/if}
         <button class="icon-btn" title={$_('chores.page.delayAllByWeek')} onclick={() => store.delayChore(chore.id, 7)}>⏭</button>
       {/snippet}
@@ -283,10 +295,13 @@
                     placeholder={$_('chores.row.notePlaceholder')}
                     onkeydown={(e) => { if (e.key === "Enter") confirmComplete(); if (e.key === "Escape") completing = null; }}
                   />
+                  <div class="date-field">
+                    <DatePicker bind:value={completingAssign.completedOn} max={todayIso()} />
+                  </div>
                   <button class="icon-btn confirm-btn" onclick={confirmComplete}>✓</button>
                   <button class="icon-btn" onclick={() => { completing = null; }}>✕</button>
                 {:else}
-                  <button class="icon-btn" onclick={() => { completing = { kind: "assignment", id: a.id, notes: "" }; }}>✓</button>
+                  <button class="icon-btn" onclick={() => { completing = { kind: "assignment", id: a.id, notes: "", completedOn: todayIso() }; }}>✓</button>
                 {/if}
                 <button class="icon-btn danger" onclick={() => store.deleteAssignment(a.id)}>✕</button>
                 <button class="icon-btn" title={$_('chores.page.delayByWeek')} onclick={() => store.delayAssignment(a.id, 7)}>⏭</button>
@@ -399,6 +414,7 @@
     font-family: var(--font-sans);
   }
   .note-input:focus { outline: none; border-color: var(--accent); }
+  .date-field { display: inline-block; width: 150px; }
 
   .expand-body { padding: 10px 16px; display: flex; flex-direction: column; gap: 6px; }
 

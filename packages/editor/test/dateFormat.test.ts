@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   formatDate, formatTime, formatDateTime,
-  formatDateWithOptions, formatTimeWithOptions,
+  formatDateWithOptions, formatTimeWithOptions, todayIso,
 } from "../src/lib/dateFormat";
 
 beforeEach(() => {
@@ -76,5 +76,13 @@ describe("formatDate / formatTime / formatDateTime (read current settings)", () 
   it("respects an explicit override over the language default", () => {
     localStorage.setItem("myhome-localization", JSON.stringify({ dateFormat: "ISO", timeFormat: null, weekStart: null }));
     expect(formatDate("2024-01-15T00:00:00")).toBe("2024-01-15");
+  });
+});
+
+describe("todayIso", () => {
+  it("returns today's local date as YYYY-MM-DD", () => {
+    const d = new Date();
+    const expected = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    expect(todayIso()).toBe(expected);
   });
 });

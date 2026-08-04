@@ -194,3 +194,93 @@ describe("ChoresPage — unassigned chores stay visible by default", () => {
     unmount(comp);
   });
 });
+
+describe("ChoresPage — mark-all-done backdating", () => {
+  it("shows a date picker defaulting to today, and confirms with only notes when left at today", async () => {
+    const chore = makeChore();
+    const store = makeStore([chore]);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    (target.querySelector('button[title="Mark all done"]') as HTMLButtonElement).click();
+    flushSync();
+
+    expect(target.querySelector(".dp-text")).not.toBeNull();
+
+    (target.querySelector(".confirm-btn") as HTMLButtonElement).click();
+    await Promise.resolve();
+    flushSync();
+
+    expect(store.completeChore).toHaveBeenCalledWith("c1", "");
+
+    unmount(comp);
+  });
+
+  it("confirms with notes and completedOn after picking a past date", async () => {
+    const chore = makeChore();
+    const store = makeStore([chore]);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    (target.querySelector('button[title="Mark all done"]') as HTMLButtonElement).click();
+    flushSync();
+
+    (target.querySelector(".dp-field") as HTMLElement).click();
+    flushSync();
+    const cells = [...target.querySelectorAll(".dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
+    const firstOfMonth = cells.find((c) => c.textContent === "1")!;
+    firstOfMonth.click();
+    flushSync();
+
+    (target.querySelector(".confirm-btn") as HTMLButtonElement).click();
+    await Promise.resolve();
+    flushSync();
+
+    expect(store.completeChore).toHaveBeenCalledTimes(1);
+    const [id, notes, completedOn] = store.completeChore.mock.calls[0];
+    expect(id).toBe("c1");
+    expect(notes).toBe("");
+    expect(completedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+
+    unmount(comp);
+  });
+
+  it("assignment-level mark-done confirms with notes and completedOn after picking a past date", async () => {
+    const chore = makeChore();
+    const store = makeStore([chore]);
+    store.assignments = [{ id: "a1", choreId: "c1", roomId: null, nextDueDate: new Date().toISOString() }] as typeof store.assignments;
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    (target.querySelector(".expand-btn") as HTMLButtonElement).click();
+    flushSync();
+
+    (target.querySelector(".assign-row .icon-btn") as HTMLButtonElement).click();
+    flushSync();
+
+    (target.querySelector(".dp-field") as HTMLElement).click();
+    flushSync();
+    const cells = [...target.querySelectorAll(".dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
+    const firstOfMonth = cells.find((c) => c.textContent === "1")!;
+    firstOfMonth.click();
+    flushSync();
+
+    (target.querySelector(".assign-row .confirm-btn") as HTMLButtonElement).click();
+    await Promise.resolve();
+    flushSync();
+
+    expect(store.completeAssignment).toHaveBeenCalledTimes(1);
+    const [id, notes, completedOn] = store.completeAssignment.mock.calls[0];
+    expect(id).toBe("a1");
+    expect(notes).toBe("");
+    expect(completedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+
+    unmount(comp);
+  });
+});
