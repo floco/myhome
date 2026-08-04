@@ -1,5 +1,6 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
+  import DatePicker from "./DatePicker.svelte";
 
   interface Props {
     emoji: string;
@@ -7,23 +8,34 @@
     location?: string;
     dueLabel: string;
     dueColor: string;
-    oncomplete: (notes: string) => void;
+    oncomplete: (notes: string, completedOn?: string) => void;
   }
   let { emoji, name, location, dueLabel, dueColor, oncomplete }: Props = $props();
 
+  function todayIso(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
   let completing = $state(false);
   let notes = $state("");
+  let completedOn = $state("");
 
   function start(e: Event): void {
     e.stopPropagation();
     completing = true;
     notes = "";
+    completedOn = todayIso();
   }
 
   function confirm(e: Event): void {
     e.stopPropagation();
     completing = false;
-    oncomplete(notes);
+    if (completedOn === todayIso()) {
+      oncomplete(notes);
+    } else {
+      oncomplete(notes, completedOn);
+    }
   }
 
   function cancel(e: Event): void {
@@ -50,6 +62,9 @@
       onclick={(e) => e.stopPropagation()}
       onkeydown={handleKeydown}
     />
+    <div class="date-field" onclick={(e) => e.stopPropagation()}>
+      <DatePicker bind:value={completedOn} max={todayIso()} />
+    </div>
     <button class="done-btn confirm" onclick={confirm}>✓</button>
     <button class="cancel-btn" onclick={cancel}>✕</button>
   {:else}
@@ -76,6 +91,7 @@
     border-radius: var(--radius-sm); color: var(--text); font-size: 11px;
   }
   .note-input:focus { outline: none; border-color: var(--accent); }
+  .date-field { flex-shrink: 0; max-width: 150px; }
   .done-btn {
     padding: 4px 10px; border: none; border-radius: var(--radius-sm);
     background: var(--success); color: var(--accent-contrast); cursor: pointer; font-size: 12px;

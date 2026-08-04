@@ -162,4 +162,75 @@ describe("ChoreRow", () => {
     unmount(comp);
     target.remove();
   });
+
+  it("shows a date picker defaulting to today when marking done", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ChoreRow, {
+      target,
+      props: { emoji: "🧹", name: "Sweep", dueLabel: "Today", dueColor: "#4caf50", oncomplete: vi.fn() },
+    });
+
+    (target.querySelector(".done-btn") as HTMLButtonElement).click();
+    flushSync();
+
+    const dateField = target.querySelector(".dp-text");
+    expect(dateField).not.toBeNull();
+    expect(dateField!.textContent).not.toBe("");
+
+    unmount(comp);
+    target.remove();
+  });
+
+  it("confirm with the default (today) date calls oncomplete with only notes, no completedOn", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const oncomplete = vi.fn();
+    const comp = mount(ChoreRow, {
+      target,
+      props: { emoji: "🧹", name: "Sweep", dueLabel: "Today", dueColor: "#4caf50", oncomplete },
+    });
+
+    (target.querySelector(".done-btn") as HTMLButtonElement).click();
+    flushSync();
+    (target.querySelector(".done-btn.confirm") as HTMLButtonElement).click();
+    flushSync();
+
+    expect(oncomplete).toHaveBeenCalledWith("");
+    expect(oncomplete.mock.calls[0].length).toBe(1);
+
+    unmount(comp);
+    target.remove();
+  });
+
+  it("confirm after picking a past date calls oncomplete with notes and completedOn", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const oncomplete = vi.fn();
+    const comp = mount(ChoreRow, {
+      target,
+      props: { emoji: "🧹", name: "Sweep", dueLabel: "Today", dueColor: "#4caf50", oncomplete },
+    });
+
+    (target.querySelector(".done-btn") as HTMLButtonElement).click();
+    flushSync();
+
+    (target.querySelector(".dp-field") as HTMLElement).click();
+    flushSync();
+    const cells = [...target.querySelectorAll(".dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
+    const firstOfMonth = cells.find((c) => c.textContent === "1")!;
+    firstOfMonth.click();
+    flushSync();
+
+    (target.querySelector(".done-btn.confirm") as HTMLButtonElement).click();
+    flushSync();
+
+    expect(oncomplete).toHaveBeenCalledTimes(1);
+    const [notesArg, dateArg] = oncomplete.mock.calls[0];
+    expect(notesArg).toBe("");
+    expect(dateArg).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+
+    unmount(comp);
+    target.remove();
+  });
 });
