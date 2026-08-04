@@ -270,7 +270,7 @@
             onkeydown={(e) => { if (e.key === "Enter") confirmComplete(); if (e.key === "Escape") completing = null; }}
           />
           <div class="date-field">
-            <DatePicker bind:value={completingChore.completedOn} max={todayIso()} />
+            <DatePicker bind:value={completingChore.completedOn} max={todayIso()} compact />
           </div>
           <button class="icon-btn confirm-btn" onclick={confirmComplete}>✓</button>
           <button class="icon-btn" onclick={() => { completing = null; }}>✕</button>
@@ -296,7 +296,7 @@
                     onkeydown={(e) => { if (e.key === "Enter") confirmComplete(); if (e.key === "Escape") completing = null; }}
                   />
                   <div class="date-field">
-                    <DatePicker bind:value={completingAssign.completedOn} max={todayIso()} />
+                    <DatePicker bind:value={completingAssign.completedOn} max={todayIso()} compact />
                   </div>
                   <button class="icon-btn confirm-btn" onclick={confirmComplete}>✓</button>
                   <button class="icon-btn" onclick={() => { completing = null; }}>✕</button>
@@ -414,7 +414,7 @@
     font-family: var(--font-sans);
   }
   .note-input:focus { outline: none; border-color: var(--accent); }
-  .date-field { display: inline-block; width: 150px; }
+  .date-field { display: inline-block; width: 118px; }
 
   .expand-body { padding: 10px 16px; display: flex; flex-direction: column; gap: 6px; }
 

@@ -59,7 +59,7 @@
       onkeydown={handleKeydown}
     />
     <div class="date-field" onclick={(e) => e.stopPropagation()}>
-      <DatePicker bind:value={completedOn} max={todayIso()} />
+      <DatePicker bind:value={completedOn} max={todayIso()} compact />
     </div>
     <button class="done-btn confirm" onclick={confirm}>✓</button>
     <button class="cancel-btn" onclick={cancel}>✕</button>
@@ -87,7 +87,7 @@
     border-radius: var(--radius-sm); color: var(--text); font-size: 11px;
   }
   .note-input:focus { outline: none; border-color: var(--accent); }
-  .date-field { flex-shrink: 0; max-width: 150px; }
+  .date-field { flex-shrink: 0; width: 118px; }
   .done-btn {
     padding: 4px 10px; border: none; border-radius: var(--radius-sm);
     background: var(--success); color: var(--accent-contrast); cursor: pointer; font-size: 12px;

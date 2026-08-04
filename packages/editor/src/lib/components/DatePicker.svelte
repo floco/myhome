@@ -1,14 +1,15 @@
 <!-- packages/editor/src/lib/components/DatePicker.svelte -->
 <script lang="ts">
   import { _, locale } from "svelte-i18n";
-  import { getWeekStart } from "../localization";
+  import { getWeekStart, getDateFormat } from "../localization";
 
   interface Props {
     value?: string;
     placeholder?: string;
     max?: string;
+    compact?: boolean;
   }
-  let { value = $bindable(""), placeholder, max }: Props = $props();
+  let { value = $bindable(""), placeholder, max, compact = false }: Props = $props();
 
   let open = $state(false);
   let viewYear = $state(new Date().getFullYear());
@@ -48,6 +49,10 @@
   function displayValue(): string {
     if (!value) return "";
     const [y, m, d] = value.split("-");
+    const format = getDateFormat();
+    if (format === "MDY") return `${m}/${d}/${y}`;
+    if (format === "DMY") return `${d}/${m}/${y}`;
+    if (format === "ISO") return `${y}-${m}-${d}`;
     return `${d} ${MONTH_NAMES[parseInt(m) - 1]} ${y}`;
   }
 
@@ -105,7 +110,7 @@
 
 <div class="dp-wrap">
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="dp-field" onclick={() => { open = !open; }}>
+  <div class="dp-field" class:compact onclick={() => { open = !open; }}>
     <span class="dp-text">{displayValue() || effectivePlaceholder}</span>
     <span class="dp-icon">📅</span>
   </div>
@@ -150,6 +155,10 @@
     font-size: 13px; font-family: var(--font-sans); min-width: 160px;
     user-select: none; box-sizing: border-box;
   }
+  .dp-field.compact {
+    min-width: 0; width: 100%; padding: 4px 8px; font-size: 11px; gap: 4px;
+  }
+  .dp-field.compact .dp-icon { font-size: 11px; }
   .dp-field:hover { border-color: var(--accent); }
   .dp-text { flex: 1; }
   .dp-icon { font-size: 13px; flex-shrink: 0; }
