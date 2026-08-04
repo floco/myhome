@@ -134,10 +134,6 @@
     setTimeout(() => { if (textareaEl) { textareaEl.focus(); textareaEl.setSelectionRange(ns, ns); } }, 0);
   }
 
-  function escapeAttr(s: string): string {
-    return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
-
   // Allow relative paths and http/https absolute URLs; block javascript:, data:, etc.
   function safeUrl(u: string): string {
     if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(u)) {
@@ -147,16 +143,19 @@
     return u;
   }
 
+  // Strip characters that would break the "[![alt|width](url)](url)" markdown
+  // this builds: [ ] would prematurely close the alt/link text, | collides with
+  // the width-suffix delimiter, and newlines would break out of the line.
+  function sanitizeAlt(s: string): string {
+    return s.replace(/[[\]|\n]/g, " ");
+  }
+
   function insertMedia(item: MediaItem, width: number): void {
-    const name = escapeAttr(item.name);
-    const url = escapeAttr(safeUrl(item.url));
-    const thumb = escapeAttr(safeUrl(item.thumbnailUrl));
+    const name = sanitizeAlt(item.name);
+    const url = safeUrl(item.url);
+    const imgSrc = item.type === "document" ? safeUrl(item.thumbnailUrl) : url;
     const w = Math.floor(Number(width));
-    const md =
-      item.type === "document"
-        ? `<a href="${url}"><img src="${thumb}" width="${w}" alt="${name}"></a>`
-        : `<a href="${url}"><img src="${url}" width="${w}" alt="${name}"></a>`;
-    insert(md);
+    insert(`[![${name}|${w}](<${imgSrc}>)](<${url}>)`);
     pickerOpen = false;
   }
 
