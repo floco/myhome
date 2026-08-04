@@ -265,3 +265,45 @@ describe("scheduleLabel", () => {
     expect(scheduleLabel(chore)).toBe("2nd Tue of the month");
   });
 });
+
+describe("choreStore — completedOn", () => {
+  it("completeChore omits completedOn from the request body when not provided", async () => {
+    const fetchMock = makeFetch(200, emptyDoc);
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createChoreStore(getHomeId);
+    await tick();
+
+    await store.completeChore("c1", "done");
+
+    const completeCall = fetchMock.mock.calls.find(([url]) => String(url).includes("/complete"));
+    expect(completeCall).toBeDefined();
+    const sentBody = JSON.parse(completeCall![1].body as string);
+    expect(sentBody).toEqual({ notes: "done" });
+  });
+
+  it("completeChore includes completedOn in the request body when provided", async () => {
+    const fetchMock = makeFetch(200, emptyDoc);
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createChoreStore(getHomeId);
+    await tick();
+
+    await store.completeChore("c1", "done", "2026-07-01");
+
+    const completeCall = fetchMock.mock.calls.find(([url]) => String(url).includes("/complete"));
+    const sentBody = JSON.parse(completeCall![1].body as string);
+    expect(sentBody).toEqual({ notes: "done", completedOn: "2026-07-01" });
+  });
+
+  it("completeAssignment includes completedOn in the request body when provided", async () => {
+    const fetchMock = makeFetch(200, emptyDoc);
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createChoreStore(getHomeId);
+    await tick();
+
+    await store.completeAssignment("a1", "", "2026-07-01");
+
+    const completeCall = fetchMock.mock.calls.find(([url]) => String(url).includes("/complete"));
+    const sentBody = JSON.parse(completeCall![1].body as string);
+    expect(sentBody).toEqual({ notes: "", completedOn: "2026-07-01" });
+  });
+});

@@ -68,7 +68,7 @@
             name={row.name}
             dueLabel={row.dueLabel}
             dueColor={row.dueColor}
-            oncomplete={(notes) => store.completeAssignment(row.id, notes)}
+            oncomplete={(notes, completedOn) => store.completeAssignment(row.id, notes, completedOn)}
           />
         {/each}
       </div>
