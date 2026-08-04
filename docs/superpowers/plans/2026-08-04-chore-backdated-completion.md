@@ -343,7 +343,7 @@ def test_complete_assignment_with_past_completedOn_older_than_existing_leaves_ne
     resp = client.post(f"/api/homes/{home_id}/assignments/{aid}/complete", json={"completedOn": "2026-07-01"})
     assert resp.status_code == 200
     data = resp.json()
-    assert data["nextDueDate"] == ""
+    assert data["nextDueDate"] == "2026-08-31T00:00:00Z"  # inherited from the chore at creation, unchanged
     chores = client.get(f"/api/homes/{home_id}/chores").json()["chores"]
     chore = next(c for c in chores if c["id"] == "c1")
     assert chore["nextDueDate"] == "2026-08-31T00:00:00Z"

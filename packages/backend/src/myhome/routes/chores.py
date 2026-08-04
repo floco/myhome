@@ -358,26 +358,30 @@ def complete_assignment(
         raise HTTPException(status_code=404, detail="Chore not found")
     notes = body.notes if body else ""
     now = datetime.now(timezone.utc)
-    if chore.scheduleFromDue and assignment.nextDueDate:
-        try:
-            from_dt = datetime.fromisoformat(assignment.nextDueDate.replace("Z", "+00:00"))
-        except ValueError:
-            from_dt = now
-    else:
-        from_dt = now
-    doc.completions.append(CompletionRecord(
+    completed_at = _resolve_completed_at(body.completedOn, now) if body and body.completedOn else now
+    new_completion = CompletionRecord(
         id=str(uuid.uuid4()),
         choreId=chore.id,
         assignmentId=assignment_id,
-        completedAt=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        completedAt=completed_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
         scheduledDue=assignment.nextDueDate,
         notes=notes,
-    ))
+    )
+    doc.completions.append(new_completion)
     completions_for_chore = [c for c in doc.completions if c.choreId == chore.id]
-    next_due = next_due_from_schedule(chore, from_dt, completions_for_chore)
-    if chore.frequencyType == "adaptive":
-        chore.periodDays = adaptive_period_days(chore, completions_for_chore)
-    assignment.nextDueDate = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
+    other_completions = [c for c in completions_for_chore if c.id != new_completion.id]
+    if is_most_recent_completion(completed_at, other_completions):
+        if chore.scheduleFromDue and assignment.nextDueDate:
+            try:
+                from_dt = datetime.fromisoformat(assignment.nextDueDate.replace("Z", "+00:00"))
+            except ValueError:
+                from_dt = completed_at
+        else:
+            from_dt = completed_at
+        next_due = next_due_from_schedule(chore, from_dt, completions_for_chore)
+        if chore.frequencyType == "adaptive":
+            chore.periodDays = adaptive_period_days(chore, completions_for_chore)
+        assignment.nextDueDate = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
     save_chores(home_id, doc)
     log_activity(home_id, current_user_id, "chores", "complete", chore.name, chore.id)
     return assignment
