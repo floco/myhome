@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.17.0 - 2026-08-04
+
+- Added the ability to log a chore as completed on a past date instead of only "now" — the next-due date only shifts if the backdated entry is the most recent completion on record, so logging an older catch-up entry never disturbs the current schedule
+- Changed the Knowledge Base media picker to insert plain markdown instead of raw HTML when embedding a photo or document, so page content stays portable and readable as markdown
+
 ## 0.16.0 - 2026-08-03
 
 - Added a fast upload/download path for MCP attachment tools (Claude/AI assistant integrations) — large photos and PDFs used to have to be sent as inline text, which could take minutes to hours; they're now transferred directly, cutting that down to seconds
