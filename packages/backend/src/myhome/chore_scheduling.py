@@ -105,6 +105,19 @@ def adaptive_period_days(chore: Chore, completions_for_chore: list[CompletionRec
     return sum(recent) / len(recent)
 
 
+def is_most_recent_completion(new_completed_at: datetime, other_completions: list[CompletionRecord]) -> bool:
+    """True if `new_completed_at` is at or after every completion in
+    `other_completions` (which should NOT include the new completion itself).
+    An empty list means there's nothing to be later than, so it's trivially
+    the most recent."""
+    if not other_completions:
+        return True
+    latest_other = max(
+        datetime.fromisoformat(c.completedAt.replace("Z", "+00:00")) for c in other_completions
+    )
+    return new_completed_at >= latest_other
+
+
 def next_due_from_schedule(chore: Chore, from_dt: datetime, completions: list[CompletionRecord] | None = None) -> datetime:
     ft = chore.frequencyType
     freq = chore.frequency
