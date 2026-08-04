@@ -4,8 +4,30 @@
   import { _ } from "svelte-i18n";
   import type { MediaItem } from "./mediaTypes";
 
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
   // Single newlines become <br>; GFM adds ~~strikethrough~~, tables, task lists.
-  marked.use({ breaks: true, gfm: true });
+  // Custom image renderer: an alt-text suffix of "|<digits>" (e.g. "photo.jpg|400",
+  // the convention this editor's media picker inserts) becomes a width attribute;
+  // any other image (hand-typed, pasted, or legacy content) renders unchanged.
+  marked.use({
+    breaks: true,
+    gfm: true,
+    renderer: {
+      image({ href, title, text }) {
+        const widthMatch = text.match(/^(.*)\|(\d+)$/);
+        const alt = widthMatch ? widthMatch[1] : text;
+        const width = widthMatch ? widthMatch[2] : null;
+        let out = `<img src="${escapeHtml(href)}" alt="${escapeHtml(alt)}"`;
+        if (width) out += ` width="${width}"`;
+        if (title) out += ` title="${escapeHtml(title)}"`;
+        out += ">";
+        return out;
+      },
+    },
+  });
 
   interface Props {
     value: string;

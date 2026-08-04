@@ -373,6 +373,89 @@ describe("MarkdownEditor — media picker", () => {
   });
 });
 
+describe("MarkdownEditor — image renderer (alt|width)", () => {
+  it("renders a width attribute when alt text has a |<digits> suffix", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "![photo.jpg|400](https://example.com/photo.jpg)", editing: false },
+    });
+    flushSync();
+    const img = target.querySelector(".md-preview img") as HTMLImageElement;
+    expect(img.getAttribute("src")).toBe("https://example.com/photo.jpg");
+    expect(img.getAttribute("alt")).toBe("photo.jpg");
+    expect(img.getAttribute("width")).toBe("400");
+    unmount(app);
+    target.remove();
+  });
+
+  it("renders no width attribute for a plain image with no |<digits> suffix", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "![a plain photo](https://example.com/photo.jpg)", editing: false },
+    });
+    flushSync();
+    const img = target.querySelector(".md-preview img") as HTMLImageElement;
+    expect(img.getAttribute("alt")).toBe("a plain photo");
+    expect(img.hasAttribute("width")).toBe(false);
+    unmount(app);
+    target.remove();
+  });
+
+  it("does not treat a non-numeric suffix after | as a width", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "![a|b](https://example.com/photo.jpg)", editing: false },
+    });
+    flushSync();
+    const img = target.querySelector(".md-preview img") as HTMLImageElement;
+    expect(img.getAttribute("alt")).toBe("a|b");
+    expect(img.hasAttribute("width")).toBe(false);
+    unmount(app);
+    target.remove();
+  });
+
+  it("HTML-escapes alt text containing special characters", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: '![a & "b"|400](https://example.com/photo.jpg)', editing: false },
+    });
+    flushSync();
+    const img = target.querySelector(".md-preview img") as HTMLImageElement;
+    expect(img.getAttribute("alt")).toBe('a & "b"');
+    expect(img.getAttribute("width")).toBe("400");
+    unmount(app);
+    target.remove();
+  });
+
+  it("renders a link-wrapped image (nested markdown) with the width applied", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: {
+        value: "[![doc.pdf|200](<https://example.com/doc.pdf.thumb.jpg>)](<https://example.com/doc.pdf>)",
+        editing: false,
+      },
+    });
+    flushSync();
+    const link = target.querySelector(".md-preview a") as HTMLAnchorElement;
+    const img = link.querySelector("img") as HTMLImageElement;
+    expect(link.getAttribute("href")).toBe("https://example.com/doc.pdf");
+    expect(img.getAttribute("src")).toBe("https://example.com/doc.pdf.thumb.jpg");
+    expect(img.getAttribute("width")).toBe("200");
+    unmount(app);
+    target.remove();
+  });
+});
+
 describe("MarkdownEditor — clickToEdit", () => {
   it("clicking preview enters edit mode by default", () => {
     const target = document.createElement("div");
