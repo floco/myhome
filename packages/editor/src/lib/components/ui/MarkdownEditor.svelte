@@ -4,8 +4,30 @@
   import { _ } from "svelte-i18n";
   import type { MediaItem } from "./mediaTypes";
 
+  function escapeHtml(s: string): string {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
   // Single newlines become <br>; GFM adds ~~strikethrough~~, tables, task lists.
-  marked.use({ breaks: true, gfm: true });
+  // Custom image renderer: an alt-text suffix of "|<digits>" (e.g. "photo.jpg|400",
+  // the convention this editor's media picker inserts) becomes a width attribute;
+  // any other image (hand-typed, pasted, or legacy content) renders unchanged.
+  marked.use({
+    breaks: true,
+    gfm: true,
+    renderer: {
+      image({ href, title, text }) {
+        const widthMatch = text.match(/^(.*)\|(\d+)$/);
+        const alt = widthMatch ? widthMatch[1] : text;
+        const width = widthMatch ? widthMatch[2] : null;
+        let out = `<img src="${escapeHtml(href)}" alt="${escapeHtml(alt)}"`;
+        if (width) out += ` width="${width}"`;
+        if (title) out += ` title="${escapeHtml(title)}"`;
+        out += ">";
+        return out;
+      },
+    },
+  });
 
   interface Props {
     value: string;
@@ -112,10 +134,6 @@
     setTimeout(() => { if (textareaEl) { textareaEl.focus(); textareaEl.setSelectionRange(ns, ns); } }, 0);
   }
 
-  function escapeAttr(s: string): string {
-    return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
-
   // Allow relative paths and http/https absolute URLs; block javascript:, data:, etc.
   function safeUrl(u: string): string {
     if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(u)) {
@@ -125,16 +143,19 @@
     return u;
   }
 
+  // Strip characters that would break the "[![alt|width](url)](url)" markdown
+  // this builds: [ ] would prematurely close the alt/link text, | collides with
+  // the width-suffix delimiter, and newlines would break out of the line.
+  function sanitizeAlt(s: string): string {
+    return s.replace(/[[\]|\n]/g, " ");
+  }
+
   function insertMedia(item: MediaItem, width: number): void {
-    const name = escapeAttr(item.name);
-    const url = escapeAttr(safeUrl(item.url));
-    const thumb = escapeAttr(safeUrl(item.thumbnailUrl));
+    const name = sanitizeAlt(item.name);
+    const url = safeUrl(item.url);
+    const imgSrc = item.type === "document" ? safeUrl(item.thumbnailUrl) : url;
     const w = Math.floor(Number(width));
-    const md =
-      item.type === "document"
-        ? `<a href="${url}"><img src="${thumb}" width="${w}" alt="${name}"></a>`
-        : `<a href="${url}"><img src="${url}" width="${w}" alt="${name}"></a>`;
-    insert(md);
+    insert(`[![${name}|${w}](<${imgSrc}>)](<${url}>)`);
     pickerOpen = false;
   }
 

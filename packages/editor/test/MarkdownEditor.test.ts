@@ -267,7 +267,7 @@ describe("MarkdownEditor — media picker", () => {
     (target.querySelector('[data-size="s"]') as HTMLButtonElement).click();
     flushSync();
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
-    expect(textarea.value).toBe('<a href="/api/kb/e1/attachments/photo.jpg"><img src="/api/kb/e1/attachments/photo.jpg" width="200" alt="photo.jpg"></a>');
+    expect(textarea.value).toBe("[![photo.jpg|200](</api/kb/e1/attachments/photo.jpg>)](</api/kb/e1/attachments/photo.jpg>)");
     expect(target.querySelector(".media-picker")).toBeNull();
     unmount(app);
     target.remove();
@@ -286,7 +286,7 @@ describe("MarkdownEditor — media picker", () => {
     (target.querySelector('[data-size="m"]') as HTMLButtonElement).click();
     flushSync();
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
-    expect(textarea.value).toBe('<a href="/api/kb/e1/attachments/photo.jpg"><img src="/api/kb/e1/attachments/photo.jpg" width="400" alt="photo.jpg"></a>');
+    expect(textarea.value).toBe("[![photo.jpg|400](</api/kb/e1/attachments/photo.jpg>)](</api/kb/e1/attachments/photo.jpg>)");
     unmount(app);
     target.remove();
   });
@@ -304,7 +304,7 @@ describe("MarkdownEditor — media picker", () => {
     (target.querySelector('[data-size="l"]') as HTMLButtonElement).click();
     flushSync();
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
-    expect(textarea.value).toBe('<a href="/api/kb/e1/attachments/photo.jpg"><img src="/api/kb/e1/attachments/photo.jpg" width="600" alt="photo.jpg"></a>');
+    expect(textarea.value).toBe("[![photo.jpg|600](</api/kb/e1/attachments/photo.jpg>)](</api/kb/e1/attachments/photo.jpg>)");
     unmount(app);
     target.remove();
   });
@@ -323,9 +323,38 @@ describe("MarkdownEditor — media picker", () => {
     flushSync();
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
     expect(textarea.value).toBe(
-      '<a href="/api/kb/e1/attachments/doc.pdf"><img src="/api/kb/e1/attachments/doc.pdf.thumb.jpg" width="200" alt="doc.pdf"></a>',
+      "[![doc.pdf|200](</api/kb/e1/attachments/doc.pdf.thumb.jpg>)](</api/kb/e1/attachments/doc.pdf>)",
     );
     expect(target.querySelector(".media-picker")).toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("strips markdown-breaking characters ([ ] | newline) from the inserted alt text", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const weirdItem: MediaItem = {
+      id: "weird",
+      name: "photo [1]|two\nlines.jpg",
+      url: "/api/kb/e1/attachments/weird.jpg",
+      thumbnailUrl: "/api/kb/e1/attachments/weird.jpg",
+      type: "image",
+    };
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true, mediaItems: [weirdItem] },
+    });
+    flushSync();
+    (target.querySelector('[title="Insert media"]') as HTMLButtonElement).click();
+    flushSync();
+    (target.querySelector('[data-size="s"]') as HTMLButtonElement).click();
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    // sanitizeAlt replaces each of [ ] | \n individually with a space (no
+    // collapsing of adjacent spaces), so "[1]|" becomes "  1  " (double spaces).
+    expect(textarea.value).toBe(
+      "[![photo  1  two lines.jpg|200](</api/kb/e1/attachments/weird.jpg>)](</api/kb/e1/attachments/weird.jpg>)",
+    );
     unmount(app);
     target.remove();
   });
@@ -368,6 +397,89 @@ describe("MarkdownEditor — media picker", () => {
     expect(target.querySelector(".media-picker")).toBeNull();
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
     expect(textarea.value).toBe("");
+    unmount(app);
+    target.remove();
+  });
+});
+
+describe("MarkdownEditor — image renderer (alt|width)", () => {
+  it("renders a width attribute when alt text has a |<digits> suffix", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "![photo.jpg|400](https://example.com/photo.jpg)", editing: false },
+    });
+    flushSync();
+    const img = target.querySelector(".md-preview img") as HTMLImageElement;
+    expect(img.getAttribute("src")).toBe("https://example.com/photo.jpg");
+    expect(img.getAttribute("alt")).toBe("photo.jpg");
+    expect(img.getAttribute("width")).toBe("400");
+    unmount(app);
+    target.remove();
+  });
+
+  it("renders no width attribute for a plain image with no |<digits> suffix", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "![a plain photo](https://example.com/photo.jpg)", editing: false },
+    });
+    flushSync();
+    const img = target.querySelector(".md-preview img") as HTMLImageElement;
+    expect(img.getAttribute("alt")).toBe("a plain photo");
+    expect(img.hasAttribute("width")).toBe(false);
+    unmount(app);
+    target.remove();
+  });
+
+  it("does not treat a non-numeric suffix after | as a width", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "![a|b](https://example.com/photo.jpg)", editing: false },
+    });
+    flushSync();
+    const img = target.querySelector(".md-preview img") as HTMLImageElement;
+    expect(img.getAttribute("alt")).toBe("a|b");
+    expect(img.hasAttribute("width")).toBe(false);
+    unmount(app);
+    target.remove();
+  });
+
+  it("HTML-escapes alt text containing special characters", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: '![a & "b"|400](https://example.com/photo.jpg)', editing: false },
+    });
+    flushSync();
+    const img = target.querySelector(".md-preview img") as HTMLImageElement;
+    expect(img.getAttribute("alt")).toBe('a & "b"');
+    expect(img.getAttribute("width")).toBe("400");
+    unmount(app);
+    target.remove();
+  });
+
+  it("renders a link-wrapped image (nested markdown) with the width applied", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: {
+        value: "[![doc.pdf|200](<https://example.com/doc.pdf.thumb.jpg>)](<https://example.com/doc.pdf>)",
+        editing: false,
+      },
+    });
+    flushSync();
+    const link = target.querySelector(".md-preview a") as HTMLAnchorElement;
+    const img = link.querySelector("img") as HTMLImageElement;
+    expect(link.getAttribute("href")).toBe("https://example.com/doc.pdf");
+    expect(img.getAttribute("src")).toBe("https://example.com/doc.pdf.thumb.jpg");
+    expect(img.getAttribute("width")).toBe("200");
     unmount(app);
     target.remove();
   });
