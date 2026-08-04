@@ -51,3 +51,52 @@ describe("DatePicker week start", () => {
     unmount(app);
   });
 });
+
+describe("DatePicker max", () => {
+  let target: HTMLDivElement;
+
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem("myhome-locale", "en");
+    target = document.createElement("div");
+    document.body.appendChild(target);
+  });
+
+  afterEach(() => {
+    target.remove();
+  });
+
+  it("disables and ignores clicks on days after max", () => {
+    const app = mount(DatePicker, { target, props: { value: "2024-01-10", max: "2024-01-15" } });
+    flushSync();
+    (target.querySelector(".dp-field") as HTMLElement).click();
+    flushSync();
+
+    const cells = [...target.querySelectorAll(".dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
+    const day20 = cells.find((c) => c.textContent === "20")!;
+    expect(day20.disabled).toBe(true);
+
+    day20.click();
+    flushSync();
+
+    expect(target.querySelector(".dp-text")!.textContent).toContain("10");
+    unmount(app);
+  });
+
+  it("still allows selecting a day at or before max", () => {
+    const app = mount(DatePicker, { target, props: { value: "2024-01-10", max: "2024-01-15" } });
+    flushSync();
+    (target.querySelector(".dp-field") as HTMLElement).click();
+    flushSync();
+
+    const cells = [...target.querySelectorAll(".dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
+    const day15 = cells.find((c) => c.textContent === "15")!;
+    expect(day15.disabled).toBe(false);
+
+    day15.click();
+    flushSync();
+
+    expect(target.querySelector(".dp-text")!.textContent).toContain("15");
+    unmount(app);
+  });
+});

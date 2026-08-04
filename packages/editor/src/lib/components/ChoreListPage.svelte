@@ -55,7 +55,7 @@
           location={getRoomName(assignment.roomId)}
           dueLabel={formatDue(assignment.nextDueDate)}
           dueColor={store.getColor(pct)}
-          oncomplete={(notes) => store.completeAssignment(assignment.id, notes)}
+          oncomplete={(notes, completedOn) => store.completeAssignment(assignment.id, notes, completedOn)}
         />
       {/each}
     {/if}
@@ -70,7 +70,7 @@
           location={getRoomName(assignment.roomId)}
           dueLabel={formatDue(assignment.nextDueDate)}
           dueColor={store.getColor(pct)}
-          oncomplete={(notes) => store.completeAssignment(assignment.id, notes)}
+          oncomplete={(notes, completedOn) => store.completeAssignment(assignment.id, notes, completedOn)}
         />
       {/each}
     {/if}

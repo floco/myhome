@@ -196,13 +196,13 @@ export function createChoreStore(getHomeId: () => string | null = () => null) {
     await init();
   }
 
-  async function completeChore(id: string, notes: string = ""): Promise<void> {
+  async function completeChore(id: string, notes: string = "", completedOn?: string): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
     const resp = await fetch(`/api/homes/${homeId}/chores/${id}/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notes }),
+      body: JSON.stringify(completedOn ? { notes, completedOn } : { notes }),
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
@@ -226,13 +226,13 @@ export function createChoreStore(getHomeId: () => string | null = () => null) {
     return imported as number;
   }
 
-  async function completeAssignment(id: string, notes: string = ""): Promise<void> {
+  async function completeAssignment(id: string, notes: string = "", completedOn?: string): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
     const resp = await fetch(`/api/homes/${homeId}/assignments/${id}/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notes }),
+      body: JSON.stringify(completedOn ? { notes, completedOn } : { notes }),
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from myhome.chore_scheduling import adaptive_period_days, next_due_from_schedule
+from myhome.chore_scheduling import adaptive_period_days, next_due_from_schedule, is_most_recent_completion
 from myhome.models_chores import Chore, CompletionRecord
 
 
@@ -169,3 +169,32 @@ def test_adaptive_next_due_uses_averaged_gap():
     from_dt = datetime(2026, 7, 30, tzinfo=timezone.utc)
     result = next_due_from_schedule(chore, from_dt, completions)
     assert result == datetime(2026, 9, 8, tzinfo=timezone.utc)  # 2026-07-30 + 40 days
+
+
+def test_is_most_recent_completion_true_with_no_other_completions():
+    now = datetime(2026, 8, 4, 12, 0, tzinfo=timezone.utc)
+    assert is_most_recent_completion(now, []) is True
+
+
+def test_is_most_recent_completion_true_when_later_than_all_others():
+    new = datetime(2026, 8, 4, 12, 0, tzinfo=timezone.utc)
+    others = [
+        CompletionRecord(id="r1", choreId="c1", completedAt="2026-07-01T00:00:00Z", scheduledDue=""),
+        CompletionRecord(id="r2", choreId="c1", completedAt="2026-08-01T00:00:00Z", scheduledDue=""),
+    ]
+    assert is_most_recent_completion(new, others) is True
+
+
+def test_is_most_recent_completion_false_when_an_other_is_later():
+    new = datetime(2026, 7, 15, 12, 0, tzinfo=timezone.utc)
+    others = [
+        CompletionRecord(id="r1", choreId="c1", completedAt="2026-07-01T00:00:00Z", scheduledDue=""),
+        CompletionRecord(id="r2", choreId="c1", completedAt="2026-08-01T00:00:00Z", scheduledDue=""),
+    ]
+    assert is_most_recent_completion(new, others) is False
+
+
+def test_is_most_recent_completion_true_when_exactly_equal_to_latest_other():
+    new = datetime(2026, 8, 1, 0, 0, tzinfo=timezone.utc)
+    others = [CompletionRecord(id="r1", choreId="c1", completedAt="2026-08-01T00:00:00Z", scheduledDue="")]
+    assert is_most_recent_completion(new, others) is True

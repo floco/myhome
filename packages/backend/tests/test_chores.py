@@ -129,6 +129,70 @@ def test_complete_chore_404(client, home_id):
     assert resp.status_code == 404
 
 
+def test_complete_chore_with_past_completedOn_is_latest_advances_next_due(client, home_id, tmp_path):
+    """No prior completions exist, so a single backdated completion is
+    trivially the most recent one -- next-due must be computed from the
+    picked date, not from today."""
+    doc = ChoreDocument(
+        chores=[
+            Chore(id="c1", name="Sweep", emoji="🧹", periodDays=7, nextDueDate="2020-01-01T00:00:00Z"),
+        ],
+        assignments=[],
+    )
+    save_chores(home_id, doc)
+    resp = client.post(f"/api/homes/{home_id}/chores/c1/complete", json={"completedOn": "2020-06-01"})
+    assert resp.status_code == 200
+    data = resp.json()
+    from datetime import datetime, timezone, timedelta
+    new_due = datetime.fromisoformat(data["nextDueDate"].replace("Z", "+00:00"))
+    expected = datetime(2020, 6, 8, tzinfo=timezone.utc)  # 2020-06-01 + 7 days, same time-of-day component ignored
+    assert new_due.date() == expected.date()
+    completions = client.get(f"/api/homes/{home_id}/chores").json()["completions"]
+    rec = next(c for c in completions if c["choreId"] == "c1")
+    assert rec["completedAt"].startswith("2020-06-01")
+
+
+def test_complete_chore_with_past_completedOn_older_than_existing_leaves_next_due_unchanged(client, home_id, tmp_path):
+    """An existing completion from 2026-08-01 is already the latest. Logging
+    a backdated completion from 2026-07-01 must be recorded as history but
+    must NOT move nextDueDate or periodDays."""
+    doc = ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="Change filter", emoji="🔧", periodDays=30.0,
+                frequencyType="adaptive", frequency=1, frequencyMetadata={},
+                nextDueDate="2026-08-31T00:00:00Z",
+            )
+        ],
+        assignments=[],
+        completions=[
+            CompletionRecord(id="r1", choreId="c1", completedAt="2026-08-01T00:00:00Z", scheduledDue=""),
+        ],
+    )
+    save_chores(home_id, doc)
+    resp = client.post(f"/api/homes/{home_id}/chores/c1/complete", json={"completedOn": "2026-07-01"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["nextDueDate"] == "2026-08-31T00:00:00Z"
+    assert data["periodDays"] == 30.0
+    completions = client.get(f"/api/homes/{home_id}/chores").json()["completions"]
+    assert len(completions) == 2
+    backdated = next(c for c in completions if c["completedAt"].startswith("2026-07-01"))
+    assert backdated["choreId"] == "c1"
+
+
+def test_complete_chore_rejects_future_completedOn(client, home_id, tmp_path):
+    save_chores(home_id, make_chore_doc())
+    resp = client.post(f"/api/homes/{home_id}/chores/c1/complete", json={"completedOn": "2999-01-01"})
+    assert resp.status_code == 400
+
+
+def test_complete_chore_rejects_malformed_completedOn(client, home_id, tmp_path):
+    save_chores(home_id, make_chore_doc())
+    resp = client.post(f"/api/homes/{home_id}/chores/c1/complete", json={"completedOn": "not-a-date"})
+    assert resp.status_code == 400
+
+
 # --- Assignment routes ---
 
 def test_create_assignment(client, home_id, tmp_path):
@@ -213,6 +277,54 @@ def test_complete_assignment(client, home_id, tmp_path):
 def test_complete_assignment_404(client, home_id):
     resp = client.post(f"/api/homes/{home_id}/assignments/nonexistent/complete")
     assert resp.status_code == 404
+
+
+def test_complete_assignment_with_past_completedOn_is_latest_advances_next_due(client, home_id, tmp_path):
+    doc = ChoreDocument(
+        chores=[Chore(id="c1", name="Sweep", emoji="🧹", periodDays=7, nextDueDate="2020-01-01T00:00:00Z")],
+        assignments=[],
+    )
+    save_chores(home_id, doc)
+    aid = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    resp = client.post(f"/api/homes/{home_id}/assignments/{aid}/complete", json={"completedOn": "2020-06-01"})
+    assert resp.status_code == 200
+    data = resp.json()
+    from datetime import datetime, timezone
+    new_due = datetime.fromisoformat(data["nextDueDate"].replace("Z", "+00:00"))
+    assert new_due.date() == datetime(2020, 6, 8, tzinfo=timezone.utc).date()
+
+
+def test_complete_assignment_with_past_completedOn_older_than_existing_leaves_next_due_unchanged(client, home_id, tmp_path):
+    doc = ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="Change filter", emoji="🔧", periodDays=30.0,
+                frequencyType="adaptive", frequency=1, frequencyMetadata={},
+                nextDueDate="2026-08-31T00:00:00Z",
+            )
+        ],
+        assignments=[],
+        completions=[
+            CompletionRecord(id="r1", choreId="c1", assignmentId="a1", completedAt="2026-08-01T00:00:00Z", scheduledDue=""),
+        ],
+    )
+    save_chores(home_id, doc)
+    aid = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    resp = client.post(f"/api/homes/{home_id}/assignments/{aid}/complete", json={"completedOn": "2026-07-01"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["nextDueDate"] == "2026-08-31T00:00:00Z"  # inherited from the chore at creation, unchanged
+    chores = client.get(f"/api/homes/{home_id}/chores").json()["chores"]
+    chore = next(c for c in chores if c["id"] == "c1")
+    assert chore["nextDueDate"] == "2026-08-31T00:00:00Z"
+    assert chore["periodDays"] == 30.0
+
+
+def test_complete_assignment_rejects_future_completedOn(client, home_id, tmp_path):
+    save_chores(home_id, make_chore_doc())
+    aid = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    resp = client.post(f"/api/homes/{home_id}/assignments/{aid}/complete", json={"completedOn": "2999-01-01"})
+    assert resp.status_code == 400
 
 
 def test_complete_chore_advances_all_assignments(client, home_id, tmp_path):

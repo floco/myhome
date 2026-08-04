@@ -6,8 +6,9 @@
   interface Props {
     value?: string;
     placeholder?: string;
+    max?: string;
   }
-  let { value = $bindable(""), placeholder }: Props = $props();
+  let { value = $bindable(""), placeholder, max }: Props = $props();
 
   let open = $state(false);
   let viewYear = $state(new Date().getFullYear());
@@ -61,10 +62,19 @@
     return t.getFullYear() === viewYear && t.getMonth() === viewMonth && t.getDate() === day;
   }
 
-  function selectDay(day: number): void {
+  function cellIso(day: number): string {
     const mm = String(viewMonth + 1).padStart(2, "0");
     const dd = String(day).padStart(2, "0");
-    value = `${viewYear}-${mm}-${dd}`;
+    return `${viewYear}-${mm}-${dd}`;
+  }
+
+  function isDisabled(day: number): boolean {
+    return !!max && cellIso(day) > max;
+  }
+
+  function selectDay(day: number): void {
+    if (isDisabled(day)) return;
+    value = cellIso(day);
     open = false;
   }
 
@@ -120,6 +130,7 @@
               class="dp-cell"
               class:dp-selected={isSelected(day)}
               class:dp-today={isToday(day)}
+              disabled={isDisabled(day)}
               onclick={() => selectDay(day)}
             >{day}</button>
           {/if}
@@ -178,4 +189,6 @@
   .dp-today { color: var(--accent); font-weight: 600; }
   .dp-selected { background: var(--accent); color: var(--accent-contrast); font-weight: 600; }
   .dp-selected:hover { opacity: 0.85; }
+  .dp-cell:disabled { color: var(--text-faint); cursor: default; opacity: 0.5; }
+  .dp-cell:disabled:hover { background: none; color: var(--text-faint); }
 </style>

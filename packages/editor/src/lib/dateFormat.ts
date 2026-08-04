@@ -56,3 +56,8 @@ export function formatDateTime(value: string | Date | null | undefined): string 
   if (!d) return "—";
   return `${formatDate(d)} ${formatTime(d)}`;
 }
+
+export function todayIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
