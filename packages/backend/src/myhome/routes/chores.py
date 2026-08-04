@@ -20,7 +20,7 @@ from ..models_chores import (
     ImportRequest,
     ImportResponse,
 )
-from ..chore_scheduling import next_due_from_schedule, adaptive_period_days
+from ..chore_scheduling import next_due_from_schedule, adaptive_period_days, is_most_recent_completion
 from ..deps import get_current_user_id, require_auth
 from ..persistence_activity import log_activity
 from ..persistence_chores import (
@@ -30,6 +30,19 @@ from ..persistence_chores import (
 )
 
 router = APIRouter()
+
+
+def _resolve_completed_at(completed_on: str, now: datetime) -> datetime:
+    """Turn a `YYYY-MM-DD` completedOn string into a full UTC datetime,
+    keeping `now`'s time-of-day so the result sorts sensibly against other
+    same-day completions. Rejects malformed or future dates."""
+    try:
+        picked = datetime.strptime(completed_on, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="completedOn must be an ISO date (YYYY-MM-DD)")
+    if picked > now.date():
+        raise HTTPException(status_code=400, detail="completedOn cannot be in the future")
+    return now.replace(year=picked.year, month=picked.month, day=picked.day)
 
 
 async def _validate_donetick_url(raw_url: str) -> str:
@@ -278,29 +291,33 @@ def complete_chore(
         raise HTTPException(status_code=404, detail="Chore not found")
     notes = body.notes if body else ""
     now = datetime.now(timezone.utc)
-    if chore.scheduleFromDue and chore.nextDueDate:
-        try:
-            from_dt = datetime.fromisoformat(chore.nextDueDate.replace("Z", "+00:00"))
-        except ValueError:
-            from_dt = now
-    else:
-        from_dt = now
-    doc.completions.append(CompletionRecord(
+    completed_at = _resolve_completed_at(body.completedOn, now) if body and body.completedOn else now
+    new_completion = CompletionRecord(
         id=str(uuid.uuid4()),
         choreId=chore_id,
-        completedAt=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        completedAt=completed_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
         scheduledDue=chore.nextDueDate,
         notes=notes,
-    ))
+    )
+    doc.completions.append(new_completion)
     completions_for_chore = [c for c in doc.completions if c.choreId == chore_id]
-    next_due = next_due_from_schedule(chore, from_dt, completions_for_chore)
-    next_due_str = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
-    if chore.frequencyType == "adaptive":
-        chore.periodDays = adaptive_period_days(chore, completions_for_chore)
-    for a in doc.assignments:
-        if a.choreId == chore_id:
-            a.nextDueDate = next_due_str
-    chore.nextDueDate = next_due_str
+    other_completions = [c for c in completions_for_chore if c.id != new_completion.id]
+    if is_most_recent_completion(completed_at, other_completions):
+        if chore.scheduleFromDue and chore.nextDueDate:
+            try:
+                from_dt = datetime.fromisoformat(chore.nextDueDate.replace("Z", "+00:00"))
+            except ValueError:
+                from_dt = completed_at
+        else:
+            from_dt = completed_at
+        next_due = next_due_from_schedule(chore, from_dt, completions_for_chore)
+        next_due_str = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
+        if chore.frequencyType == "adaptive":
+            chore.periodDays = adaptive_period_days(chore, completions_for_chore)
+        for a in doc.assignments:
+            if a.choreId == chore_id:
+                a.nextDueDate = next_due_str
+        chore.nextDueDate = next_due_str
     save_chores(home_id, doc)
     log_activity(home_id, current_user_id, "chores", "complete", chore.name, chore_id)
     return chore

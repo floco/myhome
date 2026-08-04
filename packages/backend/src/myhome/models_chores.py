@@ -85,6 +85,7 @@ class AssignmentUpdate(BaseModel):
 
 class CompleteRequest(BaseModel):
     notes: str = ""
+    completedOn: str | None = None  # ISO date, YYYY-MM-DD; None = use current time
 
 
 class ImportRequest(BaseModel):
