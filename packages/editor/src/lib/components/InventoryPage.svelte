@@ -264,13 +264,13 @@
         columns={[
           { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
           { key: "name", label: $_('chores.editModal.name'), sortValue: (i) => i.name, cellClass: "name-cell", cell: nameCell },
-          { key: "category", label: $_('costs.page.category'), sortValue: (i) => categoryName(i.categoryId) || null, cell: categoryCell },
-          { key: "owner", label: $_('inventory.modal.owner'), sortValue: (i) => ownerName(i.ownerId) || null, cell: ownerCell },
-          { key: "store", label: $_('inventory.modal.store'), sortValue: (i) => storeName(i.storeId) || null, cell: storeCell },
-          { key: "room", label: $_('costs.page.room'), sortValue: (i) => roomName(i.placement?.roomId), cell: roomCell },
-          { key: "purchased", label: $_('inventory.page.purchased'), sortValue: (i) => (i.purchaseDate ? new Date(i.purchaseDate) : null), cell: purchasedCell },
-          { key: "cost", label: $_('inventory.page.cost'), sortValue: (i) => i.purchasePrice, cell: costCell },
-          { key: "warranty", label: $_('inventory.pinPopup.warranty'), sortable: false, cell: warrantyCell },
+          { key: "category", label: $_('costs.page.category'), sortValue: (i) => categoryName(i.categoryId) || null, cell: categoryCell, hideBelow: "tablet" },
+          { key: "owner", label: $_('inventory.modal.owner'), sortValue: (i) => ownerName(i.ownerId) || null, cell: ownerCell, hideBelow: "tablet" },
+          { key: "store", label: $_('inventory.modal.store'), sortValue: (i) => storeName(i.storeId) || null, cell: storeCell, hideBelow: "tablet" },
+          { key: "room", label: $_('costs.page.room'), sortValue: (i) => roomName(i.placement?.roomId), cell: roomCell, hideBelow: "tablet" },
+          { key: "purchased", label: $_('inventory.page.purchased'), sortValue: (i) => (i.purchaseDate ? new Date(i.purchaseDate) : null), cell: purchasedCell, hideBelow: "mobile" },
+          { key: "cost", label: $_('inventory.page.cost'), sortValue: (i) => i.purchasePrice, cell: costCell, hideBelow: "mobile" },
+          { key: "warranty", label: $_('inventory.pinPopup.warranty'), sortable: false, cell: warrantyCell, hideBelow: "mobile" },
         ] as Column<InventoryItem>[]}
         rows={filtered}
         rowKey={(item) => item.id}
