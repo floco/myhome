@@ -22,16 +22,16 @@ describe("createFloatingDrag", () => {
     expect(drag.pos).toBeNull();
   });
 
-  it("dragging moves pos by the mouse delta, clamped to the container bounds", () => {
+  it("dragging moves pos by the pointer delta, clamped to the container bounds", () => {
     const { container, panel } = setUpDom();
     const drag = createFloatingDrag(".test-panel");
-    const mousedown = new MouseEvent("mousedown", { bubbles: true, clientX: 350, clientY: 225 });
-    Object.defineProperty(mousedown, "currentTarget", { value: panel });
-    drag.startDrag(mousedown);
-    window.dispatchEvent(new MouseEvent("mousemove", { clientX: 370, clientY: 245 }));
+    const pointerdown = new PointerEvent("pointerdown", { bubbles: true, clientX: 350, clientY: 225 });
+    Object.defineProperty(pointerdown, "currentTarget", { value: panel });
+    drag.startDrag(pointerdown);
+    window.dispatchEvent(new PointerEvent("pointermove", { clientX: 370, clientY: 245 }));
     // initX=300, initY=200, delta=(20,20) -> (320, 220), well within the 800x600 container.
     expect(drag.pos).toEqual({ x: 320, y: 220 });
-    window.dispatchEvent(new MouseEvent("mouseup"));
+    window.dispatchEvent(new PointerEvent("pointerup"));
     panel.remove();
     container.remove();
   });
@@ -39,13 +39,13 @@ describe("createFloatingDrag", () => {
   it("clamps to the container's bottom-right when dragged past it", () => {
     const { container, panel } = setUpDom();
     const drag = createFloatingDrag(".test-panel");
-    const mousedown = new MouseEvent("mousedown", { bubbles: true, clientX: 350, clientY: 225 });
-    Object.defineProperty(mousedown, "currentTarget", { value: panel });
-    drag.startDrag(mousedown);
-    window.dispatchEvent(new MouseEvent("mousemove", { clientX: 5000, clientY: 5000 }));
+    const pointerdown = new PointerEvent("pointerdown", { bubbles: true, clientX: 350, clientY: 225 });
+    Object.defineProperty(pointerdown, "currentTarget", { value: panel });
+    drag.startDrag(pointerdown);
+    window.dispatchEvent(new PointerEvent("pointermove", { clientX: 5000, clientY: 5000 }));
     // container width(800) - panel width(100) = 700 max x; height(600) - 50 = 550 max y.
     expect(drag.pos).toEqual({ x: 700, y: 550 });
-    window.dispatchEvent(new MouseEvent("mouseup"));
+    window.dispatchEvent(new PointerEvent("pointerup"));
     panel.remove();
     container.remove();
   });
