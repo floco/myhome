@@ -196,16 +196,16 @@ describe("Canvas", () => {
     flushSync();
 
     const handle = target.querySelectorAll("circle.handle")[0]!;
-    handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1 }));
     flushSync();
     expect(dragStartPoint).toEqual({ x: 0, y: 0 });
 
     const svg = target.querySelector("svg.canvas")!;
-    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 410, clientY: 300 }));
+    svg.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: 410, clientY: 300 }));
     flushSync();
     expect(lastPointerWorld).toEqual({ x: 0.1, y: 0 });
 
-    svg.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+    svg.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
     flushSync();
     expect(events).toEqual(["dragstart", "move", "dragend"]);
   });
@@ -235,10 +235,10 @@ describe("Canvas", () => {
 
     const svg = target.querySelector("svg.canvas")!;
     svg.dispatchEvent(
-      new MouseEvent("mousedown", { bubbles: true, button: 1, clientX: 100, clientY: 100 }),
+      new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, button: 1, clientX: 100, clientY: 100 }),
     );
     svg.dispatchEvent(
-      new MouseEvent("mousemove", { bubbles: true, button: 1, clientX: 120, clientY: 90 }),
+      new PointerEvent("pointermove", { bubbles: true, pointerId: 1, button: 1, clientX: 120, clientY: 90 }),
     );
     flushSync();
 

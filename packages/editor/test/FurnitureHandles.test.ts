@@ -44,24 +44,24 @@ describe("FurnitureHandles", () => {
     expect(handle).toHaveLength(1);
   });
 
-  it("calls onresizestart when a corner handle is mousedown'd", () => {
+  it("calls onresizestart when a corner handle is pointerdown'd", () => {
     const onresizestart = vi.fn();
     const object = makeSofa();
     setup({ object, viewport: VP, onresizestart });
     const handle = svg.querySelector("rect.corner-handle")!;
-    handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1 }));
     expect(onresizestart).toHaveBeenCalled();
     const [id, corner] = onresizestart.mock.calls[0];
     expect(id).toBe("f1");
     expect(typeof corner).toBe("string");
   });
 
-  it("calls onrotatestart when the rotate handle is mousedown'd", () => {
+  it("calls onrotatestart when the rotate handle is pointerdown'd", () => {
     const onrotatestart = vi.fn();
     const object = makeSofa();
     setup({ object, viewport: VP, onrotatestart });
     const handle = svg.querySelector("circle.rotate-handle")!;
-    handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
-    expect(onrotatestart).toHaveBeenCalledWith("f1", expect.any(MouseEvent));
+    handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1 }));
+    expect(onrotatestart).toHaveBeenCalledWith("f1", expect.any(PointerEvent));
   });
 });

@@ -117,7 +117,7 @@
   let lastClickPos: { x: number; y: number } | null = null;
   let clickCountResetTimer: ReturnType<typeof setTimeout> | null = null;
 
-  function toWorld(event: MouseEvent): Point {
+  function toWorld(event: PointerEvent): Point {
     const rect = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
     return {
       x: (event.clientX - rect.left - viewport.panX) / viewport.zoom,
@@ -125,7 +125,7 @@
     };
   }
 
-  function handleMouseDown(event: MouseEvent): void {
+  function handlePointerDown(event: PointerEvent): void {
     if (event.button === 1 || (event.button === 0 && spacePressed)) {
       event.preventDefault();
       panState = { x: event.clientX, y: event.clientY };
@@ -133,7 +133,7 @@
     }
   }
 
-  function handleMouseMove(event: MouseEvent): void {
+  function handlePointerMove(event: PointerEvent): void {
     if (panState) {
       const dx = event.clientX - panState.x;
       const dy = event.clientY - panState.y;
@@ -144,7 +144,7 @@
     onpointermove?.(toWorld(event));
   }
 
-  function handleMouseUp(): void {
+  function handlePointerUp(): void {
     const wasPanning = panState !== null;
     panState = null;
     if (!wasPanning) {
@@ -202,7 +202,7 @@
     if (snapResult) onplacepoint?.(snapResult.point);
   }
 
-  function handleDragStart(point: Point, event: MouseEvent): void {
+  function handleDragStart(point: Point, event: PointerEvent): void {
     event.stopPropagation();
     ondragstart?.(point);
   }
@@ -213,9 +213,9 @@
   {height}
   class="canvas"
   onclick={handleClick}
-  onmousedown={handleMouseDown}
-  onmousemove={handleMouseMove}
-  onmouseup={handleMouseUp}
+  onpointerdown={handlePointerDown}
+  onpointermove={handlePointerMove}
+  onpointerup={handlePointerUp}
   ondblclick={() => ondblclick?.()}
   onwheel={handleWheel}
 >
@@ -317,5 +317,6 @@
   .canvas {
     background: var(--canvas-bg);
     display: block;
+    touch-action: none;
   }
 </style>
