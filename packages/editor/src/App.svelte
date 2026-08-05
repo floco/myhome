@@ -1368,6 +1368,10 @@
     margin-right: var(--space-2); flex-shrink: 0;
   }
 
+  @media (max-width: 480px) { /* --bp-mobile */
+    .app-title { display: none; }
+  }
+
   .theme-toggle { margin-right: var(--space-2); }
 
   .topbar-sep {
