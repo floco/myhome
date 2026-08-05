@@ -422,9 +422,9 @@
       class="trash-link"
       class:drop-target={trashDragOver}
       onclick={openTrash}
-      ondragover={(e) => { if (dragging) { e.preventDefault(); trashDragOver = true; } }}
-      ondragleave={() => { trashDragOver = false; }}
-      ondrop={(e) => { e.preventDefault(); handleDropOnTrash(); }}
+      onpointermove={() => { if (dragging) trashDragOver = true; }}
+      onpointerleave={() => { trashDragOver = false; }}
+      onpointerup={() => { if (dragging) handleDropOnTrash(); }}
     >
       🗑 {$_('kb.trash.title')}{store.trash.length > 0 ? ` (${store.trash.length})` : ""}
     </button>
