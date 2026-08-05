@@ -35,3 +35,22 @@ describe("RoomPanel — HA Area auto-fill", () => {
     expect(onupdate).toHaveBeenCalledWith({ haAreaId: "a1" });
   });
 });
+
+describe("RoomPanel — header controls", () => {
+  it("renders a drag handle when onstartdrag is provided", () => {
+    const { target } = setup({ onstartdrag: vi.fn() });
+    expect(target.querySelector(".drag-handle")).not.toBeNull();
+  });
+
+  it("renders no drag handle when onstartdrag is omitted", () => {
+    const { target } = setup();
+    expect(target.querySelector(".drag-handle")).toBeNull();
+  });
+
+  it("calls ondismiss when the close button is clicked", () => {
+    const ondismiss = vi.fn();
+    const { target } = setup({ ondismiss });
+    (target.querySelector('[title="Close"]') as HTMLElement).click();
+    expect(ondismiss).toHaveBeenCalled();
+  });
+});

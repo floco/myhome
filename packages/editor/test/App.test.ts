@@ -372,6 +372,20 @@ describe("App — room panel", () => {
     unmount(app);
     target.remove();
   });
+
+  it("room panel renders inside a draggable, dismissible float once a room is selected", async () => {
+    stubFetch404();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = await mountAndLoad(target);
+    drawWalls(target, SAMPLE_RECT_CORNERS);
+    (target.querySelector("polygon.room") as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+    expect(target.querySelector(".room-panel-float")).not.toBeNull();
+    expect(target.querySelector('.room-panel-float [title="Close"]')).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
 });
 
 describe("App — opening selection", () => {

@@ -291,6 +291,7 @@
   const ftDrag = createFloatingDrag(".floating-toolbar");
   const fpDrag = createFloatingDrag(".furniture-float");
   const ipDrag = createFloatingDrag(".picker-float");
+  const rpDrag = createFloatingDrag(".room-panel-float");
   let navExpanded = $state(false);
   let showNewChoreModal = $state(false);
   let userMenuOpen = $state(false);
@@ -889,11 +890,15 @@
               onzoom={handleZoom}
             />
             {#if selectedRoom}
-              <RoomPanel
-                room={selectedRoom}
-                {haAreas}
-                onupdate={(patch) => floorStore.updateRoom(selectedRoom.id, patch)}
-              />
+              <div class="room-panel-float" style={rpDrag.pos ? `left:${rpDrag.pos.x}px;top:${rpDrag.pos.y}px;right:auto;transform:none` : ''}>
+                <RoomPanel
+                  room={selectedRoom}
+                  {haAreas}
+                  onupdate={(patch) => floorStore.updateRoom(selectedRoom.id, patch)}
+                  onstartdrag={rpDrag.startDrag}
+                  ondismiss={() => toolStore.selectRoom(null)}
+                />
+              </div>
             {/if}
             {#if choreLayerActive}
               <ChoreOverlay
@@ -1444,6 +1449,11 @@
     border-radius: var(--radius-md); padding: 0;
     box-shadow: var(--shadow-md); z-index: 20;
     overflow: hidden;
+  }
+
+  .room-panel-float {
+    position: absolute; right: 120px; top: 50%; transform: translateY(-50%);
+    z-index: 21;
   }
 
   .floating-toolbar {
