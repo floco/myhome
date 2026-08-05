@@ -1507,6 +1507,32 @@
     height: 1px; background: var(--border); flex-shrink: 0; margin: 2px 0;
   }
 
+  @media (max-width: 480px) { /* --bp-mobile */
+    .floating-toolbar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0; top: auto;
+      transform: none !important;
+      width: 100%;
+      height: 48px;
+      flex-direction: row;
+      align-items: center;
+      gap: 0;
+      border-radius: 0;
+      border-left: none; border-right: none; border-bottom: none;
+      overflow-x: auto;
+      z-index: 30;
+    }
+    .ft-handle { display: none; }
+    .ft-btn {
+      width: auto;
+      flex-direction: column;
+      gap: 1px;
+      font-size: 10px;
+    }
+    .ft-label { font-size: 8px; }
+    .ft-sep { width: 1px; height: 24px; margin: 0 2px; }
+  }
+
   .loading {
     display: flex; align-items: center; justify-content: center;
     height: 100%; color: #888; font-size: 14px;
