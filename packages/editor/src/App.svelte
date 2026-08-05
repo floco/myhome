@@ -535,7 +535,7 @@
     selectedFurnitureId = id;
   }
 
-  function handleMoveFurnitureStart(id: string, e: MouseEvent): void {
+  function handleMoveFurnitureStart(id: string, e: PointerEvent): void {
     const obj = floorStore.currentFurniture.find((f) => f.id === id);
     if (!obj) return;
     floorStore.saveSnapshot();
@@ -548,7 +548,7 @@
     furnitureDrag = { type: "move", id, startObjX: obj.x, startObjY: obj.y, startCursorX: cursorX, startCursorY: cursorY };
   }
 
-  function handleResizeFurnitureStart(id: string, corner: string, _e: MouseEvent): void {
+  function handleResizeFurnitureStart(id: string, corner: string, _e: PointerEvent): void {
     const obj = floorStore.currentFurniture.find((f) => f.id === id);
     if (!obj) return;
     floorStore.saveSnapshot();
@@ -563,7 +563,7 @@
     furnitureDrag = { type: "resize", id, fixedX, fixedY, rotation: obj.rotation };
   }
 
-  function handleRotateFurnitureStart(id: string, _e: MouseEvent): void {
+  function handleRotateFurnitureStart(id: string, _e: PointerEvent): void {
     const obj = floorStore.currentFurniture.find((f) => f.id === id);
     if (!obj) return;
     floorStore.saveSnapshot();
@@ -758,7 +758,7 @@
   onkeydown={handleKeydown}
   onkeyup={handleKeyup}
   onblur={() => { spacePressed = false; }}
-  onmouseup={() => { handleDragEnd(); endFurnitureDrag(); }}
+  onpointerup={() => { handleDragEnd(); endFurnitureDrag(); }}
 />
 
 <CommandPalette

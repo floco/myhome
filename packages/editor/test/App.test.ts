@@ -47,7 +47,7 @@ function drawWalls(target: HTMLElement, worldCorners: { x: number; y: number }[]
   for (const corner of worldCorners) {
     const screen = { x: corner.x * 100 + 400, y: corner.y * 100 + 300 };
     svg.dispatchEvent(
-      new MouseEvent("mousemove", { bubbles: true, clientX: screen.x, clientY: screen.y }),
+      new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: screen.x, clientY: screen.y }),
     );
     flushSync();
     svg.dispatchEvent(
@@ -165,7 +165,7 @@ describe("App", () => {
     for (const corner of corners) {
       const screen = { x: corner.x * 100 + 400, y: corner.y * 100 + 300 };
       svg.dispatchEvent(
-        new MouseEvent("mousemove", { bubbles: true, clientX: screen.x, clientY: screen.y }),
+        new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: screen.x, clientY: screen.y }),
       );
       flushSync();
       svg.dispatchEvent(
@@ -199,12 +199,12 @@ describe("App", () => {
     const svg = target.querySelector("svg.canvas")!;
     const wallsBefore = target.querySelectorAll("polygon.wall").length;
 
-    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 1400, clientY: 1300 }));
+    svg.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: 1400, clientY: 1300 }));
     flushSync();
     svg.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 1400, clientY: 1300 }));
     flushSync();
 
-    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 1500, clientY: 1300 }));
+    svg.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: 1500, clientY: 1300 }));
     flushSync();
     svg.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 1500, clientY: 1300 }));
     flushSync();
@@ -230,12 +230,12 @@ describe("App", () => {
 
     const svg = target.querySelector("svg.canvas")!;
 
-    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 2400, clientY: 2300 }));
+    svg.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: 2400, clientY: 2300 }));
     flushSync();
     svg.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 2400, clientY: 2300 }));
     flushSync();
 
-    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 2500, clientY: 2300 }));
+    svg.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: 2500, clientY: 2300 }));
     flushSync();
     svg.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 2500, clientY: 2300 }));
     flushSync();
@@ -265,14 +265,14 @@ describe("App", () => {
     flushSync();
 
     const handle = target.querySelector("circle.handle")!;
-    handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1 }));
     flushSync();
 
     const svg = target.querySelector("svg.canvas")!;
     // Drag wall-1's start handle (at world (0,0) → screen (400,300)) to screen (300,300) → world (-1,0)
-    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 300, clientY: 300 }));
+    svg.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: 300, clientY: 300 }));
     flushSync();
-    svg.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+    svg.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
     flushSync();
 
     // Both wall-1 and wall-4 share the (0,0) endpoint; both polygons should have changed
@@ -295,16 +295,16 @@ describe("App", () => {
     flushSync();
 
     const handle = target.querySelector("circle.handle")!;
-    handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1 }));
     flushSync();
 
     // wall-1.end is at world (4,0) -> screen (800,300). Move the cursor to
     // just within snap radius of it so the dragged start endpoint
     // (world (0,0)) would snap onto wall-1's own other endpoint.
     const svg = target.querySelector("svg.canvas")!;
-    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 795, clientY: 300 }));
+    svg.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: 795, clientY: 300 }));
     flushSync();
-    svg.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+    svg.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
     flushSync();
 
     // The drag was a no-op (it would have collapsed wall-1 to zero length),
@@ -347,8 +347,8 @@ describe("App", () => {
     const wallBefore = target.querySelector("polygon.wall")!.getAttribute("points");
 
     window.dispatchEvent(new KeyboardEvent("keydown", { code: "Space" }));
-    svg.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientX: 100, clientY: 100 }));
-    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 130, clientY: 80 }));
+    svg.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, clientX: 100, clientY: 100 }));
+    svg.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: 130, clientY: 80 }));
     flushSync();
     window.dispatchEvent(new KeyboardEvent("keyup", { code: "Space" }));
 
@@ -559,11 +559,11 @@ describe("App — autosave", () => {
     const p1 = { x: 10 * 100 + 400, y: 10 * 100 + 300 };
     const p2 = { x: 12 * 100 + 400, y: 10 * 100 + 300 };
 
-    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: p1.x, clientY: p1.y }));
+    svg.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: p1.x, clientY: p1.y }));
     flushSync();
     svg.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: p1.x, clientY: p1.y }));
     flushSync();
-    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: p2.x, clientY: p2.y }));
+    svg.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: p2.x, clientY: p2.y }));
     flushSync();
     svg.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: p2.x, clientY: p2.y }));
     flushSync();

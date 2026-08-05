@@ -19,7 +19,7 @@
     tool?: ToolType;
     selected?: boolean;
     onselect?: (id: string) => void;
-    ondraghandlestart?: (openingId: string, side: "start" | "end", event: MouseEvent) => void;
+    ondraghandlestart?: (openingId: string, side: "start" | "end", event: PointerEvent) => void;
   } = $props();
 
   const dir = $derived.by(() => {
@@ -145,7 +145,7 @@
       cx={sp1.x}
       cy={sp1.y}
       r="5"
-      onmousedown={(e) => { e.stopPropagation(); ondraghandlestart?.(opening.id, "start", e); }}
+      onpointerdown={(e) => { e.stopPropagation(); ondraghandlestart?.(opening.id, "start", e); }}
       role="button"
       tabindex="0"
     />
@@ -154,7 +154,7 @@
       cx={sp2.x}
       cy={sp2.y}
       r="5"
-      onmousedown={(e) => { e.stopPropagation(); ondraghandlestart?.(opening.id, "end", e); }}
+      onpointerdown={(e) => { e.stopPropagation(); ondraghandlestart?.(opening.id, "end", e); }}
       role="button"
       tabindex="0"
     />

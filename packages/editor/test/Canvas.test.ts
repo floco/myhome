@@ -196,16 +196,16 @@ describe("Canvas", () => {
     flushSync();
 
     const handle = target.querySelectorAll("circle.handle")[0]!;
-    handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    handle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1 }));
     flushSync();
     expect(dragStartPoint).toEqual({ x: 0, y: 0 });
 
     const svg = target.querySelector("svg.canvas")!;
-    svg.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 410, clientY: 300 }));
+    svg.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: 410, clientY: 300 }));
     flushSync();
     expect(lastPointerWorld).toEqual({ x: 0.1, y: 0 });
 
-    svg.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+    svg.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
     flushSync();
     expect(events).toEqual(["dragstart", "move", "dragend"]);
   });
@@ -235,10 +235,10 @@ describe("Canvas", () => {
 
     const svg = target.querySelector("svg.canvas")!;
     svg.dispatchEvent(
-      new MouseEvent("mousedown", { bubbles: true, button: 1, clientX: 100, clientY: 100 }),
+      new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, button: 1, clientX: 100, clientY: 100 }),
     );
     svg.dispatchEvent(
-      new MouseEvent("mousemove", { bubbles: true, button: 1, clientX: 120, clientY: 90 }),
+      new PointerEvent("pointermove", { bubbles: true, pointerId: 1, button: 1, clientX: 120, clientY: 90 }),
     );
     flushSync();
 
@@ -455,5 +455,78 @@ describe("Canvas", () => {
     const svg = target.querySelector("svg.canvas");
     expect(svg!.querySelectorAll("rect.corner-handle")).toHaveLength(4);
     expect(svg!.querySelectorAll("circle.rotate-handle")).toHaveLength(1);
+  });
+
+  it("two active pointers report a pan delta and a zoom factor from their centroid/distance change", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const floor = createSampleFloor();
+    let panDelta: { dx: number; dy: number } | null = null;
+    let zoomCall: { screen: Point; factor: number } | null = null;
+    let moveCount = 0;
+
+    app = mount(Canvas, {
+      target,
+      props: {
+        floor,
+        viewport: { ...DEFAULT_VIEWPORT },
+        width: 800,
+        height: 600,
+        onpan: (dx: number, dy: number) => { panDelta = { dx, dy }; },
+        onzoom: (screen: Point, factor: number) => { zoomCall = { screen, factor }; },
+        onpointermove: () => moveCount++,
+      },
+    });
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas")!;
+    svg.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, clientX: 100, clientY: 100 }));
+    svg.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 2, clientX: 300, clientY: 100 }));
+    // centroid (200,100), distance 200
+    svg.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: 150, clientY: 100 }));
+    // pointer 1 moved to (150,100); pointer 2 unchanged at (300,100)
+    // new centroid (225,100), new distance 150
+    flushSync();
+
+    expect(panDelta).toEqual({ dx: 25, dy: 0 }); // 225 - 200
+    expect(zoomCall!.factor).toBe(0.75); // 150 / 200
+    expect(zoomCall!.screen).toEqual({ x: 225, y: 100 }); // jsdom's default getBoundingClientRect is all-zero
+    expect(moveCount).toBe(0); // single-pointer world-cursor reporting is suppressed during a 2-finger gesture
+
+    svg.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
+    svg.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 2 }));
+  });
+
+  it("returns to single-pointer mode once a second pointer lifts", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const floor = createSampleFloor();
+    let moveCount = 0;
+
+    app = mount(Canvas, {
+      target,
+      props: {
+        floor,
+        viewport: { ...DEFAULT_VIEWPORT },
+        width: 800,
+        height: 600,
+        onpointermove: () => moveCount++,
+      },
+    });
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas")!;
+    svg.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, clientX: 100, clientY: 100 }));
+    svg.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 2, clientX: 300, clientY: 100 }));
+    svg.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 2 }));
+    flushSync();
+
+    // Back to a single active pointer (id 1) — its move should report a world position again.
+    svg.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: 120, clientY: 110 }));
+    flushSync();
+
+    expect(moveCount).toBe(1);
   });
 });
