@@ -1111,6 +1111,7 @@
                 draggingId={draggingItemId}
                 highlightId={pickerHighlightId}
                 onstartdrag={ipDrag.startDrag}
+                ondismiss={() => { pickerOpen = false; }}
                 ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; pickerHighlightId = null; }}
                 ondragend={() => { draggingLayerId = null; draggingItemId = null; }}
               />
@@ -1118,7 +1119,7 @@
           {/if}
           {#if furnitureLibraryOpen}
             <div class="furniture-float" style={fpDrag.pos ? `left:${fpDrag.pos.x}px;top:${fpDrag.pos.y}px;right:auto;transform:none` : ''}>
-              <FurnitureLibraryPanel onstartdrag={fpDrag.startDrag} />
+              <FurnitureLibraryPanel onstartdrag={fpDrag.startDrag} ondismiss={() => { furnitureLibraryOpen = false; }} />
             </div>
           {/if}
           {#if floorStore.loaded}
