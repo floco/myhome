@@ -1137,7 +1137,7 @@
               style={ftDrag.pos ? `left:${ftDrag.pos.x}px;top:${ftDrag.pos.y}px;right:auto;transform:none` : ''}
             >
               <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="ft-handle" onmousedown={ftDrag.startDrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
+              <div class="ft-handle" onpointerdown={ftDrag.startDrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
               <div class="ft-sep"></div>
               <FloorSwitcher
                 floors={floorStore.floors}
@@ -1446,6 +1446,19 @@
     overflow: hidden;
   }
 
+  @media (max-width: 480px) { /* --bp-mobile */
+    .picker-float {
+      position: fixed;
+      left: 0; right: 0; bottom: 48px; top: auto;
+      transform: none !important;
+      width: 100%;
+      max-height: 45vh;
+      border-radius: 0;
+      border-left: none; border-right: none; border-bottom: none;
+      z-index: 26;
+    }
+  }
+
   .furniture-float {
     position: absolute; right: 120px; top: 50%; transform: translateY(-50%);
     max-height: min(460px, calc(100% - 16px));
@@ -1456,9 +1469,33 @@
     overflow: hidden;
   }
 
+  @media (max-width: 480px) { /* --bp-mobile */
+    .furniture-float {
+      position: fixed;
+      left: 0; right: 0; bottom: 48px; top: auto;
+      transform: none !important;
+      width: 100%;
+      max-height: 45vh;
+      border-radius: 0;
+      border-left: none; border-right: none; border-bottom: none;
+      z-index: 26;
+    }
+  }
+
   .room-panel-float {
     position: absolute; right: 120px; top: 50%; transform: translateY(-50%);
     z-index: 21;
+  }
+
+  @media (max-width: 480px) { /* --bp-mobile */
+    .room-panel-float {
+      position: fixed;
+      left: 0; right: 0; bottom: 48px; top: auto;
+      transform: none !important;
+      width: 100%;
+      max-height: 45vh;
+      z-index: 26;
+    }
   }
 
   .floating-toolbar {
@@ -1505,6 +1542,34 @@
 
   .ft-sep {
     height: 1px; background: var(--border); flex-shrink: 0; margin: 2px 0;
+  }
+
+  @media (max-width: 480px) { /* --bp-mobile */
+    .floating-toolbar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0; top: auto;
+      transform: none !important;
+      box-sizing: border-box;
+      width: 100%;
+      height: 48px;
+      padding: 4px;
+      flex-direction: row;
+      align-items: center;
+      gap: 0;
+      border-radius: 0;
+      border-left: none; border-right: none; border-bottom: none;
+      overflow-x: auto;
+      z-index: 30;
+    }
+    .ft-handle { display: none; }
+    .ft-btn {
+      width: auto;
+      flex-direction: column;
+      gap: 1px;
+      font-size: 10px;
+    }
+    .ft-label { font-size: 8px; }
+    .ft-sep { width: 1px; height: 24px; margin: 0 2px; }
   }
 
   .loading {
