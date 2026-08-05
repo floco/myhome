@@ -96,6 +96,16 @@
     gap: var(--space-3);
     overflow-y: auto;
   }
+
+  @media (max-width: 480px) { /* --bp-mobile */
+    .room-panel {
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+      border-left: none; border-right: none; border-bottom: none;
+    }
+  }
+
   .panel-header {
     display: flex;
     align-items: center;

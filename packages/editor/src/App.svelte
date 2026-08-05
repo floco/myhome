@@ -1461,6 +1461,17 @@
     z-index: 21;
   }
 
+  @media (max-width: 480px) { /* --bp-mobile */
+    .room-panel-float {
+      position: fixed;
+      left: 0; right: 0; bottom: 48px; top: auto;
+      transform: none !important;
+      width: 100%;
+      max-height: 45vh;
+      z-index: 26;
+    }
+  }
+
   .floating-toolbar {
     position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
     display: flex; flex-direction: column; align-items: stretch; gap: 1px;
