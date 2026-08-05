@@ -117,7 +117,27 @@
   let lastClickPos: { x: number; y: number } | null = null;
   let clickCountResetTimer: ReturnType<typeof setTimeout> | null = null;
 
-  function toWorld(event: MouseEvent): Point {
+  const activePointers = new Map<number, Point>();
+  let gestureBase: { centroid: Point; distance: number } | null = null;
+
+  function gesturePoints(): Point[] {
+    return [...activePointers.values()].slice(0, 2);
+  }
+
+  function centroidOf(pts: Point[]): Point {
+    return { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+  }
+
+  function distanceOf(pts: Point[]): number {
+    return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+  }
+
+  function rebaseGesture(): void {
+    const pts = gesturePoints();
+    gestureBase = pts.length >= 2 ? { centroid: centroidOf(pts), distance: distanceOf(pts) } : null;
+  }
+
+  function toWorld(event: PointerEvent): Point {
     const rect = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
     return {
       x: (event.clientX - rect.left - viewport.panX) / viewport.zoom,
@@ -125,7 +145,14 @@
     };
   }
 
-  function handleMouseDown(event: MouseEvent): void {
+  function handlePointerDown(event: PointerEvent): void {
+    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (activePointers.size >= 2) {
+      rebaseGesture();
+      panState = null;
+      suppressNextClick = true;
+      return;
+    }
     if (event.button === 1 || (event.button === 0 && spacePressed)) {
       event.preventDefault();
       panState = { x: event.clientX, y: event.clientY };
@@ -133,7 +160,26 @@
     }
   }
 
-  function handleMouseMove(event: MouseEvent): void {
+  function handlePointerMove(event: PointerEvent): void {
+    if (activePointers.has(event.pointerId)) {
+      activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    }
+    if (activePointers.size >= 2) {
+      const pts = gesturePoints();
+      const centroid = centroidOf(pts);
+      const dist = distanceOf(pts);
+      if (gestureBase) {
+        const dx = centroid.x - gestureBase.centroid.x;
+        const dy = centroid.y - gestureBase.centroid.y;
+        if (dx !== 0 || dy !== 0) onpan?.(dx, dy);
+        if (gestureBase.distance > 0 && dist > 0) {
+          const rect = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
+          onzoom?.({ x: centroid.x - rect.left, y: centroid.y - rect.top }, dist / gestureBase.distance);
+        }
+      }
+      gestureBase = { centroid, distance: dist };
+      return;
+    }
     if (panState) {
       const dx = event.clientX - panState.x;
       const dy = event.clientY - panState.y;
@@ -144,7 +190,9 @@
     onpointermove?.(toWorld(event));
   }
 
-  function handleMouseUp(): void {
+  function handlePointerUp(event: PointerEvent): void {
+    activePointers.delete(event.pointerId);
+    rebaseGesture();
     const wasPanning = panState !== null;
     panState = null;
     if (!wasPanning) {
@@ -202,7 +250,7 @@
     if (snapResult) onplacepoint?.(snapResult.point);
   }
 
-  function handleDragStart(point: Point, event: MouseEvent): void {
+  function handleDragStart(point: Point, event: PointerEvent): void {
     event.stopPropagation();
     ondragstart?.(point);
   }
@@ -213,9 +261,9 @@
   {height}
   class="canvas"
   onclick={handleClick}
-  onmousedown={handleMouseDown}
-  onmousemove={handleMouseMove}
-  onmouseup={handleMouseUp}
+  onpointerdown={handlePointerDown}
+  onpointermove={handlePointerMove}
+  onpointerup={handlePointerUp}
   ondblclick={() => ondblclick?.()}
   onwheel={handleWheel}
 >
@@ -317,5 +365,6 @@
   .canvas {
     background: var(--canvas-bg);
     display: block;
+    touch-action: none;
   }
 </style>

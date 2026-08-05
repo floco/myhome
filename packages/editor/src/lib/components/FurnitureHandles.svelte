@@ -14,8 +14,8 @@
   }: {
     object: FurnitureObject;
     viewport: ViewportState;
-    onresizestart?: (id: string, corner: Corner, e: MouseEvent) => void;
-    onrotatestart?: (id: string, e: MouseEvent) => void;
+    onresizestart?: (id: string, corner: Corner, e: PointerEvent) => void;
+    onrotatestart?: (id: string, e: PointerEvent) => void;
   } = $props();
 
   const HANDLE_SIZE = 8;
@@ -51,12 +51,12 @@
     };
   })());
 
-  function handleCornerDown(corner: Corner, e: MouseEvent) {
+  function handleCornerDown(corner: Corner, e: PointerEvent) {
     e.stopPropagation();
     onresizestart?.(object.id, corner, e);
   }
 
-  function handleRotateDown(e: MouseEvent) {
+  function handleRotateDown(e: PointerEvent) {
     e.stopPropagation();
     onrotatestart?.(object.id, e);
   }
@@ -70,7 +70,7 @@
     y={c.y - HANDLE_SIZE / 2}
     width={HANDLE_SIZE}
     height={HANDLE_SIZE}
-    onmousedown={(e) => handleCornerDown(c.key, e)}
+    onpointerdown={(e) => handleCornerDown(c.key, e)}
   />
 {/each}
 
@@ -80,7 +80,7 @@
   cx={rotHandle.x}
   cy={rotHandle.y}
   r={HANDLE_SIZE / 2 + 2}
-  onmousedown={handleRotateDown}
+  onpointerdown={handleRotateDown}
 ><title>{$_('floorPlan.rotate')}</title></circle>
 
 <style>

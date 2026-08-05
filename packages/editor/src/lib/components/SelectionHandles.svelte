@@ -12,7 +12,7 @@
     wall: Wall;
     viewport: ViewportState;
     draggingPoint: Point | null;
-    ondragstart: (point: Point, event: MouseEvent) => void;
+    ondragstart: (point: Point, event: PointerEvent) => void;
   } = $props();
 
   function toScreen(p: Point): Point {
@@ -31,14 +31,14 @@
     cx={startScreen.x}
     cy={startScreen.y}
     r="5"
-    onmousedown={(e) => ondragstart(wall.start, e)}
+    onpointerdown={(e) => ondragstart(wall.start, e)}
   />
   <circle
     class="handle"
     cx={endScreen.x}
     cy={endScreen.y}
     r="5"
-    onmousedown={(e) => ondragstart(wall.end, e)}
+    onpointerdown={(e) => ondragstart(wall.end, e)}
   />
   {#if draggingPoint}
     <text class="length-label" x={midScreen.x} y={midScreen.y - 6} text-anchor="middle">

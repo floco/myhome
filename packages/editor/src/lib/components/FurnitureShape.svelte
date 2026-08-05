@@ -20,7 +20,7 @@
     selected?: boolean;
     tool?: string;
     onselect?: (id: string) => void;
-    onbodymousedown?: (id: string, e: MouseEvent) => void;
+    onbodymousedown?: (id: string, e: PointerEvent) => void;
   } = $props();
 
   const cs = $derived(worldToScreen({ x: object.x, y: object.y }, viewport));
@@ -32,7 +32,7 @@
     onselect?.(object.id);
   }
 
-  function handleMousedown(e: MouseEvent) {
+  function handleMousedown(e: PointerEvent) {
     onbodymousedown?.(object.id, e);
   }
 </script>
@@ -43,7 +43,7 @@
   class:selected
   transform="translate({cs.x},{cs.y}) rotate({object.rotation}) scale({scaleX},{scaleY}) translate(-50,-50)"
   onclick={handleClick}
-  onmousedown={handleMousedown}
+  onpointerdown={handleMousedown}
   role="button"
   tabindex="-1"
   aria-label={$_(`floorPlan.furnitureLibrary.items.${template.id}`)}
