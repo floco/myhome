@@ -63,3 +63,31 @@ describe("CostsPage — external selection", () => {
     unmount(comp);
   });
 });
+
+describe("CostsPage — responsive columns", () => {
+  it("hides qty/unitPrice/supplier/room at tablet and date at mobile", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(CostsPage, {
+      target,
+      props: {
+        costsStore: makeCostsStore([makeEntry()]),
+        settingsStore: makeSettingsStore(),
+        contactsStore: makeContactsStore(),
+        floorStore: { floors: [] },
+      },
+    });
+    flushSync();
+
+    const headers = target.querySelectorAll("thead th");
+    // emoji, category, date, supplier, qty, unitPrice, total, room
+    expect(headers[4].classList.contains("col-hide-tablet")).toBe(true); // qty
+    expect(headers[5].classList.contains("col-hide-tablet")).toBe(true); // unitPrice
+    expect(headers[3].classList.contains("col-hide-tablet")).toBe(true); // supplier
+    expect(headers[7].classList.contains("col-hide-tablet")).toBe(true); // room
+    expect(headers[2].classList.contains("col-hide-mobile")).toBe(true); // date
+    expect(headers[6].classList.contains("col-hide-tablet")).toBe(false); // total always visible
+
+    unmount(comp);
+  });
+});

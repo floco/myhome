@@ -291,12 +291,12 @@
       columns={[
         { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
         { key: "category", label: $_('costs.page.category'), sortValue: (e) => categoryName(e.categoryId), cellClass: "name-cell", cell: categoryCell },
-        { key: "date", label: $_('costs.page.date'), sortValue: (e) => new Date(e.date), cell: dateCell },
-        { key: "supplier", label: $_('costs.page.supplier'), sortValue: (e) => (e.contactId ? supplierMap.get(e.contactId)?.name ?? null : null), cell: supplierCell },
-        { key: "qty", label: $_('costs.page.qty'), headerClass: "num-col", cellClass: "num-col", sortValue: (e) => e.quantity, cell: qtyCell },
-        { key: "unitPrice", label: $_('costs.page.unitPrice'), headerClass: "num-col", cellClass: "num-col", sortValue: (e) => e.unitPrice, cell: unitPriceCell },
+        { key: "date", label: $_('costs.page.date'), sortValue: (e) => new Date(e.date), cell: dateCell, hideBelow: "mobile" },
+        { key: "supplier", label: $_('costs.page.supplier'), sortValue: (e) => (e.contactId ? supplierMap.get(e.contactId)?.name ?? null : null), cell: supplierCell, hideBelow: "tablet" },
+        { key: "qty", label: $_('costs.page.qty'), headerClass: "num-col", cellClass: "num-col", sortValue: (e) => e.quantity, cell: qtyCell, hideBelow: "tablet" },
+        { key: "unitPrice", label: $_('costs.page.unitPrice'), headerClass: "num-col", cellClass: "num-col", sortValue: (e) => e.unitPrice, cell: unitPriceCell, hideBelow: "tablet" },
         { key: "total", label: $_('costs.page.total'), headerClass: "num-col", cellClass: "num-col amount-cell", sortValue: (e) => e.totalAmount, cell: totalCell },
-        { key: "room", label: $_('costs.page.room'), sortValue: (e) => roomName(e.roomId), cell: roomCell },
+        { key: "room", label: $_('costs.page.room'), sortValue: (e) => roomName(e.roomId), cell: roomCell, hideBelow: "tablet" },
       ] as Column<CostEntry>[]}
       rows={filtered}
       rowKey={(entry) => entry.id}
@@ -400,7 +400,7 @@
   @media (max-width: 700px) {
     .page { overflow-y: auto; }
     .table-card-wrap { flex: none; min-height: auto; }
-    .table-card-wrap :global(.ui-card) { flex: none !important; overflow: visible !important; min-height: auto !important; }
+    .table-card-wrap :global(.ui-card) { flex: none !important; width: 100%; overflow: visible !important; min-height: auto !important; }
     .table-wrapper { flex: none !important; overflow-y: visible !important; }
   }
 

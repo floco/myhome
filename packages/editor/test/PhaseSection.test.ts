@@ -109,4 +109,24 @@ describe("PhaseSection", () => {
     unmount(comp);
     target.remove();
   });
+
+  it("marks progress hideBelow tablet and count hideBelow mobile", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => doc }));
+    const store = createBuildStore(getHomeId);
+    await waitTick();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(PhaseSection, { target, props: { store, onopentask: vi.fn() } });
+    await tick();
+    flushSync();
+
+    const headers = target.querySelectorAll("thead th");
+    // expand, name, status, count, progress
+    expect(headers[4].classList.contains("col-hide-tablet")).toBe(true); // progress
+    expect(headers[3].classList.contains("col-hide-mobile")).toBe(true); // count
+    expect(headers[1].classList.contains("col-hide-tablet")).toBe(false); // name always visible
+
+    unmount(comp);
+    target.remove();
+  });
 });

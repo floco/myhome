@@ -124,3 +124,26 @@ describe("InventoryPage — owner/store filters and columns", () => {
     unmount(app);
   });
 });
+
+describe("InventoryPage — responsive columns", () => {
+  it("hides category/owner/store/room at tablet and purchased/cost/warranty at mobile", () => {
+    const store = makeStore([makeItem()]);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(InventoryPage, { target, props: { store, floorStore: { floors: [] }, ...BASE_PROPS } });
+    flushSync();
+
+    const headers = target.querySelectorAll("thead th");
+    // emoji, name, category, owner, store, room, purchased, cost, warranty
+    for (const i of [2, 3, 4, 5]) {
+      expect(headers[i].classList.contains("col-hide-tablet")).toBe(true);
+    }
+    for (const i of [6, 7, 8]) {
+      expect(headers[i].classList.contains("col-hide-mobile")).toBe(true);
+    }
+    expect(headers[1].classList.contains("col-hide-tablet")).toBe(false); // name always visible
+    expect(headers[1].classList.contains("col-hide-mobile")).toBe(false);
+
+    unmount(comp);
+  });
+});

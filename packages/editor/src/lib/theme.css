@@ -47,6 +47,12 @@
   --space-5: 24px;
   --space-6: 32px;
 
+  /* Breakpoints (documented convention — @media conditions can't use
+     var(), so every @media added elsewhere in the codebase must match
+     these two numbers literally: 700px and 480px). */
+  --bp-tablet: 700px;
+  --bp-mobile: 480px;
+
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   /* Floor-plan canvas (tuned separately from UI chrome) */

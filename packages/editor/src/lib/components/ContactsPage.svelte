@@ -92,8 +92,8 @@
         columns={[
           { key: "name", label: $_('contacts.page.name'), sortValue: (c) => c.name, cellClass: "name-cell", cell: nameCell },
           { key: "type", label: $_('contacts.page.type'), sortValue: (c) => typeMap.get(c.typeId)?.name ?? null, cell: typeCell },
-          { key: "phone", label: $_('contacts.page.phone'), sortValue: (c) => c.phone, cell: phoneCell },
-          { key: "email", label: $_('contacts.page.email'), sortValue: (c) => c.email, cell: emailCell },
+          { key: "phone", label: $_('contacts.page.phone'), sortValue: (c) => c.phone, cell: phoneCell, hideBelow: "mobile" },
+          { key: "email", label: $_('contacts.page.email'), sortValue: (c) => c.email, cell: emailCell, hideBelow: "tablet" },
         ] as Column<Contact>[]}
         rows={filteredContacts}
         rowKey={(c) => c.id}
@@ -131,7 +131,7 @@
   @media (max-width: 700px) {
     .page { overflow-y: auto; }
     .table-card-wrap { flex: none; min-height: auto; }
-    .table-card-wrap :global(.ui-card) { flex: none !important; overflow: visible !important; min-height: auto !important; }
+    .table-card-wrap :global(.ui-card) { flex: none !important; width: 100%; overflow: visible !important; min-height: auto !important; }
     .table-wrapper { flex: none !important; overflow-y: visible !important; }
   }
   .toolbar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }

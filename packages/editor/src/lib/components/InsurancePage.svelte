@@ -164,10 +164,10 @@
         columns={[
           { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
           { key: "name", label: $_('insurance.page.name'), sortValue: (p) => p.name, cellClass: "name-cell", cell: nameCell },
-          { key: "category", label: $_('costs.page.category'), sortValue: (p) => categoryMap.get(p.categoryId)?.name ?? null, cell: categoryCell },
-          { key: "provider", label: $_('costs.entryModal.supplier'), sortValue: (p) => contactMap.get(p.contactId ?? "")?.name ?? null, cell: providerCell },
+          { key: "category", label: $_('costs.page.category'), sortValue: (p) => categoryMap.get(p.categoryId)?.name ?? null, cell: categoryCell, hideBelow: "tablet" },
+          { key: "provider", label: $_('costs.entryModal.supplier'), sortValue: (p) => contactMap.get(p.contactId ?? "")?.name ?? null, cell: providerCell, hideBelow: "tablet" },
           { key: "premium", label: $_('insurance.page.premium'), sortValue: (p) => annualized(p), cell: premiumCell },
-          { key: "endDate", label: $_('insurance.page.endDate'), sortValue: (p) => (p.endDate ? new Date(p.endDate) : null), cell: endDateCell },
+          { key: "endDate", label: $_('insurance.page.endDate'), sortValue: (p) => (p.endDate ? new Date(p.endDate) : null), cell: endDateCell, hideBelow: "mobile" },
         ] as Column<InsurancePolicy>[]}
         rows={filteredPolicies}
         rowKey={(p) => p.id}
@@ -215,7 +215,7 @@
     .chart-card-wrap :global(.ui-stat-row.column) { width: auto; }
     .page { overflow-y: auto; }
     .table-card-wrap { flex: none; min-height: auto; }
-    .table-card-wrap :global(.ui-card) { flex: none !important; overflow: visible !important; min-height: auto !important; }
+    .table-card-wrap :global(.ui-card) { flex: none !important; width: 100%; overflow: visible !important; min-height: auto !important; }
     .table-wrapper { flex: none !important; overflow-y: visible !important; }
   }
 

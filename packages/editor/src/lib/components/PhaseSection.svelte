@@ -93,8 +93,8 @@
       { key: "expand", label: "", sortable: false, cellClass: "expand-cell", cell: expandCell },
       { key: "name", label: $_('build.page.phasesTab'), sortValue: (p) => resolveLabel(p.nameKey, p.nameOverride), cellClass: "name-cell", cell: nameCell },
       { key: "status", label: $_('build.dashboard.status'), sortValue: (p) => p.status, cell: statusCell },
-      { key: "count", label: "", sortable: false, cellClass: "count-cell", cell: countCell },
-      { key: "progress", label: "", sortable: false, cellClass: "progress-cell", cell: progressCell },
+      { key: "count", label: "", sortable: false, cellClass: "count-cell", cell: countCell, hideBelow: "mobile" },
+      { key: "progress", label: "", sortable: false, cellClass: "progress-cell", cell: progressCell, hideBelow: "tablet" },
     ] as Column<BuildPhase>[]}
     rows={filteredPhases}
     rowKey={(phase) => phase.id}
