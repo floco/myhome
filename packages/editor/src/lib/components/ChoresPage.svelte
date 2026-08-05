@@ -318,8 +318,8 @@
           { key: "expand", label: "", sortable: false, cellClass: "expand-cell", cell: expandCell },
           { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
           { key: "name", label: $_('chores.editModal.name'), sortValue: (c) => displayName(c), cellClass: "name-cell", cell: nameCell },
-          { key: "schedule", label: $_('chores.page.schedule'), sortValue: (c) => scheduleLabel(c), cell: scheduleCell },
-          { key: "rooms", label: $_('chores.page.rooms'), sortValue: (c) => roomsSummary(assignmentsForChore(c.id)), cell: roomsCell },
+          { key: "schedule", label: $_('chores.page.schedule'), sortValue: (c) => scheduleLabel(c), cell: scheduleCell, hideBelow: "mobile" },
+          { key: "rooms", label: $_('chores.page.rooms'), sortValue: (c) => roomsSummary(assignmentsForChore(c.id)), cell: roomsCell, hideBelow: "tablet" },
           { key: "nextDue", label: $_('chores.page.nextDue'), sortValue: (c) => { const d = earliestDue(assignmentsForChore(c.id)); return d ? new Date(d) : null; }, cell: nextDueCell },
           { key: "actions", label: "", sortable: false, cellClass: "actions-cell", stopRowClick: true, cell: actionsCell },
         ] as Column<Chore>[]}
