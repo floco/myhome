@@ -5,6 +5,7 @@
   import { createHouseStore } from "./lib/houseStore.svelte";
   import { createViewportStore } from "./lib/viewportStore.svelte";
   import { createToolStore } from "./lib/toolStore.svelte";
+  import { createFloatingDrag } from "./lib/floatingDrag.svelte";
   import { placePoint, allEndpoints } from "./lib/drawingTool";
   import { findSnapPoint, snapToGrid, SNAP_RADIUS_PX, hitTestWall, HIT_RADIUS_PX } from "./lib/geometry-helpers";
   import type { Opening } from "@myhome/geometry";
@@ -287,38 +288,10 @@
   let pickerOpen = $state(false);
   const ALL_FLOOR_ID = "__all__";
   let allFloorsMode = $state(false);
-  let ftPos = $state<{ x: number; y: number } | null>(null);
-  let fpPos = $state<{ x: number; y: number } | null>(null);
-
-  function makeDragHandler(selector: string, pos: { x: number; y: number } | null, setPos: (p: { x: number; y: number }) => void) {
-    return function startDrag(e: MouseEvent): void {
-      e.preventDefault();
-      const el = (e.currentTarget as HTMLElement).closest(selector) as HTMLElement;
-      const rect = el.getBoundingClientRect();
-      const canvasRect = (el.parentElement as HTMLElement).getBoundingClientRect();
-      const initX = rect.left - canvasRect.left;
-      const initY = rect.top - canvasRect.top;
-      const startX = e.clientX;
-      const startY = e.clientY;
-      function onMove(me: MouseEvent): void {
-        setPos({
-          x: Math.max(0, Math.min(canvasRect.width - rect.width, initX + me.clientX - startX)),
-          y: Math.max(0, Math.min(canvasRect.height - rect.height, initY + me.clientY - startY)),
-        });
-      }
-      function onUp(): void {
-        window.removeEventListener('mousemove', onMove);
-        window.removeEventListener('mouseup', onUp);
-      }
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onUp);
-    };
-  }
-
-  const startFtDrag = makeDragHandler('.floating-toolbar', ftPos, (p) => { ftPos = p; });
-  const startFpDrag = makeDragHandler('.furniture-float', fpPos, (p) => { fpPos = p; });
-  const startIpDrag = makeDragHandler('.picker-float', null, (p) => { ipPos = p; });
-  let ipPos = $state<{ x: number; y: number } | null>(null);
+  const ftDrag = createFloatingDrag(".floating-toolbar");
+  const fpDrag = createFloatingDrag(".furniture-float");
+  const ipDrag = createFloatingDrag(".picker-float");
+  const rpDrag = createFloatingDrag(".room-panel-float");
   let navExpanded = $state(false);
   let showNewChoreModal = $state(false);
   let userMenuOpen = $state(false);
@@ -906,6 +879,7 @@
               tool={toolStore.state.tool}
               drawPoints={toolStore.state.drawPoints}
               cursorWorld={toolStore.state.cursorWorld}
+              draggingPoint={toolStore.state.draggingPoint}
               {spacePressed}
               onpointermove={handlePointerMove}
               onplacepoint={handlePlacePoint}
@@ -917,11 +891,15 @@
               onzoom={handleZoom}
             />
             {#if selectedRoom}
-              <RoomPanel
-                room={selectedRoom}
-                {haAreas}
-                onupdate={(patch) => floorStore.updateRoom(selectedRoom.id, patch)}
-              />
+              <div class="room-panel-float" style={rpDrag.pos ? `left:${rpDrag.pos.x}px;top:${rpDrag.pos.y}px;right:auto;transform:none` : ''}>
+                <RoomPanel
+                  room={selectedRoom}
+                  {haAreas}
+                  onupdate={(patch) => floorStore.updateRoom(selectedRoom.id, patch)}
+                  onstartdrag={rpDrag.startDrag}
+                  ondismiss={() => toolStore.selectRoom(null)}
+                />
+              </div>
             {/if}
             {#if choreLayerActive}
               <ChoreOverlay
@@ -1133,20 +1111,21 @@
             {/if}
           {/if}
           {#if pickerOpen && pickerLayers.length > 0}
-            <div class="picker-float" style={ipPos ? `left:${ipPos.x}px;top:${ipPos.y}px;right:auto;transform:none` : ''}>
+            <div class="picker-float" style={ipDrag.pos ? `left:${ipDrag.pos.x}px;top:${ipDrag.pos.y}px;right:auto;transform:none` : ''}>
               <ItemPickerPanel
                 layers={pickerLayers}
                 draggingId={draggingItemId}
                 highlightId={pickerHighlightId}
-                onstartdrag={startIpDrag}
+                onstartdrag={ipDrag.startDrag}
+                ondismiss={() => { pickerOpen = false; }}
                 ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; pickerHighlightId = null; }}
                 ondragend={() => { draggingLayerId = null; draggingItemId = null; }}
               />
             </div>
           {/if}
           {#if furnitureLibraryOpen}
-            <div class="furniture-float" style={fpPos ? `left:${fpPos.x}px;top:${fpPos.y}px;right:auto;transform:none` : ''}>
-              <FurnitureLibraryPanel onstartdrag={startFpDrag} />
+            <div class="furniture-float" style={fpDrag.pos ? `left:${fpDrag.pos.x}px;top:${fpDrag.pos.y}px;right:auto;transform:none` : ''}>
+              <FurnitureLibraryPanel onstartdrag={fpDrag.startDrag} ondismiss={() => { furnitureLibraryOpen = false; }} />
             </div>
           {/if}
           {#if floorStore.loaded}
@@ -1155,10 +1134,10 @@
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div
               class="floating-toolbar"
-              style={ftPos ? `left:${ftPos.x}px;top:${ftPos.y}px;right:auto;transform:none` : ''}
+              style={ftDrag.pos ? `left:${ftDrag.pos.x}px;top:${ftDrag.pos.y}px;right:auto;transform:none` : ''}
             >
               <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="ft-handle" onmousedown={startFtDrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
+              <div class="ft-handle" onmousedown={ftDrag.startDrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
               <div class="ft-sep"></div>
               <FloorSwitcher
                 floors={floorStore.floors}
@@ -1471,6 +1450,11 @@
     border-radius: var(--radius-md); padding: 0;
     box-shadow: var(--shadow-md); z-index: 20;
     overflow: hidden;
+  }
+
+  .room-panel-float {
+    position: absolute; right: 120px; top: 50%; transform: translateY(-50%);
+    z-index: 21;
   }
 
   .floating-toolbar {

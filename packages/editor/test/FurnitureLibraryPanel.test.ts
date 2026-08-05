@@ -26,6 +26,20 @@ describe("FurnitureLibraryPanel", () => {
     expect(input).not.toBeNull();
   });
 
+  it("renders a dismiss button when ondismiss is provided, and calls it on click", () => {
+    const ondismiss = vi.fn();
+    setup({ ondismiss });
+    const btn = target.querySelector('.panel-header [title="Close"]') as HTMLElement;
+    expect(btn).not.toBeNull();
+    btn.click();
+    expect(ondismiss).toHaveBeenCalled();
+  });
+
+  it("renders no dismiss button when ondismiss is omitted", () => {
+    setup();
+    expect(target.querySelector('.panel-header [title="Close"]')).toBeNull();
+  });
+
   it("renders all categories as section headings", () => {
     setup();
     const headings = Array.from(target.querySelectorAll(".category-label")).map(

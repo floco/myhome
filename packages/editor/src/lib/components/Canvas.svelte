@@ -39,6 +39,7 @@
     drawPoints = [],
     cursorWorld = null,
     spacePressed = false,
+    draggingPoint = null,
     onpointermove,
     onplacepoint,
     ondblclick,
@@ -69,6 +70,7 @@
     drawPoints?: Point[];
     cursorWorld?: Point | null;
     spacePressed?: boolean;
+    draggingPoint?: Point | null;
     onpointermove?: (point: Point) => void;
     onplacepoint?: (point: Point) => void;
     ondblclick?: () => void;
@@ -307,7 +309,7 @@
     />
   {/if}
   {#if selectedWall}
-    <SelectionHandles wall={selectedWall} {viewport} ondragstart={handleDragStart} />
+    <SelectionHandles wall={selectedWall} {viewport} {draggingPoint} ondragstart={handleDragStart} />
   {/if}
 </svg>
 

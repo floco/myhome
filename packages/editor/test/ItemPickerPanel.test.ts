@@ -29,6 +29,30 @@ afterEach(() => {
 });
 
 describe("ItemPickerPanel", () => {
+  it("renders a dismiss button when ondismiss is provided, and calls it on click", async () => {
+    const ondismiss = vi.fn();
+    const app = mount(ItemPickerPanel, {
+      target,
+      props: { layers: [CHORES_LAYER], draggingId: null, ondragstart: vi.fn(), ondragend: vi.fn(), ondismiss },
+    });
+    flushSync();
+    const btn = target.querySelector('.panel-header [title="Close"]') as HTMLElement;
+    expect(btn).not.toBeNull();
+    btn.click();
+    expect(ondismiss).toHaveBeenCalled();
+    unmount(app);
+  });
+
+  it("renders no dismiss button when ondismiss is omitted", async () => {
+    const app = mount(ItemPickerPanel, {
+      target,
+      props: { layers: [CHORES_LAYER], draggingId: null, ondragstart: vi.fn(), ondragend: vi.fn() },
+    });
+    flushSync();
+    expect(target.querySelector('.panel-header [title="Close"]')).toBeNull();
+    unmount(app);
+  });
+
   it("renders a section per layer", async () => {
     const app = mount(ItemPickerPanel, {
       target,

@@ -7,7 +7,7 @@
     type FurnitureTemplate,
   } from "../furnitureLibrary";
 
-  let { onstartdrag }: { onstartdrag?: (e: MouseEvent) => void } = $props();
+  let { onstartdrag, ondismiss }: { onstartdrag?: (e: MouseEvent) => void; ondismiss?: () => void } = $props();
 
   let search = $state("");
 
@@ -49,6 +49,9 @@
       bind:value={search}
       oninput={() => {}}
     />
+    {#if ondismiss}
+      <button class="dismiss-btn" onclick={ondismiss} title={$_('common.close')}>✕</button>
+    {/if}
   </div>
 
   <div class="panel-body">
@@ -110,6 +113,17 @@
   }
   .drag-handle:hover { opacity: 1; background: var(--surface-hover); }
   .drag-handle:active { cursor: grabbing; }
+
+  .dismiss-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    padding: 2px 4px;
+    border-radius: var(--radius-sm);
+  }
+  .dismiss-btn:hover { background: var(--surface-hover); color: var(--text); }
 
   .panel-header input {
     flex: 1;

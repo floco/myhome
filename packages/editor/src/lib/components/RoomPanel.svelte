@@ -6,10 +6,14 @@
     room,
     haAreas = [],
     onupdate,
+    onstartdrag,
+    ondismiss,
   }: {
     room: Room;
     haAreas?: Array<{ area_id: string; name: string }>;
     onupdate: (patch: { label?: string; haAreaId?: string | null }) => void;
+    onstartdrag?: (e: MouseEvent) => void;
+    ondismiss?: () => void;
   } = $props();
 
   let labelDraft = $state("");
@@ -26,12 +30,27 @@
   function handleAreaChange(e: Event): void {
     const val = (e.target as HTMLSelectElement).value;
     const next = val === "" ? null : val;
-    if (next !== room.haAreaId) onupdate({ haAreaId: next });
+    if (next === room.haAreaId) return;
+    const patch: { haAreaId: string | null; label?: string } = { haAreaId: next };
+    if (next !== null && room.label.trim() === "") {
+      const area = haAreas.find((a) => a.area_id === next);
+      if (area) patch.label = area.name;
+    }
+    onupdate(patch);
   }
 </script>
 
 <aside class="room-panel">
-  <h2>{$_('floorPlan.roomPanel.title')}</h2>
+  <div class="panel-header">
+    {#if onstartdrag}
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="drag-handle" onmousedown={onstartdrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
+    {/if}
+    <h2>{$_('floorPlan.roomPanel.title')}</h2>
+    {#if ondismiss}
+      <button class="dismiss-btn" onclick={ondismiss} title={$_('common.close')}>✕</button>
+    {/if}
+  </div>
 
   <label>
     <span>{$_('floorPlan.roomPanel.label')}</span>
@@ -66,10 +85,6 @@
 
 <style>
   .room-panel {
-    position: absolute;
-    right: 120px;
-    top: 50%;
-    transform: translateY(-50%);
     width: 200px;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -80,14 +95,43 @@
     flex-direction: column;
     gap: var(--space-3);
     overflow-y: auto;
-    z-index: 20;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
   }
   h2 {
+    flex: 1;
+    min-width: 0;
     margin: 0;
     font-size: 13px;
     color: var(--text);
     font-weight: 600;
   }
+  .drag-handle {
+    cursor: grab;
+    color: var(--text-muted);
+    font-size: 14px;
+    letter-spacing: 3px;
+    opacity: 0.5;
+    padding: 2px 0;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    user-select: none;
+  }
+  .drag-handle:hover { opacity: 1; background: var(--surface-hover); }
+  .drag-handle:active { cursor: grabbing; }
+  .dismiss-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    padding: 2px 4px;
+    border-radius: var(--radius-sm);
+  }
+  .dismiss-btn:hover { background: var(--surface-hover); color: var(--text); }
   label {
     display: flex;
     flex-direction: column;

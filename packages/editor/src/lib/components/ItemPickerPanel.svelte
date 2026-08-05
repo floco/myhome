@@ -20,11 +20,12 @@
     draggingId: string | null;
     highlightId?: string | null;
     onstartdrag?: (e: MouseEvent) => void;
+    ondismiss?: () => void;
     ondragstart: (layerId: string, itemId: string, event: DragEvent) => void;
     ondragend: () => void;
   }
 
-  let { layers, draggingId, highlightId = null, onstartdrag, ondragstart, ondragend }: Props = $props();
+  let { layers, draggingId, highlightId = null, onstartdrag, ondismiss, ondragstart, ondragend }: Props = $props();
 
   let query = $state("");
   let openSections = $state<Set<string>>(new Set());
@@ -79,6 +80,9 @@
       <div class="drag-handle" onmousedown={onstartdrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
     {/if}
     <input class="search" placeholder={$_('floorPlan.itemPicker.search')} bind:value={query} />
+    {#if ondismiss}
+      <button class="dismiss-btn" onclick={ondismiss} title={$_('common.close')}>✕</button>
+    {/if}
   </div>
   {#each layers as layer (layer.id)}
     {@const filtered = filteredItems(layer.items)}
@@ -169,6 +173,17 @@
   }
   .drag-handle:hover { opacity: 1; background: var(--surface-hover); }
   .drag-handle:active { cursor: grabbing; }
+
+  .dismiss-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    padding: 2px 4px;
+    border-radius: var(--radius-sm);
+  }
+  .dismiss-btn:hover { background: var(--surface-hover); color: var(--text); }
 
   .search {
     flex: 1; min-width: 0;
