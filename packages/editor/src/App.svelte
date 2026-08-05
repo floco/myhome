@@ -879,6 +879,7 @@
               tool={toolStore.state.tool}
               drawPoints={toolStore.state.drawPoints}
               cursorWorld={toolStore.state.cursorWorld}
+              draggingPoint={toolStore.state.draggingPoint}
               {spacePressed}
               onpointermove={handlePointerMove}
               onplacepoint={handlePlacePoint}
