@@ -153,6 +153,10 @@
     overflow: hidden;
   }
 
+  @media (max-width: 480px) { /* --bp-mobile */
+    .panel { width: 100%; }
+  }
+
   .panel-header {
     display: flex; align-items: center; gap: 4px;
     padding: var(--space-2);
