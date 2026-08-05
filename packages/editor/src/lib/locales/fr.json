@@ -1147,6 +1147,8 @@
     "tree": {
       "collapse": "Réduire",
       "expand": "Développer",
+      "collapseAll": "Tout réduire",
+      "expandAll": "Tout développer",
       "pageActions": "Actions de la page",
       "addChildPage": "Ajouter une sous-page",
       "rename": "Renommer",

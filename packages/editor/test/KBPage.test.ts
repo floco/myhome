@@ -147,9 +147,9 @@ describe("KBPage — empty state", () => {
 
   it("toolbar has a single New Page button (no separate Folder button)", async () => {
     const { target, comp } = await setup([]);
-    const buttons = Array.from(target.querySelectorAll("button")).map((b) => b.textContent?.trim());
-    expect(buttons).toContain("＋ New Page");
-    expect(buttons).not.toContain("＋ Folder");
+    expect(target.querySelector('[title="New Page"]')).not.toBeNull();
+    const titles = Array.from(target.querySelectorAll(".sidebar-toolbar button")).map((b) => b.getAttribute("title"));
+    expect(titles).not.toContain("＋ Folder");
     unmount(comp); target.remove();
   });
 });
@@ -175,6 +175,29 @@ describe("KBPage — default tree collapse state", () => {
     (target.querySelector(".disclosure") as HTMLElement).click();
     flushSync();
     expect(target.querySelectorAll(".tree-row").length).toBe(2);
+    unmount(comp); target.remove();
+  });
+});
+
+describe("KBPage — collapse/expand all", () => {
+  it("shows a collapse-all control when a parent is expanded, and it collapses every parent", async () => {
+    const entries = [
+      makeEntry({ id: "p1", title: "Parent 1" }),
+      makeEntry({ id: "c1", title: "Child 1", parentId: "p1", order: 0 }),
+      makeEntry({ id: "p2", title: "Parent 2", order: 1 }),
+      makeEntry({ id: "c2", title: "Child 2", parentId: "p2", order: 0 }),
+    ];
+    const { target, comp } = await setup(entries);
+    const toggleBtn = () => target.querySelector('[title="Expand all"], [title="Collapse all"]') as HTMLElement;
+    expect(toggleBtn().title).toBe("Expand all");
+    toggleBtn().click();
+    flushSync();
+    expect(target.querySelectorAll(".tree-row").length).toBe(4);
+    expect(toggleBtn().title).toBe("Collapse all");
+    toggleBtn().click();
+    flushSync();
+    expect(target.querySelectorAll(".tree-row").length).toBe(2);
+    expect(toggleBtn().title).toBe("Expand all");
     unmount(comp); target.remove();
   });
 });

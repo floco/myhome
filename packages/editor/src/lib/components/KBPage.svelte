@@ -298,6 +298,19 @@
     collapsedIds = next;
   }
 
+  const allParentsExpanded = $derived(
+    store.entries.some((e) => e.parentId !== null) &&
+    store.entries.filter((e) => e.parentId !== null).every((e) => !collapsedIds.has(e.parentId as string)),
+  );
+
+  function toggleAllTree(): void {
+    if (allParentsExpanded) {
+      collapsedIds = new Set(store.entries.filter((e) => e.parentId !== null).map((e) => e.parentId as string));
+    } else {
+      collapsedIds = new Set();
+    }
+  }
+
   async function handleRenamePage(id: string, title: string): Promise<void> {
     try {
       await store.updateEntry(id, { title });
@@ -380,7 +393,10 @@
   <div class="kb-sidebar" class:expanded={sidebarExpanded}>
     <div class="sidebar-toolbar">
       <Input placeholder={$_('floorPlan.itemPicker.search')} bind:value={searchQuery} />
-      <Button onclick={handleNewPage}>＋ {$_('kb.page.newPage')}</Button>
+      <Button onclick={toggleAllTree} title={allParentsExpanded ? $_('kb.tree.collapseAll') : $_('kb.tree.expandAll')}>
+        {allParentsExpanded ? "⊟" : "⊞"}
+      </Button>
+      <Button onclick={handleNewPage} title={$_('kb.page.newPage')}>＋</Button>
     </div>
     <div class="entry-list">
       <KBTree
