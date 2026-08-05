@@ -1549,8 +1549,10 @@
       position: fixed;
       left: 0; right: 0; bottom: 0; top: auto;
       transform: none !important;
+      box-sizing: border-box;
       width: 100%;
       height: 48px;
+      padding: 4px;
       flex-direction: row;
       align-items: center;
       gap: 0;
