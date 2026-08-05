@@ -50,3 +50,22 @@ describe("ContactsPage", () => {
     unmount(comp);
   });
 });
+
+describe("ContactsPage — responsive columns", () => {
+  it("hides email at tablet and phone at mobile", () => {
+    const store = makeContactsStore([makeContact()]);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ContactsPage, { target, props: { store, settingsStore: makeSettingsStore() } });
+    flushSync();
+
+    const headers = target.querySelectorAll("thead th");
+    // name, type, phone, email
+    expect(headers[3].classList.contains("col-hide-tablet")).toBe(true); // email
+    expect(headers[2].classList.contains("col-hide-mobile")).toBe(true); // phone
+    expect(headers[0].classList.contains("col-hide-tablet")).toBe(false); // name
+    expect(headers[1].classList.contains("col-hide-tablet")).toBe(false); // type
+
+    unmount(comp);
+  });
+});

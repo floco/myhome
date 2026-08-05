@@ -92,8 +92,8 @@
         columns={[
           { key: "name", label: $_('contacts.page.name'), sortValue: (c) => c.name, cellClass: "name-cell", cell: nameCell },
           { key: "type", label: $_('contacts.page.type'), sortValue: (c) => typeMap.get(c.typeId)?.name ?? null, cell: typeCell },
-          { key: "phone", label: $_('contacts.page.phone'), sortValue: (c) => c.phone, cell: phoneCell },
-          { key: "email", label: $_('contacts.page.email'), sortValue: (c) => c.email, cell: emailCell },
+          { key: "phone", label: $_('contacts.page.phone'), sortValue: (c) => c.phone, cell: phoneCell, hideBelow: "mobile" },
+          { key: "email", label: $_('contacts.page.email'), sortValue: (c) => c.email, cell: emailCell, hideBelow: "tablet" },
         ] as Column<Contact>[]}
         rows={filteredContacts}
         rowKey={(c) => c.id}
