@@ -165,10 +165,10 @@
         columns={[
           { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
           { key: "name", label: $_('chores.editModal.name'), sortValue: (p) => p.name, cellClass: "name-cell", cell: nameCell },
-          { key: "type", label: $_('properties.page.type'), sortValue: (p) => typeLabel(p.type), cell: typeCell },
-          { key: "location", label: $_('properties.page.location'), sortValue: (p) => (p.locationId ? locationMap.get(p.locationId)?.name ?? null : null), cell: locationCell },
-          { key: "price", label: $_('properties.page.price'), sortValue: (p) => p.price, cell: priceCell },
-          { key: "size", label: $_('properties.page.size'), sortValue: (p) => p.builtSize ?? p.landSize, cell: sizeCell },
+          { key: "type", label: $_('properties.page.type'), sortValue: (p) => typeLabel(p.type), cell: typeCell, hideBelow: "tablet" },
+          { key: "location", label: $_('properties.page.location'), sortValue: (p) => (p.locationId ? locationMap.get(p.locationId)?.name ?? null : null), cell: locationCell, hideBelow: "mobile" },
+          { key: "price", label: $_('properties.page.price'), sortValue: (p) => p.price, cell: priceCell, hideBelow: "mobile" },
+          { key: "size", label: $_('properties.page.size'), sortValue: (p) => p.builtSize ?? p.landSize, cell: sizeCell, hideBelow: "tablet" },
           { key: "status", label: $_('works.page.status'), sortValue: (p) => p.status, cell: statusCell },
         ] as Column<Property>[]}
         rows={filteredProperties}

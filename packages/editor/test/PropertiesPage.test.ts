@@ -87,3 +87,23 @@ describe("PropertiesPage — add property", () => {
     unmount(comp);
   });
 });
+
+describe("PropertiesPage — responsive columns", () => {
+  it("hides type/size at tablet and location/price at mobile", () => {
+    const store = makeStore([makeProperty()]);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(PropertiesPage, { target, props: { store, locationsStore: makeLocationsStore() } });
+    flushSync();
+
+    const headers = target.querySelectorAll("thead th");
+    // emoji, name, type, location, price, size, status
+    expect(headers[2].classList.contains("col-hide-tablet")).toBe(true); // type
+    expect(headers[5].classList.contains("col-hide-tablet")).toBe(true); // size
+    expect(headers[3].classList.contains("col-hide-mobile")).toBe(true); // location
+    expect(headers[4].classList.contains("col-hide-mobile")).toBe(true); // price
+    expect(headers[1].classList.contains("col-hide-tablet")).toBe(false); // name
+
+    unmount(comp);
+  });
+});
