@@ -9,4 +9,5 @@ export interface Column<T> {
   headerClass?: string;
   cellClass?: string | ((row: T) => string);
   stopRowClick?: boolean;
+  hideBelow?: "tablet" | "mobile";
 }
