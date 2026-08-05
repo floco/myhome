@@ -190,11 +190,11 @@
         columns={[
           { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
           { key: "name", label: $_('chores.editModal.name'), sortValue: (c) => c.name, cellClass: "name-cell", cell: nameCell },
-          { key: "category", label: $_('costs.page.category'), sortValue: (c) => categoryName(c.categoryId), cell: categoryCell },
-          { key: "quantity", label: $_('consumables.page.quantity'), sortValue: (c) => c.quantity, cell: quantityCell },
-          { key: "min", label: $_('consumables.page.min'), cellClass: "faint", sortValue: (c) => c.minQuantity, cell: minCell },
+          { key: "category", label: $_('costs.page.category'), sortValue: (c) => categoryName(c.categoryId), cell: categoryCell, hideBelow: "tablet" },
+          { key: "quantity", label: $_('consumables.page.quantity'), sortValue: (c) => c.quantity, cell: quantityCell, hideBelow: "mobile" },
+          { key: "min", label: $_('consumables.page.min'), cellClass: "faint", sortValue: (c) => c.minQuantity, cell: minCell, hideBelow: "tablet" },
           { key: "stock", label: $_('consumables.page.stock'), sortable: false, cellClass: "bar-cell", cell: stockCell },
-          { key: "status", label: $_('works.page.status'), sortValue: (c) => stockStatus(c), cell: statusCell },
+          { key: "status", label: $_('works.page.status'), sortValue: (c) => stockStatus(c), cell: statusCell, hideBelow: "mobile" },
           { key: "actions", label: "", sortable: false, cellClass: "actions-cell", stopRowClick: true, cell: actionsCell },
         ] as Column<Consumable>[]}
         rows={filtered}
