@@ -167,10 +167,10 @@
         columns={[
           { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
           { key: "title", label: $_('works.page.title'), sortValue: (w) => w.title, cellClass: "name-cell", cell: titleCell },
-          { key: "category", label: $_('costs.page.category'), sortValue: (w) => categoryMap.get(w.categoryId ?? "")?.name ?? null, cell: categoryCell },
-          { key: "date", label: $_('costs.page.date'), sortValue: (w) => (w.date ? new Date(w.date) : null), cell: dateCell },
-          { key: "supplier", label: $_('costs.page.supplier'), sortValue: (w) => supplierMap.get(w.contactId ?? "")?.name ?? null, cell: supplierCell },
-          { key: "cost", label: $_('inventory.page.cost'), sortValue: (w) => w.totalCost, cell: costCell },
+          { key: "category", label: $_('costs.page.category'), sortValue: (w) => categoryMap.get(w.categoryId ?? "")?.name ?? null, cell: categoryCell, hideBelow: "mobile" },
+          { key: "date", label: $_('costs.page.date'), sortValue: (w) => (w.date ? new Date(w.date) : null), cell: dateCell, hideBelow: "tablet" },
+          { key: "supplier", label: $_('costs.page.supplier'), sortValue: (w) => supplierMap.get(w.contactId ?? "")?.name ?? null, cell: supplierCell, hideBelow: "tablet" },
+          { key: "cost", label: $_('inventory.page.cost'), sortValue: (w) => w.totalCost, cell: costCell, hideBelow: "mobile" },
           { key: "status", label: $_('works.page.status'), sortValue: (w) => w.status, cell: statusCell },
         ] as Column<Work>[]}
         rows={filteredWorks}

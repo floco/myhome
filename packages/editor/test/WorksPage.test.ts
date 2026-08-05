@@ -71,3 +71,26 @@ describe("WorksPage — timeline click opens modal", () => {
     unmount(comp);
   });
 });
+
+describe("WorksPage — responsive columns", () => {
+  it("hides date/supplier at tablet and category/cost at mobile", () => {
+    const store = makeWorksStore([makeWork()]);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(WorksPage, {
+      target,
+      props: { store, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore() },
+    });
+    flushSync();
+
+    const headers = target.querySelectorAll("thead th");
+    // emoji, title, category, date, supplier, cost, status
+    expect(headers[3].classList.contains("col-hide-tablet")).toBe(true); // date
+    expect(headers[4].classList.contains("col-hide-tablet")).toBe(true); // supplier
+    expect(headers[2].classList.contains("col-hide-mobile")).toBe(true); // category
+    expect(headers[5].classList.contains("col-hide-mobile")).toBe(true); // cost
+    expect(headers[1].classList.contains("col-hide-tablet")).toBe(false); // title always visible
+
+    unmount(comp);
+  });
+});
