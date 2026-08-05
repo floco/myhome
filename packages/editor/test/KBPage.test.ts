@@ -154,6 +154,31 @@ describe("KBPage — empty state", () => {
   });
 });
 
+describe("KBPage — default tree collapse state", () => {
+  it("parent pages start collapsed; leaf pages have no disclosure state to worry about", async () => {
+    const entries = [
+      makeEntry({ id: "p", title: "Parent" }),
+      makeEntry({ id: "c", title: "Child", parentId: "p", order: 0 }),
+    ];
+    const { target, comp } = await setup(entries);
+    expect(target.querySelector(".disclosure")?.textContent).toBe("▶");
+    expect(target.querySelectorAll(".tree-row").length).toBe(1);
+    unmount(comp); target.remove();
+  });
+
+  it("clicking the disclosure on a default-collapsed parent still expands it", async () => {
+    const entries = [
+      makeEntry({ id: "p", title: "Parent" }),
+      makeEntry({ id: "c", title: "Child", parentId: "p", order: 0 }),
+    ];
+    const { target, comp } = await setup(entries);
+    (target.querySelector(".disclosure") as HTMLElement).click();
+    flushSync();
+    expect(target.querySelectorAll(".tree-row").length).toBe(2);
+    unmount(comp); target.remove();
+  });
+});
+
 describe("KBPage — selection and deep links", () => {
   it("selects the page named by selectedItemId on mount", async () => {
     const { target, comp } = await setup([makeEntry()], { selectedItemId: "e1" });
@@ -220,6 +245,9 @@ describe("KBPage — moving an existing page under another", () => {
       makeEntry({ id: "c", title: "Page C", parentId: "a", order: 1 }),
     ];
     const { target, comp, store } = await setup(entries);
+    // Page A starts collapsed by default; expand it so B and C render.
+    (target.querySelector(".disclosure") as HTMLElement).click();
+    flushSync();
     const rows = target.querySelectorAll(".tree-row");
     // rows: [Page A, Page B, Page C] -- reorder C before B, both already under A
     const sourceRow = rows[2] as HTMLElement; // Page C

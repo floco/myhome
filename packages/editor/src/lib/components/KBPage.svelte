@@ -61,6 +61,16 @@
     })
   );
 
+  let collapseDefaultApplied = $state(false);
+
+  $effect(() => {
+    if (collapseDefaultApplied) return;
+    if (store.entries.length === 0) return;
+    const parents = new Set(store.entries.filter((e) => e.parentId !== null).map((e) => e.parentId as string));
+    collapsedIds = parents;
+    collapseDefaultApplied = true;
+  });
+
   function selectEntry(entry: KBEntry): void {
     selectedId = entry.id;
     draftTitle = entry.title;
