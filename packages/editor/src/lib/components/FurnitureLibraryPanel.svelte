@@ -91,6 +91,10 @@
     overflow: hidden;
   }
 
+  @media (max-width: 480px) { /* --bp-mobile */
+    .furniture-panel { width: 100%; }
+  }
+
   .panel-header {
     display: flex;
     align-items: center;

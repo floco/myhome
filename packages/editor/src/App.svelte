@@ -1469,6 +1469,19 @@
     overflow: hidden;
   }
 
+  @media (max-width: 480px) { /* --bp-mobile */
+    .furniture-float {
+      position: fixed;
+      left: 0; right: 0; bottom: 48px; top: auto;
+      transform: none !important;
+      width: 100%;
+      max-height: 45vh;
+      border-radius: 0;
+      border-left: none; border-right: none; border-bottom: none;
+      z-index: 26;
+    }
+  }
+
   .room-panel-float {
     position: absolute; right: 120px; top: 50%; transform: translateY(-50%);
     z-index: 21;
