@@ -19,38 +19,43 @@ function setup(overrides: Record<string, unknown> = {}) {
 describe("RoomPanel — HA Area auto-fill", () => {
   it("fills the room label from the area name when the label is empty", () => {
     const onupdate = vi.fn();
-    const { target } = setup({ room: makeRoom({ label: "" }), onupdate });
+    const { target, comp } = setup({ room: makeRoom({ label: "" }), onupdate });
     const select = target.querySelector("select") as HTMLSelectElement;
     select.value = "a1";
     select.dispatchEvent(new Event("change", { bubbles: true }));
     expect(onupdate).toHaveBeenCalledWith(expect.objectContaining({ haAreaId: "a1", label: "Living Room" }));
+    unmount(comp); target.remove();
   });
 
   it("does not touch an existing custom label when the area changes", () => {
     const onupdate = vi.fn();
-    const { target } = setup({ room: makeRoom({ label: "My Office" }), onupdate });
+    const { target, comp } = setup({ room: makeRoom({ label: "My Office" }), onupdate });
     const select = target.querySelector("select") as HTMLSelectElement;
     select.value = "a1";
     select.dispatchEvent(new Event("change", { bubbles: true }));
     expect(onupdate).toHaveBeenCalledWith({ haAreaId: "a1" });
+    unmount(comp); target.remove();
   });
 });
 
 describe("RoomPanel — header controls", () => {
   it("renders a drag handle when onstartdrag is provided", () => {
-    const { target } = setup({ onstartdrag: vi.fn() });
+    const { target, comp } = setup({ onstartdrag: vi.fn() });
     expect(target.querySelector(".drag-handle")).not.toBeNull();
+    unmount(comp); target.remove();
   });
 
   it("renders no drag handle when onstartdrag is omitted", () => {
-    const { target } = setup();
+    const { target, comp } = setup();
     expect(target.querySelector(".drag-handle")).toBeNull();
+    unmount(comp); target.remove();
   });
 
   it("calls ondismiss when the close button is clicked", () => {
     const ondismiss = vi.fn();
-    const { target } = setup({ ondismiss });
+    const { target, comp } = setup({ ondismiss });
     (target.querySelector('[title="Close"]') as HTMLElement).click();
     expect(ondismiss).toHaveBeenCalled();
+    unmount(comp); target.remove();
   });
 });
