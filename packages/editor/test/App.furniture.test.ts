@@ -67,7 +67,7 @@ describe("App furniture integration", () => {
     ) as HTMLButtonElement;
     btn.click();
     flushSync();
-    const items = target.querySelectorAll("[draggable='true']");
+    const items = target.querySelectorAll(".furniture-item");
     expect(items.length).toBeGreaterThan(0);
   });
 });

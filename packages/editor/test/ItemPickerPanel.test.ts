@@ -33,7 +33,7 @@ describe("ItemPickerPanel", () => {
     const ondismiss = vi.fn();
     const app = mount(ItemPickerPanel, {
       target,
-      props: { layers: [CHORES_LAYER], draggingId: null, ondragstart: vi.fn(), ondragend: vi.fn(), ondismiss },
+      props: { layers: [CHORES_LAYER], draggingId: null, onitempointerdown: vi.fn(), ondismiss },
     });
     flushSync();
     const btn = target.querySelector('.panel-header [title="Close"]') as HTMLElement;
@@ -46,7 +46,7 @@ describe("ItemPickerPanel", () => {
   it("renders no dismiss button when ondismiss is omitted", async () => {
     const app = mount(ItemPickerPanel, {
       target,
-      props: { layers: [CHORES_LAYER], draggingId: null, ondragstart: vi.fn(), ondragend: vi.fn() },
+      props: { layers: [CHORES_LAYER], draggingId: null, onitempointerdown: vi.fn() },
     });
     flushSync();
     expect(target.querySelector('.panel-header [title="Close"]')).toBeNull();
@@ -56,7 +56,7 @@ describe("ItemPickerPanel", () => {
   it("renders a section per layer", async () => {
     const app = mount(ItemPickerPanel, {
       target,
-      props: { layers: [CHORES_LAYER, INV_LAYER], draggingId: null, ondragstart: vi.fn(), ondragend: vi.fn() },
+      props: { layers: [CHORES_LAYER, INV_LAYER], draggingId: null, onitempointerdown: vi.fn() },
     });
     flushSync();
     const headers = target.querySelectorAll(".section-header");
@@ -69,7 +69,7 @@ describe("ItemPickerPanel", () => {
   it("single layer is expanded by default", async () => {
     const app = mount(ItemPickerPanel, {
       target,
-      props: { layers: [CHORES_LAYER], draggingId: null, ondragstart: vi.fn(), ondragend: vi.fn() },
+      props: { layers: [CHORES_LAYER], draggingId: null, onitempointerdown: vi.fn() },
     });
     flushSync();
     const bodies = target.querySelectorAll(".section-body");
@@ -80,7 +80,7 @@ describe("ItemPickerPanel", () => {
   it("multiple layers are collapsed by default", async () => {
     const app = mount(ItemPickerPanel, {
       target,
-      props: { layers: [CHORES_LAYER, INV_LAYER], draggingId: null, ondragstart: vi.fn(), ondragend: vi.fn() },
+      props: { layers: [CHORES_LAYER, INV_LAYER], draggingId: null, onitempointerdown: vi.fn() },
     });
     flushSync();
     const bodies = target.querySelectorAll(".section-body");
@@ -91,7 +91,7 @@ describe("ItemPickerPanel", () => {
   it("clicking a collapsed section header expands it", async () => {
     const app = mount(ItemPickerPanel, {
       target,
-      props: { layers: [CHORES_LAYER, INV_LAYER], draggingId: null, ondragstart: vi.fn(), ondragend: vi.fn() },
+      props: { layers: [CHORES_LAYER, INV_LAYER], draggingId: null, onitempointerdown: vi.fn() },
     });
     flushSync();
     const header = target.querySelector<HTMLButtonElement>(".section-header")!;
@@ -105,7 +105,7 @@ describe("ItemPickerPanel", () => {
   it("clicking an expanded section header collapses it", async () => {
     const app = mount(ItemPickerPanel, {
       target,
-      props: { layers: [CHORES_LAYER], draggingId: null, ondragstart: vi.fn(), ondragend: vi.fn() },
+      props: { layers: [CHORES_LAYER], draggingId: null, onitempointerdown: vi.fn() },
     });
     flushSync();
     const header = target.querySelector<HTMLButtonElement>(".section-header")!;
@@ -118,7 +118,7 @@ describe("ItemPickerPanel", () => {
   it("items split into Unplaced and Placed groups", async () => {
     const app = mount(ItemPickerPanel, {
       target,
-      props: { layers: [CHORES_LAYER], draggingId: null, ondragstart: vi.fn(), ondragend: vi.fn() },
+      props: { layers: [CHORES_LAYER], draggingId: null, onitempointerdown: vi.fn() },
     });
     flushSync();
     const titles = Array.from(target.querySelectorAll(".group-title")).map(el => el.textContent?.trim());
@@ -130,7 +130,7 @@ describe("ItemPickerPanel", () => {
   it("placed items have the .placed class", async () => {
     const app = mount(ItemPickerPanel, {
       target,
-      props: { layers: [CHORES_LAYER], draggingId: null, ondragstart: vi.fn(), ondragend: vi.fn() },
+      props: { layers: [CHORES_LAYER], draggingId: null, onitempointerdown: vi.fn() },
     });
     flushSync();
     const rows = target.querySelectorAll(".item-row");
@@ -142,7 +142,7 @@ describe("ItemPickerPanel", () => {
   it("search filters items by name", async () => {
     const app = mount(ItemPickerPanel, {
       target,
-      props: { layers: [CHORES_LAYER], draggingId: null, ondragstart: vi.fn(), ondragend: vi.fn() },
+      props: { layers: [CHORES_LAYER], draggingId: null, onitempointerdown: vi.fn() },
     });
     flushSync();
     const input = target.querySelector<HTMLInputElement>(".search")!;
@@ -155,27 +155,23 @@ describe("ItemPickerPanel", () => {
     unmount(app);
   });
 
-  it("ondragstart called with layerId and itemId on drag", async () => {
-    const ondragstart = vi.fn();
+  it("onitempointerdown called with layerId and item on pointerdown", async () => {
+    const onitempointerdown = vi.fn();
     const app = mount(ItemPickerPanel, {
       target,
-      props: { layers: [CHORES_LAYER], draggingId: null, ondragstart, ondragend: vi.fn() },
+      props: { layers: [CHORES_LAYER], draggingId: null, onitempointerdown },
     });
     flushSync();
     const row = target.querySelector<HTMLElement>(".item-row")!;
-    const dt = { setDragImage: vi.fn(), setData: vi.fn() };
-    const evt = new MouseEvent("dragstart", { bubbles: true }) as unknown as DragEvent;
-    Object.defineProperty(evt, "dataTransfer", { value: dt });
-    row.dispatchEvent(evt);
-    await Promise.resolve();
-    expect(ondragstart).toHaveBeenCalledWith("chores", expect.any(String), expect.anything());
+    row.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1 }));
+    expect(onitempointerdown).toHaveBeenCalledWith("chores", expect.objectContaining({ id: expect.any(String) }), expect.anything());
     unmount(app);
   });
 
   it("dragging item gets .dragging class", async () => {
     const app = mount(ItemPickerPanel, {
       target,
-      props: { layers: [CHORES_LAYER], draggingId: "c1", ondragstart: vi.fn(), ondragend: vi.fn() },
+      props: { layers: [CHORES_LAYER], draggingId: "c1", onitempointerdown: vi.fn() },
     });
     flushSync();
     const rows = target.querySelectorAll(".item-row");

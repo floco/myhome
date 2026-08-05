@@ -51,7 +51,7 @@ describe("FurnitureLibraryPanel", () => {
 
   it("renders all templates with draggable items", () => {
     setup();
-    const items = target.querySelectorAll("[draggable='true']");
+    const items = target.querySelectorAll(".furniture-item");
     expect(items.length).toBe(FURNITURE_TEMPLATES.length);
   });
 
@@ -63,7 +63,7 @@ describe("FurnitureLibraryPanel", () => {
     input.dispatchEvent(new Event("input"));
     await tick();
     flushSync();
-    const items = target.querySelectorAll("[draggable='true']");
+    const items = target.querySelectorAll(".furniture-item");
     expect(items.length).toBe(1);
     expect(items[0].getAttribute("data-template-id")).toBe("sofa");
   });
@@ -79,7 +79,7 @@ describe("FurnitureLibraryPanel", () => {
     input.dispatchEvent(new Event("input"));
     await tick();
     flushSync();
-    const items = target.querySelectorAll("[draggable='true']");
+    const items = target.querySelectorAll(".furniture-item");
     expect(items.length).toBe(FURNITURE_TEMPLATES.length);
   });
 

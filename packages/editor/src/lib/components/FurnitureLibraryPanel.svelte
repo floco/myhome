@@ -7,7 +7,7 @@
     type FurnitureTemplate,
   } from "../furnitureLibrary";
 
-  let { onstartdrag, ondismiss }: { onstartdrag?: (e: PointerEvent) => void; ondismiss?: () => void } = $props();
+  let { onstartdrag, ondismiss, onitempointerdown }: { onstartdrag?: (e: PointerEvent) => void; ondismiss?: () => void; onitempointerdown?: (templateId: string, e: PointerEvent) => void } = $props();
 
   let search = $state("");
 
@@ -31,9 +31,6 @@
     return filtered.filter((t) => t.category === cat);
   }
 
-  function onDragStart(e: DragEvent, templateId: string) {
-    e.dataTransfer?.setData("furnitureTemplateId", templateId);
-  }
 </script>
 
 <div class="furniture-panel">
@@ -65,9 +62,8 @@
               <!-- svelte-ignore a11y_no_static_element_interactions -->
               <div
                 class="furniture-item"
-                draggable="true"
                 data-template-id={template.id}
-                ondragstart={(e) => onDragStart(e, template.id)}
+                onpointerdown={(e) => onitempointerdown?.(template.id, e)}
                 title={templateLabel(template.id)}
               >
                 <svg viewBox="0 0 100 100" width="48" height="48">
