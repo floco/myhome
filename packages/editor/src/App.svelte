@@ -1137,7 +1137,7 @@
               style={ftDrag.pos ? `left:${ftDrag.pos.x}px;top:${ftDrag.pos.y}px;right:auto;transform:none` : ''}
             >
               <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="ft-handle" onmousedown={ftDrag.startDrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
+              <div class="ft-handle" onpointerdown={ftDrag.startDrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
               <div class="ft-sep"></div>
               <FloorSwitcher
                 floors={floorStore.floors}

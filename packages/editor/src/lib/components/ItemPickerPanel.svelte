@@ -19,7 +19,7 @@
     layers: PickerLayer[];
     draggingId: string | null;
     highlightId?: string | null;
-    onstartdrag?: (e: MouseEvent) => void;
+    onstartdrag?: (e: PointerEvent) => void;
     ondismiss?: () => void;
     ondragstart: (layerId: string, itemId: string, event: DragEvent) => void;
     ondragend: () => void;
@@ -77,7 +77,7 @@
   <div class="panel-header">
     {#if onstartdrag}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="drag-handle" onmousedown={onstartdrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
+      <div class="drag-handle" onpointerdown={onstartdrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
     {/if}
     <input class="search" placeholder={$_('floorPlan.itemPicker.search')} bind:value={query} />
     {#if ondismiss}

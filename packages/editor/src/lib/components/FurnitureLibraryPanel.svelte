@@ -7,7 +7,7 @@
     type FurnitureTemplate,
   } from "../furnitureLibrary";
 
-  let { onstartdrag, ondismiss }: { onstartdrag?: (e: MouseEvent) => void; ondismiss?: () => void } = $props();
+  let { onstartdrag, ondismiss }: { onstartdrag?: (e: PointerEvent) => void; ondismiss?: () => void } = $props();
 
   let search = $state("");
 
@@ -41,7 +41,7 @@
   <div class="panel-header">
     {#if onstartdrag}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="drag-handle" onmousedown={onstartdrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
+      <div class="drag-handle" onpointerdown={onstartdrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
     {/if}
     <input
       type="search"

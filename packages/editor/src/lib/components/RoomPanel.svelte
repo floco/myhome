@@ -12,7 +12,7 @@
     room: Room;
     haAreas?: Array<{ area_id: string; name: string }>;
     onupdate: (patch: { label?: string; haAreaId?: string | null }) => void;
-    onstartdrag?: (e: MouseEvent) => void;
+    onstartdrag?: (e: PointerEvent) => void;
     ondismiss?: () => void;
   } = $props();
 
@@ -44,7 +44,7 @@
   <div class="panel-header">
     {#if onstartdrag}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="drag-handle" onmousedown={onstartdrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
+      <div class="drag-handle" onpointerdown={onstartdrag} title={$_('floorPlan.itemPicker.dragToReposition')}>⠿</div>
     {/if}
     <h2>{$_('floorPlan.roomPanel.title')}</h2>
     {#if ondismiss}
