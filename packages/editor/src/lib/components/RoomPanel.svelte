@@ -26,7 +26,13 @@
   function handleAreaChange(e: Event): void {
     const val = (e.target as HTMLSelectElement).value;
     const next = val === "" ? null : val;
-    if (next !== room.haAreaId) onupdate({ haAreaId: next });
+    if (next === room.haAreaId) return;
+    const patch: { haAreaId: string | null; label?: string } = { haAreaId: next };
+    if (next !== null && room.label.trim() === "") {
+      const area = haAreas.find((a) => a.area_id === next);
+      if (area) patch.label = area.name;
+    }
+    onupdate(patch);
   }
 </script>
 
