@@ -87,3 +87,25 @@ describe("InsurancePage — add policy", () => {
     unmount(comp);
   });
 });
+
+describe("InsurancePage — responsive columns", () => {
+  it("hides category/provider at tablet and endDate at mobile", () => {
+    const store = makeInsuranceStore([makePolicy()]);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(InsurancePage, {
+      target,
+      props: { store, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore() },
+    });
+    flushSync();
+
+    const headers = target.querySelectorAll("thead th");
+    // emoji, name, category, provider, premium, endDate
+    expect(headers[2].classList.contains("col-hide-tablet")).toBe(true); // category
+    expect(headers[3].classList.contains("col-hide-tablet")).toBe(true); // provider
+    expect(headers[5].classList.contains("col-hide-mobile")).toBe(true); // endDate
+    expect(headers[4].classList.contains("col-hide-tablet")).toBe(false); // premium always visible
+
+    unmount(comp);
+  });
+});
