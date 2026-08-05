@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.17.1 - 2026-08-05
+
+- Fixed the chore backdated-completion date picker not honoring the Date Format set in Settings > Localization (always showed "D Month YYYY" instead of your chosen MM/DD/YYYY, DD/MM/YYYY, or YYYY-MM-DD) — this affected every date picker in the app, not just chores
+- Fixed the same date picker overlapping the confirm/cancel buttons on the chore mark-done row
+
 ## 0.17.0 - 2026-08-04
 
 - Added the ability to log a chore as completed on a past date instead of only "now" — the next-due date only shifts if the backdated entry is the most recent completion on record, so logging an older catch-up entry never disturbs the current schedule
