@@ -182,6 +182,10 @@
   .topbar-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .topbar-chevron { font-size: 9px; color: var(--text-muted); }
 
+  @media (max-width: 480px) { /* --bp-mobile */
+    .topbar-name { display: none; }
+  }
+
   .topbar-dropdown {
     position: absolute; top: calc(100% + 4px); left: 0;
     background: var(--surface); border: 1px solid var(--border);
