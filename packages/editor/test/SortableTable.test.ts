@@ -226,4 +226,31 @@ describe("ui/SortableTable", () => {
 
     unmount(comp);
   });
+
+  it("applies col-hide-tablet/col-hide-mobile classes to columns marked hideBelow", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const columns: Column<Row>[] = [
+      { key: "name", label: "Name", sortValue: (r) => r.name },
+      { key: "qty", label: "Qty", sortValue: (r) => r.qty, hideBelow: "tablet" },
+      { key: "actions", label: "", sortable: false, hideBelow: "mobile" },
+    ];
+    const comp = mount(SortableTable, {
+      target,
+      props: { columns, rows: baseRows(), rowKey: (r: Row) => r.id },
+    });
+    flushSync();
+
+    const headers = target.querySelectorAll("thead th");
+    expect(headers[0].classList.contains("col-hide-tablet")).toBe(false);
+    expect(headers[0].classList.contains("col-hide-mobile")).toBe(false);
+    expect(headers[1].classList.contains("col-hide-tablet")).toBe(true);
+    expect(headers[2].classList.contains("col-hide-mobile")).toBe(true);
+
+    const firstRowCells = target.querySelectorAll("tbody tr:first-child td");
+    expect(firstRowCells[1].classList.contains("col-hide-tablet")).toBe(true);
+    expect(firstRowCells[2].classList.contains("col-hide-mobile")).toBe(true);
+
+    unmount(comp);
+  });
 });

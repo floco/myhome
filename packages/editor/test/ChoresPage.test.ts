@@ -284,3 +284,22 @@ describe("ChoresPage — mark-all-done backdating", () => {
     unmount(comp);
   });
 });
+
+describe("ChoresPage — responsive columns", () => {
+  it("marks rooms hideBelow tablet and schedule hideBelow mobile, keeps actions always visible", () => {
+    const store = makeStore([makeChore()]);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    const headers = target.querySelectorAll("thead th");
+    // expand, emoji, name, schedule, rooms, nextDue, actions
+    expect(headers[4].classList.contains("col-hide-tablet")).toBe(true); // rooms
+    expect(headers[3].classList.contains("col-hide-mobile")).toBe(true); // schedule
+    expect(headers[6].classList.contains("col-hide-tablet")).toBe(false); // actions
+    expect(headers[6].classList.contains("col-hide-mobile")).toBe(false); // actions
+
+    unmount(comp);
+  });
+});

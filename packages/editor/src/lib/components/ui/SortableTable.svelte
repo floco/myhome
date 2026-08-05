@@ -59,6 +59,12 @@
   function cellClassFor(column: Column<T>, row: T): string | undefined {
     return typeof column.cellClass === "function" ? column.cellClass(row) : column.cellClass;
   }
+
+  function hideClassFor(column: Column<T>): string {
+    if (column.hideBelow === "tablet") return "col-hide-tablet";
+    if (column.hideBelow === "mobile") return "col-hide-mobile";
+    return "";
+  }
 </script>
 
 <table class="ui-sortable-table {className ?? ''}">
@@ -66,9 +72,9 @@
     <tr>
       {#each columns as column (column.key)}
         {#if column.sortable === false}
-          <th class={column.headerClass}>{column.label}</th>
+          <th class="{column.headerClass ?? ''} {hideClassFor(column)}">{column.label}</th>
         {:else}
-          <th class={column.headerClass} aria-sort={ariaSortFor(column.key)}>
+          <th class="{column.headerClass ?? ''} {hideClassFor(column)}" aria-sort={ariaSortFor(column.key)}>
             <button type="button" class="ui-sortable-table-sort-btn" onclick={() => sortState.toggle(column.key)}>
               {column.label}
               <span class="ui-sortable-table-arrow">{arrowFor(column.key)}</span>
@@ -84,7 +90,7 @@
       <tr onclick={rowClick ? () => rowClick(row) : undefined} class="{rowClass?.(row) ?? ''} {rowClick ? 'clickable' : ''}">
         {#each columns as column (column.key)}
           <td
-            class={cellClassFor(column, row)}
+            class="{cellClassFor(column, row) ?? ''} {hideClassFor(column)}"
             onclick={column.stopRowClick ? (e) => e.stopPropagation() : undefined}
           >
             {#if column.cell}
@@ -135,4 +141,11 @@
   .ui-sortable-table tr.clickable:hover td { cursor: pointer; }
   .ui-sortable-table-expand-row td { background: var(--surface-alt); padding: 0; cursor: default; }
   .ui-sortable-table-empty { text-align: center; color: var(--text-faint); padding: 32px; }
+
+  @media (max-width: 700px) { /* --bp-tablet */
+    .ui-sortable-table .col-hide-tablet { display: none; }
+  }
+  @media (max-width: 480px) { /* --bp-mobile */
+    .ui-sortable-table .col-hide-mobile { display: none; }
+  }
 </style>

@@ -186,3 +186,34 @@ describe("ConsumablesPage — stock status summary", () => {
     unmount(comp);
   });
 });
+
+describe("ConsumablesPage — responsive columns", () => {
+  it("hides category/min at tablet and quantity/status at mobile", async () => {
+    const store = makeStore();
+    await makeTick();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ConsumablesPage, {
+      target,
+      props: {
+        store,
+        settingsStore: { consumableCategories: [], consumableUnits: [] },
+        onplaceonmap: vi.fn(),
+      },
+    });
+    await tick();
+    flushSync();
+
+    const headers = target.querySelectorAll("thead th");
+    // emoji, name, category, quantity, min, stock, status, actions
+    expect(headers[2].classList.contains("col-hide-tablet")).toBe(true); // category
+    expect(headers[4].classList.contains("col-hide-tablet")).toBe(true); // min
+    expect(headers[3].classList.contains("col-hide-mobile")).toBe(true); // quantity
+    expect(headers[6].classList.contains("col-hide-mobile")).toBe(true); // status
+    expect(headers[7].classList.contains("col-hide-tablet")).toBe(false); // actions
+    expect(headers[7].classList.contains("col-hide-mobile")).toBe(false); // actions
+
+    unmount(comp);
+    target.remove();
+  });
+});
