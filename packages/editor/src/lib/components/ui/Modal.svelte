@@ -69,6 +69,20 @@
     overflow: hidden;
   }
   .ui-modal:focus { outline: none; }
+
+  @media (max-width: 480px) { /* --bp-mobile */
+    .ui-modal {
+      top: 0;
+      left: 0;
+      transform: none;
+      width: 100% !important;
+      height: 100%;
+      max-width: 100vw;
+      max-height: 100vh;
+      border-radius: 0;
+    }
+  }
+
   .ui-modal-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: var(--space-4);
