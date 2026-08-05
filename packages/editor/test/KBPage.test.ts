@@ -391,7 +391,7 @@ describe("KBPage — insert bookmark", () => {
   it("fetches a link preview and inserts the returned HTML at the cursor", async () => {
     const entries = [makeEntry({ content: "" })];
     const { target, comp } = await setup(entries, { selectedItemId: "e1" });
-    const editBtn = Array.from(target.querySelectorAll("button")).find((b) => b.textContent === "Edit") as HTMLElement;
+    const editBtn = target.querySelector('[title="Edit"]') as HTMLElement;
     editBtn.click();
     flushSync();
     (target.querySelector('[title="Insert bookmark"]') as HTMLButtonElement).click();
@@ -415,7 +415,7 @@ describe("KBPage — insert bookmark", () => {
   it("Cancel closes the modal without inserting anything", async () => {
     const entries = [makeEntry({ content: "" })];
     const { target, comp } = await setup(entries, { selectedItemId: "e1" });
-    const editBtn = Array.from(target.querySelectorAll("button")).find((b) => b.textContent === "Edit") as HTMLElement;
+    const editBtn = target.querySelector('[title="Edit"]') as HTMLElement;
     editBtn.click();
     flushSync();
     (target.querySelector('[title="Insert bookmark"]') as HTMLButtonElement).click();

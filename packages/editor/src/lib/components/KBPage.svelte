@@ -469,12 +469,12 @@
         </div>
         <div class="header-actions">
           {#if contentTab === "content" && editing}
-            <Button variant="primary" disabled={saving} onclick={handleSave}>
-              {saving ? $_('settings.security.saving') : $_('common.save')}
+            <Button variant="primary" disabled={saving} onclick={handleSave} title={saving ? $_('settings.security.saving') : $_('common.save')}>
+              💾
             </Button>
-            <Button variant="secondary" onclick={handleCancel}>{$_('common.cancel')}</Button>
+            <Button variant="secondary" onclick={handleCancel} title={$_('common.cancel')}>✕</Button>
           {:else if contentTab === "content" && !editing}
-            <Button variant="secondary" onclick={() => { editing = true; }}>{$_('common.edit')}</Button>
+            <Button variant="secondary" onclick={() => { editing = true; }} title={$_('common.edit')}>✏️</Button>
           {/if}
           <Button variant="ghost" onclick={() => handleAskDelete(selectedEntry.id)} title={$_('kb.page.deletePage')}>🗑</Button>
         </div>
