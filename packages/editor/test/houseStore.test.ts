@@ -342,3 +342,37 @@ describe("houseStore — dirty tracking", () => {
     expect(store.generation).toBe(g1 + 1);
   });
 });
+
+describe("houseStore — updateOpening HA fields", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", makeFetchStub(404));
+  });
+
+  it("persists HA sensor and shutter fields", async () => {
+    const store = createHouseStore(getHomeId);
+    await tick();
+    store.addOpening({ id: "o1", wallId: "w1", type: "window", offset: 0, width: 1 });
+    store.updateOpening("o1", {
+      haEntityId: "binary_sensor.front_window",
+      hasShutter: true,
+      shutterEntityId: "cover.front_window_shutter",
+    });
+    const opening = store.floor.openings[0];
+    expect(opening.haEntityId).toBe("binary_sensor.front_window");
+    expect(opening.hasShutter).toBe(true);
+    expect(opening.shutterEntityId).toBe("cover.front_window_shutter");
+  });
+
+  it("can clear a previously-set shutter link", async () => {
+    const store = createHouseStore(getHomeId);
+    await tick();
+    store.addOpening({
+      id: "o1", wallId: "w1", type: "window", offset: 0, width: 1,
+      hasShutter: true, shutterEntityId: "cover.front_window_shutter",
+    });
+    store.updateOpening("o1", { hasShutter: false, shutterEntityId: null });
+    const opening = store.floor.openings[0];
+    expect(opening.hasShutter).toBe(false);
+    expect(opening.shutterEntityId).toBeNull();
+  });
+});
