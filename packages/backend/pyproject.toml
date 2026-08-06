@@ -20,6 +20,7 @@ dependencies = [
     # pin below that until the server code is ported to whatever replaced it.
     "mcp>=1.28,<2",
     "sqlalchemy>=2.0",
+    "websockets>=12",
 ]
 
 [project.optional-dependencies]

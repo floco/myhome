@@ -16,6 +16,7 @@
     { id: "consumables", icon: "🛒" },
     { id: "costs",       icon: "💰" },
     { id: "works",       icon: "🔧" },
+    { id: "ha",          icon: "📡" },
   ];
 
   function handleClickOutside(e: MouseEvent) {

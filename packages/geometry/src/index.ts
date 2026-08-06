@@ -4,3 +4,4 @@ export * from "./planarGraph";
 export * from "./roomDetection";
 export * from "./roomMatching";
 export * from "./svgRender";
+export * from "./openingAdjacency";

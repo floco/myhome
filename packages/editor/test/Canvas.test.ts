@@ -530,3 +530,62 @@ describe("Canvas", () => {
     expect(moveCount).toBe(1);
   });
 });
+
+describe("Canvas — HA layer", () => {
+  let target: HTMLElement;
+  let app: ReturnType<typeof mount> | undefined;
+
+  afterEach(() => {
+    if (app) {
+      unmount(app);
+      app = undefined;
+    }
+    target?.remove();
+  });
+
+  it("passes resolved HA state through to the linked opening", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const floor = createSampleFloor();
+    floor.openings = [
+      { id: "op1", wallId: "wall-1", type: "window", offset: 1, width: 1, haEntityId: "binary_sensor.front_window" },
+    ];
+
+    const haStates = new Map([
+      ["binary_sensor.front_window", { state: "on", attributes: {} }],
+    ]);
+
+    app = mount(Canvas, {
+      target,
+      props: {
+        floor, viewport: { ...DEFAULT_VIEWPORT }, width: 800, height: 600,
+        haLayerActive: true, haStates,
+      },
+    });
+    flushSync();
+
+    const line = target.querySelector("line.window-sym") as SVGLineElement;
+    expect(line.getAttribute("stroke")).toBe("var(--canvas-opening-open)");
+  });
+
+  it("does not apply HA coloring when haLayerActive is false", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const floor = createSampleFloor();
+    floor.openings = [
+      { id: "op1", wallId: "wall-1", type: "window", offset: 1, width: 1, haEntityId: "binary_sensor.front_window" },
+    ];
+    const haStates = new Map([["binary_sensor.front_window", { state: "on", attributes: {} }]]);
+
+    app = mount(Canvas, {
+      target,
+      props: { floor, viewport: { ...DEFAULT_VIEWPORT }, width: 800, height: 600, haStates },
+    });
+    flushSync();
+
+    const line = target.querySelector("line.window-sym") as SVGLineElement;
+    expect(line.getAttribute("stroke")).toBe("var(--canvas-opening-window)");
+  });
+});

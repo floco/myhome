@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import type { Wall, Opening } from "@myhome/geometry";
   import { chooseSweepFlag } from "@myhome/geometry";
   import { worldToScreen, type ViewportState } from "../viewportStore.svelte.ts";
   import type { ToolType } from "../toolStore.svelte";
+  import type { HaEntityState } from "../haStateStore.svelte";
 
   let {
     wall,
@@ -10,6 +12,9 @@
     viewport,
     tool = "select",
     selected = false,
+    haLayerActive = false,
+    haState = null,
+    shutterState = null,
     onselect,
     ondraghandlestart,
   }: {
@@ -18,6 +23,9 @@
     viewport: ViewportState;
     tool?: ToolType;
     selected?: boolean;
+    haLayerActive?: boolean;
+    haState?: HaEntityState | null;
+    shutterState?: HaEntityState | null;
     onselect?: (id: string) => void;
     ondraghandlestart?: (openingId: string, side: "start" | "end", event: PointerEvent) => void;
   } = $props();
@@ -46,6 +54,40 @@
   const sp2 = $derived(worldToScreen(wp2, viewport));
 
   const thickness = $derived(wall.thickness ?? 0.1);
+
+  const sensorStatus = $derived.by((): "open" | "closed" | "unavailable" | null => {
+    if (!haLayerActive || !opening.haEntityId) return null;
+    if (!haState || haState.state === "unavailable" || haState.state === "unknown") return "unavailable";
+    return haState.state === "on" ? "open" : "closed";
+  });
+
+  const strokeColor = $derived.by(() => {
+    if (selected) return "var(--canvas-wall-selected)";
+    if (sensorStatus === "open") return "var(--canvas-opening-open)";
+    if (sensorStatus === "unavailable") return "var(--canvas-opening-unavailable)";
+    return opening.type === "window" ? "var(--canvas-opening-window)" : "var(--canvas-opening-door)";
+  });
+
+  const shutterClosedFraction = $derived.by(() => {
+    if (!haLayerActive || opening.type !== "window" || !opening.hasShutter || !shutterState) return 0;
+    const pos = shutterState.attributes?.current_position;
+    if (typeof pos === "number") return Math.max(0, Math.min(1, (100 - pos) / 100));
+    return shutterState.state === "closed" ? 1 : 0;
+  });
+
+  const shutterOverlayPoints = $derived.by(() => {
+    if (shutterClosedFraction <= 0) return null;
+    const closedTo = clampedFrom + (clampedTo - clampedFrom) * shutterClosedFraction;
+    const perpX = -dir.y * (thickness / 2);
+    const perpY = dir.x * (thickness / 2);
+    const startWorld = { x: wall.start.x + dir.x * clampedFrom, y: wall.start.y + dir.y * clampedFrom };
+    const endWorld = { x: wall.start.x + dir.x * closedTo, y: wall.start.y + dir.y * closedTo };
+    const c1 = worldToScreen({ x: startWorld.x + perpX, y: startWorld.y + perpY }, viewport);
+    const c2 = worldToScreen({ x: endWorld.x + perpX, y: endWorld.y + perpY }, viewport);
+    const c3 = worldToScreen({ x: endWorld.x - perpX, y: endWorld.y - perpY }, viewport);
+    const c4 = worldToScreen({ x: startWorld.x - perpX, y: startWorld.y - perpY }, viewport);
+    return `${c1.x},${c1.y} ${c2.x},${c2.y} ${c3.x},${c3.y} ${c4.x},${c4.y}`;
+  });
 
   const gapPoints = $derived.by(() => {
     const perpX = -dir.y * (thickness / 2);
@@ -107,12 +149,17 @@
       y1={sp1.y}
       x2={sp2.x}
       y2={sp2.y}
-      stroke={selected ? "var(--canvas-wall-selected)" : "var(--canvas-opening-window)"}
+      stroke={strokeColor}
       stroke-width="3"
       onclick={handleClick}
       role="button"
       tabindex="0"
-    />
+    >
+      {#if sensorStatus === "unavailable"}<title>{$_('floorPlan.openingPanel.sensorUnavailable')}</title>{/if}
+    </line>
+    {#if shutterOverlayPoints}
+      <polygon points={shutterOverlayPoints} fill="var(--canvas-shutter-fill)" class="shutter-overlay" />
+    {/if}
   {:else if opening.type === "door" && doorData}
     <line
       class="door-leaf"
@@ -120,17 +167,19 @@
       y1={doorData.hinge.y}
       x2={doorData.openEnd.x}
       y2={doorData.openEnd.y}
-      stroke={selected ? "var(--canvas-wall-selected)" : "var(--canvas-opening-door)"}
+      stroke={strokeColor}
       stroke-width="2"
       onclick={handleClick}
       role="button"
       tabindex="0"
-    />
+    >
+      {#if sensorStatus === "unavailable"}<title>{$_('floorPlan.openingPanel.sensorUnavailable')}</title>{/if}
+    </line>
     <path
       class="door-arc"
       d="M {doorData.other.x} {doorData.other.y} A {doorData.radius} {doorData.radius} 0 0 {doorData.sweep} {doorData.openEnd.x} {doorData.openEnd.y}"
       fill="none"
-      stroke={selected ? "var(--canvas-wall-selected)" : "var(--canvas-opening-door)"}
+      stroke={strokeColor}
       stroke-width="1"
       stroke-dasharray="4 2"
       onclick={handleClick}

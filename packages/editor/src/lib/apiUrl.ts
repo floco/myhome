@@ -15,3 +15,13 @@ export function apiUrl(path: string): string {
   if (base.pathname === "/") return path;
   return new URL(path.slice(1), base).toString();
 }
+
+/**
+ * Same ingress-prefix rewriting as apiUrl(), for WebSocket connections --
+ * `new WebSocket(...)` needs a ws(s):// URL, not http(s)://.
+ */
+export function wsUrl(path: string): string {
+  const url = new URL(apiUrl(path), location.href);
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  return url.toString();
+}
