@@ -258,7 +258,17 @@
       "unknownSuffix": "{id} (inconnue)"
     },
     "openingPanel": {
-      "sensorUnavailable": "Capteur indisponible"
+      "sensorUnavailable": "Capteur indisponible",
+      "title": "Ouverture",
+      "sensor": "Capteur",
+      "none": "(aucun)",
+      "unknownSuffix": "{id} (inconnu)",
+      "hasShutter": "Volet roulant",
+      "shutter": "Volet",
+      "noArea": "Associez d'abord cette pièce à une zone HA",
+      "open": "Ouvrir",
+      "close": "Fermer",
+      "stop": "Stop"
     },
     "itemPicker": {
       "dragToReposition": "Glisser pour repositionner",

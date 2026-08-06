@@ -258,7 +258,17 @@
       "unknownSuffix": "{id} (unknown)"
     },
     "openingPanel": {
-      "sensorUnavailable": "Sensor unavailable"
+      "sensorUnavailable": "Sensor unavailable",
+      "title": "Opening",
+      "sensor": "Sensor",
+      "none": "(none)",
+      "unknownSuffix": "{id} (unknown)",
+      "hasShutter": "Has roller shutter",
+      "shutter": "Shutter",
+      "noArea": "Assign this room to an HA Area first",
+      "open": "Open",
+      "close": "Close",
+      "stop": "Stop"
     },
     "itemPicker": {
       "dragToReposition": "Drag to reposition",
