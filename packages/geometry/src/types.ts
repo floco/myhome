@@ -34,6 +34,12 @@ export interface Opening {
   width: number;
   /** Only meaningful for type "door". */
   swing?: DoorSwing;
+  /** Linked HA binary_sensor entity id (door/window contact sensor). */
+  haEntityId?: string | null;
+  /** Whether this window has a roller shutter. Only meaningful for type "window". */
+  hasShutter?: boolean;
+  /** Linked HA cover entity id for the roller shutter. */
+  shutterEntityId?: string | null;
 }
 
 export interface Room {
