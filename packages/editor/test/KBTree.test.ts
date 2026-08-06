@@ -204,8 +204,8 @@ describe("KBTree — drag and drop", () => {
     const rows = target.querySelectorAll(".tree-row");
     const targetRow = rows[1] as HTMLElement;
     vi.spyOn(targetRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
-    targetRow.dispatchEvent(new MouseEvent("dragover", { bubbles: true, clientY: 10 }));
-    targetRow.dispatchEvent(new MouseEvent("drop", { bubbles: true, clientY: 10 }));
+    targetRow.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientY: 10 }));
+    targetRow.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, clientY: 10 }));
     expect(ondrop).toHaveBeenCalledWith("a", "b", null);
     unmount(comp); target.remove();
   });
@@ -218,7 +218,7 @@ describe("KBTree — drag and drop", () => {
     const rows = target.querySelectorAll(".tree-row");
     const targetRow = rows[1] as HTMLElement;
     vi.spyOn(targetRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
-    targetRow.dispatchEvent(new MouseEvent("dragover", { bubbles: true, clientY: 10 }));
+    targetRow.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientY: 10 }));
     flushSync();
     expect(targetRow.className).toContain("drop-inside");
     expect(targetRow.className).not.toContain("drop-before");
@@ -234,7 +234,7 @@ describe("KBTree — drag and drop", () => {
     const rows = target.querySelectorAll(".tree-row");
     const targetRow = rows[1] as HTMLElement;
     vi.spyOn(targetRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
-    targetRow.dispatchEvent(new MouseEvent("dragover", { bubbles: true, clientY: 1 }));
+    targetRow.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientY: 1 }));
     flushSync();
     expect(targetRow.className).toContain("drop-before");
     expect(targetRow.className).not.toContain("drop-inside");
@@ -250,8 +250,8 @@ describe("KBTree — drag and drop", () => {
     const rows = target.querySelectorAll(".tree-row");
     const targetRow = rows[0] as HTMLElement;
     vi.spyOn(targetRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
-    targetRow.dispatchEvent(new MouseEvent("dragover", { bubbles: true, clientY: 1 }));
-    targetRow.dispatchEvent(new MouseEvent("drop", { bubbles: true, clientY: 1 }));
+    targetRow.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientY: 1 }));
+    targetRow.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, clientY: 1 }));
     expect(ondrop).toHaveBeenCalledWith("c", null, ["c", "a", "b"]);
     unmount(comp); target.remove();
   });
@@ -265,8 +265,8 @@ describe("KBTree — drag and drop", () => {
     const rows = target.querySelectorAll(".tree-row");
     const childRow = rows[1] as HTMLElement;
     vi.spyOn(childRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
-    childRow.dispatchEvent(new MouseEvent("dragover", { bubbles: true, clientY: 10 }));
-    childRow.dispatchEvent(new MouseEvent("drop", { bubbles: true, clientY: 10 }));
+    childRow.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientY: 10 }));
+    childRow.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, clientY: 10 }));
     expect(ondrop).not.toHaveBeenCalled();
     unmount(comp); target.remove();
   });

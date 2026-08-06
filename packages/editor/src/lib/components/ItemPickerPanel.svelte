@@ -21,11 +21,10 @@
     highlightId?: string | null;
     onstartdrag?: (e: PointerEvent) => void;
     ondismiss?: () => void;
-    ondragstart: (layerId: string, itemId: string, event: DragEvent) => void;
-    ondragend: () => void;
+    onitempointerdown: (layerId: string, item: PickerItem, event: PointerEvent) => void;
   }
 
-  let { layers, draggingId, highlightId = null, onstartdrag, ondismiss, ondragstart, ondragend }: Props = $props();
+  let { layers, draggingId, highlightId = null, onstartdrag, ondismiss, onitempointerdown }: Props = $props();
 
   let query = $state("");
   let openSections = $state<Set<string>>(new Set());
@@ -60,17 +59,6 @@
     return items.filter(i => i.name.toLowerCase().includes(q) || i.emoji.includes(q));
   }
 
-  function startDrag(layerId: string, item: PickerItem, event: DragEvent): void {
-    const el = document.createElement("div");
-    el.textContent = item.emoji;
-    el.style.cssText = "font-size:28px;position:absolute;top:-100px;pointer-events:none";
-    document.body.appendChild(el);
-    event.dataTransfer?.setDragImage(el, 14, 14);
-    setTimeout(() => document.body.removeChild(el), 0);
-    event.dataTransfer?.setData("pickerLayer", layerId);
-    event.dataTransfer?.setData("pickerId", item.id);
-    ondragstart(layerId, item.id, event);
-  }
 </script>
 
 <div class="panel">
@@ -106,9 +94,7 @@
                 class:dragging={draggingId === item.id}
                 class:highlighted={highlightId === item.id}
                 data-picker-id={item.id}
-                draggable={true}
-                ondragstart={(e) => startDrag(layer.id, item, e)}
-                ondragend={() => ondragend()}
+                onpointerdown={(e) => onitempointerdown(layer.id, item, e)}
                 role="button"
                 tabindex="0"
               >
@@ -125,9 +111,7 @@
                 class:dragging={draggingId === item.id}
                 class:highlighted={highlightId === item.id}
                 data-picker-id={item.id}
-                draggable={true}
-                ondragstart={(e) => startDrag(layer.id, item, e)}
-                ondragend={() => ondragend()}
+                onpointerdown={(e) => onitempointerdown(layer.id, item, e)}
                 role="button"
                 tabindex="0"
               >
