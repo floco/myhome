@@ -186,7 +186,8 @@
       "properties": "Properties",
       "build": "Build",
       "contacts": "Contacts",
-      "insurance": "Insurance"
+      "insurance": "Insurance",
+      "ha": "Home Assistant"
     },
     "search": {
       "placeholder": "Search chores, inventory, works, costs…",
@@ -255,6 +256,19 @@
       "haArea": "HA Area",
       "none": "(none)",
       "unknownSuffix": "{id} (unknown)"
+    },
+    "openingPanel": {
+      "sensorUnavailable": "Sensor unavailable",
+      "title": "Opening",
+      "sensor": "Sensor",
+      "none": "(none)",
+      "unknownSuffix": "{id} (unknown)",
+      "hasShutter": "Has roller shutter",
+      "shutter": "Shutter",
+      "noArea": "Assign this room to an HA Area first",
+      "open": "Open",
+      "close": "Close",
+      "stop": "Stop"
     },
     "itemPicker": {
       "dragToReposition": "Drag to reposition",

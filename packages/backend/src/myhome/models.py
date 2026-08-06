@@ -23,6 +23,9 @@ class Opening(BaseModel):
     offset: float
     width: float
     swing: Literal["left-in", "right-in", "left-out", "right-out"] | None = None
+    haEntityId: str | None = None
+    hasShutter: bool = False
+    shutterEntityId: str | None = None
 
 
 class Room(BaseModel):

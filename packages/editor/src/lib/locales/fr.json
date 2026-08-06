@@ -186,7 +186,8 @@
       "properties": "Biens",
       "build": "Construction",
       "contacts": "Contacts",
-      "insurance": "Assurance"
+      "insurance": "Assurance",
+      "ha": "Home Assistant"
     },
     "search": {
       "placeholder": "Rechercher corvées, inventaire, travaux, coûts…",
@@ -255,6 +256,19 @@
       "haArea": "Zone HA",
       "none": "(aucune)",
       "unknownSuffix": "{id} (inconnue)"
+    },
+    "openingPanel": {
+      "sensorUnavailable": "Capteur indisponible",
+      "title": "Ouverture",
+      "sensor": "Capteur",
+      "none": "(aucun)",
+      "unknownSuffix": "{id} (inconnu)",
+      "hasShutter": "Volet roulant",
+      "shutter": "Volet",
+      "noArea": "Associez d'abord cette pièce à une zone HA",
+      "open": "Ouvrir",
+      "close": "Fermer",
+      "stop": "Stop"
     },
     "itemPicker": {
       "dragToReposition": "Glisser pour repositionner",
