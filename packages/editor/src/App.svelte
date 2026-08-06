@@ -1,16 +1,18 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
   import type { Point, WallType } from "@myhome/geometry";
-  import { pointsEqual } from "@myhome/geometry";
+  import { pointsEqual, findAdjacentRooms } from "@myhome/geometry";
   import { createHouseStore } from "./lib/houseStore.svelte";
   import { createViewportStore } from "./lib/viewportStore.svelte";
   import { createToolStore } from "./lib/toolStore.svelte";
   import { createFloatingDrag } from "./lib/floatingDrag.svelte";
+  import { createHaStateStore } from "./lib/haStateStore.svelte";
   import { placePoint, allEndpoints } from "./lib/drawingTool";
   import { findSnapPoint, snapToGrid, SNAP_RADIUS_PX, hitTestWall, HIT_RADIUS_PX } from "./lib/geometry-helpers";
   import type { Opening } from "@myhome/geometry";
   import Canvas from "./lib/components/Canvas.svelte";
   import RoomPanel from "./lib/components/RoomPanel.svelte";
+  import OpeningPanel from "./lib/components/OpeningPanel.svelte";
   import FloorSwitcher from "./lib/components/FloorSwitcher.svelte";
   import { createChoreStore } from "./lib/choreStore.svelte";
   import type { Assignment } from "./lib/choreStore.svelte";
@@ -194,6 +196,7 @@
   );
   const worksLayerActive = $derived(activeLayers.has("works"));
   const consumablesLayerActive = $derived(activeLayers.has("consumables"));
+  const haLayerActive = $derived(activeLayers.has("ha"));
   const currentFloorConsumables = $derived(
     consumableStore.consumables.filter(c => c.placement?.floorId === floorStore.currentFloorId)
   );
@@ -294,6 +297,8 @@
   const fpDrag = createFloatingDrag(".furniture-float");
   const ipDrag = createFloatingDrag(".picker-float");
   const rpDrag = createFloatingDrag(".room-panel-float");
+  const opDrag = createFloatingDrag(".opening-panel-float");
+  const haStateStore = createHaStateStore();
   let navExpanded = $state(false);
   let showNewChoreModal = $state(false);
   let userMenuOpen = $state(false);
@@ -341,6 +346,22 @@
       ? (floorStore.floor.rooms.find((r) => r.id === toolStore.state.selectedRoomId) ?? null)
       : null
   );
+
+  const selectedOpening = $derived(
+    toolStore.state.selectedOpeningId
+      ? (floorStore.floor.openings.find((o) => o.id === toolStore.state.selectedOpeningId) ?? null)
+      : null
+  );
+  const selectedOpeningWall = $derived(
+    selectedOpening
+      ? (floorStore.floor.walls.find((w) => w.id === selectedOpening.wallId) ?? null)
+      : null
+  );
+  const selectedOpeningAreaIds = $derived.by(() => {
+    if (!selectedOpening || !selectedOpeningWall) return [];
+    const rooms = findAdjacentRooms(selectedOpening, selectedOpeningWall, floorStore.floor.rooms);
+    return [...new Set(rooms.map((r) => r.haAreaId).filter((id): id is string => id !== null))];
+  });
 
   const currentFloorRoomIds = $derived(new Set(floorStore.floor.rooms.map((r) => r.id)));
   const currentFloorAssignments = $derived(
@@ -425,6 +446,19 @@
       .then((r) => r.json())
       .then((areas: Array<{ area_id: string; name: string }>) => { haAreas = areas; })
       .catch(() => { haAreas = []; });
+  });
+
+  $effect(() => {
+    haStateStore.setActive(isFloorPlan && haLayerActive);
+  });
+
+  $effect(() => {
+    const ids = new Set<string>();
+    for (const opening of floorStore.floor.openings) {
+      if (opening.haEntityId) ids.add(opening.haEntityId);
+      if (opening.hasShutter && opening.shutterEntityId) ids.add(opening.shutterEntityId);
+    }
+    haStateStore.setEntityIds(ids);
   });
 
   function handleSelect(id: string | null): void {
@@ -905,7 +939,20 @@
               ondragopeninghandlestart={handleOpeningHandleDragStart}
               onpan={handlePan}
               onzoom={handleZoom}
+              haLayerActive={haLayerActive}
+              haStates={haStateStore.states}
             />
+            {#if selectedOpening}
+              <div class="opening-panel-float" style={opDrag.pos ? `left:${opDrag.pos.x}px;top:${opDrag.pos.y}px;right:auto;transform:none` : ''}>
+                <OpeningPanel
+                  opening={selectedOpening}
+                  areaIds={selectedOpeningAreaIds}
+                  onupdate={(patch) => floorStore.updateOpening(selectedOpening.id, patch)}
+                  onstartdrag={opDrag.startDrag}
+                  ondismiss={() => toolStore.selectOpening(null)}
+                />
+              </div>
+            {/if}
             {#if selectedRoom}
               <div class="room-panel-float" style={rpDrag.pos ? `left:${rpDrag.pos.x}px;top:${rpDrag.pos.y}px;right:auto;transform:none` : ''}>
                 <RoomPanel
@@ -1517,6 +1564,22 @@
 
   @media (max-width: 480px) { /* --bp-mobile */
     .room-panel-float {
+      position: fixed;
+      left: 0; right: 0; bottom: 48px; top: auto;
+      transform: none !important;
+      width: 100%;
+      max-height: 45vh;
+      z-index: 26;
+    }
+  }
+
+  .opening-panel-float {
+    position: absolute; right: 120px; top: 50%; transform: translateY(-50%);
+    z-index: 21;
+  }
+
+  @media (max-width: 480px) { /* --bp-mobile */
+    .opening-panel-float {
       position: fixed;
       left: 0; right: 0; bottom: 48px; top: auto;
       transform: none !important;

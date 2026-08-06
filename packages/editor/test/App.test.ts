@@ -615,3 +615,37 @@ describe("App — HA layer", () => {
     target.remove();
   });
 });
+
+describe("App — OpeningPanel wiring", () => {
+  it("shows the OpeningPanel when a window is selected, with no area hint when its room has no HA area", async () => {
+    stubFetch();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = await mountAndLoad(target);
+
+    drawWalls(target, [
+      { x: 0, y: 0 }, { x: 4, y: 0 }, { x: 4, y: 3 }, { x: 0, y: 3 }, { x: 0, y: 0 },
+    ]);
+
+    toolbarBtn(target, "Window").click();
+    flushSync();
+    const svg = target.querySelector("svg.canvas")!;
+    // Click near the middle of the bottom wall (world (2,0) -> screen (600,300)).
+    svg.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: 600, clientY: 300 }));
+    flushSync();
+    svg.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: 600, clientY: 300 }));
+    flushSync();
+    toolbarBtn(target, "Select").click();
+    flushSync();
+
+    const windowLine = target.querySelector("line.window-sym") as SVGLineElement;
+    windowLine.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+
+    expect(target.querySelector(".opening-panel-float")).not.toBeNull();
+    expect(target.querySelector(".opening-panel .hint")).not.toBeNull();
+
+    unmount(app);
+    target.remove();
+  });
+});
