@@ -257,6 +257,9 @@
       "none": "(aucune)",
       "unknownSuffix": "{id} (inconnue)"
     },
+    "openingPanel": {
+      "sensorUnavailable": "Capteur indisponible"
+    },
     "itemPicker": {
       "dragToReposition": "Glisser pour repositionner",
       "search": "Rechercher…",

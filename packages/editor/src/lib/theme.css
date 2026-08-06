@@ -65,6 +65,9 @@
   --canvas-divider: #5d7a96;
   --canvas-opening-door: #a6862a;
   --canvas-opening-window: #3b7dd8;
+  --canvas-opening-open: #d97706;
+  --canvas-opening-unavailable: #9a9aa5;
+  --canvas-shutter-fill: rgba(20, 20, 24, 0.45);
   --canvas-label: #44546b;
   --canvas-draw-preview: #d97f1f;
   --canvas-selected-fill: rgba(17, 17, 17, 0.12);
@@ -113,6 +116,9 @@
   --canvas-divider: #99aadd;
   --canvas-opening-door: #eeeeaa;
   --canvas-opening-window: #88ccff;
+  --canvas-opening-open: #fbbf24;
+  --canvas-opening-unavailable: #6b6b75;
+  --canvas-shutter-fill: rgba(255, 255, 255, 0.4);
   --canvas-label: #ccddee;
   --canvas-draw-preview: #ffb84d;
   --canvas-selected-fill: rgba(85, 170, 255, 0.15);

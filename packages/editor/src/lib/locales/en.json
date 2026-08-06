@@ -257,6 +257,9 @@
       "none": "(none)",
       "unknownSuffix": "{id} (unknown)"
     },
+    "openingPanel": {
+      "sensorUnavailable": "Sensor unavailable"
+    },
     "itemPicker": {
       "dragToReposition": "Drag to reposition",
       "search": "Search…",
