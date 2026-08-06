@@ -139,6 +139,8 @@
   let draggingItemId = $state<string | null>(null);
   let draggingLayerId = $state<string | null>(null);
   let pickerHighlightId = $state<string | null>(null);
+  let pointerDragFurnitureTemplateId = $state<string | null>(null);
+  let dragGhost = $state<{ x: number; y: number; emoji: string; label: string } | null>(null);
 
   let commandPaletteOpen = $state(false);
   let selectedChoreId = $state<string | null>(null);
@@ -669,32 +671,42 @@
     return inside;
   }
 
-  function handleDragOver(e: DragEvent): void {
-    const types = e.dataTransfer?.types ?? [];
-    if (draggingItemId || types.some(t => t.includes("furniture")) || types.includes("pickerid") || types.includes("pickerlayer")) {
-      e.preventDefault();
-    }
+  function handleItemPointerDown(layerId: string, item: { id: string; name: string; emoji: string }, e: PointerEvent): void {
+    draggingLayerId = layerId;
+    draggingItemId = item.id;
+    dragGhost = { x: e.clientX, y: e.clientY, emoji: item.emoji, label: item.name };
   }
 
-  function handleDrop(e: DragEvent): void {
-    e.preventDefault();
+  function handleFurniturePointerDown(templateId: string, e: PointerEvent): void {
+    pointerDragFurnitureTemplateId = templateId;
+    dragGhost = { x: e.clientX, y: e.clientY, emoji: "🪑", label: $_(`floorPlan.furnitureLibrary.items.${templateId}`) };
+  }
 
-    const furnitureTemplateId = e.dataTransfer?.getData("furnitureTemplateId");
-    if (furnitureTemplateId) {
-      const template = getTemplate(furnitureTemplateId);
+  function cancelItemDrag(): void {
+    draggingItemId = null;
+    draggingLayerId = null;
+    pointerDragFurnitureTemplateId = null;
+    dragGhost = null;
+  }
+
+  function placeDraggedAt(clientX: number, clientY: number): void {
+    const canvasEl = document.querySelector(".canvas-area") as HTMLElement | null;
+    if (!canvasEl) return;
+    const rect = canvasEl.getBoundingClientRect();
+    if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return;
+
+    if (pointerDragFurnitureTemplateId) {
+      const template = getTemplate(pointerDragFurnitureTemplateId);
       if (template) {
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        const worldX = (e.clientX - rect.left - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
-        const worldY = (e.clientY - rect.top - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
-        floorStore.addFurniture(furnitureTemplateId, worldX, worldY, template.defaultWidth, template.defaultHeight);
+        const worldX = (clientX - rect.left - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
+        const worldY = (clientY - rect.top - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
+        floorStore.addFurniture(pointerDragFurnitureTemplateId, worldX, worldY, template.defaultWidth, template.defaultHeight);
       }
       return;
     }
 
-    const layerId = e.dataTransfer?.getData("pickerLayer") ?? draggingLayerId;
-    const itemId = e.dataTransfer?.getData("pickerId") ?? draggingItemId;
-    draggingItemId = null;
-    draggingLayerId = null;
+    const layerId = draggingLayerId;
+    const itemId = draggingItemId;
     if (!layerId || !itemId) return;
 
     if (allFloorsMode) {
@@ -704,8 +716,7 @@
       return;
     }
 
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const screenX = e.clientX - rect.left, screenY = e.clientY - rect.top;
+    const screenX = clientX - rect.left, screenY = clientY - rect.top;
     const worldX = (screenX - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
     const worldY = (screenY - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
 
@@ -752,13 +763,18 @@
       choreStore.createAssignment({ choreId: itemId, roomId: room.id, position: { x: worldX, y: worldY }, nextDueDate: chore?.nextDueDate ?? "" });
     }
   }
+
+  function handleCanvasPointerUp(e: PointerEvent): void {
+    placeDraggedAt(e.clientX, e.clientY);
+  }
 </script>
 
 <svelte:window
   onkeydown={handleKeydown}
   onkeyup={handleKeyup}
   onblur={() => { spacePressed = false; }}
-  onpointerup={() => { handleDragEnd(); endFurnitureDrag(); }}
+  onpointermove={(e) => { if (dragGhost) dragGhost = { ...dragGhost, x: e.clientX, y: e.clientY }; }}
+  onpointerup={() => { handleDragEnd(); endFurnitureDrag(); cancelItemDrag(); }}
 />
 
 <CommandPalette
@@ -833,7 +849,7 @@
         <NewHomeModal open={true} required={true} onclose={() => {}} />
 
       {:else if isFloorPlan}
-        <div class="canvas-area" bind:clientWidth={canvasWidth} bind:clientHeight={canvasHeight} ondragover={handleDragOver} ondrop={handleDrop}>
+        <div class="canvas-area" bind:clientWidth={canvasWidth} bind:clientHeight={canvasHeight} onpointerup={handleCanvasPointerUp}>
           {#if !floorStore.loaded}
             <div class="loading">{$_('common.loading')}</div>
           {:else if allFloorsMode}
@@ -1118,14 +1134,13 @@
                 highlightId={pickerHighlightId}
                 onstartdrag={ipDrag.startDrag}
                 ondismiss={() => { pickerOpen = false; }}
-                ondragstart={(layerId, itemId, _e) => { draggingLayerId = layerId; draggingItemId = itemId; pickerHighlightId = null; }}
-                ondragend={() => { draggingLayerId = null; draggingItemId = null; }}
+                onitempointerdown={(layerId, item, e) => { pickerHighlightId = null; handleItemPointerDown(layerId, item, e); }}
               />
             </div>
           {/if}
           {#if furnitureLibraryOpen}
             <div class="furniture-float" style={fpDrag.pos ? `left:${fpDrag.pos.x}px;top:${fpDrag.pos.y}px;right:auto;transform:none` : ''}>
-              <FurnitureLibraryPanel onstartdrag={fpDrag.startDrag} ondismiss={() => { furnitureLibraryOpen = false; }} />
+              <FurnitureLibraryPanel onstartdrag={fpDrag.startDrag} ondismiss={() => { furnitureLibraryOpen = false; }} onitempointerdown={handleFurniturePointerDown} />
             </div>
           {/if}
           {#if floorStore.loaded}
@@ -1308,6 +1323,12 @@
   </div>
 </div>
 
+{#if dragGhost}
+  <div class="drag-ghost" style="left:{dragGhost.x + 12}px; top:{dragGhost.y + 12}px;">
+    {dragGhost.emoji} {dragGhost.label}
+  </div>
+{/if}
+
 <NewChoreModal open={showNewChoreModal} store={choreStore} onclose={() => { showNewChoreModal = false; }} />
 
 {#if openBuildTaskId}
@@ -1339,6 +1360,13 @@
 
 <style>
   :global(body) { margin: 0; padding: 0; overflow: hidden; }
+
+  .drag-ghost {
+    position: fixed; pointer-events: none; z-index: 999;
+    background: var(--surface); border: 1px solid var(--accent);
+    border-radius: var(--radius-sm); padding: 4px 8px; font-size: 12px;
+    box-shadow: var(--shadow-md); white-space: nowrap;
+  }
 
   .app {
     display: flex; flex-direction: column;

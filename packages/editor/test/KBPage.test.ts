@@ -248,10 +248,10 @@ describe("KBPage — moving an existing page under another", () => {
     const sourceRow = rows[1] as HTMLElement; // Page B
     const targetRow = rows[0] as HTMLElement; // Page A
 
-    sourceRow.dispatchEvent(new Event("dragstart", { bubbles: true }));
+    sourceRow.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1 }));
     vi.spyOn(targetRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
-    targetRow.dispatchEvent(new MouseEvent("dragover", { bubbles: true, clientY: 10 }));
-    targetRow.dispatchEvent(new MouseEvent("drop", { bubbles: true, clientY: 10 }));
+    targetRow.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientY: 10 }));
+    targetRow.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, clientY: 10 }));
     await tick(); flushSync(); await tick(); flushSync();
 
     const parentA = store.entries.find((e) => e.id === "a");
@@ -276,10 +276,10 @@ describe("KBPage — moving an existing page under another", () => {
     const sourceRow = rows[2] as HTMLElement; // Page C
     const targetRow = rows[1] as HTMLElement; // Page B
 
-    sourceRow.dispatchEvent(new Event("dragstart", { bubbles: true }));
+    sourceRow.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1 }));
     vi.spyOn(targetRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
-    targetRow.dispatchEvent(new MouseEvent("dragover", { bubbles: true, clientY: 1 }));
-    targetRow.dispatchEvent(new MouseEvent("drop", { bubbles: true, clientY: 1 }));
+    targetRow.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientY: 1 }));
+    targetRow.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, clientY: 1 }));
     await tick(); flushSync(); await tick(); flushSync();
 
     const parentA = store.entries.find((e) => e.id === "a");
@@ -370,9 +370,9 @@ describe("KBPage — trash", () => {
     const row = target.querySelector(".tree-row") as HTMLElement;
     const trashLink = Array.from(target.querySelectorAll("button")).find((b) => b.textContent?.includes("Trash")) as HTMLElement;
 
-    row.dispatchEvent(new Event("dragstart", { bubbles: true }));
-    trashLink.dispatchEvent(new MouseEvent("dragover", { bubbles: true }));
-    trashLink.dispatchEvent(new MouseEvent("drop", { bubbles: true }));
+    row.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1 }));
+    trashLink.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1 }));
+    trashLink.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
     flushSync();
 
     const modal = target.querySelector(".ui-modal") as HTMLElement;

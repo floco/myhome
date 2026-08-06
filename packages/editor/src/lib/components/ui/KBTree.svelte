@@ -122,32 +122,32 @@
     return false;
   }
 
-  function handleDragOver(e: DragEvent, entry: KBEntry): void {
+  function handlePointerOver(e: PointerEvent, entry: KBEntry): void {
     if (!dragging || dragging === entry.id || wouldCreateCycle(dragging, entry.id)) return;
-    e.preventDefault();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const ratio = (e.clientY - rect.top) / rect.height;
     const position = ratio < 0.25 ? "before" : ratio > 0.75 ? "after" : "inside";
     dropIndicator = { id: entry.id, position };
   }
 
-  function handleDrop(e: DragEvent, entry: KBEntry): void {
-    e.preventDefault();
+  function handlePointerDrop(e: PointerEvent, entry: KBEntry): void {
+    const draggedId = dragging;
     const indicator = dropIndicator;
     dropIndicator = null;
-    if (!dragging || dragging === entry.id || wouldCreateCycle(dragging, entry.id) || !indicator) return;
+    onenddrag();
+    if (!draggedId || draggedId === entry.id || wouldCreateCycle(draggedId, entry.id) || !indicator) return;
     if (indicator.position === "inside") {
-      ondrop(dragging, entry.id, null);
+      ondrop(draggedId, entry.id, null);
       return;
     }
     const siblings = entries
-      .filter((s) => s.parentId === entry.parentId && s.id !== dragging)
+      .filter((s) => s.parentId === entry.parentId && s.id !== draggedId)
       .sort((a, b) => a.order - b.order);
     const targetIndex = siblings.findIndex((s) => s.id === entry.id);
     const insertAt = indicator.position === "before" ? targetIndex : targetIndex + 1;
     const orderedIds = siblings.map((s) => s.id);
-    orderedIds.splice(insertAt, 0, dragging);
-    ondrop(dragging, entry.parentId, orderedIds);
+    orderedIds.splice(insertAt, 0, draggedId);
+    ondrop(draggedId, entry.parentId, orderedIds);
   }
 </script>
 
@@ -164,12 +164,10 @@
         class:drop-before={dropIndicator?.id === entry.id && dropIndicator.position === "before"}
         class:drop-after={dropIndicator?.id === entry.id && dropIndicator.position === "after"}
         class:drop-inside={dropIndicator?.id === entry.id && dropIndicator.position === "inside"}
-        draggable="true"
-        ondragstart={(e) => { e.dataTransfer?.setData("text/plain", ""); onstartdrag(entry.id); }}
-        ondragend={() => { dropIndicator = null; onenddrag(); }}
-        ondragover={(e) => handleDragOver(e, entry)}
-        ondragleave={() => { if (dropIndicator?.id === entry.id) dropIndicator = null; }}
-        ondrop={(e) => handleDrop(e, entry)}
+        onpointerdown={() => onstartdrag(entry.id)}
+        onpointermove={(e) => handlePointerOver(e, entry)}
+        onpointerleave={() => { if (dropIndicator?.id === entry.id) dropIndicator = null; }}
+        onpointerup={(e) => handlePointerDrop(e, entry)}
         onclick={() => onselect(entry)}
         onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") onselect(entry); }}
       >
