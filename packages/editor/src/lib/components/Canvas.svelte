@@ -2,6 +2,7 @@
   import type { Floor, Point, FurnitureObject } from "@myhome/geometry";
   import type { ViewportState } from "../viewportStore.svelte.ts";
   import type { ToolType } from "../toolStore.svelte";
+  import type { HaEntityState } from "../haStateStore.svelte";
   import { computeSnap, allEndpoints } from "../drawingTool";
   import { SNAP_RADIUS_PX, hitTestWall, HIT_RADIUS_PX, findAdjacentWall } from "../geometry-helpers";
   import { worldToScreen } from "../viewportStore.svelte.ts";
@@ -47,6 +48,8 @@
     ondragend,
     onpan,
     onzoom,
+    haLayerActive = false,
+    haStates = new Map<string, HaEntityState>(),
   }: {
     floor: Floor;
     viewport: ViewportState;
@@ -78,6 +81,8 @@
     ondragend?: () => void;
     onpan?: (dx: number, dy: number) => void;
     onzoom?: (screen: Point, factor: number) => void;
+    haLayerActive?: boolean;
+    haStates?: Map<string, HaEntityState>;
   } = $props();
 
   const snapResult = $derived.by(() => {
@@ -327,6 +332,9 @@
         {viewport}
         {tool}
         selected={opening.id === selectedOpeningId}
+        haLayerActive={haLayerActive}
+        haState={opening.haEntityId ? (haStates.get(opening.haEntityId) ?? null) : null}
+        shutterState={opening.hasShutter && opening.shutterEntityId ? (haStates.get(opening.shutterEntityId) ?? null) : null}
         onselect={(id) => onselectopening?.(id)}
         ondraghandlestart={(openingId, side, event) => {
           event.stopPropagation();
