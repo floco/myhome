@@ -34,3 +34,40 @@ async def test_call_ha_service_raises_on_http_error(monkeypatch):
         )
         with pytest.raises(Exception):
             await call_ha_service("notify", "mobile_app_pixel", {"message": "hello"})
+
+
+def test_get_ha_entities_returns_empty_without_token(client, monkeypatch):
+    monkeypatch.delenv("SUPERVISOR_TOKEN", raising=False)
+    resp = client.get("/api/ha/entities", params={"area_id": "entryway", "domain": "binary_sensor"})
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_get_ha_entities_rejects_unsupported_domain(client, monkeypatch):
+    monkeypatch.setenv("SUPERVISOR_TOKEN", "test-token")
+    resp = client.get("/api/ha/entities", params={"area_id": "entryway", "domain": "light"})
+    assert resp.status_code == 400
+
+
+def test_get_ha_entities_lists_matching_domain(client, monkeypatch):
+    monkeypatch.setenv("SUPERVISOR_TOKEN", "test-token")
+    with respx.mock:
+        route = respx.post("http://supervisor/core/api/template").mock(
+            return_value=Response(200, text=json.dumps([
+                {"entity_id": "binary_sensor.front_door", "name": "Front Door"},
+            ]))
+        )
+        resp = client.get("/api/ha/entities", params={"area_id": "entryway", "domain": "binary_sensor"})
+    assert resp.status_code == 200
+    assert resp.json() == [{"entity_id": "binary_sensor.front_door", "name": "Front Door"}]
+    body = json.loads(route.calls[0].request.content)
+    assert body["variables"] == {"area_id": "entryway", "domain": "binary_sensor"}
+
+
+def test_get_ha_entities_returns_empty_on_ha_error(client, monkeypatch):
+    monkeypatch.setenv("SUPERVISOR_TOKEN", "test-token")
+    with respx.mock:
+        respx.post("http://supervisor/core/api/template").mock(return_value=Response(500))
+        resp = client.get("/api/ha/entities", params={"area_id": "entryway", "domain": "cover"})
+    assert resp.status_code == 200
+    assert resp.json() == []
