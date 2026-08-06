@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { apiUrl } from "../src/lib/apiUrl";
+import { apiUrl, wsUrl } from "../src/lib/apiUrl";
 
 function setBaseURI(url: string): void {
   Object.defineProperty(document, "baseURI", { value: url, configurable: true });
@@ -30,5 +30,17 @@ describe("apiUrl", () => {
   it("leaves non-absolute paths untouched", () => {
     setBaseURI("http://localhost:3000/api/hassio_ingress/abc123/");
     expect(apiUrl("relative/path")).toBe("relative/path");
+  });
+});
+
+describe("wsUrl", () => {
+  it("converts http to ws at domain root", () => {
+    setBaseURI("http://localhost:3000/");
+    expect(wsUrl("/api/ha/ws")).toBe("ws://localhost:3000/api/ha/ws");
+  });
+
+  it("converts https to wss under an ingress path prefix", () => {
+    setBaseURI("https://localhost:3000/api/hassio_ingress/abc123/");
+    expect(wsUrl("/api/ha/ws")).toBe("wss://localhost:3000/api/hassio_ingress/abc123/api/ha/ws");
   });
 });
