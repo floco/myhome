@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.18.0 - 2026-08-06
+
+- Added the ability to link floor plan windows and doors to Home Assistant door/window sensors — they now show orange on the floor plan when open (and gray if the sensor is unreachable), delivered live over a new "Home Assistant" map layer that's on by default
+- Added roller shutter support for windows — link a shutter's Home Assistant cover entity to see its position on the floor plan and open, close, or stop it directly from there
+- Added full touch/mobile support across the app: tables hide low-priority columns on narrow screens, the top bar and modals reflow below 480px, floating panels can be dragged and collapse into bottom sheets on mobile, the floor plan canvas supports touch drawing/dragging/panning/pinch-zoom, and drag-and-drop reordering works via touch instead of requiring a mouse
+
 ## 0.17.1 - 2026-08-05
 
 - Fixed the chore backdated-completion date picker not honoring the Date Format set in Settings > Localization (always showed "D Month YYYY" instead of your chosen MM/DD/YYYY, DD/MM/YYYY, or YYYY-MM-DD) — this affected every date picker in the app, not just chores
