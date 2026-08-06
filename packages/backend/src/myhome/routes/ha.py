@@ -99,3 +99,17 @@ async def call_ha_service(domain: str, service: str, data: dict) -> None:
             timeout=5.0,
         )
         resp.raise_for_status()
+
+
+_ALLOWED_COVER_ACTIONS = {"open", "close", "stop"}
+
+
+@router.post("/api/ha/cover/{entity_id}/{action}")
+async def post_ha_cover_action(entity_id: str, action: str) -> dict:
+    if action not in _ALLOWED_COVER_ACTIONS:
+        raise HTTPException(status_code=400, detail="invalid action")
+    try:
+        await call_ha_service("cover", f"{action}_cover", {"entity_id": entity_id})
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return {"ok": True}
