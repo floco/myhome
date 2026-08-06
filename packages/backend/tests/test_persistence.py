@@ -1,5 +1,5 @@
 # packages/backend/tests/test_persistence.py
-from myhome.models import Floor, House, HouseDocument
+from myhome.models import Floor, House, HouseDocument, Opening, Wall
 from myhome.persistence import load_house, save_house
 
 HOME_ID = "test-home"
@@ -48,3 +48,35 @@ def test_save_overwrites_existing_document(tmp_path, monkeypatch):
     updated.house.name = "Renamed"
     save_house(HOME_ID, updated)
     assert load_house(HOME_ID).house.name == "Renamed"
+
+
+def make_doc_with_opening() -> HouseDocument:
+    doc = make_doc()
+    doc.floors[0].walls = [
+        Wall(id="w1", type="wall", start={"x": 0, "y": 0}, end={"x": 4, "y": 0}, thickness=0.1)
+    ]
+    doc.floors[0].openings = [
+        Opening(
+            id="o1", wallId="w1", type="window", offset=1, width=1,
+            haEntityId="binary_sensor.front_window", hasShutter=True,
+            shutterEntityId="cover.front_window_shutter",
+        )
+    ]
+    return doc
+
+
+def test_round_trip_preserves_opening_ha_fields(tmp_path, monkeypatch):
+    _setup(tmp_path, monkeypatch)
+    save_house(HOME_ID, make_doc_with_opening())
+    loaded = load_house(HOME_ID)
+    opening = loaded.floors[0].openings[0]
+    assert opening.haEntityId == "binary_sensor.front_window"
+    assert opening.hasShutter is True
+    assert opening.shutterEntityId == "cover.front_window_shutter"
+
+
+def test_opening_ha_fields_default_when_absent():
+    opening = Opening(id="o2", wallId="w1", type="door", offset=0, width=0.9)
+    assert opening.haEntityId is None
+    assert opening.hasShutter is False
+    assert opening.shutterEntityId is None
