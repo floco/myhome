@@ -186,7 +186,8 @@
       "properties": "Biens",
       "build": "Construction",
       "contacts": "Contacts",
-      "insurance": "Assurance"
+      "insurance": "Assurance",
+      "ha": "Home Assistant"
     },
     "search": {
       "placeholder": "Rechercher corvées, inventaire, travaux, coûts…",

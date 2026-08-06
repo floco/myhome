@@ -595,3 +595,23 @@ describe("App — autosave", () => {
     expect(saveBtn.title).toBe("Saving…");
   });
 });
+
+describe("App — HA layer", () => {
+  it("is active by default without the user toggling it", async () => {
+    stubFetch();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = await mountAndLoad(target);
+
+    (target.querySelector('button[title="Toggle map layers"]') as HTMLButtonElement).click();
+    await tick();
+    flushSync();
+    const haRow = Array.from(target.querySelectorAll(".layer-row")).find(
+      (r) => r.textContent?.includes("Home Assistant"),
+    ) as HTMLElement;
+    expect((haRow.querySelector('input[type="checkbox"]') as HTMLInputElement).checked).toBe(true);
+
+    unmount(app);
+    target.remove();
+  });
+});

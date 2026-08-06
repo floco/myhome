@@ -185,7 +185,7 @@
     screenY: number;
   } | null>(null);
 
-  let activeLayers = $state(new Set<string>());
+  let activeLayers = $state(new Set<string>(["ha"]));
   const choreLayerActive = $derived(activeLayers.has("chores"));
   const inventoryLayerActive = $derived(activeLayers.has("inventory"));
   const costsLayerActive = $derived(activeLayers.has("costs"));

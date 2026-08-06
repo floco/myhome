@@ -186,7 +186,8 @@
       "properties": "Properties",
       "build": "Build",
       "contacts": "Contacts",
-      "insurance": "Insurance"
+      "insurance": "Insurance",
+      "ha": "Home Assistant"
     },
     "search": {
       "placeholder": "Search chores, inventory, works, costs…",
