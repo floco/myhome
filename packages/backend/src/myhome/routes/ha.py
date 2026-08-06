@@ -1,6 +1,8 @@
 import asyncio
 import json
 import os
+import re
+from urllib.parse import quote
 
 import httpx
 import websockets
@@ -16,6 +18,18 @@ _HA_BASE = "http://supervisor/core/api"
 _HA_WS_URL = "ws://supervisor/core/websocket"
 
 _ALLOWED_ENTITY_DOMAINS = {"binary_sensor", "cover"}
+_ENTITY_ID_RE = re.compile(r"^[a-z_]+\.[a-z0-9_]+$")
+
+
+def _is_allowed_entity_id(entity_id: object) -> bool:
+    """Restricts WS state subscriptions to the same binary_sensor/cover scope
+    that /api/ha/entities enforces -- without this, an authenticated client
+    could request live state for *any* HA entity (locks, cameras, alarm
+    panels, ...) via the WS channel, bypassing that domain restriction."""
+    if not isinstance(entity_id, str) or not _ENTITY_ID_RE.match(entity_id):
+        return False
+    domain = entity_id.split(".", 1)[0]
+    return domain in _ALLOWED_ENTITY_DOMAINS
 
 
 def _auth_headers(token: str) -> dict:
@@ -136,7 +150,9 @@ async def _authenticate_ws(websocket: WebSocket) -> tuple[str, str] | None:
 
 
 async def _fetch_state(client: httpx.AsyncClient, token: str, entity_id: str) -> dict | None:
-    resp = await client.get(f"{_HA_BASE}/states/{entity_id}", headers=_auth_headers(token), timeout=5.0)
+    resp = await client.get(
+        f"{_HA_BASE}/states/{quote(entity_id, safe='')}", headers=_auth_headers(token), timeout=5.0
+    )
     if resp.status_code != 200:
         return None
     data = resp.json()
@@ -190,7 +206,8 @@ async def ha_ws(websocket: WebSocket) -> None:
             nonlocal entity_ids
             while True:
                 data = await websocket.receive_json()
-                new_ids = set(data.get("entity_ids", []))
+                requested_ids = data.get("entity_ids", [])
+                new_ids = {e for e in requested_ids if _is_allowed_entity_id(e)}
                 added = new_ids - entity_ids
                 entity_ids = new_ids
                 if added:

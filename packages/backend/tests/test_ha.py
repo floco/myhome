@@ -235,3 +235,37 @@ def test_ha_ws_updates_subscription_and_sends_snapshot_for_new_ids(client, monke
             ws.send_json({"entity_ids": ["binary_sensor.front_door", "cover.bedroom_shutter"]})
             snapshot2 = ws.receive_json()
             assert snapshot2["entity_id"] == "cover.bedroom_shutter"
+
+
+def test_ha_ws_rejects_entity_ids_outside_the_allowed_domains(client, monkeypatch):
+    monkeypatch.setenv("SUPERVISOR_TOKEN", "test-token")
+    fake = FakeUpstream(_handshake_messages())
+
+    async def fake_connect():
+        return fake
+
+    monkeypatch.setattr(ha_module, "_connect_upstream_ws", fake_connect)
+
+    def _echo_entity_state(request):
+        entity_id = request.url.path.rsplit("/", 1)[-1]
+        return Response(200, json={"entity_id": entity_id, "state": "on", "attributes": {}})
+
+    with respx.mock:
+        states_route = respx.get(url__regex=r"http://supervisor/core/api/states/.*").mock(
+            side_effect=_echo_entity_state
+        )
+        with client.websocket_connect("/api/ha/ws") as ws:
+            ws.send_json({"entity_ids": [
+                "lock.front_door",  # disallowed domain
+                "binary_sensor.../../etc/passwd",  # malformed / path-traversal attempt
+                "binary_sensor.front_door",  # the only legitimate id
+            ]})
+            snapshot = ws.receive_json()
+            assert snapshot["entity_id"] == "binary_sensor.front_door"
+            requested = {c.request.url.path.rsplit("/", 1)[-1] for c in states_route.calls}
+            assert requested == {"binary_sensor.front_door"}
+
+            # Confirm nothing else queues up behind it.
+            fake.push_event("binary_sensor.front_door", "off")
+            update = ws.receive_json()
+            assert update["entity_id"] == "binary_sensor.front_door"
