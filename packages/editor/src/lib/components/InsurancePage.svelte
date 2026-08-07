@@ -14,6 +14,8 @@
   import StatTileRow from "./ui/StatTileRow.svelte";
   import DonutChart from "./DonutChart.svelte";
   import { assignCategoryColors } from "../colorAssignment";
+  import Modal from "./ui/Modal.svelte";
+  import FilterButton from "./ui/FilterButton.svelte";
 
   type InsuranceStore = ReturnType<typeof createInsuranceStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -30,6 +32,8 @@
   let modalPolicy = $state<InsurancePolicy | "create" | null>(null);
   let searchQuery = $state("");
   let categoryFilter = $state("");
+  let filterModalOpen = $state(false);
+  const filtersActive = $derived(categoryFilter !== "");
 
   const categoryMap = $derived(
     new Map(settingsStore.insuranceCategories.map(c => [c.id, c]))
@@ -127,14 +131,20 @@
     <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
     <div class="toolbar">
       <Input placeholder={$_('insurance.page.search')} bind:value={searchQuery} />
-      <select class="native-input filter-sel" bind:value={categoryFilter}>
-        <option value="">{$_('costs.page.allCategories')}</option>
-        {#each settingsStore.insuranceCategories as cat}
-          <option value={cat.id}>{cat.emoji} {cat.name}</option>
-        {/each}
-      </select>
-      <Button onclick={() => { modalPolicy = "create"; }}>＋ {$_('insurance.page.addPolicy')}</Button>
+      <FilterButton active={filtersActive} title={$_('common.filters')} onclick={() => { filterModalOpen = true; }} />
+      <Button iconOnly title={$_('insurance.page.addPolicy')} onclick={() => { modalPolicy = "create"; }}>＋</Button>
     </div>
+
+    <Modal open={filterModalOpen} title={$_('common.filters')} onclose={() => { filterModalOpen = false; }} width="360px">
+      <div class="filter-modal-body">
+        <select class="native-input filter-sel" bind:value={categoryFilter}>
+          <option value="">{$_('costs.page.allCategories')}</option>
+          {#each settingsStore.insuranceCategories as cat}
+            <option value={cat.id}>{cat.emoji} {cat.name}</option>
+          {/each}
+        </select>
+      </div>
+    </Modal>
 
     <div class="table-wrapper">
       {#snippet emojiCell(p: InsurancePolicy)}
@@ -231,6 +241,9 @@
   }
   .native-input:focus { outline: none; border-color: var(--accent); }
   .filter-sel { cursor: pointer; }
+
+  .filter-modal-body { display: flex; flex-direction: column; gap: var(--space-3); }
+  .filter-modal-body .native-input { width: 100%; }
 
   .table-wrapper { flex: 1; overflow-y: auto; }
   :global(.emoji-cell) { font-size: 16px; width: 32px; text-align: center; }
