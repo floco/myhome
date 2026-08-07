@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.19.0 - 2026-08-07
+
+- Added door kinds (hinged, swinging, sliding, garage) and a window in/out side toggle to the floor plan opening panel, each rendered with its own door/window symbol instead of one generic symbol for all doors and windows
+- Changed the Home Assistant sensor picker in the opening panel to only show sensors matching the opening type (door/garage-door sensors for doors, window sensors for windows) instead of every binary sensor in the house
+- Changed the toolbar above every module's table (Chores, Consumables, Inventory, Works, Costs, Contacts, Properties, Insurance) to fit on one line on mobile — dropdown filters now live behind a filter icon that opens a modal, and the Add button is icon-only
+- Changed the KPI/stat row above Chores, Consumables, and Works to wrap stat tiles into fewer rows on mobile instead of stacking one per line
+
 ## 0.18.0 - 2026-08-06
 
 - Added the ability to link floor plan windows and doors to Home Assistant door/window sensors — they now show orange on the floor plan when open (and gray if the sensor is unreachable), delivered live over a new "Home Assistant" map layer that's on by default
