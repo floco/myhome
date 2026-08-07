@@ -24,6 +24,10 @@ export type OpeningType = "door" | "window";
  */
 export type DoorSwing = "left-in" | "right-in" | "left-out" | "right-out";
 
+export type DoorKind = "hinged" | "swinging" | "sliding" | "garage";
+
+export type WallSide = "in" | "out";
+
 export interface Opening {
   id: string;
   wallId: string;
@@ -34,12 +38,16 @@ export interface Opening {
   width: number;
   /** Only meaningful for type "door". */
   swing?: DoorSwing;
+  /** Only meaningful for type "door". Undefined behaves as "hinged". */
+  doorKind?: DoorKind;
   /** Linked HA binary_sensor entity id (door/window contact sensor). */
   haEntityId?: string | null;
   /** Whether this window has a roller shutter. Only meaningful for type "window". */
   hasShutter?: boolean;
   /** Linked HA cover entity id for the roller shutter. */
   shutterEntityId?: string | null;
+  /** Only meaningful for type "window". Undefined behaves as "in". */
+  windowSide?: WallSide;
 }
 
 export interface Room {

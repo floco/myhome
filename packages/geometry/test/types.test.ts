@@ -38,4 +38,11 @@ describe("Opening HA fields", () => {
     const opening: Opening = { id: "o2", wallId: "w1", type: "door", offset: 0, width: 0.9 };
     expect(opening.haEntityId).toBeUndefined();
   });
+
+  it("allows an opening with doorKind and windowSide set", () => {
+    const door: Opening = { id: "o3", wallId: "w1", type: "door", offset: 0, width: 0.9, doorKind: "sliding" };
+    const window: Opening = { id: "o4", wallId: "w1", type: "window", offset: 0, width: 1, windowSide: "out" };
+    expect(door.doorKind).toBe("sliding");
+    expect(window.windowSide).toBe("out");
+  });
 });

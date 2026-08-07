@@ -66,6 +66,57 @@ def test_get_ha_entities_lists_matching_domain(client, monkeypatch):
     assert body["variables"] == {"area_id": "entryway", "domain": "binary_sensor"}
 
 
+def test_get_ha_entities_filters_by_device_class(client, monkeypatch):
+    monkeypatch.setenv("SUPERVISOR_TOKEN", "test-token")
+    with respx.mock:
+        respx.post("http://supervisor/core/api/template").mock(
+            return_value=Response(200, text=json.dumps([
+                {"entity_id": "binary_sensor.front_window", "name": "Front Window", "device_class": "window"},
+                {"entity_id": "binary_sensor.hallway_motion", "name": "Hallway Motion", "device_class": "motion"},
+            ]))
+        )
+        resp = client.get(
+            "/api/ha/entities",
+            params={"area_id": "entryway", "domain": "binary_sensor", "device_classes": "window"},
+        )
+    assert resp.status_code == 200
+    assert resp.json() == [{"entity_id": "binary_sensor.front_window", "name": "Front Window"}]
+
+
+def test_get_ha_entities_filters_by_multiple_device_classes(client, monkeypatch):
+    monkeypatch.setenv("SUPERVISOR_TOKEN", "test-token")
+    with respx.mock:
+        respx.post("http://supervisor/core/api/template").mock(
+            return_value=Response(200, text=json.dumps([
+                {"entity_id": "binary_sensor.front_door", "name": "Front Door", "device_class": "door"},
+                {"entity_id": "binary_sensor.garage_door", "name": "Garage Door", "device_class": "garage_door"},
+                {"entity_id": "binary_sensor.front_window", "name": "Front Window", "device_class": "window"},
+            ]))
+        )
+        resp = client.get(
+            "/api/ha/entities",
+            params={"area_id": "entryway", "domain": "binary_sensor", "device_classes": "door,garage_door"},
+        )
+    assert resp.status_code == 200
+    assert resp.json() == [
+        {"entity_id": "binary_sensor.front_door", "name": "Front Door"},
+        {"entity_id": "binary_sensor.garage_door", "name": "Garage Door"},
+    ]
+
+
+def test_get_ha_entities_no_filter_when_device_classes_omitted(client, monkeypatch):
+    monkeypatch.setenv("SUPERVISOR_TOKEN", "test-token")
+    with respx.mock:
+        respx.post("http://supervisor/core/api/template").mock(
+            return_value=Response(200, text=json.dumps([
+                {"entity_id": "binary_sensor.hallway_motion", "name": "Hallway Motion", "device_class": "motion"},
+            ]))
+        )
+        resp = client.get("/api/ha/entities", params={"area_id": "entryway", "domain": "binary_sensor"})
+    assert resp.status_code == 200
+    assert resp.json() == [{"entity_id": "binary_sensor.hallway_motion", "name": "Hallway Motion"}]
+
+
 def test_get_ha_entities_returns_empty_on_ha_error(client, monkeypatch):
     monkeypatch.setenv("SUPERVISOR_TOKEN", "test-token")
     with respx.mock:

@@ -42,6 +42,24 @@ describe("OpeningPanel — sensor picker", () => {
     expect((fetch as ReturnType<typeof vi.fn>).mock.calls[0][0]).toContain("domain=binary_sensor");
   });
 
+  it("scopes the sensor fetch to device_class=window for a window opening", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] });
+    vi.stubGlobal("fetch", fetchMock);
+    setup({ opening: makeWindow() });
+    await new Promise((r) => setTimeout(r, 0));
+    const url = new URL((fetchMock.mock.calls[0][0] as string), "http://x");
+    expect(url.searchParams.get("device_classes")).toBe("window");
+  });
+
+  it("scopes the sensor fetch to device_class=door,garage_door for a door opening", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] });
+    vi.stubGlobal("fetch", fetchMock);
+    setup({ opening: makeDoor() });
+    await new Promise((r) => setTimeout(r, 0));
+    const url = new URL((fetchMock.mock.calls[0][0] as string), "http://x");
+    expect(url.searchParams.get("device_classes")).toBe("door,garage_door");
+  });
+
   it("shows a hint and disables pickers when there is no linked area", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
     setup({ areaIds: [] });
@@ -113,5 +131,82 @@ describe("OpeningPanel — shutter fields", () => {
       "/api/ha/cover/cover.front_window_shutter/open",
       { method: "POST" },
     );
+  });
+});
+
+describe("OpeningPanel — door kind and orientation", () => {
+  it("shows a door kind select for a door, defaulting to hinged", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    setup({ opening: makeDoor() });
+    const select = target.querySelector("select.door-kind") as HTMLSelectElement;
+    expect(select).not.toBeNull();
+    expect(select.value).toBe("hinged");
+  });
+
+  it("does not show a door kind select for a window", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    setup({ opening: makeWindow() });
+    expect(target.querySelector("select.door-kind")).toBeNull();
+  });
+
+  it("shows hinge-side and swing-direction toggles for a hinged door", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    setup({ opening: makeDoor({ swing: "right-out" }) });
+    const hinge = target.querySelector("select.hinge-side") as HTMLSelectElement;
+    const direction = target.querySelector("select.swing-direction") as HTMLSelectElement;
+    expect(hinge.value).toBe("right");
+    expect(direction.value).toBe("out");
+  });
+
+  it("shows only the hinge-side toggle for a swinging door", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    setup({ opening: makeDoor({ doorKind: "swinging" }) });
+    expect(target.querySelector("select.hinge-side")).not.toBeNull();
+    expect(target.querySelector("select.swing-direction")).toBeNull();
+  });
+
+  it("shows no orientation toggle for sliding or garage doors", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    setup({ opening: makeDoor({ doorKind: "sliding" }) });
+    expect(target.querySelector("select.hinge-side")).toBeNull();
+    expect(target.querySelector("select.swing-direction")).toBeNull();
+  });
+
+  it("updates swing when the hinge-side toggle changes, preserving direction", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    const onupdate = vi.fn();
+    setup({ opening: makeDoor({ swing: "left-out" }), onupdate });
+    const hinge = target.querySelector("select.hinge-side") as HTMLSelectElement;
+    hinge.value = "right";
+    hinge.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(onupdate).toHaveBeenCalledWith({ swing: "right-out" });
+  });
+
+  it("updates doorKind when the door kind select changes", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    const onupdate = vi.fn();
+    setup({ opening: makeDoor(), onupdate });
+    const select = target.querySelector("select.door-kind") as HTMLSelectElement;
+    select.value = "garage";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(onupdate).toHaveBeenCalledWith({ doorKind: "garage" });
+  });
+
+  it("shows a window-side toggle for a window, defaulting to in", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    setup({ opening: makeWindow() });
+    const select = target.querySelector("select.window-side") as HTMLSelectElement;
+    expect(select).not.toBeNull();
+    expect(select.value).toBe("in");
+  });
+
+  it("updates windowSide when the window-side toggle changes", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    const onupdate = vi.fn();
+    setup({ opening: makeWindow(), onupdate });
+    const select = target.querySelector("select.window-side") as HTMLSelectElement;
+    select.value = "out";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(onupdate).toHaveBeenCalledWith({ windowSide: "out" });
   });
 });

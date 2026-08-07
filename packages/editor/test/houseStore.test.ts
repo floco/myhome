@@ -375,4 +375,16 @@ describe("houseStore — updateOpening HA fields", () => {
     expect(opening.hasShutter).toBe(false);
     expect(opening.shutterEntityId).toBeNull();
   });
+
+  it("persists doorKind and windowSide", async () => {
+    const store = createHouseStore(getHomeId);
+    await tick();
+    store.addOpening({ id: "o1", wallId: "w1", type: "door", offset: 0, width: 0.9 });
+    store.updateOpening("o1", { doorKind: "sliding" });
+    expect(store.floor.openings[0].doorKind).toBe("sliding");
+
+    store.addOpening({ id: "o2", wallId: "w1", type: "window", offset: 1, width: 1 });
+    store.updateOpening("o2", { windowSide: "out" });
+    expect(store.floor.openings[1].windowSide).toBe("out");
+  });
 });
