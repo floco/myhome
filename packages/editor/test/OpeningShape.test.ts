@@ -113,3 +113,21 @@ describe("OpeningShape — shutter overlay", () => {
     expect(target.querySelector(".shutter-overlay")).toBeNull();
   });
 });
+
+describe("OpeningShape — window glazing symbol", () => {
+  it("renders two window-sym lines offset toward the interior by default", () => {
+    setup({ opening: makeWindow({ offset: 1, width: 1 }) });
+    const lines = target.querySelectorAll("line.window-sym");
+    expect(lines).toHaveLength(2);
+    // wall runs along +x, thickness 0.1 -> "in" perpendicular is world +y (screen y increases).
+    expect(Number((lines[0] as SVGLineElement).getAttribute("y1"))).toBeCloseTo(303, 5);
+    expect(Number((lines[1] as SVGLineElement).getAttribute("y1"))).toBeCloseTo(301, 5);
+  });
+
+  it("offsets both lines toward the exterior when windowSide is out", () => {
+    setup({ opening: makeWindow({ offset: 1, width: 1, windowSide: "out" }) });
+    const lines = target.querySelectorAll("line.window-sym");
+    expect(Number((lines[0] as SVGLineElement).getAttribute("y1"))).toBeCloseTo(297, 5);
+    expect(Number((lines[1] as SVGLineElement).getAttribute("y1"))).toBeCloseTo(299, 5);
+  });
+});

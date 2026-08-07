@@ -89,6 +89,22 @@
     return `${c1.x},${c1.y} ${c2.x},${c2.y} ${c3.x},${c3.y} ${c4.x},${c4.y}`;
   });
 
+  const windowGlazingLines = $derived.by(() => {
+    if (opening.type !== "window" || dir.length < 1e-9) return null;
+    const perpIn = { x: -dir.y, y: dir.x };
+    const perpOut = { x: dir.y, y: -dir.x };
+    const side = opening.windowSide ?? "in";
+    const perp = side === "out" ? perpOut : perpIn;
+    const majorOffset = thickness * 0.3;
+    const minorOffset = thickness * 0.1;
+    const offsetLine = (mag: number) => {
+      const a = { x: wp1.x + perp.x * mag, y: wp1.y + perp.y * mag };
+      const b = { x: wp2.x + perp.x * mag, y: wp2.y + perp.y * mag };
+      return { p1: worldToScreen(a, viewport), p2: worldToScreen(b, viewport) };
+    };
+    return { major: offsetLine(majorOffset), minor: offsetLine(minorOffset) };
+  });
+
   const gapPoints = $derived.by(() => {
     const perpX = -dir.y * (thickness / 2);
     const perpY = dir.x * (thickness / 2);
@@ -142,13 +158,13 @@
     tabindex="0"
   />
 
-  {#if opening.type === "window"}
+  {#if opening.type === "window" && windowGlazingLines}
     <line
       class="window-sym"
-      x1={sp1.x}
-      y1={sp1.y}
-      x2={sp2.x}
-      y2={sp2.y}
+      x1={windowGlazingLines.major.p1.x}
+      y1={windowGlazingLines.major.p1.y}
+      x2={windowGlazingLines.major.p2.x}
+      y2={windowGlazingLines.major.p2.y}
       stroke={strokeColor}
       stroke-width="3"
       onclick={handleClick}
@@ -157,6 +173,18 @@
     >
       {#if sensorStatus === "unavailable"}<title>{$_('floorPlan.openingPanel.sensorUnavailable')}</title>{/if}
     </line>
+    <line
+      class="window-sym"
+      x1={windowGlazingLines.minor.p1.x}
+      y1={windowGlazingLines.minor.p1.y}
+      x2={windowGlazingLines.minor.p2.x}
+      y2={windowGlazingLines.minor.p2.y}
+      stroke={strokeColor}
+      stroke-width="1.5"
+      onclick={handleClick}
+      role="button"
+      tabindex="0"
+    />
     {#if shutterOverlayPoints}
       <polygon points={shutterOverlayPoints} fill="var(--canvas-shutter-fill)" class="shutter-overlay" />
     {/if}
