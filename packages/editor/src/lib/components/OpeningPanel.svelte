@@ -1,6 +1,6 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
-  import type { Opening } from "@myhome/geometry";
+  import type { Opening, DoorKind, DoorSwing, WallSide } from "@myhome/geometry";
 
   interface HaEntity { entity_id: string; name: string }
 
@@ -13,7 +13,14 @@
   }: {
     opening: Opening;
     areaIds?: string[];
-    onupdate: (patch: { haEntityId?: string | null; hasShutter?: boolean; shutterEntityId?: string | null }) => void;
+    onupdate: (patch: {
+      haEntityId?: string | null;
+      hasShutter?: boolean;
+      shutterEntityId?: string | null;
+      doorKind?: DoorKind;
+      swing?: DoorSwing;
+      windowSide?: WallSide;
+    }) => void;
     onstartdrag?: (e: PointerEvent) => void;
     ondismiss?: () => void;
   } = $props();
@@ -72,6 +79,32 @@
       controlInFlight = false;
     }
   }
+
+  const doorKind = $derived.by((): DoorKind => opening.type === "door" ? (opening.doorKind ?? "hinged") : "hinged");
+  const hingeSide = $derived.by((): "left" | "right" => (opening.swing ?? "left-in").startsWith("left") ? "left" : "right");
+  const swingDirection = $derived.by((): "in" | "out" => (opening.swing ?? "left-in").endsWith("in") ? "in" : "out");
+
+  function composeSwing(side: "left" | "right", direction: "in" | "out"): DoorSwing {
+    return `${side}-${direction}` as DoorSwing;
+  }
+
+  function handleDoorKindChange(e: Event): void {
+    onupdate({ doorKind: (e.target as HTMLSelectElement).value as DoorKind });
+  }
+
+  function handleHingeSideChange(e: Event): void {
+    const side = (e.target as HTMLSelectElement).value as "left" | "right";
+    onupdate({ swing: composeSwing(side, swingDirection) });
+  }
+
+  function handleSwingDirectionChange(e: Event): void {
+    const direction = (e.target as HTMLSelectElement).value as "in" | "out";
+    onupdate({ swing: composeSwing(hingeSide, direction) });
+  }
+
+  function handleWindowSideChange(e: Event): void {
+    onupdate({ windowSide: (e.target as HTMLSelectElement).value as WallSide });
+  }
 </script>
 
 <aside class="opening-panel">
@@ -101,6 +134,48 @@
       <p class="hint">{$_('floorPlan.openingPanel.noArea')}</p>
     {/if}
   </label>
+
+  {#if opening.type === "door"}
+    <label>
+      <span>{$_('floorPlan.openingPanel.doorKind')}</span>
+      <select class="door-kind" value={doorKind} onchange={handleDoorKindChange}>
+        <option value="hinged">{$_('floorPlan.openingPanel.doorKindHinged')}</option>
+        <option value="swinging">{$_('floorPlan.openingPanel.doorKindSwinging')}</option>
+        <option value="sliding">{$_('floorPlan.openingPanel.doorKindSliding')}</option>
+        <option value="garage">{$_('floorPlan.openingPanel.doorKindGarage')}</option>
+      </select>
+    </label>
+
+    {#if doorKind === "hinged" || doorKind === "swinging"}
+      <label>
+        <span>{$_('floorPlan.openingPanel.hingeSide')}</span>
+        <select class="hinge-side" value={hingeSide} onchange={handleHingeSideChange}>
+          <option value="left">{$_('floorPlan.openingPanel.left')}</option>
+          <option value="right">{$_('floorPlan.openingPanel.right')}</option>
+        </select>
+      </label>
+    {/if}
+
+    {#if doorKind === "hinged"}
+      <label>
+        <span>{$_('floorPlan.openingPanel.swingDirection')}</span>
+        <select class="swing-direction" value={swingDirection} onchange={handleSwingDirectionChange}>
+          <option value="in">{$_('floorPlan.openingPanel.in')}</option>
+          <option value="out">{$_('floorPlan.openingPanel.out')}</option>
+        </select>
+      </label>
+    {/if}
+  {/if}
+
+  {#if opening.type === "window"}
+    <label>
+      <span>{$_('floorPlan.openingPanel.windowSide')}</span>
+      <select class="window-side" value={opening.windowSide ?? "in"} onchange={handleWindowSideChange}>
+        <option value="in">{$_('floorPlan.openingPanel.in')}</option>
+        <option value="out">{$_('floorPlan.openingPanel.out')}</option>
+      </select>
+    </label>
+  {/if}
 
   {#if opening.type === "window"}
     <label class="checkbox-row">
