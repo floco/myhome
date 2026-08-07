@@ -158,6 +158,9 @@ describe("ChoresPage — schedule filter", () => {
     const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
     flushSync();
 
+    (target.querySelector('button[aria-label="Filters"]') as HTMLButtonElement).click();
+    flushSync();
+
     const scheduleSelect = Array.from(target.querySelectorAll("select")).find(
       (s) => Array.from(s.options).some((o) => o.value === "adaptive"),
     ) as HTMLSelectElement;

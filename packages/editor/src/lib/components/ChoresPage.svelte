@@ -11,6 +11,8 @@
   import Card from "./ui/Card.svelte";
   import HorizontalBarChart from "./HorizontalBarChart.svelte";
   import StatTile from "./ui/StatTile.svelte";
+  import Modal from "./ui/Modal.svelte";
+  import FilterButton from "./ui/FilterButton.svelte";
   import { formatDate, formatDateTime, todayIso } from "../dateFormat";
   import DatePicker from "./DatePicker.svelte";
 
@@ -44,6 +46,8 @@
   let scheduleFilter = $state("");
   let dueFilter = $state<"all" | "attention">("attention");
   let expandedHistory = $state<string | null>(null);
+  let filterModalOpen = $state(false);
+  const filtersActive = $derived(roomFilter !== "" || scheduleFilter !== "");
 
   function needsAttention(assignments: Assignment[]): boolean {
     if (assignments.length === 0) return true; // unplaced chore -- needs a room before it can be tracked
@@ -205,9 +209,11 @@
         <div class="chart-label">{$_('chores.page.scheduleHealth')}</div>
         <HorizontalBarChart segments={healthBreakdown} />
       </Card>
-      <StatTile label={$_('chores.page.active')} value={totalAssignments} />
-      <StatTile label={$_('chores.page.overdue')} value={`${overduePct}%`} variant="danger" />
-      <StatTile label={$_('chores.page.onTrack')} value={`${onTrackPct}%`} variant="success" />
+      <div class="stat-tiles">
+        <StatTile label={$_('chores.page.active')} value={totalAssignments} />
+        <StatTile label={$_('chores.page.overdue')} value={`${overduePct}%`} variant="danger" />
+        <StatTile label={$_('chores.page.onTrack')} value={`${onTrackPct}%`} variant="success" />
+      </div>
     </div>
   {/if}
 
@@ -215,27 +221,33 @@
     <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
     <div class="toolbar">
       <Input placeholder={$_('chores.page.search')} bind:value={searchQuery} />
-      <select class="native-input" bind:value={roomFilter}>
-        <option value="">{$_('chores.page.allRooms')}</option>
-        {#each allRooms as room}
-          <option value={room.id}>{room.label}</option>
-        {/each}
-      </select>
-      <select class="native-input" bind:value={scheduleFilter}>
-        <option value="">{$_('chores.page.allSchedules')}</option>
-        <option value="daily">{$_('chores.schedule.daily')}</option>
-        <option value="weekly">{$_('chores.schedule.weekly')}</option>
-        <option value="monthly">{$_('chores.schedule.monthly')}</option>
-        <option value="nth_weekday">{$_('chores.schedule.nthWeekday')}</option>
-        <option value="yearly">{$_('chores.schedule.yearly')}</option>
-        <option value="adaptive">{$_('chores.schedule.adaptive')}</option>
-      </select>
+      <FilterButton active={filtersActive} title={$_('common.filters')} onclick={() => { filterModalOpen = true; }} />
       <div class="filter-toggle">
         <button class="toggle-btn" class:active={dueFilter === "all"} title={$_('chores.page.allChores')} onclick={() => { dueFilter = "all"; }}>☰</button>
         <button class="toggle-btn" class:active={dueFilter === "attention"} title={$_('chores.page.needsAttentionTitle')} onclick={() => { dueFilter = "attention"; }}>⚠</button>
       </div>
-      <Button onclick={() => onnewchore?.()}>＋ {$_('chores.page.addChore')}</Button>
+      <Button iconOnly title={$_('chores.page.addChore')} onclick={() => onnewchore?.()}>＋</Button>
     </div>
+
+    <Modal open={filterModalOpen} title={$_('common.filters')} onclose={() => { filterModalOpen = false; }} width="360px">
+      <div class="filter-modal-body">
+        <select class="native-input" bind:value={roomFilter}>
+          <option value="">{$_('chores.page.allRooms')}</option>
+          {#each allRooms as room}
+            <option value={room.id}>{room.label}</option>
+          {/each}
+        </select>
+        <select class="native-input" bind:value={scheduleFilter}>
+          <option value="">{$_('chores.page.allSchedules')}</option>
+          <option value="daily">{$_('chores.schedule.daily')}</option>
+          <option value="weekly">{$_('chores.schedule.weekly')}</option>
+          <option value="monthly">{$_('chores.schedule.monthly')}</option>
+          <option value="nth_weekday">{$_('chores.schedule.nthWeekday')}</option>
+          <option value="yearly">{$_('chores.schedule.yearly')}</option>
+          <option value="adaptive">{$_('chores.schedule.adaptive')}</option>
+        </select>
+      </div>
+    </Modal>
 
     <div class="table-wrapper">
       {#snippet expandCell(chore: Chore)}
@@ -356,7 +368,8 @@
   .empty-charts p { margin: 0; font-size: 13px; }
 
   .chart-card-wrap { display: flex; gap: var(--space-3); align-items: stretch; padding: var(--space-4); flex-shrink: 0; }
-  .chart-card-wrap > :global(.ui-stat-tile) { flex: 0 0 140px; }
+  .stat-tiles { display: flex; gap: var(--space-3); flex-shrink: 0; }
+  .stat-tiles :global(.ui-stat-tile) { flex: 0 0 140px; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
@@ -364,9 +377,13 @@
 
   .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
 
+  .filter-modal-body { display: flex; flex-direction: column; gap: var(--space-3); }
+  .filter-modal-body .native-input { width: 100%; }
+
   @media (max-width: 700px) {
     .chart-card-wrap { flex-direction: column; }
-    .chart-card-wrap > :global(.ui-stat-tile) { flex: 0 0 auto; }
+    .stat-tiles { flex-wrap: wrap; }
+    .stat-tiles :global(.ui-stat-tile) { flex: 1 1 90px; }
     .page { overflow-y: auto; }
     .table-card-wrap { flex: none; min-height: auto; }
     .table-card-wrap :global(.ui-card) { flex: none !important; width: 100%; overflow: visible !important; min-height: auto !important; }
