@@ -13,6 +13,8 @@
   import StatTileRow from "./ui/StatTileRow.svelte";
   import DonutChart from "./DonutChart.svelte";
   import { assignCategoryColors } from "../colorAssignment";
+  import Modal from "./ui/Modal.svelte";
+  import FilterButton from "./ui/FilterButton.svelte";
 
   type InvStore = ReturnType<typeof createInventoryStore>;
   type HouseStore = ReturnType<typeof createHouseStore>;
@@ -56,6 +58,10 @@
   let categoryFilter = $state("");
   let ownerFilter = $state("");
   let storeFilter = $state("");
+  let filterModalOpen = $state(false);
+  const filtersActive = $derived(
+    roomFilter !== "" || categoryFilter !== "" || ownerFilter !== "" || storeFilter !== ""
+  );
 
   $effect(() => {
     if (selectedItemId) {
@@ -203,32 +209,38 @@
     <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
     <div class="toolbar">
       <Input bind:value={searchQuery} placeholder={$_('inventory.page.searchItems')} />
-      <select class="native-input" bind:value={roomFilter}>
-        <option value="">{$_('chores.page.allRooms')}</option>
-        {#each allRooms as room}
-          <option value={room.id}>{room.label}</option>
-        {/each}
-      </select>
-      <select class="native-input" bind:value={categoryFilter}>
-        <option value="">{$_('costs.page.allCategories')}</option>
-        {#each allCategories as id}
-          <option value={id}>{categoryName(id)}</option>
-        {/each}
-      </select>
-      <select class="native-input" bind:value={ownerFilter}>
-        <option value="">{$_('inventory.page.allOwners')}</option>
-        {#each allOwnerIds as id}
-          <option value={id}>{ownerName(id)}</option>
-        {/each}
-      </select>
-      <select class="native-input" bind:value={storeFilter}>
-        <option value="">{$_('inventory.page.allStores')}</option>
-        {#each allStoreIds as id}
-          <option value={id}>{storeName(id)}</option>
-        {/each}
-      </select>
-      <Button onclick={() => { modalItem = "create"; }}>＋ {$_('inventory.page.addItem')}</Button>
+      <FilterButton active={filtersActive} title={$_('common.filters')} onclick={() => { filterModalOpen = true; }} />
+      <Button iconOnly title={$_('inventory.page.addItem')} onclick={() => { modalItem = "create"; }}>＋</Button>
     </div>
+
+    <Modal open={filterModalOpen} title={$_('common.filters')} onclose={() => { filterModalOpen = false; }} width="360px">
+      <div class="filter-modal-body">
+        <select class="native-input" bind:value={roomFilter}>
+          <option value="">{$_('chores.page.allRooms')}</option>
+          {#each allRooms as room}
+            <option value={room.id}>{room.label}</option>
+          {/each}
+        </select>
+        <select class="native-input" bind:value={categoryFilter}>
+          <option value="">{$_('costs.page.allCategories')}</option>
+          {#each allCategories as id}
+            <option value={id}>{categoryName(id)}</option>
+          {/each}
+        </select>
+        <select class="native-input" bind:value={ownerFilter}>
+          <option value="">{$_('inventory.page.allOwners')}</option>
+          {#each allOwnerIds as id}
+            <option value={id}>{ownerName(id)}</option>
+          {/each}
+        </select>
+        <select class="native-input" bind:value={storeFilter}>
+          <option value="">{$_('inventory.page.allStores')}</option>
+          {#each allStoreIds as id}
+            <option value={id}>{storeName(id)}</option>
+          {/each}
+        </select>
+      </div>
+    </Modal>
 
     <div class="table-wrapper">
       {#snippet emojiCell(item: InventoryItem)}
@@ -350,6 +362,9 @@
     font-family: var(--font-sans); box-sizing: border-box; cursor: pointer;
   }
   .native-input:focus { outline: none; border-color: var(--accent); }
+
+  .filter-modal-body { display: flex; flex-direction: column; gap: var(--space-3); }
+  .filter-modal-body .native-input { width: 100%; }
 
   .table-wrapper { flex: 1; overflow-y: auto; }
   :global(.emoji-cell) { font-size: 16px; width: 32px; text-align: center; }
