@@ -11,6 +11,8 @@
   import Card from "./ui/Card.svelte";
   import StatTile from "./ui/StatTile.svelte";
   import StatTileRow from "./ui/StatTileRow.svelte";
+  import Modal from "./ui/Modal.svelte";
+  import FilterButton from "./ui/FilterButton.svelte";
 
   type ContactsStore = ReturnType<typeof createContactsStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -24,6 +26,8 @@
   let modalContact = $state<Contact | "create" | null>(null);
   let searchQuery = $state("");
   let typeFilter = $state("");
+  let filterModalOpen = $state(false);
+  const filtersActive = $derived(typeFilter !== "");
 
   const typeMap = $derived(new Map(settingsStore.contactTypes.map(t => [t.id, t])));
 
@@ -64,14 +68,20 @@
     <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
     <div class="toolbar">
       <Input placeholder={$_('chores.page.search')} bind:value={searchQuery} />
-      <select class="native-input filter-sel" bind:value={typeFilter}>
-        <option value="">{$_('contacts.page.allTypes')}</option>
-        {#each settingsStore.contactTypes as t}
-          <option value={t.id}>{t.name}</option>
-        {/each}
-      </select>
-      <Button onclick={() => { modalContact = "create"; }}>＋ {$_('contacts.page.addContact')}</Button>
+      <FilterButton active={filtersActive} title={$_('common.filters')} onclick={() => { filterModalOpen = true; }} />
+      <Button iconOnly title={$_('contacts.page.addContact')} onclick={() => { modalContact = "create"; }}>＋</Button>
     </div>
+
+    <Modal open={filterModalOpen} title={$_('common.filters')} onclose={() => { filterModalOpen = false; }} width="360px">
+      <div class="filter-modal-body">
+        <select class="native-input filter-sel" bind:value={typeFilter}>
+          <option value="">{$_('contacts.page.allTypes')}</option>
+          {#each settingsStore.contactTypes as t}
+            <option value={t.id}>{t.name}</option>
+          {/each}
+        </select>
+      </div>
+    </Modal>
 
     <div class="table-wrapper">
       {#snippet nameCell(c: Contact)}
@@ -143,6 +153,8 @@
   }
   .native-input:focus { outline: none; border-color: var(--accent); }
   .filter-sel { cursor: pointer; }
+  .filter-modal-body { display: flex; flex-direction: column; gap: var(--space-3); }
+  .filter-modal-body .native-input { width: 100%; }
   .table-wrapper { flex: 1; overflow-y: auto; }
   :global(.name-cell) { color: var(--text); font-weight: 600; }
   .desc { font-size: 11px; color: var(--text-faint); font-weight: 400; margin-left: 6px; }
