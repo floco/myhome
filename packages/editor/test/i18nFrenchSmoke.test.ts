@@ -22,7 +22,7 @@ describe("French locale smoke test", () => {
     (target.querySelector(".done-btn") as HTMLButtonElement).click();
     flushSync();
 
-    const input = target.querySelector(".note-input") as HTMLInputElement;
+    const input = document.querySelector(".ui-modal .ui-input") as HTMLInputElement;
     expect(input.placeholder).toBe("Remarque (facultatif)");
 
     unmount(comp);

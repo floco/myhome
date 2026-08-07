@@ -212,7 +212,7 @@ describe("ChoresPage — mark-all-done backdating", () => {
 
     expect(target.querySelector(".dp-text")).not.toBeNull();
 
-    (target.querySelector(".confirm-btn") as HTMLButtonElement).click();
+    (target.querySelector(".ui-modal-footer .ui-button-primary") as HTMLButtonElement).click();
     await Promise.resolve();
     flushSync();
 
@@ -239,7 +239,7 @@ describe("ChoresPage — mark-all-done backdating", () => {
     firstOfMonth.click();
     flushSync();
 
-    (target.querySelector(".confirm-btn") as HTMLButtonElement).click();
+    (target.querySelector(".ui-modal-footer .ui-button-primary") as HTMLButtonElement).click();
     await Promise.resolve();
     flushSync();
 
@@ -274,7 +274,7 @@ describe("ChoresPage — mark-all-done backdating", () => {
     firstOfMonth.click();
     flushSync();
 
-    (target.querySelector(".assign-row .confirm-btn") as HTMLButtonElement).click();
+    (target.querySelector(".ui-modal-footer .ui-button-primary") as HTMLButtonElement).click();
     await Promise.resolve();
     flushSync();
 

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
-  import DatePicker from "./DatePicker.svelte";
-  import { todayIso } from "../dateFormat";
+  import ChoreCompleteModal from "./ChoreCompleteModal.svelte";
 
   interface Props {
     emoji: string;
@@ -14,34 +13,16 @@
   let { emoji, name, location, dueLabel, dueColor, oncomplete }: Props = $props();
 
   let completing = $state(false);
-  let notes = $state("");
-  let completedOn = $state("");
 
   function start(e: Event): void {
     e.stopPropagation();
     completing = true;
-    notes = "";
-    completedOn = todayIso();
   }
 
-  function confirm(e: Event): void {
-    e.stopPropagation();
+  function confirm(notes: string, completedOn?: string): void {
     completing = false;
-    if (completedOn === todayIso()) {
-      oncomplete(notes);
-    } else {
-      oncomplete(notes, completedOn);
-    }
-  }
-
-  function cancel(e: Event): void {
-    e.stopPropagation();
-    completing = false;
-  }
-
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === "Enter") confirm(e);
-    if (e.key === "Escape") cancel(e);
+    if (completedOn) oncomplete(notes, completedOn);
+    else oncomplete(notes);
   }
 </script>
 
@@ -50,23 +31,16 @@
   <span class="name">{name}</span>
   {#if location}<span class="location">{location}</span>{/if}
   <span class="due" style="color:{dueColor}">{dueLabel}</span>
-  {#if completing}
-    <input
-      class="note-input"
-      bind:value={notes}
-      placeholder={$_('chores.row.notePlaceholder')}
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={handleKeydown}
-    />
-    <div class="date-field" onclick={(e) => e.stopPropagation()}>
-      <DatePicker bind:value={completedOn} max={todayIso()} compact />
-    </div>
-    <button class="done-btn confirm" onclick={confirm}>✓</button>
-    <button class="cancel-btn" onclick={cancel}>✕</button>
-  {:else}
-    <button class="done-btn" onclick={start} title={$_('chores.row.markDone')}>✓</button>
-  {/if}
+  <button class="done-btn" onclick={start} title={$_('chores.row.markDone')}>✓</button>
 </div>
+
+{#if completing}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div onclick={(e) => e.stopPropagation()}>
+    <ChoreCompleteModal title={`${emoji} ${name}`} onclose={() => { completing = false; }} onconfirm={confirm} />
+  </div>
+{/if}
 
 <style>
   .chore-row {
@@ -81,13 +55,6 @@
   .location { flex: 2; min-width: 80px; color: var(--text-muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .due { flex: 1; min-width: 70px; font-size: 12px; text-align: right; white-space: nowrap; }
 
-  .note-input {
-    flex: 1; min-width: 80px; max-width: 160px;
-    padding: 3px 8px; background: var(--surface-alt); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); color: var(--text); font-size: 11px;
-  }
-  .note-input:focus { outline: none; border-color: var(--accent); }
-  .date-field { flex-shrink: 0; width: 118px; }
   .done-btn {
     padding: 4px 10px; border: none; border-radius: var(--radius-sm);
     background: var(--success); color: var(--accent-contrast); cursor: pointer; font-size: 12px;
@@ -95,12 +62,6 @@
   }
   .done-btn:hover { opacity: 0.85; }
   .done-btn:disabled { opacity: 0.5; cursor: default; }
-  .cancel-btn {
-    padding: 4px 8px; border: none; border-radius: var(--radius-sm);
-    background: var(--surface-alt); color: var(--text-muted); cursor: pointer; font-size: 12px;
-    min-height: 30px; flex-shrink: 0;
-  }
-  .cancel-btn:hover { background: var(--surface-hover); }
 
   @media (max-width: 500px) {
     .chore-row { flex-wrap: wrap; gap: 6px; }

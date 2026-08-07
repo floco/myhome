@@ -366,6 +366,11 @@
       "notePlaceholder": "Note (optional)",
       "markDone": "Mark done"
     },
+    "completeModal": {
+      "completedOn": "Completed on",
+      "notes": "Notes",
+      "confirm": "Mark done"
+    },
     "schedule": {
       "monthlyOnDay": "Monthly on day {n}",
       "dayAbbrev": {

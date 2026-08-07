@@ -13,8 +13,8 @@
   import StatTile from "./ui/StatTile.svelte";
   import Modal from "./ui/Modal.svelte";
   import FilterButton from "./ui/FilterButton.svelte";
-  import { formatDate, formatDateTime, todayIso } from "../dateFormat";
-  import DatePicker from "./DatePicker.svelte";
+  import { formatDate, formatDateTime } from "../dateFormat";
+  import ChoreCompleteModal from "./ChoreCompleteModal.svelte";
 
   type ChoreStore = ReturnType<typeof createChoreStore>;
   type Assignment = ChoreStore["assignments"][number];
@@ -57,8 +57,8 @@
   }
 
   type CompletingState =
-    | { kind: "chore"; id: string; notes: string; completedOn: string }
-    | { kind: "assignment"; id: string; notes: string; completedOn: string };
+    | { kind: "chore"; id: string; title: string }
+    | { kind: "assignment"; id: string; title: string };
   let completing = $state<CompletingState | null>(null);
 
   const allRooms = $derived(floorStore.floors.flatMap((f) => f.rooms));
@@ -181,17 +181,16 @@
     return $_('chores.page.roomCount', { values: { n: assignments.length } });
   }
 
-  async function confirmComplete(): Promise<void> {
+  async function confirmComplete(notes: string, completedOn?: string): Promise<void> {
     if (!completing) return;
     const c = completing;
     completing = null;
-    const backdated = c.completedOn !== todayIso();
     if (c.kind === "chore") {
-      if (backdated) await store.completeChore(c.id, c.notes, c.completedOn);
-      else await store.completeChore(c.id, c.notes);
+      if (completedOn) await store.completeChore(c.id, notes, completedOn);
+      else await store.completeChore(c.id, notes);
     } else {
-      if (backdated) await store.completeAssignment(c.id, c.notes, c.completedOn);
-      else await store.completeAssignment(c.id, c.notes);
+      if (completedOn) await store.completeAssignment(c.id, notes, completedOn);
+      else await store.completeAssignment(c.id, notes);
     }
   }
 </script>
@@ -273,22 +272,7 @@
         {nextDue ? formatDate(nextDue) : "—"}
       {/snippet}
       {#snippet actionsCell(chore: Chore)}
-        {@const completingChore = completing?.kind === "chore" && completing.id === chore.id ? completing : null}
-        {#if completingChore}
-          <input
-            class="note-input"
-            bind:value={completingChore.notes}
-            placeholder={$_('chores.row.notePlaceholder')}
-            onkeydown={(e) => { if (e.key === "Enter") confirmComplete(); if (e.key === "Escape") completing = null; }}
-          />
-          <div class="date-field">
-            <DatePicker bind:value={completingChore.completedOn} max={todayIso()} compact />
-          </div>
-          <button class="icon-btn confirm-btn" onclick={confirmComplete}>✓</button>
-          <button class="icon-btn" onclick={() => { completing = null; }}>✕</button>
-        {:else}
-          <button class="icon-btn" title={$_('chores.page.markAllDone')} onclick={() => { completing = { kind: "chore", id: chore.id, notes: "", completedOn: todayIso() }; }}>✓</button>
-        {/if}
+        <button class="icon-btn" title={$_('chores.page.markAllDone')} onclick={() => { completing = { kind: "chore", id: chore.id, title: `${chore.emoji} ${displayName(chore)}` }; }}>✓</button>
         <button class="icon-btn" title={$_('chores.page.delayAllByWeek')} onclick={() => store.delayChore(chore.id, 7)}>⏭</button>
       {/snippet}
       {#snippet assignmentsExpanded(chore: Chore)}
@@ -296,25 +280,10 @@
         <div class="expand-body">
           {#if assignments.length > 0}
             {#each assignments as a (a.id)}
-              {@const completingAssign = completing?.kind === "assignment" && completing.id === a.id ? completing : null}
               <div class="assign-row">
                 <span class="assign-where">{a.roomId ? getRoomName(a.roomId) : `🏠 ${$_('chores.list.wholeHouse')}`}</span>
                 <span class="assign-due">{$_('chores.badgePopup.due')}: {formatDate(a.nextDueDate)}</span>
-                {#if completingAssign}
-                  <input
-                    class="note-input"
-                    bind:value={completingAssign.notes}
-                    placeholder={$_('chores.row.notePlaceholder')}
-                    onkeydown={(e) => { if (e.key === "Enter") confirmComplete(); if (e.key === "Escape") completing = null; }}
-                  />
-                  <div class="date-field">
-                    <DatePicker bind:value={completingAssign.completedOn} max={todayIso()} compact />
-                  </div>
-                  <button class="icon-btn confirm-btn" onclick={confirmComplete}>✓</button>
-                  <button class="icon-btn" onclick={() => { completing = null; }}>✕</button>
-                {:else}
-                  <button class="icon-btn" onclick={() => { completing = { kind: "assignment", id: a.id, notes: "", completedOn: todayIso() }; }}>✓</button>
-                {/if}
+                <button class="icon-btn" title={$_('chores.row.markDone')} onclick={() => { completing = { kind: "assignment", id: a.id, title: `${chore.emoji} ${displayName(chore)}` }; }}>✓</button>
                 <button class="icon-btn danger" onclick={() => store.deleteAssignment(a.id)}>✕</button>
                 <button class="icon-btn" title={$_('chores.page.delayByWeek')} onclick={() => store.delayAssignment(a.id, 7)}>⏭</button>
               </div>
@@ -355,6 +324,10 @@
 
 {#if editChore}
   <ChoreEditModal chore={editChore} {store} rooms={allRooms} onclose={() => { editChore = null; }} onplaceonmap={onplaceonmap ? (id) => { editChore = null; onplaceonmap!(id); } : undefined} />
+{/if}
+
+{#if completing}
+  <ChoreCompleteModal title={completing.title} onclose={() => { completing = null; }} onconfirm={confirmComplete} />
 {/if}
 
 <style>
@@ -423,15 +396,6 @@
   .expand-btn:hover { color: var(--text); }
   .icon-btn:hover { background: var(--surface-hover); color: var(--text); }
   .icon-btn.danger:hover { color: var(--danger); }
-  .confirm-btn { background: var(--success) !important; color: var(--accent-contrast) !important; }
-
-  .note-input {
-    padding: 4px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm);
-    background: var(--surface-alt); color: var(--text); font-size: 12px; width: 120px;
-    font-family: var(--font-sans);
-  }
-  .note-input:focus { outline: none; border-color: var(--accent); }
-  .date-field { display: inline-block; width: 118px; }
 
   .expand-body { padding: 10px 16px; display: flex; flex-direction: column; gap: 6px; }
 

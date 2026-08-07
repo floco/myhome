@@ -366,6 +366,11 @@
       "notePlaceholder": "Remarque (facultatif)",
       "markDone": "Marquer comme fait"
     },
+    "completeModal": {
+      "completedOn": "Terminé le",
+      "notes": "Remarques",
+      "confirm": "Marquer comme fait"
+    },
     "schedule": {
       "monthlyOnDay": "Mensuel le {n}",
       "dayAbbrev": {
