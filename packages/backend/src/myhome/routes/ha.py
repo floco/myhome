@@ -77,7 +77,7 @@ async def get_ha_areas() -> list[dict]:
 
 
 @router.get("/api/ha/entities")
-async def get_ha_entities(area_id: str, domain: str) -> list[dict]:
+async def get_ha_entities(area_id: str, domain: str, device_classes: str | None = None) -> list[dict]:
     if domain not in _ALLOWED_ENTITY_DOMAINS:
         raise HTTPException(status_code=400, detail="unsupported domain")
     token = os.environ.get("SUPERVISOR_TOKEN")
@@ -90,6 +90,7 @@ async def get_ha_entities(area_id: str, domain: str) -> list[dict]:
         "[{%- for e in area_entities(area_id) if e.startswith(domain + '.') -%}"
         "{%- if not loop.first -%},{%- endif -%}"
         '{"entity_id":"{{ e }}","name":"{{ (state_attr(e, \'friendly_name\') or e) '
+        "| replace('\"', '\\\\\"') }}\",\"device_class\":\"{{ (state_attr(e, 'device_class') or '') "
         "| replace('\"', '\\\\\"') }}\"}"
         "{%- endfor -%}]"
     )
@@ -102,7 +103,11 @@ async def get_ha_entities(area_id: str, domain: str) -> list[dict]:
                 timeout=5.0,
             )
             if resp.status_code == 200:
-                return json.loads(resp.text)
+                entities = json.loads(resp.text)
+                if device_classes:
+                    allowed = {d.strip() for d in device_classes.split(",") if d.strip()}
+                    entities = [e for e in entities if e.get("device_class") in allowed]
+                return [{"entity_id": e["entity_id"], "name": e["name"]} for e in entities]
     except Exception:
         pass
     return []
