@@ -10,6 +10,10 @@ function makeWindow(overrides: Partial<Opening> = {}): Opening {
   return { id: "o1", wallId: "w1", type: "window", offset: 1, width: 1, ...overrides };
 }
 
+function makeDoor(overrides: Partial<Opening> = {}): Opening {
+  return { id: "o2", wallId: "w1", type: "door", offset: 1, width: 0.9, ...overrides };
+}
+
 let target: HTMLElement;
 let app: ReturnType<typeof mount> | undefined;
 
@@ -129,5 +133,38 @@ describe("OpeningShape — window glazing symbol", () => {
     const lines = target.querySelectorAll("line.window-sym");
     expect(Number((lines[0] as SVGLineElement).getAttribute("y1"))).toBeCloseTo(297, 5);
     expect(Number((lines[1] as SVGLineElement).getAttribute("y1"))).toBeCloseTo(299, 5);
+  });
+});
+
+describe("OpeningShape — door kind rendering", () => {
+  it("renders one leaf/arc pair for hinged (default) doorKind", () => {
+    setup({ opening: makeDoor({ swing: "left-in" }) });
+    expect(target.querySelectorAll("line.door-leaf")).toHaveLength(1);
+    expect(target.querySelectorAll("path.door-arc")).toHaveLength(1);
+  });
+
+  it("renders two leaf/arc pairs for swinging (battante) doorKind", () => {
+    setup({ opening: makeDoor({ doorKind: "swinging", swing: "left-in" }) });
+    expect(target.querySelectorAll("line.door-leaf")).toHaveLength(2);
+    expect(target.querySelectorAll("path.door-arc")).toHaveLength(2);
+  });
+
+  it("renders a sliding bar with no arc for sliding doorKind", () => {
+    setup({ opening: makeDoor({ doorKind: "sliding" }) });
+    expect(target.querySelectorAll("line.door-leaf")).toHaveLength(0);
+    expect(target.querySelectorAll("path.door-arc")).toHaveLength(0);
+    expect(target.querySelectorAll("line.door-sliding")).toHaveLength(1);
+  });
+
+  it("renders hatch ticks with no arc for garage doorKind", () => {
+    setup({ opening: makeDoor({ doorKind: "garage" }) });
+    expect(target.querySelectorAll("path.door-arc")).toHaveLength(0);
+    expect(target.querySelectorAll("line.door-garage")).toHaveLength(5);
+  });
+
+  it("colors sliding and garage doors with the same strokeColor logic as hinged", () => {
+    setup({ opening: makeDoor({ doorKind: "sliding" }), selected: true });
+    const line = target.querySelector("line.door-sliding") as SVGLineElement;
+    expect(line.getAttribute("stroke")).toBe("var(--canvas-wall-selected)");
   });
 });

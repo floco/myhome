@@ -115,29 +115,61 @@
     return `${c1.x},${c1.y} ${c2.x},${c2.y} ${c3.x},${c3.y} ${c4.x},${c4.y}`;
   });
 
-  const doorData = $derived.by(() => {
-    if (opening.type !== "door") return null;
-    const from = Math.max(0, Math.min(dir.length, opening.offset));
-    const to = Math.max(from, Math.min(dir.length, opening.offset + opening.width));
-    const width = to - from;
+  const doorKind = $derived.by(() => opening.type === "door" ? (opening.doorKind ?? "hinged") : "hinged");
+
+  const hingedOrSwingingData = $derived.by(() => {
+    if (opening.type !== "door" || (doorKind !== "hinged" && doorKind !== "swinging")) return null;
+    const width = clampedTo - clampedFrom;
     if (width < 1e-9) return null;
     const swing = opening.swing ?? "left-in";
     const isLeft = swing === "left-in" || swing === "left-out";
-    const isIn = swing === "left-in" || swing === "right-in";
-    const perpX = isIn ? -dir.y : dir.y;
-    const perpY = isIn ? dir.x : -dir.x;
     const hingeWorld = isLeft ? wp1 : wp2;
     const otherWorld = isLeft ? wp2 : wp1;
-    const openEndWorld = {
-      x: hingeWorld.x + perpX * width,
-      y: hingeWorld.y + perpY * width,
-    };
-    const hinge = worldToScreen(hingeWorld, viewport);
     const other = worldToScreen(otherWorld, viewport);
-    const openEnd = worldToScreen(openEndWorld, viewport);
     const radius = width * viewport.zoom;
-    const sweep = chooseSweepFlag(other, openEnd, radius, hinge);
-    return { hinge, other, openEnd, radius, sweep };
+    const perpIn = { x: -dir.y, y: dir.x };
+    const perpOut = { x: dir.y, y: -dir.x };
+
+    const variant = (perp: { x: number; y: number }) => {
+      const openEndWorld = { x: hingeWorld.x + perp.x * width, y: hingeWorld.y + perp.y * width };
+      const hinge = worldToScreen(hingeWorld, viewport);
+      const openEnd = worldToScreen(openEndWorld, viewport);
+      const sweep = chooseSweepFlag(other, openEnd, radius, hinge);
+      return { hinge, other, openEnd, radius, sweep };
+    };
+
+    if (doorKind === "swinging") {
+      return { variants: [variant(perpIn), variant(perpOut)] };
+    }
+    const isIn = swing === "left-in" || swing === "right-in";
+    return { variants: [variant(isIn ? perpIn : perpOut)] };
+  });
+
+  const slidingBarData = $derived.by(() => {
+    if (opening.type !== "door" || doorKind !== "sliding" || dir.length < 1e-9) return null;
+    const perpOut = { x: dir.y, y: -dir.x };
+    const mag = (thickness / 2) * 0.5;
+    const a = { x: wp1.x + perpOut.x * mag, y: wp1.y + perpOut.y * mag };
+    const b = { x: wp2.x + perpOut.x * mag, y: wp2.y + perpOut.y * mag };
+    return { p1: worldToScreen(a, viewport), p2: worldToScreen(b, viewport) };
+  });
+
+  const garageTicksData = $derived.by(() => {
+    if (opening.type !== "door" || doorKind !== "garage" || dir.length < 1e-9) return null;
+    const tickCount = 5;
+    const halfThick = thickness / 2;
+    const perpFull = { x: -dir.y * halfThick, y: dir.x * halfThick };
+    const ticks: { p1: { x: number; y: number }; p2: { x: number; y: number } }[] = [];
+    for (let i = 0; i < tickCount; i++) {
+      const t = i / (tickCount - 1);
+      const cx = wp1.x + (wp2.x - wp1.x) * t;
+      const cy = wp1.y + (wp2.y - wp1.y) * t;
+      ticks.push({
+        p1: worldToScreen({ x: cx + perpFull.x, y: cy + perpFull.y }, viewport),
+        p2: worldToScreen({ x: cx - perpFull.x, y: cy - perpFull.y }, viewport),
+      });
+    }
+    return ticks;
   });
 
   function handleClick(event: MouseEvent): void {
@@ -188,32 +220,66 @@
     {#if shutterOverlayPoints}
       <polygon points={shutterOverlayPoints} fill="var(--canvas-shutter-fill)" class="shutter-overlay" />
     {/if}
-  {:else if opening.type === "door" && doorData}
+  {:else if opening.type === "door" && hingedOrSwingingData}
+    {#each hingedOrSwingingData.variants as v, i (i)}
+      <line
+        class="door-leaf"
+        x1={v.hinge.x}
+        y1={v.hinge.y}
+        x2={v.openEnd.x}
+        y2={v.openEnd.y}
+        stroke={strokeColor}
+        stroke-width="2"
+        onclick={handleClick}
+        role="button"
+        tabindex="0"
+      >
+        {#if sensorStatus === "unavailable"}<title>{$_('floorPlan.openingPanel.sensorUnavailable')}</title>{/if}
+      </line>
+      <path
+        class="door-arc"
+        d="M {v.other.x} {v.other.y} A {v.radius} {v.radius} 0 0 {v.sweep} {v.openEnd.x} {v.openEnd.y}"
+        fill="none"
+        stroke={strokeColor}
+        stroke-width="1"
+        stroke-dasharray="4 2"
+        onclick={handleClick}
+        role="button"
+        tabindex="0"
+      />
+    {/each}
+  {:else if opening.type === "door" && slidingBarData}
     <line
-      class="door-leaf"
-      x1={doorData.hinge.x}
-      y1={doorData.hinge.y}
-      x2={doorData.openEnd.x}
-      y2={doorData.openEnd.y}
+      class="door-sliding"
+      x1={slidingBarData.p1.x}
+      y1={slidingBarData.p1.y}
+      x2={slidingBarData.p2.x}
+      y2={slidingBarData.p2.y}
       stroke={strokeColor}
-      stroke-width="2"
+      stroke-width="4"
       onclick={handleClick}
       role="button"
       tabindex="0"
     >
       {#if sensorStatus === "unavailable"}<title>{$_('floorPlan.openingPanel.sensorUnavailable')}</title>{/if}
     </line>
-    <path
-      class="door-arc"
-      d="M {doorData.other.x} {doorData.other.y} A {doorData.radius} {doorData.radius} 0 0 {doorData.sweep} {doorData.openEnd.x} {doorData.openEnd.y}"
-      fill="none"
-      stroke={strokeColor}
-      stroke-width="1"
-      stroke-dasharray="4 2"
-      onclick={handleClick}
-      role="button"
-      tabindex="0"
-    />
+  {:else if opening.type === "door" && garageTicksData}
+    {#each garageTicksData as t, i (i)}
+      <line
+        class="door-garage"
+        x1={t.p1.x}
+        y1={t.p1.y}
+        x2={t.p2.x}
+        y2={t.p2.y}
+        stroke={strokeColor}
+        stroke-width="2"
+        onclick={handleClick}
+        role="button"
+        tabindex="0"
+      >
+        {#if i === 0 && sensorStatus === "unavailable"}<title>{$_('floorPlan.openingPanel.sensorUnavailable')}</title>{/if}
+      </line>
+    {/each}
   {/if}
 
   {#if selected}
