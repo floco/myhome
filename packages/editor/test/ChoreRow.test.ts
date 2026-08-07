@@ -42,7 +42,7 @@ describe("ChoreRow", () => {
     target.remove();
   });
 
-  it("clicking the checkmark opens a note input, then confirm calls oncomplete with the notes", () => {
+  it("clicking the checkmark opens a completion modal, then confirm calls oncomplete with the notes", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const oncomplete = vi.fn();
@@ -54,23 +54,23 @@ describe("ChoreRow", () => {
     (target.querySelector(".done-btn") as HTMLButtonElement).click();
     flushSync();
 
-    const input = target.querySelector(".note-input") as HTMLInputElement;
+    const input = document.querySelector(".ui-modal .ui-input") as HTMLInputElement;
     expect(input).not.toBeNull();
     input.value = "all done";
     input.dispatchEvent(new Event("input", { bubbles: true }));
     flushSync();
 
-    (target.querySelector(".done-btn.confirm") as HTMLButtonElement).click();
+    (document.querySelector(".ui-modal-footer .ui-button-primary") as HTMLButtonElement).click();
     flushSync();
 
     expect(oncomplete).toHaveBeenCalledWith("all done");
-    expect(target.querySelector(".note-input")).toBeNull();
+    expect(document.querySelector(".ui-modal")).toBeNull();
 
     unmount(comp);
     target.remove();
   });
 
-  it("cancel hides the note input without calling oncomplete", () => {
+  it("cancel closes the modal without calling oncomplete", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const oncomplete = vi.fn();
@@ -81,17 +81,17 @@ describe("ChoreRow", () => {
 
     (target.querySelector(".done-btn") as HTMLButtonElement).click();
     flushSync();
-    (target.querySelector(".cancel-btn") as HTMLButtonElement).click();
+    (document.querySelector(".ui-modal-footer .ui-button-secondary") as HTMLButtonElement).click();
     flushSync();
 
-    expect(target.querySelector(".note-input")).toBeNull();
+    expect(document.querySelector(".ui-modal")).toBeNull();
     expect(oncomplete).not.toHaveBeenCalled();
 
     unmount(comp);
     target.remove();
   });
 
-  it("pressing Enter in note input calls oncomplete with notes value", () => {
+  it("pressing Enter in the notes field calls oncomplete with notes value", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const oncomplete = vi.fn();
@@ -103,7 +103,7 @@ describe("ChoreRow", () => {
     (target.querySelector(".done-btn") as HTMLButtonElement).click();
     flushSync();
 
-    const input = target.querySelector(".note-input") as HTMLInputElement;
+    const input = document.querySelector(".ui-modal .ui-input") as HTMLInputElement;
     input.value = "done and dusted";
     input.dispatchEvent(new Event("input", { bubbles: true }));
     flushSync();
@@ -112,13 +112,13 @@ describe("ChoreRow", () => {
     flushSync();
 
     expect(oncomplete).toHaveBeenCalledWith("done and dusted");
-    expect(target.querySelector(".note-input")).toBeNull();
+    expect(document.querySelector(".ui-modal")).toBeNull();
 
     unmount(comp);
     target.remove();
   });
 
-  it("pressing Escape in note input hides input without calling oncomplete", () => {
+  it("pressing Escape closes the modal without calling oncomplete", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const oncomplete = vi.fn();
@@ -130,15 +130,10 @@ describe("ChoreRow", () => {
     (target.querySelector(".done-btn") as HTMLButtonElement).click();
     flushSync();
 
-    const input = target.querySelector(".note-input") as HTMLInputElement;
-    input.value = "some notes";
-    input.dispatchEvent(new Event("input", { bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     flushSync();
 
-    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-    flushSync();
-
-    expect(target.querySelector(".note-input")).toBeNull();
+    expect(document.querySelector(".ui-modal")).toBeNull();
     expect(oncomplete).not.toHaveBeenCalled();
 
     unmount(comp);
@@ -163,6 +158,26 @@ describe("ChoreRow", () => {
     target.remove();
   });
 
+  it("clicking cancel inside the modal doesn't bubble to a parent onclick", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const parentClick = vi.fn();
+    const comp = mount(ChoreRowParentWrapper, {
+      target,
+      props: { onParentClick: parentClick },
+    });
+
+    (target.querySelector(".done-btn") as HTMLButtonElement).click();
+    flushSync();
+    (document.querySelector(".ui-modal-footer .ui-button-secondary") as HTMLButtonElement).click();
+    flushSync();
+
+    expect(parentClick).not.toHaveBeenCalled();
+
+    unmount(comp);
+    target.remove();
+  });
+
   it("shows a date picker defaulting to today when marking done", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
@@ -174,7 +189,7 @@ describe("ChoreRow", () => {
     (target.querySelector(".done-btn") as HTMLButtonElement).click();
     flushSync();
 
-    const dateField = target.querySelector(".dp-text");
+    const dateField = document.querySelector(".ui-modal .dp-text");
     expect(dateField).not.toBeNull();
     expect(dateField!.textContent).not.toBe("");
 
@@ -193,7 +208,7 @@ describe("ChoreRow", () => {
 
     (target.querySelector(".done-btn") as HTMLButtonElement).click();
     flushSync();
-    (target.querySelector(".done-btn.confirm") as HTMLButtonElement).click();
+    (document.querySelector(".ui-modal-footer .ui-button-primary") as HTMLButtonElement).click();
     flushSync();
 
     expect(oncomplete).toHaveBeenCalledWith("");
@@ -215,14 +230,14 @@ describe("ChoreRow", () => {
     (target.querySelector(".done-btn") as HTMLButtonElement).click();
     flushSync();
 
-    (target.querySelector(".dp-field") as HTMLElement).click();
+    (document.querySelector(".ui-modal .dp-field") as HTMLElement).click();
     flushSync();
-    const cells = [...target.querySelectorAll(".dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
+    const cells = [...document.querySelectorAll(".ui-modal .dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
     const firstOfMonth = cells.find((c) => c.textContent === "1")!;
     firstOfMonth.click();
     flushSync();
 
-    (target.querySelector(".done-btn.confirm") as HTMLButtonElement).click();
+    (document.querySelector(".ui-modal-footer .ui-button-primary") as HTMLButtonElement).click();
     flushSync();
 
     expect(oncomplete).toHaveBeenCalledTimes(1);

@@ -74,7 +74,7 @@ describe("HomeChoresWidget", () => {
 
     (target.querySelector(".done-btn") as HTMLButtonElement).click();
     flushSync();
-    (target.querySelector(".done-btn.confirm") as HTMLButtonElement).click();
+    (target.querySelector(".ui-modal-footer .ui-button-primary") as HTMLButtonElement).click();
     flushSync();
     await tick();
 
