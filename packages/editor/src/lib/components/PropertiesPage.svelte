@@ -10,6 +10,8 @@
   import Card from "./ui/Card.svelte";
   import StatTile from "./ui/StatTile.svelte";
   import StatTileRow from "./ui/StatTileRow.svelte";
+  import Modal from "./ui/Modal.svelte";
+  import FilterButton from "./ui/FilterButton.svelte";
 
   type PropertiesStore = ReturnType<typeof createPropertiesStore>;
   type LocationsStore = ReturnType<typeof createLocationsStore>;
@@ -38,6 +40,8 @@
   let searchQuery = $state("");
   let statusFilter = $state("");
   let typeFilter = $state("");
+  let filterModalOpen = $state(false);
+  const filtersActive = $derived(statusFilter !== "" || typeFilter !== "");
 
   const locationMap = $derived(new Map(locationsStore.locations.map((l) => [l.id, l])));
 
@@ -117,22 +121,28 @@
     <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
     <div class="toolbar">
       <Input placeholder={$_('chores.page.search')} bind:value={searchQuery} />
-      <select class="native-input filter-sel" bind:value={statusFilter}>
-        <option value="">{$_('works.page.allStatuses')}</option>
-        <option value="watching">{$_('properties.status.watching')}</option>
-        <option value="visited">{$_('properties.status.visited')}</option>
-        <option value="proposal_made">{$_('properties.status.proposalMade')}</option>
-        <option value="purchased">{$_('properties.status.purchased')}</option>
-        <option value="rejected">{$_('properties.status.rejected')}</option>
-      </select>
-      <select class="native-input filter-sel" bind:value={typeFilter}>
-        <option value="">{$_('properties.page.allTypes')}</option>
-        <option value="land">{$_('properties.type.land')}</option>
-        <option value="house">{$_('properties.type.house')}</option>
-        <option value="new_build">{$_('properties.type.newBuild')}</option>
-      </select>
-      <Button onclick={() => { modalProperty = "create"; }}>＋ {$_('properties.page.addProperty')}</Button>
+      <FilterButton active={filtersActive} title={$_('common.filters')} onclick={() => { filterModalOpen = true; }} />
+      <Button iconOnly title={$_('properties.page.addProperty')} onclick={() => { modalProperty = "create"; }}>＋</Button>
     </div>
+
+    <Modal open={filterModalOpen} title={$_('common.filters')} onclose={() => { filterModalOpen = false; }} width="360px">
+      <div class="filter-modal-body">
+        <select class="native-input filter-sel" bind:value={statusFilter}>
+          <option value="">{$_('works.page.allStatuses')}</option>
+          <option value="watching">{$_('properties.status.watching')}</option>
+          <option value="visited">{$_('properties.status.visited')}</option>
+          <option value="proposal_made">{$_('properties.status.proposalMade')}</option>
+          <option value="purchased">{$_('properties.status.purchased')}</option>
+          <option value="rejected">{$_('properties.status.rejected')}</option>
+        </select>
+        <select class="native-input filter-sel" bind:value={typeFilter}>
+          <option value="">{$_('properties.page.allTypes')}</option>
+          <option value="land">{$_('properties.type.land')}</option>
+          <option value="house">{$_('properties.type.house')}</option>
+          <option value="new_build">{$_('properties.type.newBuild')}</option>
+        </select>
+      </div>
+    </Modal>
 
     <div class="table-wrapper">
       {#snippet emojiCell(p: Property)}
@@ -229,6 +239,9 @@
   }
   .native-input:focus { outline: none; border-color: var(--accent); }
   .filter-sel { cursor: pointer; }
+
+  .filter-modal-body { display: flex; flex-direction: column; gap: var(--space-3); }
+  .filter-modal-body .native-input { width: 100%; }
 
   .table-wrapper { flex: 1; overflow-y: auto; }
   :global(.emoji-cell) { font-size: 16px; width: 32px; text-align: center; }

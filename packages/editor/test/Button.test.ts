@@ -66,4 +66,16 @@ describe("ui/Button", () => {
     unmount(comp);
     target.remove();
   });
+
+  it("applies icon-only sizing when iconOnly is set", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(Button, { target, props: { iconOnly: true } });
+
+    const btn = target.querySelector("button")!;
+    expect(btn.classList.contains("ui-button-icon")).toBe(true);
+
+    unmount(comp);
+    target.remove();
+  });
 });

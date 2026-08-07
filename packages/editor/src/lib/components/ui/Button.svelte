@@ -7,12 +7,20 @@
     onclick?: () => void;
     disabled?: boolean;
     title?: string;
+    iconOnly?: boolean;
     children?: Snippet;
   }
-  let { variant = "primary", onclick, disabled = false, title, children }: Props = $props();
+  let { variant = "primary", onclick, disabled = false, title, iconOnly = false, children }: Props = $props();
 </script>
 
-<button type="button" class="ui-button ui-button-{variant}" {disabled} {title} {onclick}>
+<button
+  type="button"
+  class="ui-button ui-button-{variant}"
+  class:ui-button-icon={iconOnly}
+  {disabled}
+  {title}
+  {onclick}
+>
   {@render children?.()}
 </button>
 
@@ -25,6 +33,13 @@
     display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   }
   .ui-button:disabled { opacity: 0.5; cursor: default; }
+
+  .ui-button-icon {
+    padding: 0;
+    width: 36px; height: 36px; min-width: 36px;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
 
   .ui-button-primary { background: var(--accent); color: var(--accent-contrast); }
   .ui-button-primary:hover:not(:disabled) { opacity: 0.85; }

@@ -78,7 +78,7 @@ describe("InsurancePage — add policy", () => {
     });
     flushSync();
 
-    const addButton = Array.from(target.querySelectorAll("button")).find((b) => b.textContent?.includes("Add policy"));
+    const addButton = target.querySelector('button[title="Add policy"]');
     addButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     flushSync();
 

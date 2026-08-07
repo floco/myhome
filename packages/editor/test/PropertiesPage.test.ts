@@ -57,6 +57,9 @@ describe("PropertiesPage — filters", () => {
     const comp = mount(PropertiesPage, { target, props: { store, locationsStore: makeLocationsStore() } });
     flushSync();
 
+    (target.querySelector('button[aria-label="Filters"]') as HTMLButtonElement).click();
+    flushSync();
+
     const statusSelect = target.querySelectorAll("select.filter-sel")[0] as HTMLSelectElement;
     statusSelect.value = "purchased";
     statusSelect.dispatchEvent(new Event("change", { bubbles: true }));
@@ -78,7 +81,7 @@ describe("PropertiesPage — add property", () => {
     const comp = mount(PropertiesPage, { target, props: { store, locationsStore: makeLocationsStore() } });
     flushSync();
 
-    const addBtn = Array.from(target.querySelectorAll("button")).find((b) => b.textContent?.includes("Add property"))!;
+    const addBtn = target.querySelector('button[title="Add property"]') as HTMLButtonElement;
     addBtn.click();
     flushSync();
 

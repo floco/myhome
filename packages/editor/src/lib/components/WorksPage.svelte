@@ -10,8 +10,9 @@
   import type { Column } from "./ui/SortableTable.types";
   import Card from "./ui/Card.svelte";
   import StatTile from "./ui/StatTile.svelte";
-  import StatTileRow from "./ui/StatTileRow.svelte";
   import WorksTimeline from "./WorksTimeline.svelte";
+  import Modal from "./ui/Modal.svelte";
+  import FilterButton from "./ui/FilterButton.svelte";
 
   type WorksStore = ReturnType<typeof createWorksStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -43,6 +44,8 @@
   let searchQuery = $state("");
   let statusFilter = $state("");
   let categoryFilter = $state("");
+  let filterModalOpen = $state(false);
+  const filtersActive = $derived(statusFilter !== "" || categoryFilter !== "");
 
   const categoryMap = $derived(
     new Map(settingsStore.workCategories.map(c => [c.id, c]))
@@ -105,14 +108,12 @@
         <div class="chart-label">{$_('works.page.houseTimeline')}</div>
         <WorksTimeline works={store.works} onworkclick={handleTimelineClick} />
       </Card>
-      <StatTileRow direction="column">
+      <div class="stat-tiles">
         <StatTile label={$_('works.status.planned')} value={plannedCount} />
         <StatTile label={$_('works.status.inProgress')} value={inProgressCount} />
-      </StatTileRow>
-      <StatTileRow direction="column">
         <StatTile label={$_('works.status.done')} value={doneCount} />
         <StatTile label={$_('works.page.totalCost')} value={`${fmt(allTimeCost)} €`} />
-      </StatTileRow>
+      </div>
     </div>
   {/if}
 
@@ -120,20 +121,26 @@
     <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
     <div class="toolbar">
       <Input placeholder={$_('chores.page.search')} bind:value={searchQuery} />
-      <select class="native-input filter-sel" bind:value={statusFilter}>
-        <option value="">{$_('works.page.allStatuses')}</option>
-        <option value="planned">{$_('works.status.planned')}</option>
-        <option value="in_progress">{$_('works.status.inProgress')}</option>
-        <option value="done">{$_('works.status.done')}</option>
-      </select>
-      <select class="native-input filter-sel" bind:value={categoryFilter}>
-        <option value="">{$_('costs.page.allCategories')}</option>
-        {#each settingsStore.workCategories as cat}
-          <option value={cat.id}>{cat.emoji} {cat.name}</option>
-        {/each}
-      </select>
-      <Button onclick={() => { modalWork = "create"; }}>＋ {$_('works.page.addWork')}</Button>
+      <FilterButton active={filtersActive} title={$_('common.filters')} onclick={() => { filterModalOpen = true; }} />
+      <Button iconOnly title={$_('works.page.addWork')} onclick={() => { modalWork = "create"; }}>＋</Button>
     </div>
+
+    <Modal open={filterModalOpen} title={$_('common.filters')} onclose={() => { filterModalOpen = false; }} width="360px">
+      <div class="filter-modal-body">
+        <select class="native-input filter-sel" bind:value={statusFilter}>
+          <option value="">{$_('works.page.allStatuses')}</option>
+          <option value="planned">{$_('works.status.planned')}</option>
+          <option value="in_progress">{$_('works.status.inProgress')}</option>
+          <option value="done">{$_('works.status.done')}</option>
+        </select>
+        <select class="native-input filter-sel" bind:value={categoryFilter}>
+          <option value="">{$_('costs.page.allCategories')}</option>
+          {#each settingsStore.workCategories as cat}
+            <option value={cat.id}>{cat.emoji} {cat.name}</option>
+          {/each}
+        </select>
+      </div>
+    </Modal>
 
     <div class="table-wrapper">
       {#snippet emojiCell(work: Work)}
@@ -207,7 +214,8 @@
   .empty-charts p { margin: 0; font-size: 13px; }
 
   .chart-card-wrap { display: flex; gap: var(--space-3); align-items: stretch; padding: var(--space-4); flex-shrink: 0; }
-  .chart-card-wrap :global(.ui-stat-row.column) :global(.ui-card) { flex: 1; }
+  .stat-tiles { display: flex; flex-direction: column; gap: var(--space-3); flex-shrink: 0; width: 200px; }
+  .stat-tiles :global(.ui-card) { flex: 1; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
@@ -215,9 +223,13 @@
 
   .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
 
+  .filter-modal-body { display: flex; flex-direction: column; gap: var(--space-3); }
+  .filter-modal-body .native-input { width: 100%; }
+
   @media (max-width: 700px) {
     .chart-card-wrap { flex-direction: column; }
-    .chart-card-wrap :global(.ui-stat-row.column) { width: auto; }
+    .stat-tiles { flex-direction: row; flex-wrap: wrap; width: auto; }
+    .stat-tiles :global(.ui-stat-tile) { flex: 1 1 90px; }
     .page { overflow-y: auto; }
     .table-card-wrap { flex: none; min-height: auto; }
     .table-card-wrap :global(.ui-card) { flex: none !important; width: 100%; overflow: visible !important; min-height: auto !important; }

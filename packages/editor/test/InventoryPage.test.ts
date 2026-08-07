@@ -115,6 +115,8 @@ describe("InventoryPage — owner/store filters and columns", () => {
       },
     });
     flushSync();
+    (target.querySelector('button[aria-label="Filters"]') as HTMLButtonElement).click();
+    flushSync();
     expect(target.textContent).toContain("Alice");
     expect(target.textContent).toContain("Bob");
     const ownerSelects = Array.from(target.querySelectorAll("select")).filter((s) =>

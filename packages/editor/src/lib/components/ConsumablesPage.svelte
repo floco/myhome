@@ -11,6 +11,8 @@
   import Card from "./ui/Card.svelte";
   import HorizontalBarChart from "./HorizontalBarChart.svelte";
   import StatTile from "./ui/StatTile.svelte";
+  import Modal from "./ui/Modal.svelte";
+  import FilterButton from "./ui/FilterButton.svelte";
 
   type ConsumableStore = ReturnType<typeof createConsumableStore>;
   type SettingsStore = Pick<ReturnType<typeof createSettingsStore>, "consumableCategories" | "consumableUnits">;
@@ -30,6 +32,8 @@
   let attentionFilter = $state(false);
   let editConsumable = $state<Consumable | null>(null);
   let showCreate = $state(false);
+  let filterModalOpen = $state(false);
+  const filtersActive = $derived(categoryFilter !== "");
 
   $effect(() => {
     if (selectedItemId) {
@@ -118,8 +122,10 @@
         <div class="chart-label">{$_('consumables.page.stockStatus', { values: { n: store.consumables.length } })}</div>
         <HorizontalBarChart segments={stockBreakdown} />
       </Card>
-      <StatTile label={$_('consumables.page.low')} value={lowStockCount} variant="warning" />
-      <StatTile label={$_('consumables.page.empty')} value={emptyStockCount} variant="danger" />
+      <div class="stat-tiles">
+        <StatTile label={$_('consumables.page.low')} value={lowStockCount} variant="warning" />
+        <StatTile label={$_('consumables.page.empty')} value={emptyStockCount} variant="danger" />
+      </div>
     </div>
   {/if}
 
@@ -127,12 +133,7 @@
     <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
     <div class="toolbar">
       <Input placeholder={$_('chores.page.search')} bind:value={searchQuery} />
-      <select class="native-select" bind:value={categoryFilter}>
-        <option value="">{$_('costs.page.allCategories')}</option>
-        {#each settingsStore.consumableCategories as cat}
-          <option value={cat.id}>{cat.emoji} {cat.name}</option>
-        {/each}
-      </select>
+      <FilterButton active={filtersActive} title={$_('common.filters')} onclick={() => { filterModalOpen = true; }} />
       <div class="filter-toggle">
         <button
           class="toggle-btn"
@@ -147,8 +148,19 @@
           title={$_('chores.page.needsAttentionTitle')}
         >⚠</button>
       </div>
-      <Button onclick={() => { showCreate = true; }}>＋ {$_('consumables.page.addConsumable')}</Button>
+      <Button iconOnly title={$_('consumables.page.addConsumable')} onclick={() => { showCreate = true; }}>＋</Button>
     </div>
+
+    <Modal open={filterModalOpen} title={$_('common.filters')} onclose={() => { filterModalOpen = false; }} width="360px">
+      <div class="filter-modal-body">
+        <select class="native-select" bind:value={categoryFilter}>
+          <option value="">{$_('costs.page.allCategories')}</option>
+          {#each settingsStore.consumableCategories as cat}
+            <option value={cat.id}>{cat.emoji} {cat.name}</option>
+          {/each}
+        </select>
+      </div>
+    </Modal>
 
     <div class="table-wrapper">
       {#snippet emojiCell(c: Consumable)}
@@ -236,7 +248,8 @@
   .empty-charts p { margin: 0; font-size: 13px; }
 
   .chart-card-wrap { display: flex; gap: var(--space-3); align-items: stretch; padding: var(--space-4); flex-shrink: 0; }
-  .chart-card-wrap > :global(.ui-stat-tile) { flex: 0 0 140px; }
+  .stat-tiles { display: flex; gap: var(--space-3); flex-shrink: 0; }
+  .stat-tiles :global(.ui-stat-tile) { flex: 0 0 140px; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
@@ -244,9 +257,13 @@
 
   .table-card-wrap { flex: 1; min-height: 0; display: flex; padding: 0 var(--space-4) var(--space-4); }
 
+  .filter-modal-body { display: flex; flex-direction: column; gap: var(--space-3); }
+  .filter-modal-body .native-select { width: 100%; }
+
   @media (max-width: 700px) {
     .chart-card-wrap { flex-direction: column; }
-    .chart-card-wrap > :global(.ui-stat-tile) { flex: 0 0 auto; }
+    .stat-tiles { flex-wrap: wrap; }
+    .stat-tiles :global(.ui-stat-tile) { flex: 1 1 90px; }
     .page { overflow-y: auto; }
     .table-card-wrap { flex: none; min-height: auto; }
     .table-card-wrap :global(.ui-card) { flex: none !important; width: 100%; overflow: visible !important; min-height: auto !important; }
