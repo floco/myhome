@@ -169,7 +169,7 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
 
   function updateOpening(
     id: string,
-    patch: Partial<Pick<Opening, "offset" | "width" | "swing" | "haEntityId" | "hasShutter" | "shutterEntityId">>,
+    patch: Partial<Pick<Opening, "offset" | "width" | "swing" | "haEntityId" | "hasShutter" | "shutterEntityId" | "doorKind" | "windowSide">>,
     opts?: { skipHistory?: boolean }
   ): void {
     const opening = currentFloor().openings.find((o) => o.id === id);
@@ -182,6 +182,8 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
     if (patch.haEntityId !== undefined) opening.haEntityId = patch.haEntityId;
     if (patch.hasShutter !== undefined) opening.hasShutter = patch.hasShutter;
     if (patch.shutterEntityId !== undefined) opening.shutterEntityId = patch.shutterEntityId;
+    if (patch.doorKind !== undefined) opening.doorKind = patch.doorKind;
+    if (patch.windowSide !== undefined) opening.windowSide = patch.windowSide;
   }
 
   function updateRoom(id: string, patch: Partial<Pick<Room, "label" | "haAreaId">>): void {
