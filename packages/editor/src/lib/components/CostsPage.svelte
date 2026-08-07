@@ -14,6 +14,8 @@
   import DonutChart from "./DonutChart.svelte";
   import SortableTable from "./ui/SortableTable.svelte";
   import type { Column } from "./ui/SortableTable.types";
+  import Modal from "./ui/Modal.svelte";
+  import FilterButton from "./ui/FilterButton.svelte";
 
   type CostsStore = ReturnType<typeof createCostsStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -48,6 +50,8 @@
   let searchQuery = $state("");
   let categoryFilter = $state("");
   let yearFilter = $state("");
+  let filterModalOpen = $state(false);
+  const filtersActive = $derived(categoryFilter !== "" || yearFilter !== "");
 
   const categoryMap = $derived(
     new Map(settingsStore.costCategories.map(c => [c.id, c]))
@@ -246,20 +250,26 @@
     <!-- Toolbar -->
     <div class="toolbar">
       <Input bind:value={searchQuery} placeholder={$_('costs.page.searchEntries')} />
-      <select class="native-input" bind:value={categoryFilter}>
-        <option value="">{$_('costs.page.allCategories')}</option>
-        {#each settingsStore.costCategories as cat}
-          <option value={cat.id}>{cat.emoji} {cat.name}</option>
-        {/each}
-      </select>
-      <select class="native-input" bind:value={yearFilter}>
-        <option value="">{$_('costs.page.allYears')}</option>
-        {#each allYears as y}
-          <option value={String(y)}>{y}</option>
-        {/each}
-      </select>
-      <Button onclick={() => { modalEntry = "create"; }}>＋ {$_('costs.page.addEntry')}</Button>
+      <FilterButton active={filtersActive} title={$_('common.filters')} onclick={() => { filterModalOpen = true; }} />
+      <Button iconOnly title={$_('costs.page.addEntry')} onclick={() => { modalEntry = "create"; }}>＋</Button>
     </div>
+
+    <Modal open={filterModalOpen} title={$_('common.filters')} onclose={() => { filterModalOpen = false; }} width="360px">
+      <div class="filter-modal-body">
+        <select class="native-input" bind:value={categoryFilter}>
+          <option value="">{$_('costs.page.allCategories')}</option>
+          {#each settingsStore.costCategories as cat}
+            <option value={cat.id}>{cat.emoji} {cat.name}</option>
+          {/each}
+        </select>
+        <select class="native-input" bind:value={yearFilter}>
+          <option value="">{$_('costs.page.allYears')}</option>
+          {#each allYears as y}
+            <option value={String(y)}>{y}</option>
+          {/each}
+        </select>
+      </div>
+    </Modal>
 
     <div class="table-wrapper">
     {#snippet emojiCell(entry: CostEntry)}
@@ -415,6 +425,9 @@
     font-family: var(--font-sans); box-sizing: border-box; cursor: pointer;
   }
   .native-input:focus { outline: none; border-color: var(--accent); }
+
+  .filter-modal-body { display: flex; flex-direction: column; gap: var(--space-3); }
+  .filter-modal-body .native-input { width: 100%; }
 
   .table-wrapper { flex: 1; overflow-y: auto; }
   :global(.num-col) { text-align: right; }
