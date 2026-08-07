@@ -42,6 +42,24 @@ describe("OpeningPanel — sensor picker", () => {
     expect((fetch as ReturnType<typeof vi.fn>).mock.calls[0][0]).toContain("domain=binary_sensor");
   });
 
+  it("scopes the sensor fetch to device_class=window for a window opening", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] });
+    vi.stubGlobal("fetch", fetchMock);
+    setup({ opening: makeWindow() });
+    await new Promise((r) => setTimeout(r, 0));
+    const url = new URL((fetchMock.mock.calls[0][0] as string), "http://x");
+    expect(url.searchParams.get("device_classes")).toBe("window");
+  });
+
+  it("scopes the sensor fetch to device_class=door,garage_door for a door opening", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] });
+    vi.stubGlobal("fetch", fetchMock);
+    setup({ opening: makeDoor() });
+    await new Promise((r) => setTimeout(r, 0));
+    const url = new URL((fetchMock.mock.calls[0][0] as string), "http://x");
+    expect(url.searchParams.get("device_classes")).toBe("door,garage_door");
+  });
+
   it("shows a hint and disables pickers when there is no linked area", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
     setup({ areaIds: [] });

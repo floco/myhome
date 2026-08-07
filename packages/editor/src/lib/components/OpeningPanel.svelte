@@ -22,14 +22,16 @@
   let coverEntities = $state<HaEntity[]>([]);
   let controlInFlight = $state(false);
 
-  async function fetchEntities(domain: string): Promise<HaEntity[]> {
+  async function fetchEntities(domain: string, deviceClasses?: string): Promise<HaEntity[]> {
     if (areaIds.length === 0) return [];
     const lists = await Promise.all(
-      areaIds.map((areaId) =>
-        fetch(`/api/ha/entities?area_id=${encodeURIComponent(areaId)}&domain=${domain}`)
+      areaIds.map((areaId) => {
+        const params = new URLSearchParams({ area_id: areaId, domain });
+        if (deviceClasses) params.set("device_classes", deviceClasses);
+        return fetch(`/api/ha/entities?${params.toString()}`)
           .then((r) => (r.ok ? r.json() : []))
-          .catch(() => [] as HaEntity[])
-      )
+          .catch(() => [] as HaEntity[]);
+      })
     );
     const byId = new Map<string, HaEntity>();
     for (const list of lists as HaEntity[][]) for (const e of list) byId.set(e.entity_id, e);
@@ -37,7 +39,8 @@
   }
 
   $effect(() => {
-    fetchEntities("binary_sensor").then((list) => { sensorEntities = list; });
+    const deviceClasses = opening.type === "window" ? "window" : "door,garage_door";
+    fetchEntities("binary_sensor", deviceClasses).then((list) => { sensorEntities = list; });
   });
 
   $effect(() => {
