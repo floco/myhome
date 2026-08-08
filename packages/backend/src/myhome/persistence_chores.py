@@ -44,7 +44,7 @@ def load_chores(home_id: str) -> ChoreDocument:
         Assignment(
             id=r["id"], choreId=r["chore_id"], roomId=r["room_id"],
             position=Position(x=r["position_x"], y=r["position_y"]) if r["position_x"] is not None else None,
-            nextDueDate=r["next_due_date"],
+            nextDueDate=r["next_due_date"], label=r["label"],
         )
         for r in assignment_rows
     ]
@@ -96,7 +96,7 @@ def save_chores(home_id: str, doc: ChoreDocument) -> None:
                     "id": a.id, "home_id": home_id, "order_index": i, "chore_id": a.choreId, "room_id": a.roomId,
                     "position_x": a.position.x if a.position else None,
                     "position_y": a.position.y if a.position else None,
-                    "next_due_date": a.nextDueDate,
+                    "next_due_date": a.nextDueDate, "label": a.label,
                 }
                 for i, a in enumerate(doc.assignments)
             ])

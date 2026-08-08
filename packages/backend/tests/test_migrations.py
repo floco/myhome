@@ -102,6 +102,13 @@ def _create_legacy_category_tables(conn) -> None:
         "notes VARCHAR NOT NULL, attachments TEXT NOT NULL, placement_floor_id VARCHAR, "
         "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
     ))
+    # chore_assignments pre-dates migration 8 (which adds the label column),
+    # so every migration test's snapshot needs it in this old shape too.
+    conn.execute(text(
+        "CREATE TABLE chore_assignments (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+        "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, room_id VARCHAR, "
+        "position_x FLOAT, position_y FLOAT, next_due_date VARCHAR NOT NULL)"
+    ))
 
 
 def test_run_migrations_scopes_cost_categories_by_home(tmp_path):
@@ -268,6 +275,13 @@ def test_run_migrations_adds_insurance_support(tmp_path):
             "INSERT INTO cost_entries (id, home_id, order_index, category_id, date, total_amount, notes, attachments) "
             "VALUES ('c1', 'h1', 0, 'cat-fuel', '2026-01-01', 100.0, '', '[]')"
         ))
+        # chore_assignments is needed too since this snapshot now also runs
+        # migration 8 (_add_assignment_label_column) on its way to CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE chore_assignments (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, room_id VARCHAR, "
+            "position_x FLOAT, position_y FLOAT, next_due_date VARCHAR NOT NULL)"
+        ))
         conn.execute(text(
             "INSERT INTO cost_categories (id, home_id, order_index, name, emoji, color) "
             "VALUES ('cat-fuel', 'h1', 0, 'Fuel', '🛢', '#4466cc')"
@@ -337,6 +351,13 @@ def test_run_migrations_backfills_inventory_category_id(tmp_path):
             "INSERT INTO inventory_items (id, home_id, order_index, name, emoji, category, notes, attachments) "
             "VALUES ('i3', 'h1', 2, 'Misc', '📦', '', '', '[]')"
         ))
+        # chore_assignments is needed too since this snapshot now also runs
+        # migration 8 (_add_assignment_label_column) on its way to CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE chore_assignments (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, room_id VARCHAR, "
+            "position_x FLOAT, position_y FLOAT, next_due_date VARCHAR NOT NULL)"
+        ))
         conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
         conn.execute(text("INSERT INTO schema_version (version) VALUES (6)"))
 
@@ -359,3 +380,30 @@ def test_run_migrations_backfills_inventory_category_id(tmp_path):
     assert items[2]["category_id"] is None
     assert items[0]["owner_id"] is None
     assert items[0]["store_id"] is None
+
+
+def test_run_migrations_adds_label_to_pre_existing_chore_assignments_table(tmp_path):
+    db_path = tmp_path / "legacy.db"
+    engine = create_engine(f"sqlite:///{db_path}")
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE chore_assignments ("
+            "id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, order_index INTEGER NOT NULL, "
+            "chore_id VARCHAR NOT NULL, room_id VARCHAR, position_x FLOAT, position_y FLOAT, "
+            "next_due_date VARCHAR NOT NULL)"
+        ))
+        conn.execute(text(
+            "INSERT INTO chore_assignments (id, home_id, order_index, chore_id, room_id, position_x, position_y, next_due_date) "
+            "VALUES ('a1', 'h1', 0, 'c1', 'r1', NULL, NULL, '2027-01-01T00:00:00Z')"
+        ))
+        conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
+        conn.execute(text("INSERT INTO schema_version (version) VALUES (7)"))
+
+    run_migrations(engine)
+
+    with engine.connect() as conn:
+        version = conn.execute(text("SELECT version FROM schema_version")).scalar()
+        row = conn.execute(text("SELECT id, label FROM chore_assignments WHERE id = 'a1'")).mappings().first()
+
+    assert version == CURRENT_VERSION
+    assert row["label"] is None

@@ -37,6 +37,7 @@ class Assignment(BaseModel):
     roomId: str | None = None
     position: Position | None = None
     nextDueDate: str = ""   # per-instance due date; empty string = not yet set
+    label: str | None = None   # disambiguates multiple assignments to the same room
 
 
 class ChoreDocument(BaseModel):
@@ -76,11 +77,13 @@ class AssignmentCreate(BaseModel):
     roomId: str | None = None
     position: Position | None = None
     nextDueDate: str = ""   # if empty, backend fills from chore.nextDueDate
+    label: str | None = None
 
 
 class AssignmentUpdate(BaseModel):
     position: Position | None = None
     nextDueDate: str | None = None
+    label: str | None = None
 
 
 class CompleteRequest(BaseModel):

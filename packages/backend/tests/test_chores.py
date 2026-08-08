@@ -233,6 +233,32 @@ def test_create_assignment_404_unknown_chore(client, home_id):
     assert resp.status_code == 404
 
 
+def test_create_assignment_with_label(client, home_id, tmp_path):
+    save_chores(home_id, make_chore_doc())
+    resp = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r1", "label": "Balcony plants"})
+    assert resp.status_code == 201
+    assert resp.json()["label"] == "Balcony plants"
+
+
+def test_create_assignment_without_label_defaults_to_none(client, home_id, tmp_path):
+    save_chores(home_id, make_chore_doc())
+    resp = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r1"})
+    assert resp.status_code == 201
+    assert resp.json()["label"] is None
+
+
+def test_create_assignment_duplicate_room_allowed(client, home_id, tmp_path):
+    save_chores(home_id, make_chore_doc())
+    r1 = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r1", "label": "Side A"})
+    r2 = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r1", "label": "Side B"})
+    assert r1.status_code == 201
+    assert r2.status_code == 201
+    assignments = client.get(f"/api/homes/{home_id}/chores").json()["assignments"]
+    room_r1 = [a for a in assignments if a["roomId"] == "r1"]
+    assert len(room_r1) == 2
+    assert {a["label"] for a in room_r1} == {"Side A", "Side B"}
+
+
 def test_update_assignment_position(client, home_id, tmp_path):
     save_chores(home_id, make_chore_doc())
     create_resp = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r1", "position": {"x": 1.0, "y": 1.0}})
@@ -242,6 +268,16 @@ def test_update_assignment_position(client, home_id, tmp_path):
     assignments = client.get(f"/api/homes/{home_id}/chores").json()["assignments"]
     a = next(a for a in assignments if a["id"] == aid)
     assert a["position"]["x"] == 5.0
+
+
+def test_update_assignment_label(client, home_id, tmp_path):
+    save_chores(home_id, make_chore_doc())
+    aid = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    put_resp = client.put(f"/api/homes/{home_id}/assignments/{aid}", json={"label": "Watering side"})
+    assert put_resp.status_code == 204
+    assignments = client.get(f"/api/homes/{home_id}/chores").json()["assignments"]
+    a = next(a for a in assignments if a["id"] == aid)
+    assert a["label"] == "Watering side"
 
 
 def test_delete_assignment(client, home_id, tmp_path):

@@ -338,6 +338,7 @@ def create_assignment(home_id: str, body: AssignmentCreate) -> Assignment:
         roomId=body.roomId,
         position=body.position,
         nextDueDate=next_due,
+        label=body.label,
     )
     doc.assignments.append(assignment)
     save_chores(home_id, doc)
@@ -397,6 +398,8 @@ def update_assignment(home_id: str, assignment_id: str, body: AssignmentUpdate) 
         assignment.position = body.position
     if body.nextDueDate is not None:
         assignment.nextDueDate = body.nextDueDate
+    if body.label is not None:
+        assignment.label = body.label
     save_chores(home_id, doc)
 
 
