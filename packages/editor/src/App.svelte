@@ -746,7 +746,7 @@
     if (allFloorsMode) {
       if (layerId !== "chores") return;
       const chore = choreStore.chores.find(c => c.id === itemId);
-      choreStore.createAssignment({ choreId: itemId, roomId: null, position: null, nextDueDate: chore?.nextDueDate ?? "" });
+      choreStore.createAssignment({ choreId: itemId, roomId: null, position: null, nextDueDate: chore?.nextDueDate ?? "", label: null });
       return;
     }
 
@@ -794,7 +794,7 @@
       const room = floorStore.floor.rooms.find(r => r.polygon && pointInPolygon({ x: worldX, y: worldY }, r.polygon));
       if (!room) return;
       const chore = choreStore.chores.find(c => c.id === itemId);
-      choreStore.createAssignment({ choreId: itemId, roomId: room.id, position: { x: worldX, y: worldY }, nextDueDate: chore?.nextDueDate ?? "" });
+      choreStore.createAssignment({ choreId: itemId, roomId: room.id, position: { x: worldX, y: worldY }, nextDueDate: chore?.nextDueDate ?? "", label: null });
     }
   }
 

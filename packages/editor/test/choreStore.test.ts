@@ -75,7 +75,7 @@ describe("choreStore — getProgress", () => {
     const store = createChoreStore(getHomeId);
     await tick();
     const halfRemaining = new Date(Date.now() + 7 * 86400000).toISOString();
-    const assignment = { id: "a1", choreId: "x", roomId: null, position: null, nextDueDate: halfRemaining };
+    const assignment = { id: "a1", choreId: "x", roomId: null, position: null, nextDueDate: halfRemaining, label: null };
     const pct = store.getProgress(assignment, { id: "x", donetickId: null, name: "", emoji: "", periodDays: 14, nextDueDate: halfRemaining, description: "" });
     expect(pct).toBeCloseTo(0.5, 1);
   });
@@ -85,7 +85,7 @@ describe("choreStore — getProgress", () => {
     const store = createChoreStore(getHomeId);
     await tick();
     const overdue = new Date(Date.now() - 86400000).toISOString();
-    const assignment = { id: "a1", choreId: "x", roomId: null, position: null, nextDueDate: overdue };
+    const assignment = { id: "a1", choreId: "x", roomId: null, position: null, nextDueDate: overdue, label: null };
     const pct = store.getProgress(assignment, { id: "x", donetickId: null, name: "", emoji: "", periodDays: 14, nextDueDate: overdue, description: "" });
     expect(pct).toBe(0);
   });
@@ -95,7 +95,7 @@ describe("choreStore — getProgress", () => {
     const store = createChoreStore(getHomeId);
     await tick();
     const fullRemaining = new Date(Date.now() + 14 * 86400000).toISOString();
-    const assignment = { id: "a1", choreId: "x", roomId: null, position: null, nextDueDate: fullRemaining };
+    const assignment = { id: "a1", choreId: "x", roomId: null, position: null, nextDueDate: fullRemaining, label: null };
     const pct = store.getProgress(assignment, { id: "x", donetickId: null, name: "", emoji: "", periodDays: 14, nextDueDate: fullRemaining, description: "" });
     expect(pct).toBeCloseTo(1, 1);
   });

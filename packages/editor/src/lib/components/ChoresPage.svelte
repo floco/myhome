@@ -13,7 +13,7 @@
   import StatTile from "./ui/StatTile.svelte";
   import Modal from "./ui/Modal.svelte";
   import FilterButton from "./ui/FilterButton.svelte";
-  import { formatDate, formatDateTime } from "../dateFormat";
+  import { formatDate } from "../dateFormat";
   import ChoreCompleteModal from "./ChoreCompleteModal.svelte";
   import type { Point } from "@myhome/geometry";
 

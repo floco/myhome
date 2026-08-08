@@ -444,7 +444,12 @@
       "nameEmpty": "Le nom ne peut pas être vide",
       "saveFailed": "Échec de l'enregistrement",
       "deleteFailed": "Échec de la suppression",
-      "uploadFailed": "Échec de l'envoi"
+      "uploadFailed": "Échec de l'envoi",
+      "assignments": "Affectations",
+      "assignmentsCount": "Affectations ({n})",
+      "labelPlaceholder": "Étiquette (optionnel)",
+      "selectRoom": "Choisir une pièce…",
+      "addAssignment": "Ajouter"
     },
     "page": {
       "emptyCharts": "Aucune corvée assignée pour l'instant — cliquez sur ＋ Ajouter une corvée pour commencer.",
