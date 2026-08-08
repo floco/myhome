@@ -87,6 +87,7 @@ export interface Assignment {
   roomId: string | null;
   position: Position | null;
   nextDueDate: string;
+  label: string | null;
 }
 
 export interface ChoreDocument {
@@ -266,6 +267,18 @@ export function createChoreStore(getHomeId: () => string | null = () => null) {
     await init();
   }
 
+  async function updateAssignmentLabel(id: string, label: string): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/assignments/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label }),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
   async function _putAssignmentDelay(id: string, days: number): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
@@ -330,6 +343,7 @@ export function createChoreStore(getHomeId: () => string | null = () => null) {
     createAssignment,
     completeAssignment,
     updateAssignmentPosition,
+    updateAssignmentLabel,
     deleteAssignment,
     delayAssignment,
     delayChore,

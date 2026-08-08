@@ -307,3 +307,20 @@ describe("choreStore — completedOn", () => {
     expect(sentBody).toEqual({ notes: "", completedOn: "2026-07-01" });
   });
 });
+
+describe("choreStore — updateAssignmentLabel", () => {
+  it("PUTs the label to the assignment endpoint", async () => {
+    const fetchMock = makeFetch(200, emptyDoc);
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createChoreStore(getHomeId);
+    await tick();
+
+    await store.updateAssignmentLabel("a1", "Balcony plants");
+
+    const putCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/assignments/a1"));
+    expect(putCall).toBeDefined();
+    expect(putCall![1].method).toBe("PUT");
+    const sentBody = JSON.parse(putCall![1].body as string);
+    expect(sentBody).toEqual({ label: "Balcony plants" });
+  });
+});
