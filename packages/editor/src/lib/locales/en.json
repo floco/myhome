@@ -444,7 +444,12 @@
       "nameEmpty": "Name cannot be empty",
       "saveFailed": "Save failed",
       "deleteFailed": "Delete failed",
-      "uploadFailed": "Upload failed"
+      "uploadFailed": "Upload failed",
+      "assignments": "Assignments",
+      "assignmentsCount": "Assignments ({n})",
+      "labelPlaceholder": "Label (optional)",
+      "selectRoom": "Select a room…",
+      "addAssignment": "Add"
     },
     "page": {
       "emptyCharts": "No chore assignments yet — click ＋ Add chore to get started.",

@@ -24,7 +24,7 @@ from .schema import (
     work_categories,
 )
 
-CURRENT_VERSION = 7
+CURRENT_VERSION = 8
 
 
 def _drop_kb_folders_table(conn: Connection) -> None:
@@ -179,6 +179,10 @@ def _add_inventory_owner_store_and_category_id(conn: Connection) -> None:
             )
 
 
+def _add_assignment_label_column(conn: Connection) -> None:
+    conn.execute(text("ALTER TABLE chore_assignments ADD COLUMN label VARCHAR"))
+
+
 MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (2, _drop_kb_folders_table),
     (3, _add_ha_user_id_column),
@@ -186,6 +190,7 @@ MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (5, _absorb_suppliers_into_contacts),
     (6, _add_insurance_support),
     (7, _add_inventory_owner_store_and_category_id),
+    (8, _add_assignment_label_column),
 ]
 
 

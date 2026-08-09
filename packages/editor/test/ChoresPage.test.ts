@@ -80,33 +80,6 @@ describe("ChoresPage — external selection", () => {
   });
 });
 
-describe("ChoresPage — expand/collapse assignments", () => {
-  it("expands and collapses the assignment detail row on toggle click", () => {
-    const chore = makeChore();
-    const store = makeStore([chore]);
-    store.assignments = [{ id: "a1", choreId: "c1", roomId: null, nextDueDate: new Date().toISOString() }] as typeof store.assignments;
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-
-    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
-    flushSync();
-
-    expect(target.querySelector(".assign-row")).toBeNull();
-
-    const toggleBtn = target.querySelector(".expand-btn") as HTMLButtonElement;
-    toggleBtn.click();
-    flushSync();
-    expect(target.querySelector(".assign-row")).not.toBeNull();
-    expect(target.querySelector(".assign-where")?.textContent).toBe("🏠 Whole house");
-
-    toggleBtn.click();
-    flushSync();
-    expect(target.querySelector(".assign-row")).toBeNull();
-
-    unmount(comp);
-  });
-});
-
 describe("ChoresPage — schedule health summary", () => {
   it("renders a bar per non-empty health bucket and the right stat numbers", () => {
     const now = Date.now();
@@ -252,40 +225,6 @@ describe("ChoresPage — mark-all-done backdating", () => {
     unmount(comp);
   });
 
-  it("assignment-level mark-done confirms with notes and completedOn after picking a past date", async () => {
-    const chore = makeChore();
-    const store = makeStore([chore]);
-    store.assignments = [{ id: "a1", choreId: "c1", roomId: null, nextDueDate: new Date().toISOString() }] as typeof store.assignments;
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
-    flushSync();
-
-    (target.querySelector(".expand-btn") as HTMLButtonElement).click();
-    flushSync();
-
-    (target.querySelector(".assign-row .icon-btn") as HTMLButtonElement).click();
-    flushSync();
-
-    (target.querySelector(".dp-field") as HTMLElement).click();
-    flushSync();
-    const cells = [...target.querySelectorAll(".dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
-    const firstOfMonth = cells.find((c) => c.textContent === "1")!;
-    firstOfMonth.click();
-    flushSync();
-
-    (target.querySelector(".ui-modal-footer .ui-button-primary") as HTMLButtonElement).click();
-    await Promise.resolve();
-    flushSync();
-
-    expect(store.completeAssignment).toHaveBeenCalledTimes(1);
-    const [id, notes, completedOn] = store.completeAssignment.mock.calls[0];
-    expect(id).toBe("a1");
-    expect(notes).toBe("");
-    expect(completedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-
-    unmount(comp);
-  });
 });
 
 describe("ChoresPage — responsive columns", () => {
@@ -297,11 +236,11 @@ describe("ChoresPage — responsive columns", () => {
     flushSync();
 
     const headers = target.querySelectorAll("thead th");
-    // expand, emoji, name, schedule, rooms, nextDue, actions
-    expect(headers[4].classList.contains("col-hide-tablet")).toBe(true); // rooms
-    expect(headers[3].classList.contains("col-hide-mobile")).toBe(true); // schedule
-    expect(headers[6].classList.contains("col-hide-tablet")).toBe(false); // actions
-    expect(headers[6].classList.contains("col-hide-mobile")).toBe(false); // actions
+    // emoji, name, schedule, rooms, nextDue, actions
+    expect(headers[3].classList.contains("col-hide-tablet")).toBe(true); // rooms
+    expect(headers[2].classList.contains("col-hide-mobile")).toBe(true); // schedule
+    expect(headers[5].classList.contains("col-hide-tablet")).toBe(false); // actions
+    expect(headers[5].classList.contains("col-hide-mobile")).toBe(false); // actions
 
     unmount(comp);
   });

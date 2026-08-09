@@ -241,6 +241,7 @@ chore_assignments = Table(
     Column("position_x", Float),
     Column("position_y", Float),
     Column("next_due_date", String, nullable=False),
+    Column("label", String),
 )
 
 chore_completions = Table(

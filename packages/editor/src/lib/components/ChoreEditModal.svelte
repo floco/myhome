@@ -13,21 +13,24 @@
   import Lightbox from "./ui/Lightbox.svelte";
   import EmojiPicker from "./ui/EmojiPicker.svelte";
   import ScheduleEditor from "./ScheduleEditor.svelte";
-  import { formatDate, formatDateTime } from "../dateFormat";
+  import ChoreCompleteModal from "./ChoreCompleteModal.svelte";
+  import { polygonCentroid } from "@myhome/geometry";
+  import type { Point } from "@myhome/geometry";
+  import { formatDate } from "../dateFormat";
 
-  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion">;
+  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion" | "createAssignment" | "updateAssignmentLabel" | "deleteAssignment" | "delayAssignment" | "completeAssignment">;
 
   interface Props {
     chore: Chore | null;
     store: ChoreStore;
-    rooms: Array<{ id: string; label: string }>;
+    rooms: Array<{ id: string; label: string; polygon: Point[] | null }>;
     onclose: () => void;
     onplaceonmap?: (choreId: string) => void;
   }
 
   let { chore, store, rooms, onclose, onplaceonmap }: Props = $props();
 
-  let activeTab = $state<"info" | "media" | "history">("info");
+  let activeTab = $state<"info" | "assignments" | "media" | "history">("info");
   let draftName = $state("");
   let draftEmoji = $state("");
   let draftPeriodDays = $state(30);
@@ -46,8 +49,16 @@
   let uploadError = $state<string | null>(null);
   let lightboxOpen = $state(false);
   let lightboxIndex = $state(0);
+  let newAssignmentRoomId = $state("");
+  let newAssignmentLabel = $state("");
+  let completing = $state<{ id: string; title: string } | null>(null);
 
-  const history = $derived(chore ? store.getCompletionsForChore(chore.id).slice().reverse() : []);
+  const history = $derived(
+    chore
+      ? store.getCompletionsForChore(chore.id).slice().sort((a, b) => b.completedAt.localeCompare(a.completedAt))
+      : []
+  );
+  const assignmentsForChore = $derived(chore ? store.assignments.filter((a) => a.choreId === chore.id) : []);
   let deletingCompletion = $state<string | null>(null);
 
   function getRoomName(assignmentId: string | null): string {
@@ -55,6 +66,41 @@
     const assignment = store.assignments.find((a) => a.id === assignmentId);
     if (!assignment?.roomId) return `🏠 ${$_('chores.list.wholeHouse')}`;
     return rooms.find((r) => r.id === assignment.roomId)?.label ?? $_('chores.list.unknownRoom');
+  }
+
+  function getAssignmentLabel(assignmentId: string | null): string | null {
+    if (!assignmentId) return null;
+    return store.assignments.find((a) => a.id === assignmentId)?.label ?? null;
+  }
+
+  async function handleLabelBlur(assignmentId: string, value: string): Promise<void> {
+    const trimmed = value.trim();
+    const current = store.assignments.find((a) => a.id === assignmentId)?.label ?? "";
+    if (trimmed === current) return;
+    await store.updateAssignmentLabel(assignmentId, trimmed);
+  }
+
+  async function handleAddAssignment(): Promise<void> {
+    if (!chore || !newAssignmentRoomId) return;
+    const room = rooms.find((r) => r.id === newAssignmentRoomId);
+    const position = room?.polygon ? polygonCentroid(room.polygon) : null;
+    await store.createAssignment({
+      choreId: chore.id,
+      roomId: newAssignmentRoomId,
+      position,
+      nextDueDate: "",
+      label: newAssignmentLabel.trim() || null,
+    });
+    newAssignmentRoomId = "";
+    newAssignmentLabel = "";
+  }
+
+  async function confirmCompleteAssignment(notes: string, completedOn?: string): Promise<void> {
+    if (!completing) return;
+    const id = completing.id;
+    completing = null;
+    if (completedOn) await store.completeAssignment(id, notes, completedOn);
+    else await store.completeAssignment(id, notes);
   }
 
   async function handleDeleteCompletion(id: string): Promise<void> {
@@ -76,6 +122,8 @@
       draftScheduleFromDue = chore.scheduleFromDue;
       draftDescription = chore.description ?? "";
       activeTab = "info";
+      newAssignmentRoomId = "";
+      newAssignmentLabel = "";
       error = null;
     }
   });
@@ -142,11 +190,12 @@
     <Tabs
       tabs={[
         { id: "info", label: $_('chores.editModal.info') },
+        { id: "assignments", label: assignmentsForChore.length > 0 ? $_('chores.editModal.assignmentsCount', { values: { n: assignmentsForChore.length } }) : $_('chores.editModal.assignments') },
         { id: "media", label: (chore.attachments?.length ?? 0) > 0 ? $_('chores.editModal.mediaCount', { values: { n: chore.attachments.length } }) : $_('chores.editModal.media') },
         { id: "history", label: history.length > 0 ? $_('chores.editModal.historyCount', { values: { n: history.length } }) : $_('chores.editModal.history') },
       ]}
       active={activeTab}
-      onchange={(id) => { activeTab = id as "info" | "media" | "history"; }}
+      onchange={(id) => { activeTab = id as "info" | "assignments" | "media" | "history"; }}
     />
 
     {#if activeTab === "info"}
@@ -178,6 +227,38 @@
         </label>
         {#if error}<div class="form-error">{error}</div>{/if}
       </div>
+    {:else if activeTab === "assignments"}
+      <div class="assignments-pane">
+        {#if assignmentsForChore.length === 0}
+          <div class="no-assignments">{$_('chores.page.notAssigned')}</div>
+        {:else}
+          {#each assignmentsForChore as a (a.id)}
+            <div class="assignment-row">
+              <span class="assign-where">{a.roomId ? (rooms.find((r) => r.id === a.roomId)?.label ?? $_('chores.list.unknownRoom')) : `🏠 ${$_('chores.list.wholeHouse')}`}</span>
+              <input
+                class="native-input assign-label-input"
+                placeholder={$_('chores.editModal.labelPlaceholder')}
+                value={a.label ?? ""}
+                onblur={(e) => handleLabelBlur(a.id, (e.target as HTMLInputElement).value)}
+              />
+              <span class="assign-due">{$_('chores.badgePopup.due')}: {formatDate(a.nextDueDate)}</span>
+              <button class="icon-btn" title={$_('chores.row.markDone')} onclick={() => { completing = { id: a.id, title: `${chore.emoji} ${chore.name}` }; }}>✓</button>
+              <button class="icon-btn" title={$_('chores.page.delayByWeek')} onclick={() => store.delayAssignment(a.id, 7)}>⏭</button>
+              <button class="icon-btn danger" onclick={() => store.deleteAssignment(a.id)}>✕</button>
+            </div>
+          {/each}
+        {/if}
+        <div class="add-assignment-row">
+          <select class="native-input" bind:value={newAssignmentRoomId}>
+            <option value="">{$_('chores.editModal.selectRoom')}</option>
+            {#each rooms as room}
+              <option value={room.id}>{room.label}</option>
+            {/each}
+          </select>
+          <input class="native-input assign-label-input" placeholder={$_('chores.editModal.labelPlaceholder')} bind:value={newAssignmentLabel} />
+          <Button variant="secondary" disabled={!newAssignmentRoomId} onclick={handleAddAssignment}>{$_('chores.editModal.addAssignment')}</Button>
+        </div>
+      </div>
     {:else if activeTab === "media"}
       <div class="media-pane">
         <MediaGallery
@@ -196,9 +277,10 @@
           <div class="no-history">{$_('chores.editModal.noCompletions')}</div>
         {:else}
           {#each history as rec (rec.id)}
+            {@const label = getAssignmentLabel(rec.assignmentId)}
             <div class="history-row">
-              <span class="hist-room">{getRoomName(rec.assignmentId)}</span>
-              <span class="hist-date">{formatDateTime(rec.completedAt)}</span>
+              <span class="hist-room">{getRoomName(rec.assignmentId)}{#if label} <span class="hist-label">({label})</span>{/if}</span>
+              <span class="hist-date">{formatDate(rec.completedAt)}</span>
               {#if rec.scheduledDue}<span class="hist-due">{$_('chores.editModal.dueOn', { values: { date: formatDate(rec.scheduledDue) } })}</span>{/if}
               {#if rec.notes}<span class="hist-notes">{rec.notes}</span>{/if}
               <button class="hist-del" disabled={deletingCompletion === rec.id} title={$_('chores.editModal.deleteRecord')} onclick={() => handleDeleteCompletion(rec.id)}>🗑</button>
@@ -234,6 +316,10 @@
   <Lightbox items={mediaItems} initialIndex={lightboxIndex} onclose={() => { lightboxOpen = false; }} />
 {/if}
 
+{#if completing}
+  <ChoreCompleteModal title={completing.title} onclose={() => { completing = null; }} onconfirm={confirmCompleteAssignment} />
+{/if}
+
 <style>
   .edit-form { display: flex; flex-direction: column; gap: 10px; }
   .spacer { flex: 1; }
@@ -261,4 +347,21 @@
   .hist-notes { color: var(--text-muted); font-style: italic; font-size: 11px; flex: 1; }
   .hist-del { margin-left: auto; background: none; border: none; cursor: pointer; color: var(--text-faint); font-size: 11px; padding: 0 2px; line-height: 1; opacity: 0.5; }
   .hist-del:hover { opacity: 1; color: var(--danger); }
+  .hist-label { color: var(--text-faint); font-weight: 400; margin-left: 4px; }
+
+  .assignments-pane { min-height: 160px; display: flex; flex-direction: column; gap: 8px; }
+  .no-assignments { font-size: 11px; color: var(--text-faint); font-style: italic; padding: 12px 0; }
+  .assignment-row { display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .assign-where { flex: 1; min-width: 80px; color: var(--text-muted); }
+  .assign-label-input { flex: 1; min-width: 100px; }
+  .assign-due { color: var(--text-faint); font-size: 11px; white-space: nowrap; }
+  .add-assignment-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 4px; }
+  .add-assignment-row select { flex: 1; min-width: 120px; }
+  .icon-btn {
+    padding: 6px 10px; border: none; border-radius: var(--radius-sm);
+    background: var(--surface-alt); color: var(--text-muted); cursor: pointer; font-size: 13px;
+    min-height: 30px;
+  }
+  .icon-btn:hover { background: var(--surface-hover); color: var(--text); }
+  .icon-btn.danger:hover { color: var(--danger); }
 </style>

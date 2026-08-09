@@ -13,15 +13,16 @@
   import StatTile from "./ui/StatTile.svelte";
   import Modal from "./ui/Modal.svelte";
   import FilterButton from "./ui/FilterButton.svelte";
-  import { formatDate, formatDateTime } from "../dateFormat";
+  import { formatDate } from "../dateFormat";
   import ChoreCompleteModal from "./ChoreCompleteModal.svelte";
+  import type { Point } from "@myhome/geometry";
 
   type ChoreStore = ReturnType<typeof createChoreStore>;
   type Assignment = ChoreStore["assignments"][number];
 
   interface Props {
     store: ChoreStore;
-    floorStore: { floors: Array<{ id: string; name: string; rooms: Array<{ id: string; label: string }> }> };
+    floorStore: { floors: Array<{ id: string; name: string; rooms: Array<{ id: string; label: string; polygon: Point[] | null }> }> };
     onnewchore?: () => void;
     onplaceonmap?: (choreId: string) => void;
     selectedItemId?: string | null;
@@ -45,7 +46,6 @@
   let roomFilter = $state("");
   let scheduleFilter = $state("");
   let dueFilter = $state<"all" | "attention">("attention");
-  let expandedHistory = $state<string | null>(null);
   let filterModalOpen = $state(false);
   const filtersActive = $derived(roomFilter !== "" || scheduleFilter !== "");
 
@@ -56,9 +56,7 @@
     return assignments.some((a) => a.nextDueDate && new Date(a.nextDueDate) <= cutoff);
   }
 
-  type CompletingState =
-    | { kind: "chore"; id: string; title: string }
-    | { kind: "assignment"; id: string; title: string };
+  type CompletingState = { kind: "chore"; id: string; title: string };
   let completing = $state<CompletingState | null>(null);
 
   const allRooms = $derived(floorStore.floors.flatMap((f) => f.rooms));
@@ -185,13 +183,8 @@
     if (!completing) return;
     const c = completing;
     completing = null;
-    if (c.kind === "chore") {
-      if (completedOn) await store.completeChore(c.id, notes, completedOn);
-      else await store.completeChore(c.id, notes);
-    } else {
-      if (completedOn) await store.completeAssignment(c.id, notes, completedOn);
-      else await store.completeAssignment(c.id, notes);
-    }
+    if (completedOn) await store.completeChore(c.id, notes, completedOn);
+    else await store.completeChore(c.id, notes);
   }
 </script>
 
@@ -249,12 +242,6 @@
     </Modal>
 
     <div class="table-wrapper">
-      {#snippet expandCell(chore: Chore)}
-        <button
-          class="expand-btn"
-          onclick={(e) => { e.stopPropagation(); expandedHistory = expandedHistory === chore.id ? null : chore.id; }}
-        >{expandedHistory === chore.id ? "▼" : "▶"}</button>
-      {/snippet}
       {#snippet emojiCell(chore: Chore)}
         {chore.emoji}
       {/snippet}
@@ -275,28 +262,8 @@
         <button class="icon-btn" title={$_('chores.page.markAllDone')} onclick={() => { completing = { kind: "chore", id: chore.id, title: `${chore.emoji} ${displayName(chore)}` }; }}>✓</button>
         <button class="icon-btn" title={$_('chores.page.delayAllByWeek')} onclick={() => store.delayChore(chore.id, 7)}>⏭</button>
       {/snippet}
-      {#snippet assignmentsExpanded(chore: Chore)}
-        {@const assignments = assignmentsForChore(chore.id)}
-        <div class="expand-body">
-          {#if assignments.length > 0}
-            {#each assignments as a (a.id)}
-              <div class="assign-row">
-                <span class="assign-where">{a.roomId ? getRoomName(a.roomId) : `🏠 ${$_('chores.list.wholeHouse')}`}</span>
-                <span class="assign-due">{$_('chores.badgePopup.due')}: {formatDate(a.nextDueDate)}</span>
-                <button class="icon-btn" title={$_('chores.row.markDone')} onclick={() => { completing = { kind: "assignment", id: a.id, title: `${chore.emoji} ${displayName(chore)}` }; }}>✓</button>
-                <button class="icon-btn danger" onclick={() => store.deleteAssignment(a.id)}>✕</button>
-                <button class="icon-btn" title={$_('chores.page.delayByWeek')} onclick={() => store.delayAssignment(a.id, 7)}>⏭</button>
-              </div>
-            {/each}
-          {:else}
-            <div class="no-assign">{$_('chores.page.notAssigned')}</div>
-          {/if}
-        </div>
-      {/snippet}
-
       <SortableTable
         columns={[
-          { key: "expand", label: "", sortable: false, cellClass: "expand-cell", cell: expandCell },
           { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
           { key: "name", label: $_('chores.editModal.name'), sortValue: (c) => displayName(c), cellClass: "name-cell", cell: nameCell },
           { key: "schedule", label: $_('chores.page.schedule'), sortValue: (c) => scheduleLabel(c), cell: scheduleCell, hideBelow: "mobile" },
@@ -307,8 +274,6 @@
         rows={filteredChores}
         rowKey={(chore) => chore.id}
         rowClick={(chore) => { editChore = chore; }}
-        isRowExpanded={(chore) => expandedHistory === chore.id}
-        expandedRow={assignmentsExpanded}
         emptyMessage={store.chores.length === 0
           ? $_('chores.page.emptyNoChores')
           : dueFilter === "attention"
@@ -391,19 +356,7 @@
     background: var(--surface-alt); color: var(--text-muted); cursor: pointer; font-size: 15px;
     min-height: 38px;
   }
-  :global(.expand-cell) { width: 20px; padding: 0 4px; text-align: center; }
-  .expand-btn { background: none; border: none; cursor: pointer; color: var(--text-faint); font-size: 9px; padding: 2px 4px; line-height: 1; }
-  .expand-btn:hover { color: var(--text); }
   .icon-btn:hover { background: var(--surface-hover); color: var(--text); }
-  .icon-btn.danger:hover { color: var(--danger); }
-
-  .expand-body { padding: 10px 16px; display: flex; flex-direction: column; gap: 6px; }
-
-  .assign-row { display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap; }
-  .assign-row .icon-btn { padding: 4px 8px; font-size: 13px; min-height: 28px; }
-  .assign-where { flex: 1; min-width: 80px; color: var(--text-muted); }
-  .assign-due { color: var(--text-faint); font-size: 11px; white-space: nowrap; }
-  .no-assign { font-size: 11px; color: var(--text-faint); font-style: italic; }
 
   .footer { padding: 6px 12px; font-size: 11px; color: var(--text-faint); border-top: 1px solid var(--border); flex-shrink: 0; }
 </style>
