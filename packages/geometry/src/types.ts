@@ -69,6 +69,7 @@ export interface FurnitureObject {
   width: number;   // meters
   height: number;  // meters
   rotation: number; // degrees, clockwise
+  params?: Record<string, string | number>; // per-instance template parameters, keyed by FurnitureParamDef.id
 }
 
 export interface Floor {
