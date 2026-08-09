@@ -226,6 +226,7 @@
       "select": "Select",
       "wall": "Wall",
       "divider": "Divider",
+      "garden": "Garden Border",
       "door": "Door",
       "window": "Window",
       "delete": "Delete selected (Del)"
