@@ -1,6 +1,6 @@
 import type { Point } from "@myhome/geometry";
 
-export type ToolType = "select" | "wall" | "divider" | "door" | "window";
+export type ToolType = "select" | "wall" | "divider" | "garden" | "door" | "window";
 
 export interface ToolState {
   tool: ToolType;

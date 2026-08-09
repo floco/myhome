@@ -1297,6 +1297,7 @@
                 <button class="ft-btn" title={$_('floorPlan.tools.select')} class:active={toolStore.state.tool === "select"} onclick={() => toolStore.setTool("select")}>🖱 <span class="ft-label">{$_('floorPlan.tools.select')}</span></button>
                 <button class="ft-btn" title={$_('floorPlan.tools.wall')} class:active={toolStore.state.tool === "wall"} onclick={() => toolStore.setTool("wall")}>🧱 <span class="ft-label">{$_('floorPlan.tools.wall')}</span></button>
                 <button class="ft-btn" title={$_('floorPlan.tools.divider')} class:active={toolStore.state.tool === "divider"} onclick={() => toolStore.setTool("divider")}>╌ <span class="ft-label">{$_('floorPlan.tools.divider')}</span></button>
+                <button class="ft-btn" title={$_('floorPlan.tools.garden')} class:active={toolStore.state.tool === "garden"} onclick={() => toolStore.setTool("garden")}>🌿 <span class="ft-label">{$_('floorPlan.tools.garden')}</span></button>
                 <button class="ft-btn" title={$_('floorPlan.tools.door')} class:active={toolStore.state.tool === "door"} onclick={() => toolStore.setTool("door")}>🚪 <span class="ft-label">{$_('floorPlan.tools.door')}</span></button>
                 <button class="ft-btn" title={$_('floorPlan.tools.window')} class:active={toolStore.state.tool === "window"} onclick={() => toolStore.setTool("window")}>🪟 <span class="ft-label">{$_('floorPlan.tools.window')}</span></button>
                 <div class="ft-sep"></div>

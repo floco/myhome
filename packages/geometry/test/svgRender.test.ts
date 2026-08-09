@@ -129,6 +129,24 @@ describe("renderFloorSvg - walls and dividers", () => {
     // dividers must not produce wall rectangles
     expect(svg).not.toContain('<path class="wall"');
   });
+
+  it("renders a garden-border wall as a dashed path, separately from dividers", () => {
+    const gardenWall: Wall = {
+      id: "gb1",
+      start: { x: 0, y: 0 },
+      end: { x: 5, y: 0 },
+      type: "garden",
+    };
+    const svg = renderFloorSvg(baseFloor({ walls: [gardenWall] }));
+
+    expect(svg).toContain('<g class="garden-borders">');
+    const paths = [...svg.matchAll(/<path class="garden-border" d="([^"]+)"/g)];
+    expect(paths).toHaveLength(1);
+    expect(paths[0][1]).toBe("M 0 0 L 5 0");
+    // Not picked up by the divider or wall groups.
+    expect(svg.match(/<path class="divider"/g)).toBeNull();
+    expect(svg.match(/<path class="wall"/g)).toBeNull();
+  });
 });
 
 describe("renderFloorSvg - rooms", () => {

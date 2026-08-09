@@ -63,6 +63,7 @@
   --canvas-room-fill: #ffffff;
   --canvas-room-fill-selected: #bcdcf0;
   --canvas-divider: #5d7a96;
+  --canvas-garden-border: #3f8f4f;
   --canvas-opening-door: #a6862a;
   --canvas-opening-window: #3b7dd8;
   --canvas-opening-open: #d97706;
@@ -114,6 +115,7 @@
   --canvas-room-fill: #232328;
   --canvas-room-fill-selected: #2a6a8a;
   --canvas-divider: #99aadd;
+  --canvas-garden-border: #7fd08f;
   --canvas-opening-door: #eeeeaa;
   --canvas-opening-window: #88ccff;
   --canvas-opening-open: #fbbf24;

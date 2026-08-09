@@ -67,6 +67,18 @@ def test_divider_renders_dashed():
     assert "stroke-dasharray" in svg
 
 
+def test_garden_border_renders_dashed_separately_from_divider():
+    floor = empty_floor()
+    floor.walls.append(
+        Wall(id="gb1", start=Point(x=0, y=0), end=Point(x=5, y=0), type="garden")
+    )
+    svg = render_floor_svg(floor)
+    assert '<g class="garden-borders">' in svg
+    assert 'class="garden-border"' in svg
+    assert 'class="divider"' not in svg
+    assert 'class="wall"' not in svg
+
+
 def test_viewbox_respects_padding():
     floor = empty_floor()
     floor.walls.append(make_wall("w1", 0, 0, 10, 0))

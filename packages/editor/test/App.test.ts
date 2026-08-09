@@ -108,7 +108,7 @@ describe("App", () => {
 
     const buttons = Array.from(target.querySelectorAll(".floating-toolbar .ft-btn"));
     const titles = buttons.map((b) => (b as HTMLButtonElement).title);
-    expect(titles).toEqual(["Switch to view mode (read-only)", "Toggle item picker", "Toggle furniture library", "Save", "Reset view", "Undo (Ctrl+Z)", "Redo (Ctrl+Y)", "Select", "Wall", "Divider", "Door", "Window", "Delete selected (Del)"]);
+    expect(titles).toEqual(["Switch to view mode (read-only)", "Toggle item picker", "Toggle furniture library", "Save", "Reset view", "Undo (Ctrl+Z)", "Redo (Ctrl+Y)", "Select", "Wall", "Divider", "Garden Border", "Door", "Window", "Delete selected (Del)"]);
 
     const selectBtn = toolbarBtn(target, "Select");
     expect(selectBtn.className).toContain("active");
@@ -156,7 +156,7 @@ describe("App", () => {
     flushSync();
 
     // Editing tools are gone.
-    for (const title of ["Wall", "Divider", "Door", "Window", "Delete selected (Del)", "Toggle item picker", "Toggle furniture library", "Save"]) {
+    for (const title of ["Wall", "Divider", "Garden Border", "Door", "Window", "Delete selected (Del)", "Toggle item picker", "Toggle furniture library", "Save"]) {
       expect(toolbarBtn(target, title)).toBeUndefined();
     }
 
@@ -222,6 +222,36 @@ describe("App", () => {
     );
     expect(labels).toHaveLength(1);
     expect(labels.every((l) => l?.startsWith("Room "))).toBe(true);
+  });
+
+  it("drawing a garden-border chain places dashed segments of type garden", async () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = await mountAndLoad(target);
+
+    toolbarBtn(target, "Garden Border").click();
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas")!;
+    const corners = [
+      { x: 10, y: 10 },
+      { x: 12, y: 10 },
+    ];
+
+    for (const corner of corners) {
+      const screen = { x: corner.x * 100 + 400, y: corner.y * 100 + 300 };
+      svg.dispatchEvent(
+        new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientX: screen.x, clientY: screen.y }),
+      );
+      flushSync();
+      svg.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, clientX: screen.x, clientY: screen.y }),
+      );
+      flushSync();
+    }
+
+    expect(target.querySelectorAll("line.garden-border").length).toBe(1);
   });
 
   it("Escape ends the wall chain without closing it", async () => {

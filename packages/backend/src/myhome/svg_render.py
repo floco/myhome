@@ -12,12 +12,14 @@ def render_floor_svg(floor: Floor, padding: float = 0.5) -> str:
 
     wall_walls = [w for w in floor.walls if w.type == "wall"]
     dividers = [w for w in floor.walls if w.type == "divider"]
+    garden_borders = [w for w in floor.walls if w.type == "garden"]
 
     walls_svg = "\n".join(
         _render_wall(w, [o for o in floor.openings if o.wallId == w.id])
         for w in wall_walls
     )
     dividers_svg = "\n".join(_render_divider(w) for w in dividers)
+    garden_borders_svg = "\n".join(_render_garden_border(w) for w in garden_borders)
     openings_svg = "\n".join(
         _render_opening(w, o)
         for w in wall_walls
@@ -39,6 +41,9 @@ def render_floor_svg(floor: Floor, padding: float = 0.5) -> str:
         "</g>",
         '<g class="dividers">',
         dividers_svg,
+        "</g>",
+        '<g class="garden-borders">',
+        garden_borders_svg,
         "</g>",
         '<g class="openings">',
         openings_svg,
@@ -77,6 +82,11 @@ def _render_room(room: Room) -> str:
 def _render_divider(wall: Wall) -> str:
     d = _polyline_to_path([wall.start, wall.end])
     return f'<path class="divider" d="{d}" stroke-dasharray="0.1 0.1" />'
+
+
+def _render_garden_border(wall: Wall) -> str:
+    d = _polyline_to_path([wall.start, wall.end])
+    return f'<path class="garden-border" d="{d}" stroke-dasharray="0.15 0.1" />'
 
 
 def _render_wall(wall: Wall, openings: list[Opening]) -> str:

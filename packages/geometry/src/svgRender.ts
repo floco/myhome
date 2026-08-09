@@ -44,6 +44,11 @@ export function renderFloorSvg(floor: Floor, options: SvgRenderOptions = {}): st
     .map(renderDivider)
     .join("\n");
 
+  const gardenBordersSvg = floor.walls
+    .filter((w) => w.type === "garden")
+    .map(renderGardenBorder)
+    .join("\n");
+
   const openingsSvg = floor.walls
     .flatMap((w) =>
       w.type === "wall"
@@ -62,6 +67,9 @@ export function renderFloorSvg(floor: Floor, options: SvgRenderOptions = {}): st
     `</g>`,
     `<g class="dividers">`,
     dividersSvg,
+    `</g>`,
+    `<g class="garden-borders">`,
+    gardenBordersSvg,
     `</g>`,
     `<g class="openings">`,
     openingsSvg,
@@ -116,6 +124,10 @@ function _findAdjacentSvg(walls: Wall[], target: Wall, atEnd: boolean): Wall | n
 
 function renderDivider(wall: Wall): string {
   return `<path class="divider" d="${polylineToPath([wall.start, wall.end])}" stroke-dasharray="0.1 0.1" />`;
+}
+
+function renderGardenBorder(wall: Wall): string {
+  return `<path class="garden-border" d="${polylineToPath([wall.start, wall.end])}" stroke-dasharray="0.15 0.1" />`;
 }
 
 function renderWall(wall: Wall, openings: Opening[], wallAtStart: Wall | null, wallAtEnd: Wall | null): string {

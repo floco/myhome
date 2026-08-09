@@ -13,7 +13,7 @@ class Wall(BaseModel):
     start: Point
     end: Point
     thickness: float | None = None
-    type: Literal["wall", "divider"]
+    type: Literal["wall", "divider", "garden"]
 
 
 class Opening(BaseModel):
