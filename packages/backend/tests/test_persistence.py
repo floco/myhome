@@ -90,6 +90,21 @@ def test_round_trip_preserves_opening_door_kind(tmp_path, monkeypatch):
     assert loaded.floors[0].openings[0].doorKind == "sliding"
 
 
+def test_round_trip_preserves_double_door_kind_and_swing(tmp_path, monkeypatch):
+    _setup(tmp_path, monkeypatch)
+    doc = make_doc()
+    doc.floors[0].walls = [
+        Wall(id="w1", type="wall", start={"x": 0, "y": 0}, end={"x": 4, "y": 0}, thickness=0.1)
+    ]
+    doc.floors[0].openings = [
+        Opening(id="o1", wallId="w1", type="door", offset=1, width=1.6, doorKind="double", swing="out"),
+    ]
+    save_house(HOME_ID, doc)
+    loaded = load_house(HOME_ID)
+    assert loaded.floors[0].openings[0].doorKind == "double"
+    assert loaded.floors[0].openings[0].swing == "out"
+
+
 def test_opening_ha_fields_default_when_absent():
     opening = Opening(id="o2", wallId="w1", type="door", offset=0, width=0.9)
     assert opening.haEntityId is None
