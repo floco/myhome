@@ -9,6 +9,7 @@ import {
   computeRectTableChairPositions,
   computeRoundTableChairPositions,
 } from "../src/lib/furnitureLibrary";
+import type { FurnitureParamDef } from "../src/lib/furnitureLibrary";
 import type { FurnitureObject } from "@myhome/geometry";
 
 describe("furnitureLibrary", () => {
@@ -119,5 +120,35 @@ describe("furnitureLibrary", () => {
     const obj: FurnitureObject = { id: "f3", templateId: "dining-table-rect", x: 0, y: 0, width: 1.6, height: 0.9, rotation: 0, params: { chairCount: 0 } };
     const svg = resolveFurnitureSvg(t, obj);
     expect((svg.match(/<rect/g) ?? []).length).toBe(1);
+  });
+
+  it("sofa declares shape and corner params, with corner defaulting to se", () => {
+    const t = getTemplate("sofa")!;
+    expect(defaultFurnitureParams(t)).toEqual({ shape: "straight", corner: "se" });
+  });
+
+  it("sofa corner param is visibleWhen shape is l-shaped", () => {
+    const t = getTemplate("sofa")!;
+    const corner = t.params?.find((p) => p.id === "corner") as Extract<FurnitureParamDef, { type: "enum" }> | undefined;
+    expect(corner?.visibleWhen).toEqual({ paramId: "shape", equals: "l-shaped" });
+  });
+
+  it("renders the original straight sofa markup when shape is straight", () => {
+    const t = getTemplate("sofa")!;
+    const obj: FurnitureObject = { id: "f1", templateId: "sofa", x: 0, y: 0, width: 2.2, height: 0.9, rotation: 0, params: { shape: "straight" } };
+    const svg = resolveFurnitureSvg(t, obj);
+    expect(svg).toContain('x="8" y="18" width="84" height="68"');
+  });
+
+  it("renders an L-shape with the chaise at the requested corner", () => {
+    const t = getTemplate("sofa")!;
+    const nw: FurnitureObject = { id: "f2", templateId: "sofa", x: 0, y: 0, width: 2.2, height: 2.0, rotation: 0, params: { shape: "l-shaped", corner: "nw" } };
+    const se: FurnitureObject = { id: "f3", templateId: "sofa", x: 0, y: 0, width: 2.2, height: 2.0, rotation: 0, params: { shape: "l-shaped", corner: "se" } };
+    const svgNw = resolveFurnitureSvg(t, nw);
+    const svgSe = resolveFurnitureSvg(t, se);
+    expect(svgNw).toContain('x="5" y="5" width="90" height="40"'); // horizontal arm at top
+    expect(svgNw).toContain('x="5" y="5" width="40" height="90"'); // vertical arm at left
+    expect(svgSe).toContain('x="5" y="55" width="90" height="40"'); // horizontal arm at bottom
+    expect(svgSe).toContain('x="55" y="5" width="40" height="90"'); // vertical arm at right
   });
 });

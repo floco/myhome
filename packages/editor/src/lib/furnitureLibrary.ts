@@ -71,6 +71,32 @@ export const FURNITURE_TEMPLATES: FurnitureTemplate[] = [
       <line x1="42" y1="40" x2="42" y2="86" fill="none" stroke-width="1.5"/>
       <line x1="58" y1="40" x2="58" y2="86" fill="none" stroke-width="1.5"/>
     `,
+    params: [
+      {
+        id: "shape",
+        type: "enum",
+        labelKey: "floorPlan.furnitureLibrary.params.sofaShape",
+        options: [
+          { value: "straight", labelKey: "floorPlan.furnitureLibrary.params.sofaShapeStraight" },
+          { value: "l-shaped", labelKey: "floorPlan.furnitureLibrary.params.sofaShapeLShaped" },
+        ],
+        default: "straight",
+      },
+      {
+        id: "corner",
+        type: "enum",
+        labelKey: "floorPlan.furnitureLibrary.params.sofaCorner",
+        options: [
+          { value: "nw", labelKey: "floorPlan.furnitureLibrary.params.cornerNw" },
+          { value: "ne", labelKey: "floorPlan.furnitureLibrary.params.cornerNe" },
+          { value: "se", labelKey: "floorPlan.furnitureLibrary.params.cornerSe" },
+          { value: "sw", labelKey: "floorPlan.furnitureLibrary.params.cornerSw" },
+        ],
+        default: "se",
+        visibleWhen: { paramId: "shape", equals: "l-shaped" },
+      },
+    ],
+    render: renderSofa,
   },
   {
     id: "armchair",
@@ -662,4 +688,27 @@ function renderDiningTableRound(ctx: FurnitureRenderContext): string {
   const table = `<circle cx="50" cy="50" r="42"/>`;
   const chairs = computeRoundTableChairPositions(chairCount).map(chairMarker).join("\n");
   return [table, chairs].filter(Boolean).join("\n");
+}
+
+function renderSofa(ctx: FurnitureRenderContext): string {
+  const shape = ctx.params.shape === "l-shaped" ? "l-shaped" : "straight";
+  if (shape === "straight") {
+    return `
+      <rect x="8" y="18" width="84" height="68" rx="6"/>
+      <rect x="8" y="18" width="84" height="22" rx="4"/>
+      <rect x="8" y="40" width="14" height="46" rx="3"/>
+      <rect x="78" y="40" width="14" height="46" rx="3"/>
+      <line x1="42" y1="40" x2="42" y2="86" fill="none" stroke-width="1.5"/>
+      <line x1="58" y1="40" x2="58" y2="86" fill="none" stroke-width="1.5"/>
+    `;
+  }
+  const corner = typeof ctx.params.corner === "string" ? ctx.params.corner : "se";
+  const north = corner === "nw" || corner === "ne";
+  const west = corner === "nw" || corner === "sw";
+  const armY = north ? 5 : 55;
+  const chaiseX = west ? 5 : 55;
+  return `
+    <rect x="5" y="${armY}" width="90" height="40" rx="6"/>
+    <rect x="${chaiseX}" y="5" width="40" height="90" rx="6"/>
+  `;
 }
