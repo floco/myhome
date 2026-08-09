@@ -3,7 +3,7 @@ export interface Point {
   y: number;
 }
 
-export type WallType = "wall" | "divider";
+export type WallType = "wall" | "divider" | "garden";
 
 export interface Wall {
   id: string;

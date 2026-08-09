@@ -3,7 +3,7 @@ import { detectRooms } from "../src/roomDetection";
 import type { Wall, Point } from "../src/types";
 import { polygonArea } from "../src/geometry";
 
-function wall(id: string, start: Point, end: Point, type: "wall" | "divider" = "wall"): Wall {
+function wall(id: string, start: Point, end: Point, type: "wall" | "divider" | "garden" = "wall"): Wall {
   return { id, start, end, thickness: type === "wall" ? 0.15 : undefined, type };
 }
 
@@ -172,5 +172,19 @@ describe("detectRooms", () => {
     expect(rooms).toHaveLength(4);
     const areas = rooms.map((r) => r.areaM2).sort();
     expect(areas).toEqual([4, 4, 4, 4]);
+  });
+
+  it("closes an area from a garden-border loop, same as a divider", () => {
+    const walls: Wall[] = [
+      wall("g1", { x: 0, y: 0 }, { x: 6, y: 0 }, "garden"),
+      wall("g2", { x: 6, y: 0 }, { x: 6, y: 4 }, "garden"),
+      wall("g3", { x: 6, y: 4 }, { x: 0, y: 4 }, "garden"),
+      wall("g4", { x: 0, y: 4 }, { x: 0, y: 0 }, "garden"),
+    ];
+
+    const rooms = detectRooms(walls);
+
+    expect(rooms).toHaveLength(1);
+    expect(rooms[0].areaM2).toBeCloseTo(24, 5);
   });
 });
