@@ -23,9 +23,11 @@ class Opening(BaseModel):
     offset: float
     width: float
     swing: Literal["left-in", "right-in", "left-out", "right-out"] | None = None
+    doorKind: Literal["hinged", "swinging", "sliding", "garage"] | None = None
     haEntityId: str | None = None
     hasShutter: bool = False
     shutterEntityId: str | None = None
+    windowSide: Literal["in", "out"] | None = None
 
 
 class Room(BaseModel):

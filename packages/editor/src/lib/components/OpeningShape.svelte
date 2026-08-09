@@ -15,6 +15,7 @@
     haLayerActive = false,
     haState = null,
     shutterState = null,
+    readOnly = false,
     onselect,
     ondraghandlestart,
   }: {
@@ -26,6 +27,7 @@
     haLayerActive?: boolean;
     haState?: HaEntityState | null;
     shutterState?: HaEntityState | null;
+    readOnly?: boolean;
     onselect?: (id: string) => void;
     ondraghandlestart?: (openingId: string, side: "start" | "end", event: PointerEvent) => void;
   } = $props();
@@ -282,7 +284,7 @@
     {/each}
   {/if}
 
-  {#if selected}
+  {#if selected && !readOnly}
     <circle
       class="handle"
       cx={sp1.x}
@@ -307,6 +309,10 @@
 <style>
   .selected-gap {
     fill: var(--canvas-selected-fill);
+  }
+
+  .shutter-overlay {
+    pointer-events: none;
   }
 
   .handle {

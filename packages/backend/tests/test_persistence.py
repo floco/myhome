@@ -59,7 +59,7 @@ def make_doc_with_opening() -> HouseDocument:
         Opening(
             id="o1", wallId="w1", type="window", offset=1, width=1,
             haEntityId="binary_sensor.front_window", hasShutter=True,
-            shutterEntityId="cover.front_window_shutter",
+            shutterEntityId="cover.front_window_shutter", windowSide="out",
         )
     ]
     return doc
@@ -73,6 +73,21 @@ def test_round_trip_preserves_opening_ha_fields(tmp_path, monkeypatch):
     assert opening.haEntityId == "binary_sensor.front_window"
     assert opening.hasShutter is True
     assert opening.shutterEntityId == "cover.front_window_shutter"
+    assert opening.windowSide == "out"
+
+
+def test_round_trip_preserves_opening_door_kind(tmp_path, monkeypatch):
+    _setup(tmp_path, monkeypatch)
+    doc = make_doc()
+    doc.floors[0].walls = [
+        Wall(id="w1", type="wall", start={"x": 0, "y": 0}, end={"x": 4, "y": 0}, thickness=0.1)
+    ]
+    doc.floors[0].openings = [
+        Opening(id="o1", wallId="w1", type="door", offset=1, width=0.9, doorKind="sliding"),
+    ]
+    save_house(HOME_ID, doc)
+    loaded = load_house(HOME_ID)
+    assert loaded.floors[0].openings[0].doorKind == "sliding"
 
 
 def test_opening_ha_fields_default_when_absent():
@@ -80,3 +95,5 @@ def test_opening_ha_fields_default_when_absent():
     assert opening.haEntityId is None
     assert opening.hasShutter is False
     assert opening.shutterEntityId is None
+    assert opening.doorKind is None
+    assert opening.windowSide is None

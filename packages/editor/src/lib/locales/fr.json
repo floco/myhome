@@ -1286,7 +1286,11 @@
       "reset": "Réinitialiser",
       "undo": "Annuler",
       "redo": "Rétablir",
-      "delete": "Supprimer"
+      "delete": "Supprimer",
+      "editMode": "Édition",
+      "viewMode": "Lecture",
+      "switchToViewMode": "Passer en mode lecture seule",
+      "switchToEditMode": "Passer en mode édition"
     },
     "placeholder": {
       "insuranceDescription": "Suivez les polices d'assurance habitation, les garanties et les renouvellements."

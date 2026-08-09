@@ -174,6 +174,7 @@
     cursor: grab;
     user-select: none;
     min-height: 64px;
+    min-width: 0;
   }
 
   .furniture-item:hover {

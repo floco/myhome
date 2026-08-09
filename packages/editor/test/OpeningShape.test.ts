@@ -116,6 +116,25 @@ describe("OpeningShape — shutter overlay", () => {
     });
     expect(target.querySelector(".shutter-overlay")).toBeNull();
   });
+
+  it("has no click handler of its own, so it can't swallow clicks meant for the shapes underneath", () => {
+    let selectedId: string | null = null;
+    setup({
+      opening: makeWindow({ hasShutter: true, shutterEntityId: "cover.front_window_shutter" }),
+      haLayerActive: true,
+      shutterState: { state: "closed", attributes: {} },
+      tool: "select",
+      onselect: (id: string) => { selectedId = id; },
+    });
+    const overlay = target.querySelector(".shutter-overlay") as SVGPolygonElement;
+    expect(overlay).not.toBeNull();
+    overlay.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(selectedId).toBeNull();
+
+    const gap = target.querySelector("polygon:not(.shutter-overlay)") as SVGPolygonElement;
+    gap.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(selectedId).toBe("o1");
+  });
 });
 
 describe("OpeningShape — window glazing symbol", () => {

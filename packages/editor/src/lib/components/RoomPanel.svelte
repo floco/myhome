@@ -5,12 +5,14 @@
   let {
     room,
     haAreas = [],
+    readOnly = false,
     onupdate,
     onstartdrag,
     ondismiss,
   }: {
     room: Room;
     haAreas?: Array<{ area_id: string; name: string }>;
+    readOnly?: boolean;
     onupdate: (patch: { label?: string; haAreaId?: string | null }) => void;
     onstartdrag?: (e: PointerEvent) => void;
     ondismiss?: () => void;
@@ -57,6 +59,7 @@
     <input
       type="text"
       bind:value={labelDraft}
+      disabled={readOnly}
       onblur={commitLabel}
       onkeydown={(e) => {
         if (e.key === "Enter") {
@@ -69,7 +72,7 @@
 
   <label>
     <span>{$_('floorPlan.roomPanel.haArea')}</span>
-    <select value={room.haAreaId ?? ""} onchange={handleAreaChange}>
+    <select value={room.haAreaId ?? ""} disabled={readOnly} onchange={handleAreaChange}>
       <option value="">{$_('floorPlan.roomPanel.none')}</option>
       {#each haAreas as area (area.area_id)}
         <option value={area.area_id}>{area.name}</option>

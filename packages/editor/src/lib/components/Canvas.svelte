@@ -50,6 +50,7 @@
     onzoom,
     haLayerActive = false,
     haStates = new Map<string, HaEntityState>(),
+    readOnly = false,
   }: {
     floor: Floor;
     viewport: ViewportState;
@@ -83,6 +84,8 @@
     onzoom?: (screen: Point, factor: number) => void;
     haLayerActive?: boolean;
     haStates?: Map<string, HaEntityState>;
+    /** Disables all draw/edit interactions; pan, zoom and selection stay live. */
+    readOnly?: boolean;
   } = $props();
 
   const snapResult = $derived.by(() => {
@@ -248,6 +251,7 @@
       onselectfurniture?.(null);
       return;
     }
+    if (readOnly) return;
     if (tool === "door" || tool === "window") {
       if (wallHit && cursorWorld) onplacepoint?.(cursorWorld);
       return;
@@ -269,7 +273,7 @@
   onpointerdown={handlePointerDown}
   onpointermove={handlePointerMove}
   onpointerup={handlePointerUp}
-  ondblclick={() => ondblclick?.()}
+  ondblclick={() => { if (!readOnly) ondblclick?.(); }}
   onwheel={handleWheel}
 >
   {#if showGrid}
@@ -294,11 +298,11 @@
         {tool}
         selected={object.id === selectedFurnitureId}
         onselect={(id) => onselectfurniture?.(id)}
-        onbodymousedown={(id, e) => { e.stopPropagation(); onmovefurniturestart?.(id, e); }}
+        onbodymousedown={(id, e) => { e.stopPropagation(); if (!readOnly) onmovefurniturestart?.(id, e); }}
       />
     {/if}
   {/each}
-  {#if selectedFurnitureId}
+  {#if selectedFurnitureId && !readOnly}
     {@const selObj = furnitureObjects.find((f) => f.id === selectedFurnitureId)}
     {#if selObj}
       <FurnitureHandles
@@ -331,6 +335,7 @@
         {opening}
         {viewport}
         {tool}
+        {readOnly}
         selected={opening.id === selectedOpeningId}
         haLayerActive={haLayerActive}
         haState={opening.haEntityId ? (haStates.get(opening.haEntityId) ?? null) : null}
@@ -364,7 +369,7 @@
       pointer-events="none"
     />
   {/if}
-  {#if selectedWall}
+  {#if selectedWall && !readOnly}
     <SelectionHandles wall={selectedWall} {viewport} {draggingPoint} ondragstart={handleDragStart} />
   {/if}
 </svg>

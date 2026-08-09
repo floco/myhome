@@ -108,7 +108,7 @@ describe("App", () => {
 
     const buttons = Array.from(target.querySelectorAll(".floating-toolbar .ft-btn"));
     const titles = buttons.map((b) => (b as HTMLButtonElement).title);
-    expect(titles).toEqual(["Toggle item picker", "Toggle furniture library", "Save", "Reset view", "Undo (Ctrl+Z)", "Redo (Ctrl+Y)", "Select", "Wall", "Divider", "Door", "Window", "Delete selected (Del)"]);
+    expect(titles).toEqual(["Switch to view mode (read-only)", "Toggle item picker", "Toggle furniture library", "Save", "Reset view", "Undo (Ctrl+Z)", "Redo (Ctrl+Y)", "Select", "Wall", "Divider", "Door", "Window", "Delete selected (Del)"]);
 
     const selectBtn = toolbarBtn(target, "Select");
     expect(selectBtn.className).toContain("active");
@@ -138,6 +138,44 @@ describe("App", () => {
 
     expect(target.querySelectorAll("polygon.wall").length).toBe(wallsBefore - 1);
     expect(deleteBtn.disabled).toBe(true);
+  });
+
+  it("view mode hides editing tools and blocks wall/furniture mutation, without blocking selection", async () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = await mountAndLoad(target);
+    drawWalls(target, SAMPLE_RECT_CORNERS);
+
+    const wall = target.querySelector("polygon.wall")!;
+    wall.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+    expect(target.querySelector(".selection-handles")).not.toBeNull();
+
+    toolbarBtn(target, "Switch to view mode (read-only)").click();
+    flushSync();
+
+    // Editing tools are gone.
+    for (const title of ["Wall", "Divider", "Door", "Window", "Delete selected (Del)", "Toggle item picker", "Toggle furniture library", "Save"]) {
+      expect(toolbarBtn(target, title)).toBeUndefined();
+    }
+
+    // Selecting the wall again no longer exposes drag handles.
+    const wallAgain = target.querySelector("polygon.wall")!;
+    wallAgain.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+    expect(target.querySelector(".selection-handles")).toBeNull();
+
+    // Delete key no-ops while a wall is nominally selected.
+    const wallsBefore = target.querySelectorAll("polygon.wall").length;
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete" }));
+    flushSync();
+    expect(target.querySelectorAll("polygon.wall").length).toBe(wallsBefore);
+
+    // Toggling back to edit mode restores the toolbar.
+    toolbarBtn(target, "Switch to edit mode").click();
+    flushSync();
+    expect(toolbarBtn(target, "Wall")).not.toBeUndefined();
   });
 
   it("drawing a wall chain places points, commits segments, and closes the loop", async () => {

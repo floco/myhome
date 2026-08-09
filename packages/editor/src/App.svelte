@@ -143,6 +143,7 @@
   let pickerHighlightId = $state<string | null>(null);
   let pointerDragFurnitureTemplateId = $state<string | null>(null);
   let dragGhost = $state<{ x: number; y: number; emoji: string; label: string } | null>(null);
+  let furniturePointerDownAt: { x: number; y: number } | null = null;
 
   let commandPaletteOpen = $state(false);
   let selectedChoreId = $state<string | null>(null);
@@ -293,6 +294,16 @@
   let pickerOpen = $state(false);
   const ALL_FLOOR_ID = "__all__";
   let allFloorsMode = $state(false);
+  let viewMode = $state(false);
+
+  function toggleViewMode(): void {
+    viewMode = !viewMode;
+    if (viewMode) {
+      toolStore.setTool("select");
+      pickerOpen = false;
+      furnitureLibraryOpen = false;
+    }
+  }
   const ftDrag = createFloatingDrag(".floating-toolbar");
   const fpDrag = createFloatingDrag(".furniture-float");
   const ipDrag = createFloatingDrag(".picker-float");
@@ -678,10 +689,11 @@
       commandPaletteOpen = true;
       return;
     }
-    if (event.ctrlKey && event.key === "s") { event.preventDefault(); if (isFloorPlan) handleSave(); return; }
+    if (event.ctrlKey && event.key === "s") { event.preventDefault(); if (isFloorPlan && !viewMode) handleSave(); return; }
     const target = event.target as HTMLElement;
     if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
     if (event.code === "Space") { event.preventDefault(); spacePressed = true; return; }
+    if (viewMode) return;
     if (event.ctrlKey && event.key === "z" && !event.shiftKey) { event.preventDefault(); handleUndo(); return; }
     if (event.ctrlKey && (event.key === "y" || (event.key === "z" && event.shiftKey))) { event.preventDefault(); handleRedo(); return; }
     if (event.key === "Escape") {
@@ -713,6 +725,7 @@
 
   function handleFurniturePointerDown(templateId: string, e: PointerEvent): void {
     pointerDragFurnitureTemplateId = templateId;
+    furniturePointerDownAt = { x: e.clientX, y: e.clientY };
     dragGhost = { x: e.clientX, y: e.clientY, emoji: "🪑", label: $_(`floorPlan.furnitureLibrary.items.${templateId}`) };
   }
 
@@ -720,10 +733,18 @@
     draggingItemId = null;
     draggingLayerId = null;
     pointerDragFurnitureTemplateId = null;
+    furniturePointerDownAt = null;
     dragGhost = null;
   }
 
+  // A furniture item tapped/clicked rather than dragged releases at
+  // (near) the same point it was picked up at -- which is still over the
+  // picker panel, not the canvas. Treat that as "add at viewport center"
+  // instead of dropping the object invisibly behind the panel.
+  const FURNITURE_CLICK_THRESHOLD_PX = 6;
+
   function placeDraggedAt(clientX: number, clientY: number): void {
+    if (viewMode) return;
     const canvasEl = document.querySelector(".canvas-area") as HTMLElement | null;
     if (!canvasEl) return;
     const rect = canvasEl.getBoundingClientRect();
@@ -732,10 +753,16 @@
     if (pointerDragFurnitureTemplateId) {
       const template = getTemplate(pointerDragFurnitureTemplateId);
       if (template) {
-        const worldX = (clientX - rect.left - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
-        const worldY = (clientY - rect.top - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
+        const wasClick = furniturePointerDownAt
+          ? Math.hypot(clientX - furniturePointerDownAt.x, clientY - furniturePointerDownAt.y) < FURNITURE_CLICK_THRESHOLD_PX
+          : false;
+        const dropScreenX = wasClick ? rect.left + rect.width / 2 : clientX;
+        const dropScreenY = wasClick ? rect.top + rect.height / 2 : clientY;
+        const worldX = (dropScreenX - rect.left - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
+        const worldY = (dropScreenY - rect.top - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
         floorStore.addFurniture(pointerDragFurnitureTemplateId, worldX, worldY, template.defaultWidth, template.defaultHeight);
       }
+      furniturePointerDownAt = null;
       return;
     }
 
@@ -941,12 +968,14 @@
               onzoom={handleZoom}
               haLayerActive={haLayerActive}
               haStates={haStateStore.states}
+              readOnly={viewMode}
             />
             {#if selectedOpening}
               <div class="opening-panel-float" style={opDrag.pos ? `left:${opDrag.pos.x}px;top:${opDrag.pos.y}px;right:auto;transform:none` : ''}>
                 <OpeningPanel
                   opening={selectedOpening}
                   areaIds={selectedOpeningAreaIds}
+                  readOnly={viewMode}
                   onupdate={(patch) => floorStore.updateOpening(selectedOpening.id, patch)}
                   onstartdrag={opDrag.startDrag}
                   ondismiss={() => toolStore.selectOpening(null)}
@@ -958,6 +987,7 @@
                 <RoomPanel
                   room={selectedRoom}
                   {haAreas}
+                  readOnly={viewMode}
                   onupdate={(patch) => floorStore.updateRoom(selectedRoom.id, patch)}
                   onstartdrag={rpDrag.startDrag}
                   ondismiss={() => toolStore.selectRoom(null)}
@@ -1212,40 +1242,57 @@
                   toolStore.selectRoom(null);
                   toolStore.selectOpening(null);
                 }}
-                onaddfloor={(name) => floorStore.addFloor(name)}
-                onrenamefloor={(id, name) => floorStore.renameFloor(id, name)}
-                onremovefloor={(id) => floorStore.removeFloor(id)}
+                onaddfloor={viewMode ? undefined : (name) => {
+                  allFloorsMode = false;
+                  floorStore.addFloor(name);
+                  toolStore.select(null);
+                  toolStore.selectRoom(null);
+                  toolStore.selectOpening(null);
+                }}
+                onrenamefloor={viewMode ? undefined : (id, name) => floorStore.renameFloor(id, name)}
+                onremovefloor={viewMode ? undefined : (id) => floorStore.removeFloor(id)}
                 compact={true}
               />
               <div class="ft-sep"></div>
+              <button
+                class="ft-btn"
+                class:active={viewMode}
+                title={viewMode ? $_('app.floatingToolbar.switchToEditMode') : $_('app.floatingToolbar.switchToViewMode')}
+                onclick={toggleViewMode}
+              >{viewMode ? '👁' : '✏️'} <span class="ft-label">{viewMode ? $_('app.floatingToolbar.viewMode') : $_('app.floatingToolbar.editMode')}</span></button>
+              <div class="ft-sep"></div>
               <LayersDropdown {activeLayers} ontoggle={toggleLayer} popoverAlign="left" />
-              <button
-                class="ft-btn"
-                class:active={pickerOpen}
-                title={$_('app.floatingToolbar.togglePicker')}
-                onclick={() => { pickerOpen = !pickerOpen; }}
-              >📋 <span class="ft-label">{$_('app.floatingToolbar.picker')}</span></button>
-              <button
-                class="ft-btn"
-                class:active={furnitureLibraryOpen}
-                title={$_('app.floatingToolbar.toggleFurniture')}
-                onclick={() => { furnitureLibraryOpen = !furnitureLibraryOpen; }}
-              >🪑 <span class="ft-label">{$_('app.floatingToolbar.furniture')}</span></button>
-              <div class="ft-sep"></div>
-              <button
-                class="ft-btn save-btn"
-                class:saved={saveStatus === "saved"}
-                class:save-error={saveStatus === "error"}
-                class:dirty={floorStore.isDirty && saveStatus === "idle"}
-                disabled={saveStatus === "saving"}
-                title={saveTitle}
-                onclick={handleSave}
-              >{saveIcon} <span class="ft-label">{saveStatus === 'error' ? $_('app.floatingToolbar.errorLabel') : saveStatus === 'saving' ? $_('settings.security.saving') : saveStatus === 'saved' ? $_('app.floatingToolbar.saved') : $_('common.save')}</span></button>
+              {#if !viewMode}
+                <button
+                  class="ft-btn"
+                  class:active={pickerOpen}
+                  title={$_('app.floatingToolbar.togglePicker')}
+                  onclick={() => { pickerOpen = !pickerOpen; }}
+                >📋 <span class="ft-label">{$_('app.floatingToolbar.picker')}</span></button>
+                <button
+                  class="ft-btn"
+                  class:active={furnitureLibraryOpen}
+                  title={$_('app.floatingToolbar.toggleFurniture')}
+                  onclick={() => { furnitureLibraryOpen = !furnitureLibraryOpen; }}
+                >🪑 <span class="ft-label">{$_('app.floatingToolbar.furniture')}</span></button>
+                <div class="ft-sep"></div>
+                <button
+                  class="ft-btn save-btn"
+                  class:saved={saveStatus === "saved"}
+                  class:save-error={saveStatus === "error"}
+                  class:dirty={floorStore.isDirty && saveStatus === "idle"}
+                  disabled={saveStatus === "saving"}
+                  title={saveTitle}
+                  onclick={handleSave}
+                >{saveIcon} <span class="ft-label">{saveStatus === 'error' ? $_('app.floatingToolbar.errorLabel') : saveStatus === 'saving' ? $_('settings.security.saving') : saveStatus === 'saved' ? $_('app.floatingToolbar.saved') : $_('common.save')}</span></button>
+              {/if}
               <button class="ft-btn" title={$_('app.floatingToolbar.resetView')} onclick={() => viewportStore.reset(floorStore.floor, canvasWidth, canvasHeight)}>↺ <span class="ft-label">{$_('app.floatingToolbar.reset')}</span></button>
-              <div class="ft-sep"></div>
-              <button class="ft-btn" title={$_('floorPlan.tools.undo')} disabled={!floorStore.hasUndo} onclick={handleUndo}>↩ <span class="ft-label">{$_('app.floatingToolbar.undo')}</span></button>
-              <button class="ft-btn" title={$_('floorPlan.tools.redo')} disabled={!floorStore.hasRedo} onclick={handleRedo}>↪ <span class="ft-label">{$_('app.floatingToolbar.redo')}</span></button>
-              {#if !choreLayerActive && !allFloorsMode}
+              {#if !viewMode}
+                <div class="ft-sep"></div>
+                <button class="ft-btn" title={$_('floorPlan.tools.undo')} disabled={!floorStore.hasUndo} onclick={handleUndo}>↩ <span class="ft-label">{$_('app.floatingToolbar.undo')}</span></button>
+                <button class="ft-btn" title={$_('floorPlan.tools.redo')} disabled={!floorStore.hasRedo} onclick={handleRedo}>↪ <span class="ft-label">{$_('app.floatingToolbar.redo')}</span></button>
+              {/if}
+              {#if !choreLayerActive && !allFloorsMode && !viewMode}
                 <div class="ft-sep"></div>
                 <button class="ft-btn" title={$_('floorPlan.tools.select')} class:active={toolStore.state.tool === "select"} onclick={() => toolStore.setTool("select")}>🖱 <span class="ft-label">{$_('floorPlan.tools.select')}</span></button>
                 <button class="ft-btn" title={$_('floorPlan.tools.wall')} class:active={toolStore.state.tool === "wall"} onclick={() => toolStore.setTool("wall")}>🧱 <span class="ft-label">{$_('floorPlan.tools.wall')}</span></button>
