@@ -5,10 +5,11 @@ export type FurnitureCategory =
   | "bathroom"
   | "office"
   | "outdoor"
-  | "garden";
+  | "garden"
+  | "structural";
 
 export const FURNITURE_CATEGORIES: FurnitureCategory[] = [
-  "living-room", "bedroom", "kitchen-dining", "bathroom", "office", "outdoor", "garden",
+  "living-room", "bedroom", "kitchen-dining", "bathroom", "office", "outdoor", "garden", "structural",
 ];
 
 export const CATEGORY_LABELS: Record<FurnitureCategory, string> = {
@@ -19,7 +20,29 @@ export const CATEGORY_LABELS: Record<FurnitureCategory, string> = {
   "office": "Office",
   "outdoor": "Outdoor",
   "garden": "Garden",
+  "structural": "Structural",
 };
+
+/** A single configurable parameter a furniture template exposes to the user. */
+export type FurnitureParamDef =
+  | { id: string; type: "integer"; labelKey: string; min: number; max: number; default: number }
+  | { id: string; type: "number"; labelKey: string; min: number; max: number; step?: number; unit?: string; default: number }
+  | {
+      id: string;
+      type: "enum";
+      labelKey: string;
+      options: { value: string; labelKey: string }[];
+      default: string;
+      /** Hide this field in the params panel unless another param currently equals a given value. */
+      visibleWhen?: { paramId: string; equals: string };
+    };
+
+/** Passed to a template's `render` function: the instance's real size and resolved params. */
+export interface FurnitureRenderContext {
+  width: number;  // meters, from the FurnitureObject instance
+  height: number; // meters
+  params: Record<string, string | number>; // schema defaults merged with the instance's own params
+}
 
 export interface FurnitureTemplate {
   id: string;
@@ -27,7 +50,9 @@ export interface FurnitureTemplate {
   category: FurnitureCategory;
   defaultWidth: number;
   defaultHeight: number;
-  svgContent: string;
+  svgContent: string; // static fallback; always used by the library picker's thumbnail
+  params?: FurnitureParamDef[]; // omitted for templates with no configurable parameters
+  render?: (ctx: FurnitureRenderContext) => string; // when present, used instead of svgContent for on-canvas rendering
 }
 
 export const FURNITURE_TEMPLATES: FurnitureTemplate[] = [
@@ -531,8 +556,46 @@ export const FURNITURE_TEMPLATES: FurnitureTemplate[] = [
       <line x1="73" y1="5" x2="73" y2="95" fill="none" stroke-dasharray="3 7" stroke-width="1"/>
     `,
   },
+  // ── Structural ──────────────────────────────────────────
+  {
+    id: "stairs",
+    label: "Stairs",
+    category: "structural",
+    defaultWidth: 1.0,
+    defaultHeight: 3.0,
+    svgContent: `
+      <rect x="5" y="5" width="90" height="90" rx="2"/>
+      <line x1="5" y1="76" x2="24" y2="76" fill="none"/>
+      <line x1="24" y1="76" x2="24" y2="57" fill="none"/>
+      <line x1="24" y1="57" x2="43" y2="57" fill="none"/>
+      <line x1="43" y1="57" x2="43" y2="38" fill="none"/>
+      <line x1="43" y1="38" x2="62" y2="38" fill="none"/>
+      <line x1="62" y1="38" x2="62" y2="19" fill="none"/>
+      <line x1="62" y1="19" x2="81" y2="19" fill="none"/>
+    `,
+  },
 ];
 
 export function getTemplate(id: string): FurnitureTemplate | undefined {
   return FURNITURE_TEMPLATES.find((t) => t.id === id);
+}
+
+export function defaultFurnitureParams(template: FurnitureTemplate): Record<string, string | number> | undefined {
+  if (!template.params || template.params.length === 0) return undefined;
+  return Object.fromEntries(template.params.map((p) => [p.id, p.default]));
+}
+
+export function resolveFurnitureParams(
+  template: FurnitureTemplate,
+  object: { params?: Record<string, string | number> }
+): Record<string, string | number> {
+  return { ...defaultFurnitureParams(template), ...object.params };
+}
+
+export function resolveFurnitureSvg(
+  template: FurnitureTemplate,
+  object: { width: number; height: number; params?: Record<string, string | number> }
+): string {
+  if (!template.render) return template.svgContent;
+  return template.render({ width: object.width, height: object.height, params: resolveFurnitureParams(template, object) });
 }

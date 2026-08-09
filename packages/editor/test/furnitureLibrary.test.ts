@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { FURNITURE_TEMPLATES, getTemplate, FURNITURE_CATEGORIES } from "../src/lib/furnitureLibrary";
+import {
+  FURNITURE_TEMPLATES,
+  getTemplate,
+  FURNITURE_CATEGORIES,
+  defaultFurnitureParams,
+  resolveFurnitureParams,
+  resolveFurnitureSvg,
+} from "../src/lib/furnitureLibrary";
+import type { FurnitureObject } from "@myhome/geometry";
 
 describe("furnitureLibrary", () => {
   it("exports a non-empty template array", () => {
@@ -41,5 +49,31 @@ describe("furnitureLibrary", () => {
     expect(cats.has("office")).toBe(true);
     expect(cats.has("outdoor")).toBe(true);
     expect(cats.has("garden")).toBe(true);
+  });
+
+  it("includes the structural category with a Stairs template that has no params", () => {
+    expect(FURNITURE_CATEGORIES).toContain("structural");
+    const stairs = getTemplate("stairs");
+    expect(stairs).toBeDefined();
+    expect(stairs?.category).toBe("structural");
+    expect(stairs?.params).toBeUndefined();
+    expect(stairs?.render).toBeUndefined();
+  });
+
+  it("defaultFurnitureParams returns undefined for templates without a params schema", () => {
+    const t = getTemplate("coffee-table")!;
+    expect(defaultFurnitureParams(t)).toBeUndefined();
+  });
+
+  it("resolveFurnitureSvg falls back to static svgContent when template.render is absent", () => {
+    const t = getTemplate("coffee-table")!;
+    const obj: FurnitureObject = { id: "f1", templateId: "coffee-table", x: 0, y: 0, width: 1.2, height: 0.6, rotation: 0 };
+    expect(resolveFurnitureSvg(t, obj)).toBe(t.svgContent);
+  });
+
+  it("resolveFurnitureParams returns an empty object for a template with no schema and no instance params", () => {
+    const t = getTemplate("coffee-table")!;
+    const obj: FurnitureObject = { id: "f1", templateId: "coffee-table", x: 0, y: 0, width: 1.2, height: 0.6, rotation: 0 };
+    expect(resolveFurnitureParams(t, obj)).toEqual({});
   });
 });
