@@ -223,6 +223,7 @@
     "tools": {
       "undo": "Undo (Ctrl+Z)",
       "redo": "Redo (Ctrl+Y)",
+      "pan": "Pan",
       "select": "Select",
       "wall": "Wall",
       "divider": "Divider",

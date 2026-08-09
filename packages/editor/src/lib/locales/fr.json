@@ -223,6 +223,7 @@
     "tools": {
       "undo": "Annuler (Ctrl+Z)",
       "redo": "Rétablir (Ctrl+Y)",
+      "pan": "Panoramique",
       "select": "Sélectionner",
       "wall": "Mur",
       "divider": "Séparation",
