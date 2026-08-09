@@ -144,21 +144,84 @@ def _render_opening(wall: Wall, opening: Opening) -> str:
             f'x1="{_fmt(p1.x)}" y1="{_fmt(p1.y)}" '
             f'x2="{_fmt(p2.x)}" y2="{_fmt(p2.y)}" />'
         )
-    return _render_door(p1, p2, dir_x, dir_y, opening.swing or "left-in", render_width)
+    thickness = wall.thickness if wall.thickness is not None else 0.1
+    door_kind = opening.doorKind or "hinged"
+    default_swing = "in" if door_kind == "double" else "left-in"
+    swing = opening.swing or default_swing
+    return _render_door(thickness, p1, p2, dir_x, dir_y, door_kind, swing, render_width)
 
 
 def _render_door(
-    p1: Point, p2: Point, dir_x: float, dir_y: float, swing: str, width: float
+    thickness: float,
+    p1: Point,
+    p2: Point,
+    dir_x: float,
+    dir_y: float,
+    door_kind: str,
+    swing: str,
+    width: float,
 ) -> str:
     if width < 1e-9:
         return ""
     perp_left = Point(x=-dir_y, y=dir_x)
     perp_right = Point(x=dir_y, y=-dir_x)
+
+    if door_kind == "sliding":
+        mag = (thickness / 2) * 0.5
+        a = Point(x=p1.x + perp_right.x * mag, y=p1.y + perp_right.y * mag)
+        b = Point(x=p2.x + perp_right.x * mag, y=p2.y + perp_right.y * mag)
+        return (
+            f'<line class="door-sliding" '
+            f'x1="{_fmt(a.x)}" y1="{_fmt(a.y)}" '
+            f'x2="{_fmt(b.x)}" y2="{_fmt(b.y)}" />'
+        )
+
+    if door_kind == "garage":
+        tick_count = 5
+        half_thick = thickness / 2
+        perp_full = Point(x=-dir_y * half_thick, y=dir_x * half_thick)
+        parts = []
+        for i in range(tick_count):
+            t = i / (tick_count - 1)
+            cx = p1.x + (p2.x - p1.x) * t
+            cy = p1.y + (p2.y - p1.y) * t
+            a = Point(x=cx + perp_full.x, y=cy + perp_full.y)
+            b = Point(x=cx - perp_full.x, y=cy - perp_full.y)
+            parts.append(
+                f'<line class="door-garage" '
+                f'x1="{_fmt(a.x)}" y1="{_fmt(a.y)}" '
+                f'x2="{_fmt(b.x)}" y2="{_fmt(b.y)}" />'
+            )
+        return "\n".join(parts)
+
+    if door_kind == "double":
+        perp = perp_right if swing == "out" else perp_left
+        half_width = width / 2
+        mid = Point(x=(p1.x + p2.x) / 2, y=(p1.y + p2.y) / 2)
+        return (
+            f"{_door_leaf_and_arc(p1, mid, perp, half_width)}\n"
+            f"{_door_leaf_and_arc(p2, mid, perp, half_width)}"
+        )
+
+    if door_kind == "swinging":
+        is_left_hinge = swing in ("left-in", "left-out")
+        hinge = p1 if is_left_hinge else p2
+        other = p2 if is_left_hinge else p1
+        return (
+            f"{_door_leaf_and_arc(hinge, other, perp_left, width)}\n"
+            f"{_door_leaf_and_arc(hinge, other, perp_right, width)}"
+        )
+
+    # hinged (default)
     is_left_hinge = swing in ("left-in", "left-out")
     is_in_swing = swing in ("left-in", "right-in")
     hinge = p1 if is_left_hinge else p2
     other = p2 if is_left_hinge else p1
     perp = perp_left if is_in_swing else perp_right
+    return _door_leaf_and_arc(hinge, other, perp, width)
+
+
+def _door_leaf_and_arc(hinge: Point, other: Point, perp: Point, width: float) -> str:
     open_end = Point(x=hinge.x + perp.x * width, y=hinge.y + perp.y * width)
     leaf = (
         f'<line class="door-leaf" '
