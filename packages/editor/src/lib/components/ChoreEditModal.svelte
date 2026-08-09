@@ -347,7 +347,7 @@
   .hist-notes { color: var(--text-muted); font-style: italic; font-size: 11px; flex: 1; }
   .hist-del { margin-left: auto; background: none; border: none; cursor: pointer; color: var(--text-faint); font-size: 11px; padding: 0 2px; line-height: 1; opacity: 0.5; }
   .hist-del:hover { opacity: 1; color: var(--danger); }
-  .hist-label { color: var(--text-faint); font-weight: 400; }
+  .hist-label { color: var(--text-faint); font-weight: 400; margin-left: 4px; }
 
   .assignments-pane { min-height: 160px; display: flex; flex-direction: column; gap: 8px; }
   .no-assignments { font-size: 11px; color: var(--text-faint); font-style: italic; padding: 12px 0; }
