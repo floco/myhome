@@ -196,6 +196,10 @@ export const FURNITURE_TEMPLATES: FurnitureTemplate[] = [
     svgContent: `
       <rect x="10" y="10" width="80" height="80" rx="3"/>
     `,
+    params: [
+      { id: "chairCount", type: "integer", labelKey: "floorPlan.furnitureLibrary.params.chairCount", min: 0, max: 8, default: 4 },
+    ],
+    render: renderDiningTableRect,
   },
   {
     id: "dining-table-round",
@@ -206,6 +210,10 @@ export const FURNITURE_TEMPLATES: FurnitureTemplate[] = [
     svgContent: `
       <circle cx="50" cy="50" r="42"/>
     `,
+    params: [
+      { id: "chairCount", type: "integer", labelKey: "floorPlan.furnitureLibrary.params.chairCount", min: 0, max: 8, default: 4 },
+    ],
+    render: renderDiningTableRound,
   },
   {
     id: "dining-chair",
@@ -598,4 +606,60 @@ export function resolveFurnitureSvg(
 ): string {
   if (!template.render) return template.svgContent;
   return template.render({ width: object.width, height: object.height, params: resolveFurnitureParams(template, object) });
+}
+
+export interface ChairPosition {
+  x: number;
+  y: number;
+  rotation: number; // degrees, so the chair's back faces away from the table
+}
+
+export function computeRectTableChairPositions(chairCount: number): ChairPosition[] {
+  if (chairCount <= 0) return [];
+  const positions: ChairPosition[] = [];
+  const sides: Array<"top" | "right" | "bottom" | "left"> = ["top", "right", "bottom", "left"];
+  const perSide = Math.ceil(chairCount / 4);
+  let remaining = chairCount;
+  for (const side of sides) {
+    const count = Math.min(perSide, remaining);
+    for (let i = 0; i < count; i++) {
+      const t = (i + 1) / (count + 1);
+      if (side === "top") positions.push({ x: 10 + t * 80, y: -8, rotation: 180 });
+      else if (side === "bottom") positions.push({ x: 10 + t * 80, y: 108, rotation: 0 });
+      else if (side === "left") positions.push({ x: -8, y: 10 + t * 80, rotation: 90 });
+      else positions.push({ x: 108, y: 10 + t * 80, rotation: 270 });
+    }
+    remaining -= count;
+    if (remaining <= 0) break;
+  }
+  return positions;
+}
+
+export function computeRoundTableChairPositions(chairCount: number): ChairPosition[] {
+  if (chairCount <= 0) return [];
+  const positions: ChairPosition[] = [];
+  for (let i = 0; i < chairCount; i++) {
+    const angle = (360 / chairCount) * i;
+    const rad = (angle * Math.PI) / 180;
+    positions.push({ x: 50 + 58 * Math.sin(rad), y: 50 - 58 * Math.cos(rad), rotation: angle });
+  }
+  return positions;
+}
+
+function chairMarker(pos: ChairPosition): string {
+  return `<rect x="${(pos.x - 8).toFixed(2)}" y="${(pos.y - 7).toFixed(2)}" width="16" height="14" rx="2" transform="rotate(${pos.rotation.toFixed(2)} ${pos.x.toFixed(2)} ${pos.y.toFixed(2)})"/>`;
+}
+
+function renderDiningTableRect(ctx: FurnitureRenderContext): string {
+  const chairCount = typeof ctx.params.chairCount === "number" ? ctx.params.chairCount : 4;
+  const table = `<rect x="10" y="10" width="80" height="80" rx="3"/>`;
+  const chairs = computeRectTableChairPositions(chairCount).map(chairMarker).join("\n");
+  return [table, chairs].filter(Boolean).join("\n");
+}
+
+function renderDiningTableRound(ctx: FurnitureRenderContext): string {
+  const chairCount = typeof ctx.params.chairCount === "number" ? ctx.params.chairCount : 4;
+  const table = `<circle cx="50" cy="50" r="42"/>`;
+  const chairs = computeRoundTableChairPositions(chairCount).map(chairMarker).join("\n");
+  return [table, chairs].filter(Boolean).join("\n");
 }

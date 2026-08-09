@@ -6,6 +6,8 @@ import {
   defaultFurnitureParams,
   resolveFurnitureParams,
   resolveFurnitureSvg,
+  computeRectTableChairPositions,
+  computeRoundTableChairPositions,
 } from "../src/lib/furnitureLibrary";
 import type { FurnitureObject } from "@myhome/geometry";
 
@@ -75,5 +77,47 @@ describe("furnitureLibrary", () => {
     const t = getTemplate("coffee-table")!;
     const obj: FurnitureObject = { id: "f1", templateId: "coffee-table", x: 0, y: 0, width: 1.2, height: 0.6, rotation: 0 };
     expect(resolveFurnitureParams(t, obj)).toEqual({});
+  });
+
+  it("computeRectTableChairPositions distributes chairs evenly across all 4 sides", () => {
+    expect(computeRectTableChairPositions(0)).toEqual([]);
+    expect(computeRectTableChairPositions(4)).toHaveLength(4);
+    expect(computeRectTableChairPositions(8)).toHaveLength(8);
+  });
+
+  it("computeRoundTableChairPositions spaces chairs evenly by angle", () => {
+    expect(computeRoundTableChairPositions(0)).toEqual([]);
+    const four = computeRoundTableChairPositions(4);
+    expect(four).toHaveLength(4);
+    // angle 0 -> straight above table center (50,50)
+    expect(four[0].x).toBeCloseTo(50, 5);
+    expect(four[0].y).toBeLessThan(50);
+    // angle 90 -> straight right of center
+    expect(four[1].x).toBeGreaterThan(50);
+    expect(four[1].y).toBeCloseTo(50, 5);
+  });
+
+  it("dining-table-rect declares a chairCount param and renders that many chair markers", () => {
+    const t = getTemplate("dining-table-rect")!;
+    expect(t.params?.find((p) => p.id === "chairCount")).toBeDefined();
+    const obj: FurnitureObject = { id: "f1", templateId: "dining-table-rect", x: 0, y: 0, width: 1.6, height: 0.9, rotation: 0, params: { chairCount: 6 } };
+    const svg = resolveFurnitureSvg(t, obj);
+    expect((svg.match(/<rect/g) ?? []).length).toBe(1 /* table */ + 6 /* chairs */);
+  });
+
+  it("dining-table-round declares a chairCount param and renders that many chair markers", () => {
+    const t = getTemplate("dining-table-round")!;
+    expect(t.params?.find((p) => p.id === "chairCount")).toBeDefined();
+    const obj: FurnitureObject = { id: "f2", templateId: "dining-table-round", x: 0, y: 0, width: 1.2, height: 1.2, rotation: 0, params: { chairCount: 3 } };
+    const svg = resolveFurnitureSvg(t, obj);
+    expect(svg).toContain("<circle");
+    expect((svg.match(/<rect/g) ?? []).length).toBe(3);
+  });
+
+  it("a table with chairCount 0 renders the table with no chairs", () => {
+    const t = getTemplate("dining-table-rect")!;
+    const obj: FurnitureObject = { id: "f3", templateId: "dining-table-rect", x: 0, y: 0, width: 1.6, height: 0.9, rotation: 0, params: { chairCount: 0 } };
+    const svg = resolveFurnitureSvg(t, obj);
+    expect((svg.match(/<rect/g) ?? []).length).toBe(1);
   });
 });
