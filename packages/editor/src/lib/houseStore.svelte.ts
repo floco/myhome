@@ -1,6 +1,7 @@
 import { detectRooms, matchRooms, pointsEqual } from "@myhome/geometry";
 import type { Floor, Wall, Opening, Room, Point, House, HouseDocument, FurnitureObject } from "@myhome/geometry";
 import { createEmptyHouse } from "./emptyFloor";
+import { getTemplate, defaultFurnitureParams } from "./furnitureLibrary";
 
 const MAX_HISTORY = 50;
 
@@ -220,7 +221,9 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
     height: number
   ): void {
     saveSnapshot();
-    const obj: FurnitureObject = { id: genId(), templateId, x, y, width, height, rotation: 0 };
+    const template = getTemplate(templateId);
+    const params = template ? defaultFurnitureParams(template) : undefined;
+    const obj: FurnitureObject = { id: genId(), templateId, x, y, width, height, rotation: 0, ...(params ? { params } : {}) };
     ensureFurniture(currentFloor()).push(obj);
   }
 
@@ -265,6 +268,13 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
     if (!opts?.skipHistory) saveSnapshot();
     else generation++;
     obj.rotation = rotation;
+  }
+
+  function updateFurnitureParams(id: string, patch: Record<string, string | number>): void {
+    const obj = ensureFurniture(currentFloor()).find((f) => f.id === id);
+    if (!obj) return;
+    saveSnapshot();
+    obj.params = { ...obj.params, ...patch };
   }
 
   // API load/save
@@ -380,6 +390,7 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
     moveFurniture,
     resizeFurniture,
     rotateFurniture,
+    updateFurnitureParams,
     reload: init,
     save,
   };

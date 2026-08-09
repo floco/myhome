@@ -114,4 +114,39 @@ describe("houseStore furniture methods", () => {
     // Accessing via store getter should still return []
     expect(store.currentFurniture).toEqual([]);
   });
+
+  it("addFurniture seeds params from the template's schema defaults", () => {
+    store.addFurniture("sofa", 0, 0, 2.2, 0.9);
+    expect(store.currentFurniture[0].params).toEqual({ shape: "straight", corner: "se" });
+  });
+
+  it("addFurniture leaves params undefined for templates without a schema", () => {
+    store.addFurniture("coffee-table", 0, 0, 1.2, 0.6);
+    expect(store.currentFurniture[0].params).toBeUndefined();
+  });
+
+  it("updateFurnitureParams merges a patch into object.params with history", () => {
+    store.addFurniture("sofa", 0, 0, 2.2, 0.9);
+    const id = store.currentFurniture[0].id;
+    const gen0 = store.generation;
+    store.updateFurnitureParams(id, { shape: "l-shaped" });
+    const obj = store.currentFurniture.find((f) => f.id === id)!;
+    expect(obj.params).toEqual({ shape: "l-shaped", corner: "se" });
+    expect(store.generation).toBeGreaterThan(gen0);
+  });
+
+  it("updateFurnitureParams supports undo", () => {
+    store.addFurniture("sofa", 0, 0, 2.2, 0.9);
+    const id = store.currentFurniture[0].id;
+    store.updateFurnitureParams(id, { shape: "l-shaped" });
+    store.undo();
+    const obj = store.currentFurniture.find((f) => f.id === id)!;
+    expect(obj.params?.shape).toBe("straight");
+  });
+
+  it("updateFurnitureParams is a no-op for an unknown id", () => {
+    store.addFurniture("sofa", 0, 0, 2.2, 0.9);
+    store.updateFurnitureParams("nonexistent", { shape: "l-shaped" });
+    expect(store.currentFurniture[0].params?.shape).toBe("straight");
+  });
 });
