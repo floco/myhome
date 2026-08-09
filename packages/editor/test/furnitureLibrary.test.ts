@@ -8,6 +8,7 @@ import {
   resolveFurnitureSvg,
   computeRectTableChairPositions,
   computeRoundTableChairPositions,
+  computeDeckPlankLayout,
 } from "../src/lib/furnitureLibrary";
 import type { FurnitureParamDef } from "../src/lib/furnitureLibrary";
 import type { FurnitureObject } from "@myhome/geometry";
@@ -150,5 +151,29 @@ describe("furnitureLibrary", () => {
     expect(svgNw).toContain('x="5" y="5" width="40" height="90"'); // vertical arm at left
     expect(svgSe).toContain('x="5" y="55" width="90" height="40"'); // horizontal arm at bottom
     expect(svgSe).toContain('x="55" y="5" width="40" height="90"'); // vertical arm at right
+  });
+
+  it("computeDeckPlankLayout adds more rows as the deck gets taller (fixed real plank width)", () => {
+    const short = computeDeckPlankLayout(4, 3, 14, 200);
+    const tall = computeDeckPlankLayout(4, 6, 14, 200);
+    // Doubling the real height should roughly double the row count (rounding
+    // to a whole number of rows means it won't land on an exact 2x).
+    expect(tall.rows).toBeGreaterThan(short.rows * 1.8);
+    expect(tall.rows).toBeLessThan(short.rows * 2.3);
+  });
+
+  it("computeDeckPlankLayout adds more planks per row as the deck gets wider (fixed real plank length)", () => {
+    const narrow = computeDeckPlankLayout(4, 3, 14, 200);
+    const wide = computeDeckPlankLayout(8, 3, 14, 200);
+    expect(wide.planksPerRow).toBeGreaterThan(narrow.planksPerRow);
+  });
+
+  it("deck-terrace declares plankWidth and plankLength params and renders a plank grid", () => {
+    const t = getTemplate("deck-terrace")!;
+    expect(t.params?.map((p) => p.id)).toEqual(["plankWidth", "plankLength"]);
+    const obj: FurnitureObject = { id: "f1", templateId: "deck-terrace", x: 0, y: 0, width: 4, height: 3, rotation: 0, params: { plankWidth: 14, plankLength: 200 } };
+    const svg = resolveFurnitureSvg(t, obj);
+    expect(svg).toContain("<rect"); // background + plank cells
+    expect((svg.match(/<rect/g) ?? []).length).toBeGreaterThan(1);
   });
 });

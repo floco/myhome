@@ -546,6 +546,11 @@ export const FURNITURE_TEMPLATES: FurnitureTemplate[] = [
       <line x1="5" y1="56" x2="95" y2="56" fill="none"/>
       <line x1="5" y1="73" x2="95" y2="73" fill="none"/>
     `,
+    params: [
+      { id: "plankWidth", type: "number", labelKey: "floorPlan.furnitureLibrary.params.plankWidth", unit: "cm", min: 5, max: 30, step: 1, default: 14 },
+      { id: "plankLength", type: "number", labelKey: "floorPlan.furnitureLibrary.params.plankLength", unit: "cm", min: 50, max: 400, step: 10, default: 200 },
+    ],
+    render: renderDeckTerrace,
   },
   {
     id: "car",
@@ -711,4 +716,40 @@ function renderSofa(ctx: FurnitureRenderContext): string {
     <rect x="5" y="${armY}" width="90" height="40" rx="6"/>
     <rect x="${chaiseX}" y="5" width="40" height="90" rx="6"/>
   `;
+}
+
+export function computeDeckPlankLayout(
+  widthM: number,
+  heightM: number,
+  plankWidthCm: number,
+  plankLengthCm: number
+): { rows: number; rowHeightLocal: number; plankLengthLocal: number; planksPerRow: number } {
+  const w = Math.max(widthM, 0.01);
+  const h = Math.max(heightM, 0.01);
+  const localPlankHeight = ((plankWidthCm / 100) / h) * 100;
+  const localPlankLength = Math.max(((plankLengthCm / 100) / w) * 100, 1);
+  const rows = Math.max(1, Math.round(100 / Math.max(localPlankHeight, 1)));
+  const planksPerRow = Math.max(1, Math.ceil(100 / localPlankLength) + 1);
+  return { rows, rowHeightLocal: 100 / rows, plankLengthLocal: localPlankLength, planksPerRow };
+}
+
+function renderDeckTerrace(ctx: FurnitureRenderContext): string {
+  const plankWidthCm = typeof ctx.params.plankWidth === "number" ? ctx.params.plankWidth : 14;
+  const plankLengthCm = typeof ctx.params.plankLength === "number" ? ctx.params.plankLength : 200;
+  const { rows, rowHeightLocal, plankLengthLocal, planksPerRow } = computeDeckPlankLayout(ctx.width, ctx.height, plankWidthCm, plankLengthCm);
+
+  const parts: string[] = [`<rect x="0" y="0" width="100" height="100" rx="1"/>`];
+  for (let r = 0; r < rows; r++) {
+    const y = r * rowHeightLocal;
+    const offset = r % 2 === 0 ? 0 : -plankLengthLocal / 2;
+    for (let p = 0; p < planksPerRow; p++) {
+      const x = offset + p * plankLengthLocal;
+      const clippedX = Math.max(x, 0);
+      const clippedRight = Math.min(x + plankLengthLocal, 100);
+      const w2 = clippedRight - clippedX;
+      if (w2 <= 0) continue;
+      parts.push(`<rect x="${clippedX.toFixed(2)}" y="${y.toFixed(2)}" width="${w2.toFixed(2)}" height="${rowHeightLocal.toFixed(2)}" fill="none"/>`);
+    }
+  }
+  return parts.join("\n");
 }
