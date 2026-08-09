@@ -74,6 +74,7 @@
   import NewHomeModal from "./lib/components/NewHomeModal.svelte";
   import HomesSwitcher from "./lib/components/HomesSwitcher.svelte";
   import FurnitureLibraryPanel from "./lib/components/FurnitureLibraryPanel.svelte";
+  import FurnitureParamsPanel from "./lib/components/FurnitureParamsPanel.svelte";
   import { getTemplate } from "./lib/furnitureLibrary";
   import CommandPalette from "./lib/components/CommandPalette.svelte";
   import { buildSearchIndex, type SearchResult } from "./lib/searchIndex";
@@ -310,6 +311,7 @@
   const ipDrag = createFloatingDrag(".picker-float");
   const rpDrag = createFloatingDrag(".room-panel-float");
   const opDrag = createFloatingDrag(".opening-panel-float");
+  const fpanelDrag = createFloatingDrag(".furniture-params-panel-float");
   const haStateStore = createHaStateStore();
   let navExpanded = $state(false);
   let showNewChoreModal = $state(false);
@@ -408,6 +410,14 @@
   // Furniture state
   let furnitureLibraryOpen = $state(false);
   let selectedFurnitureId = $state<string | null>(null);
+  const selectedFurnitureObject = $derived(
+    selectedFurnitureId
+      ? (floorStore.currentFurniture.find((f) => f.id === selectedFurnitureId) ?? null)
+      : null
+  );
+  const selectedFurnitureTemplate = $derived(
+    selectedFurnitureObject ? (getTemplate(selectedFurnitureObject.templateId) ?? null) : null
+  );
 
   interface FurnitureDragMove {
     type: "move"; id: string;
@@ -1007,6 +1017,18 @@
                   onupdate={(patch) => floorStore.updateRoom(selectedRoom.id, patch)}
                   onstartdrag={rpDrag.startDrag}
                   ondismiss={() => toolStore.selectRoom(null)}
+                />
+              </div>
+            {/if}
+            {#if selectedFurnitureObject && selectedFurnitureTemplate && selectedFurnitureTemplate.params?.length}
+              <div class="furniture-params-panel-float" style={fpanelDrag.pos ? `left:${fpanelDrag.pos.x}px;top:${fpanelDrag.pos.y}px;right:auto;transform:none` : ''}>
+                <FurnitureParamsPanel
+                  object={selectedFurnitureObject}
+                  template={selectedFurnitureTemplate}
+                  readOnly={viewMode}
+                  onupdate={(patch) => floorStore.updateFurnitureParams(selectedFurnitureObject.id, patch)}
+                  onstartdrag={fpanelDrag.startDrag}
+                  ondismiss={() => { selectedFurnitureId = null; }}
                 />
               </div>
             {/if}
@@ -1647,6 +1669,22 @@
 
   @media (max-width: 480px) { /* --bp-mobile */
     .opening-panel-float {
+      position: fixed;
+      left: 0; right: 0; bottom: 48px; top: auto;
+      transform: none !important;
+      width: 100%;
+      max-height: 45vh;
+      z-index: 26;
+    }
+  }
+
+  .furniture-params-panel-float {
+    position: absolute; right: 120px; top: 50%; transform: translateY(-50%);
+    z-index: 21;
+  }
+
+  @media (max-width: 480px) { /* --bp-mobile */
+    .furniture-params-panel-float {
       position: fixed;
       left: 0; right: 0; bottom: 48px; top: auto;
       transform: none !important;
