@@ -66,6 +66,39 @@ describe("Canvas", () => {
     expect(labels.every((l) => l?.startsWith("Room "))).toBe(true);
   });
 
+  it("renders a garden-border wall as a dashed line and supports drawing it", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const floor = createSampleFloor();
+    floor.walls.push({
+      id: "garden-1",
+      type: "garden",
+      start: { x: 0, y: -1 },
+      end: { x: 4, y: -1 },
+    });
+
+    app = mount(Canvas, {
+      target,
+      props: {
+        floor,
+        viewport: { ...DEFAULT_VIEWPORT },
+        width: 800,
+        height: 600,
+        tool: "garden",
+        drawPoints: [{ x: 0, y: 0 }],
+        cursorWorld: { x: 2.02, y: 0.01 },
+      },
+    });
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas")!;
+    expect(svg.querySelectorAll("line.garden-border")).toHaveLength(1);
+    // Same snap/draw-preview behavior as "wall"/"divider" while drawing.
+    const preview = target.querySelector("g.draw-preview")!;
+    expect(preview.querySelector("line.rubber-band")).not.toBeNull();
+  });
+
   it("selects a wall on click and clears selection on background click", () => {
     target = document.createElement("div");
     document.body.appendChild(target);

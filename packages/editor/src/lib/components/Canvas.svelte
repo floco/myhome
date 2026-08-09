@@ -10,6 +10,7 @@
   import Grid from "./Grid.svelte";
   import WallShape from "./WallShape.svelte";
   import DividerShape from "./DividerShape.svelte";
+  import GardenBorderShape from "./GardenBorderShape.svelte";
   import RoomShape from "./RoomShape.svelte";
   import DrawPreview from "./DrawPreview.svelte";
   import SelectionHandles from "./SelectionHandles.svelte";
@@ -89,7 +90,7 @@
   } = $props();
 
   const snapResult = $derived.by(() => {
-    if (tool !== "wall" && tool !== "divider") return null;
+    if (tool !== "wall" && tool !== "divider" && tool !== "garden") return null;
     if (!cursorWorld) return null;
     const radius = SNAP_RADIUS_PX / viewport.zoom;
     return computeSnap(cursorWorld, allEndpoints(floor.walls), drawPoints, radius);
@@ -324,6 +325,8 @@
           selected={wall.id === selectedId}
           onselect={(id) => onselect?.(id)}
         />
+    {:else if wall.type === "garden"}
+      <GardenBorderShape {wall} {viewport} {tool} selected={wall.id === selectedId} onselect={(id) => onselect?.(id)} />
     {:else}
       <DividerShape {wall} {viewport} {tool} selected={wall.id === selectedId} onselect={(id) => onselect?.(id)} />
     {/if}
@@ -348,7 +351,7 @@
       />
     {/each}
   {/each}
-  {#if tool === "wall" || tool === "divider"}
+  {#if tool === "wall" || tool === "divider" || tool === "garden"}
     <DrawPreview
       chainPoints={drawPoints}
       snapPoint={snapResult?.point ?? null}
