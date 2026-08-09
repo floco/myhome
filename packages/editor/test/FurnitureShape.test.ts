@@ -73,4 +73,19 @@ describe("FurnitureShape", () => {
     const g = svg.querySelector("g.furniture-object");
     expect(g!.getAttribute("transform")).toContain("rotate(45)");
   });
+
+  it("falls back to static svgContent for templates without a render function", () => {
+    const coffeeObject = { id: "f2", templateId: "coffee-table", x: 1, y: 1, width: 1.2, height: 0.6, rotation: 0 };
+    const template = getTemplate("coffee-table")!;
+    setup({ object: coffeeObject, template, viewport: VP, selected: false, tool: "select" });
+    expect(svg.querySelector("rect")).not.toBeNull();
+  });
+
+  it("renders via template.render when present, reflecting object.params", () => {
+    const object = { id: "f3", templateId: "sofa", x: 1, y: 1, width: 2.2, height: 2.0, rotation: 0, params: { shape: "l-shaped", corner: "nw" } };
+    const template = getTemplate("sofa")!;
+    setup({ object, template, viewport: VP, selected: false, tool: "select" });
+    const rects = [...svg.querySelectorAll("rect")];
+    expect(rects.some((r) => r.getAttribute("x") === "5" && r.getAttribute("y") === "5" && r.getAttribute("width") === "90")).toBe(true);
+  });
 });

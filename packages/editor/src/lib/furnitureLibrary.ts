@@ -5,10 +5,11 @@ export type FurnitureCategory =
   | "bathroom"
   | "office"
   | "outdoor"
-  | "garden";
+  | "garden"
+  | "structural";
 
 export const FURNITURE_CATEGORIES: FurnitureCategory[] = [
-  "living-room", "bedroom", "kitchen-dining", "bathroom", "office", "outdoor", "garden",
+  "living-room", "bedroom", "kitchen-dining", "bathroom", "office", "outdoor", "garden", "structural",
 ];
 
 export const CATEGORY_LABELS: Record<FurnitureCategory, string> = {
@@ -19,7 +20,29 @@ export const CATEGORY_LABELS: Record<FurnitureCategory, string> = {
   "office": "Office",
   "outdoor": "Outdoor",
   "garden": "Garden",
+  "structural": "Structural",
 };
+
+/** A single configurable parameter a furniture template exposes to the user. */
+export type FurnitureParamDef =
+  | { id: string; type: "integer"; labelKey: string; min: number; max: number; default: number }
+  | { id: string; type: "number"; labelKey: string; min: number; max: number; step?: number; unit?: string; default: number }
+  | {
+      id: string;
+      type: "enum";
+      labelKey: string;
+      options: { value: string; labelKey: string }[];
+      default: string;
+      /** Hide this field in the params panel unless another param currently equals a given value. */
+      visibleWhen?: { paramId: string; equals: string };
+    };
+
+/** Passed to a template's `render` function: the instance's real size and resolved params. */
+export interface FurnitureRenderContext {
+  width: number;  // meters, from the FurnitureObject instance
+  height: number; // meters
+  params: Record<string, string | number>; // schema defaults merged with the instance's own params
+}
 
 export interface FurnitureTemplate {
   id: string;
@@ -27,7 +50,9 @@ export interface FurnitureTemplate {
   category: FurnitureCategory;
   defaultWidth: number;
   defaultHeight: number;
-  svgContent: string;
+  svgContent: string; // static fallback; always used by the library picker's thumbnail
+  params?: FurnitureParamDef[]; // omitted for templates with no configurable parameters
+  render?: (ctx: FurnitureRenderContext) => string; // when present, used instead of svgContent for on-canvas rendering
 }
 
 export const FURNITURE_TEMPLATES: FurnitureTemplate[] = [
@@ -46,6 +71,32 @@ export const FURNITURE_TEMPLATES: FurnitureTemplate[] = [
       <line x1="42" y1="40" x2="42" y2="86" fill="none" stroke-width="1.5"/>
       <line x1="58" y1="40" x2="58" y2="86" fill="none" stroke-width="1.5"/>
     `,
+    params: [
+      {
+        id: "shape",
+        type: "enum",
+        labelKey: "floorPlan.furnitureLibrary.params.sofaShape",
+        options: [
+          { value: "straight", labelKey: "floorPlan.furnitureLibrary.params.sofaShapeStraight" },
+          { value: "l-shaped", labelKey: "floorPlan.furnitureLibrary.params.sofaShapeLShaped" },
+        ],
+        default: "straight",
+      },
+      {
+        id: "corner",
+        type: "enum",
+        labelKey: "floorPlan.furnitureLibrary.params.sofaCorner",
+        options: [
+          { value: "nw", labelKey: "floorPlan.furnitureLibrary.params.cornerNw" },
+          { value: "ne", labelKey: "floorPlan.furnitureLibrary.params.cornerNe" },
+          { value: "se", labelKey: "floorPlan.furnitureLibrary.params.cornerSe" },
+          { value: "sw", labelKey: "floorPlan.furnitureLibrary.params.cornerSw" },
+        ],
+        default: "se",
+        visibleWhen: { paramId: "shape", equals: "l-shaped" },
+      },
+    ],
+    render: renderSofa,
   },
   {
     id: "armchair",
@@ -171,6 +222,10 @@ export const FURNITURE_TEMPLATES: FurnitureTemplate[] = [
     svgContent: `
       <rect x="10" y="10" width="80" height="80" rx="3"/>
     `,
+    params: [
+      { id: "chairCount", type: "integer", labelKey: "floorPlan.furnitureLibrary.params.chairCount", min: 0, max: 8, default: 4 },
+    ],
+    render: renderDiningTableRect,
   },
   {
     id: "dining-table-round",
@@ -181,6 +236,10 @@ export const FURNITURE_TEMPLATES: FurnitureTemplate[] = [
     svgContent: `
       <circle cx="50" cy="50" r="42"/>
     `,
+    params: [
+      { id: "chairCount", type: "integer", labelKey: "floorPlan.furnitureLibrary.params.chairCount", min: 0, max: 8, default: 4 },
+    ],
+    render: renderDiningTableRound,
   },
   {
     id: "dining-chair",
@@ -487,6 +546,11 @@ export const FURNITURE_TEMPLATES: FurnitureTemplate[] = [
       <line x1="5" y1="56" x2="95" y2="56" fill="none"/>
       <line x1="5" y1="73" x2="95" y2="73" fill="none"/>
     `,
+    params: [
+      { id: "plankWidth", type: "number", labelKey: "floorPlan.furnitureLibrary.params.plankWidth", unit: "cm", min: 5, max: 30, step: 1, default: 14 },
+      { id: "plankLength", type: "number", labelKey: "floorPlan.furnitureLibrary.params.plankLength", unit: "cm", min: 50, max: 400, step: 10, default: 200 },
+    ],
+    render: renderDeckTerrace,
   },
   {
     id: "car",
@@ -531,8 +595,161 @@ export const FURNITURE_TEMPLATES: FurnitureTemplate[] = [
       <line x1="73" y1="5" x2="73" y2="95" fill="none" stroke-dasharray="3 7" stroke-width="1"/>
     `,
   },
+  // ── Structural ──────────────────────────────────────────
+  {
+    id: "stairs",
+    label: "Stairs",
+    category: "structural",
+    defaultWidth: 1.0,
+    defaultHeight: 3.0,
+    svgContent: `
+      <rect x="5" y="5" width="90" height="90" rx="2"/>
+      <line x1="5" y1="76" x2="24" y2="76" fill="none"/>
+      <line x1="24" y1="76" x2="24" y2="57" fill="none"/>
+      <line x1="24" y1="57" x2="43" y2="57" fill="none"/>
+      <line x1="43" y1="57" x2="43" y2="38" fill="none"/>
+      <line x1="43" y1="38" x2="62" y2="38" fill="none"/>
+      <line x1="62" y1="38" x2="62" y2="19" fill="none"/>
+      <line x1="62" y1="19" x2="81" y2="19" fill="none"/>
+    `,
+  },
 ];
 
 export function getTemplate(id: string): FurnitureTemplate | undefined {
   return FURNITURE_TEMPLATES.find((t) => t.id === id);
+}
+
+export function defaultFurnitureParams(template: FurnitureTemplate): Record<string, string | number> | undefined {
+  if (!template.params || template.params.length === 0) return undefined;
+  return Object.fromEntries(template.params.map((p) => [p.id, p.default]));
+}
+
+export function resolveFurnitureParams(
+  template: FurnitureTemplate,
+  object: { params?: Record<string, string | number> }
+): Record<string, string | number> {
+  return { ...defaultFurnitureParams(template), ...object.params };
+}
+
+export function resolveFurnitureSvg(
+  template: FurnitureTemplate,
+  object: { width: number; height: number; params?: Record<string, string | number> }
+): string {
+  if (!template.render) return template.svgContent;
+  return template.render({ width: object.width, height: object.height, params: resolveFurnitureParams(template, object) });
+}
+
+export interface ChairPosition {
+  x: number;
+  y: number;
+  rotation: number; // degrees, so the chair's back faces away from the table
+}
+
+export function computeRectTableChairPositions(chairCount: number): ChairPosition[] {
+  if (chairCount <= 0) return [];
+  const positions: ChairPosition[] = [];
+  const sides: Array<"top" | "right" | "bottom" | "left"> = ["top", "right", "bottom", "left"];
+  const perSide = Math.ceil(chairCount / 4);
+  let remaining = chairCount;
+  for (const side of sides) {
+    const count = Math.min(perSide, remaining);
+    for (let i = 0; i < count; i++) {
+      const t = (i + 1) / (count + 1);
+      if (side === "top") positions.push({ x: 10 + t * 80, y: -8, rotation: 180 });
+      else if (side === "bottom") positions.push({ x: 10 + t * 80, y: 108, rotation: 0 });
+      else if (side === "left") positions.push({ x: -8, y: 10 + t * 80, rotation: 90 });
+      else positions.push({ x: 108, y: 10 + t * 80, rotation: 270 });
+    }
+    remaining -= count;
+    if (remaining <= 0) break;
+  }
+  return positions;
+}
+
+export function computeRoundTableChairPositions(chairCount: number): ChairPosition[] {
+  if (chairCount <= 0) return [];
+  const positions: ChairPosition[] = [];
+  for (let i = 0; i < chairCount; i++) {
+    const angle = (360 / chairCount) * i;
+    const rad = (angle * Math.PI) / 180;
+    positions.push({ x: 50 + 58 * Math.sin(rad), y: 50 - 58 * Math.cos(rad), rotation: angle });
+  }
+  return positions;
+}
+
+function chairMarker(pos: ChairPosition): string {
+  return `<rect x="${(pos.x - 8).toFixed(2)}" y="${(pos.y - 7).toFixed(2)}" width="16" height="14" rx="2" transform="rotate(${pos.rotation.toFixed(2)} ${pos.x.toFixed(2)} ${pos.y.toFixed(2)})"/>`;
+}
+
+function renderDiningTableRect(ctx: FurnitureRenderContext): string {
+  const chairCount = typeof ctx.params.chairCount === "number" ? ctx.params.chairCount : 4;
+  const table = `<rect x="10" y="10" width="80" height="80" rx="3"/>`;
+  const chairs = computeRectTableChairPositions(chairCount).map(chairMarker).join("\n");
+  return [table, chairs].filter(Boolean).join("\n");
+}
+
+function renderDiningTableRound(ctx: FurnitureRenderContext): string {
+  const chairCount = typeof ctx.params.chairCount === "number" ? ctx.params.chairCount : 4;
+  const table = `<circle cx="50" cy="50" r="42"/>`;
+  const chairs = computeRoundTableChairPositions(chairCount).map(chairMarker).join("\n");
+  return [table, chairs].filter(Boolean).join("\n");
+}
+
+function renderSofa(ctx: FurnitureRenderContext): string {
+  const shape = ctx.params.shape === "l-shaped" ? "l-shaped" : "straight";
+  if (shape === "straight") {
+    return `
+      <rect x="8" y="18" width="84" height="68" rx="6"/>
+      <rect x="8" y="18" width="84" height="22" rx="4"/>
+      <rect x="8" y="40" width="14" height="46" rx="3"/>
+      <rect x="78" y="40" width="14" height="46" rx="3"/>
+      <line x1="42" y1="40" x2="42" y2="86" fill="none" stroke-width="1.5"/>
+      <line x1="58" y1="40" x2="58" y2="86" fill="none" stroke-width="1.5"/>
+    `;
+  }
+  const corner = typeof ctx.params.corner === "string" ? ctx.params.corner : "se";
+  const north = corner === "nw" || corner === "ne";
+  const west = corner === "nw" || corner === "sw";
+  const armY = north ? 5 : 55;
+  const chaiseX = west ? 5 : 55;
+  return `
+    <rect x="5" y="${armY}" width="90" height="40" rx="6"/>
+    <rect x="${chaiseX}" y="5" width="40" height="90" rx="6"/>
+  `;
+}
+
+export function computeDeckPlankLayout(
+  widthM: number,
+  heightM: number,
+  plankWidthCm: number,
+  plankLengthCm: number
+): { rows: number; rowHeightLocal: number; plankLengthLocal: number; planksPerRow: number } {
+  const w = Math.max(widthM, 0.01);
+  const h = Math.max(heightM, 0.01);
+  const localPlankHeight = ((plankWidthCm / 100) / h) * 100;
+  const localPlankLength = Math.max(((plankLengthCm / 100) / w) * 100, 1);
+  const rows = Math.max(1, Math.round(100 / Math.max(localPlankHeight, 1)));
+  const planksPerRow = Math.max(1, Math.ceil(100 / localPlankLength) + 1);
+  return { rows, rowHeightLocal: 100 / rows, plankLengthLocal: localPlankLength, planksPerRow };
+}
+
+function renderDeckTerrace(ctx: FurnitureRenderContext): string {
+  const plankWidthCm = typeof ctx.params.plankWidth === "number" ? ctx.params.plankWidth : 14;
+  const plankLengthCm = typeof ctx.params.plankLength === "number" ? ctx.params.plankLength : 200;
+  const { rows, rowHeightLocal, plankLengthLocal, planksPerRow } = computeDeckPlankLayout(ctx.width, ctx.height, plankWidthCm, plankLengthCm);
+
+  const parts: string[] = [`<rect x="0" y="0" width="100" height="100" rx="1"/>`];
+  for (let r = 0; r < rows; r++) {
+    const y = r * rowHeightLocal;
+    const offset = r % 2 === 0 ? 0 : -plankLengthLocal / 2;
+    for (let p = 0; p < planksPerRow; p++) {
+      const x = offset + p * plankLengthLocal;
+      const clippedX = Math.max(x, 0);
+      const clippedRight = Math.min(x + plankLengthLocal, 100);
+      const w2 = clippedRight - clippedX;
+      if (w2 <= 0) continue;
+      parts.push(`<rect x="${clippedX.toFixed(2)}" y="${y.toFixed(2)}" width="${w2.toFixed(2)}" height="${rowHeightLocal.toFixed(2)}" fill="none"/>`);
+    }
+  }
+  return parts.join("\n");
 }

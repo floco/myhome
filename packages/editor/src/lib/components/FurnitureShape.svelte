@@ -3,6 +3,7 @@
   import type { FurnitureObject } from "@myhome/geometry";
   import type { ViewportState } from "../viewportStore.svelte.ts";
   import type { FurnitureTemplate } from "../furnitureLibrary";
+  import { resolveFurnitureSvg } from "../furnitureLibrary";
   import { worldToScreen } from "../viewportStore.svelte.ts";
 
   let {
@@ -26,6 +27,7 @@
   const cs = $derived(worldToScreen({ x: object.x, y: object.y }, viewport));
   const scaleX = $derived((object.width * viewport.zoom) / 100);
   const scaleY = $derived((object.height * viewport.zoom) / 100);
+  const svgContent = $derived(resolveFurnitureSvg(template, object));
 
   function handleClick(e: MouseEvent) {
     e.stopPropagation();
@@ -48,7 +50,7 @@
   tabindex="-1"
   aria-label={$_(`floorPlan.furnitureLibrary.items.${template.id}`)}
 >
-  {@html template.svgContent}
+  {@html svgContent}
 </g>
 
 <style>

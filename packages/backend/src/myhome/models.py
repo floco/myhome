@@ -46,6 +46,7 @@ class FurnitureObject(BaseModel):
     width: float
     height: float
     rotation: float = 0.0
+    params: dict[str, str | float] | None = None
 
 
 class Floor(BaseModel):

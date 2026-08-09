@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { HouseDocument, Opening } from "../src/types";
+import type { HouseDocument, Opening, FurnitureObject } from "../src/types";
 
 describe("HouseDocument shape", () => {
   it("accepts a minimal valid document", () => {
@@ -52,5 +52,21 @@ describe("Opening HA fields", () => {
     expect(doorIn.doorKind).toBe("double");
     expect(doorIn.swing).toBe("in");
     expect(doorOut.swing).toBe("out");
+  });
+});
+
+describe("FurnitureObject params", () => {
+  it("allows a furniture object with no params", () => {
+    const obj: FurnitureObject = { id: "f1", templateId: "sofa", x: 0, y: 0, width: 2.2, height: 0.9, rotation: 0 };
+    expect(obj.params).toBeUndefined();
+  });
+
+  it("allows a furniture object with string and number params", () => {
+    const obj: FurnitureObject = {
+      id: "f2", templateId: "sofa", x: 0, y: 0, width: 2.2, height: 0.9, rotation: 0,
+      params: { shape: "l-shaped", corner: "se", chairCount: 4 },
+    };
+    expect(obj.params?.shape).toBe("l-shaped");
+    expect(obj.params?.chairCount).toBe(4);
   });
 });

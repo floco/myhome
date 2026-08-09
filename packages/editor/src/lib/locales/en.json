@@ -302,7 +302,8 @@
         "bathroom": "Bathroom",
         "office": "Office",
         "outdoor": "Outdoor",
-        "garden": "Garden"
+        "garden": "Garden",
+        "structural": "Structural"
       },
       "items": {
         "sofa": "Sofa",
@@ -343,7 +344,21 @@
         "deck-terrace": "Deck / Terrace",
         "car": "Car",
         "plant": "Plant",
-        "grass-patch": "Grass Patch"
+        "grass-patch": "Grass Patch",
+        "stairs": "Stairs"
+      },
+      "params": {
+        "chairCount": "Chairs",
+        "sofaShape": "Shape",
+        "sofaShapeStraight": "Straight",
+        "sofaShapeLShaped": "L-shaped",
+        "sofaCorner": "Chaise corner",
+        "cornerNw": "Top-left",
+        "cornerNe": "Top-right",
+        "cornerSe": "Bottom-right",
+        "cornerSw": "Bottom-left",
+        "plankWidth": "Plank width",
+        "plankLength": "Plank length"
       }
     },
     "rotate": "Rotate"

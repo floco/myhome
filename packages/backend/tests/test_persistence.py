@@ -1,5 +1,5 @@
 # packages/backend/tests/test_persistence.py
-from myhome.models import Floor, House, HouseDocument, Opening, Wall
+from myhome.models import Floor, FurnitureObject, House, HouseDocument, Opening, Wall
 from myhome.persistence import load_house, save_house
 
 HOME_ID = "test-home"
@@ -112,3 +112,17 @@ def test_opening_ha_fields_default_when_absent():
     assert opening.shutterEntityId is None
     assert opening.doorKind is None
     assert opening.windowSide is None
+
+
+def test_round_trip_preserves_furniture_params(tmp_path, monkeypatch):
+    _setup(tmp_path, monkeypatch)
+    doc = make_doc()
+    doc.floors[0].furnitureObjects = [
+        FurnitureObject(
+            id="fo1", templateId="sofa", x=1.0, y=2.0, width=2.2, height=0.9, rotation=0,
+            params={"shape": "l-shaped", "corner": "se"},
+        )
+    ]
+    save_house(HOME_ID, doc)
+    loaded = load_house(HOME_ID)
+    assert loaded.floors[0].furnitureObjects[0].params == {"shape": "l-shaped", "corner": "se"}
