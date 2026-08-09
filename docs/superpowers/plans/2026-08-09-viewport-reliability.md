@@ -60,12 +60,16 @@ const HOME = { id: "home-1", name: "Main House", type: "existing", enabledModule
 // renders a plain <line> at worldToScreen(start/end) with no thickness/miter
 // offset, so its rendered x1/y1/x2/y2 let us assert the exact fitted viewport
 // without duplicating fitViewportToFloor's math.
+// "gf-1", not "floor-1": createEmptyFloor() (the transient placeholder
+// floor rendered before any real data loads) hardcodes id "floor-1". If our
+// fixture reused that id, currentFloorId would look unchanged once the real
+// floor replaces the placeholder, and the auto-fit effect wouldn't re-fire.
 const HOUSE_DOC = {
   version: 1,
   house: { name: "Main House", units: "m", gridSnap: 0.1 },
   floors: [
     {
-      id: "floor-1",
+      id: "gf-1",
       name: "Ground Floor",
       order: 0,
       walls: [
@@ -76,7 +80,7 @@ const HOUSE_DOC = {
       furnitureObjects: [],
     },
   ],
-  currentFloorId: "floor-1",
+  currentFloorId: "gf-1",
 };
 
 function stubFetch() {
@@ -117,11 +121,14 @@ function restoreContainerSize(): void {
 async function mountApp(target: HTMLElement): Promise<ReturnType<typeof mount>> {
   window.location.hash = "#/plan";
   const app = mount(App, { target });
-  // Mirrors CommandPalette.integration.test.ts's tick budget: authStore
-  // resolves, then homesStore.loadHomes() fetches and sets activeHomeId,
-  // then the $effect watching activeHomeId fires .reload() on every module
-  // store (each doing its own fetch, all 404ing here except /house).
-  for (let i = 0; i < 6; i++) await tick();
+  // authStore resolves, then homesStore.loadHomes() fetches and sets
+  // activeHomeId, then the $effect watching activeHomeId fires .reload() on
+  // every module store — and *this* test also stubs a real /house response,
+  // so floorStore.reload() does a second real fetch beyond what
+  // CommandPalette.integration.test.ts's 6-tick budget accounted for.
+  // Verified empirically: 7 ticks is the minimum that reaches a stable DOM
+  // here; 10 leaves margin.
+  for (let i = 0; i < 10; i++) await tick();
   flushSync();
   return app;
 }
@@ -214,11 +221,31 @@ In `packages/editor/src/App.svelte`, after line 389 (`let canvasHeight = $state(
     const isLoaded = floorStore.loaded;
     if (!isLoaded) return;
     untrack(() => {
-      if (canvasWidth > 0 && canvasHeight > 0) {
+      // An empty floor (nothing drawn yet, or the transient placeholder
+      // shown before a home's data has loaded) has nothing to fit to —
+      // leave the viewport as-is rather than recentering to a meaningless
+      // {width/2, height/2} point.
+      if (canvasWidth > 0 && canvasHeight > 0 && floorStore.floor.walls.length > 0) {
         viewportStore.reset(floorStore.floor, canvasWidth, canvasHeight);
       }
     });
   });
+```
+
+**Discovered during implementation:** without the `floorStore.floor.walls.length > 0` guard, the effect also fires against the transient empty placeholder floor shown before any home's data has loaded (`getHomeId()` returns `null` → `houseStore.init()`'s early-return path sets `loaded = true` immediately with a zero-wall floor). That recentered the viewport to `{width/2, height/2, zoom: 100}` instead of leaving `DEFAULT_VIEWPORT` alone, which broke one pre-existing test (`App.test.ts`'s "wheel-zooms the viewport and Reset View restores it") that asserts exact hardcoded wall coordinates. Skipping the fit when there are no walls avoids the meaningless recenter and fixes it.
+
+Also discovered: the `addFloor()` function in `houseStore.svelte.ts` was missing `furnitureObjects: []` on the new floor object (unlike `init()`'s 404 path, which explicitly backfills it). Reading `floorStore.currentFurniture` on a freshly-added floor lazily mutates it in via `ensureFurniture()`, which Svelte 5 forbids from inside a template-reactive read context (`state_unsafe_mutation`). This is a pre-existing latent bug, exposed by Task 1's second test (the first test to add a floor via the UI and immediately render it). Fixed alongside this task since it directly blocked the test and is a one-line, non-API-changing change:
+
+```ts
+    const newFloor: Floor = {
+      id: genId(),
+      name,
+      order: maxOrder + 1,
+      walls: [],
+      openings: [],
+      rooms: [],
+      furnitureObjects: [],
+    };
 ```
 
 - [ ] **Step 5: Run the tests to verify they pass**
