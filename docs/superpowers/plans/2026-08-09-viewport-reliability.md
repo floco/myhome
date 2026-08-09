@@ -1,6 +1,6 @@
 # Viewport Reliability Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Fix the floor plan editor's viewport so it never renders blank after a refresh or floor switch, and add a dedicated Pan tool alongside the existing space+drag/middle-click/pinch panning.
 
@@ -30,7 +30,7 @@
 
 **Why `untrack` is required:** `viewportStore.reset(floorStore.floor, canvasWidth, canvasHeight)` reads deep into `floor.walls` (via `fitViewportToFloor` → `allEndpoints`), and `canvasWidth`/`canvasHeight` update on every container resize (`bind:clientWidth`/`clientHeight` in the template). If those reads aren't wrapped in `untrack()`, Svelte's `$effect` auto-subscribes to them, and the auto-fit would incorrectly re-fire on every wall edit (disrupting an in-progress edit by yanking the view) and on every browser/window resize (annoying, out of scope). Wrapping the reset call in `untrack()` keeps the effect's only real triggers as `floorStore.currentFloorId` and `floorStore.loaded`, matching the spec's stated behavior exactly.
 
-- [ ] **Step 1: Add the `untrack` import**
+- [x] **Step 1: Add the `untrack` import**
 
 In `packages/editor/src/App.svelte`, change line 1 from:
 
@@ -45,7 +45,7 @@ to:
   import { untrack } from "svelte";
 ```
 
-- [ ] **Step 2: Write the failing integration test**
+- [x] **Step 2: Write the failing integration test**
 
 Create `packages/editor/test/App.viewportAutoFit.test.ts`:
 
@@ -206,12 +206,12 @@ describe("App — viewport auto-fit", () => {
 });
 ```
 
-- [ ] **Step 3: Run the new tests to verify they fail**
+- [x] **Step 3: Run the new tests to verify they fail**
 
 Run: `cd packages/editor && npx vitest run test/App.viewportAutoFit.test.ts`
 Expected: FAIL — the divider renders at `x1="5400" y1="5300" x2="5800" y2="5300"` (screen = world*100 + (400,300), the untouched `DEFAULT_VIEWPORT`), not the fitted coordinates.
 
-- [ ] **Step 4: Add the auto-fit effect**
+- [x] **Step 4: Add the auto-fit effect**
 
 In `packages/editor/src/App.svelte`, after line 389 (`let canvasHeight = $state(800);`), insert:
 
@@ -248,19 +248,19 @@ Also discovered: the `addFloor()` function in `houseStore.svelte.ts` was missing
     };
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cd packages/editor && npx vitest run test/App.viewportAutoFit.test.ts`
 Expected: PASS (2 tests)
 
-- [ ] **Step 6: Run the full editor test suite to check for regressions**
+- [x] **Step 6: Run the full editor test suite to check for regressions**
 
 Run: `cd packages/editor && npx vitest run`
 Expected: PASS — every other test either doesn't reach `#/plan` with a real container size (so the width/height guard blocks the new effect, per the "Why `untrack` is required" note above and the jsdom-always-reports-0-clientWidth behavior it depends on), or doesn't care what the initial viewport is.
 
 If any pre-existing test fails because it *does* stub `clientWidth`/`clientHeight` (unlikely — grep found none before this task), fix that test's hardcoded screen-coordinate math to match its floor's fitted viewport rather than the old `DEFAULT_VIEWPORT`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add packages/editor/src/App.svelte packages/editor/test/App.viewportAutoFit.test.ts
@@ -278,7 +278,7 @@ git commit -m "fix(floorplan): auto-fit viewport to floor content on load and fl
 **Interfaces:**
 - Produces: `ToolType` now includes `"pan"`. Task 3 and Task 4 depend on this.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to the `"toolStore — door/window tools"` describe block in `packages/editor/test/toolStore.test.ts` (after the existing `"setTool('window') is valid"` test, i.e. after line 86):
 
@@ -290,12 +290,12 @@ Add to the `"toolStore — door/window tools"` describe block in `packages/edito
   });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `cd packages/editor && npx vitest run test/toolStore.test.ts`
 Expected: FAIL with a TypeScript error — `"pan"` is not assignable to `ToolType`.
 
-- [ ] **Step 3: Add `"pan"` to `ToolType`**
+- [x] **Step 3: Add `"pan"` to `ToolType`**
 
 In `packages/editor/src/lib/toolStore.svelte.ts:3`, change:
 
@@ -309,12 +309,12 @@ to:
 export type ToolType = "select" | "wall" | "divider" | "garden" | "door" | "window" | "pan";
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `cd packages/editor && npx vitest run test/toolStore.test.ts`
 Expected: PASS (18 tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/editor/src/lib/toolStore.svelte.ts packages/editor/test/toolStore.test.ts
@@ -333,7 +333,7 @@ git commit -m "feat(floorplan): add pan tool type"
 - Consumes: `ToolType` (now including `"pan"`, from Task 2).
 - Produces: nothing new consumed by later tasks — Task 4 only needs the `"pan"` tool value to exist (from Task 2) to wire up a button; it doesn't call into Canvas.svelte internals directly.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `packages/editor/test/Canvas.test.ts`, after the `"middle-mouse drag reports pan deltas instead of pointer moves"` test (after line 280):
 
@@ -386,12 +386,12 @@ Add to `packages/editor/test/Canvas.test.ts`, after the `"middle-mouse drag repo
   });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `cd packages/editor && npx vitest run test/Canvas.test.ts`
 Expected: FAIL — `panDelta` stays `null` (a left-button drag with `tool: "pan"` currently falls through to the draw/select path since `handlePointerDown` only checks `spacePressed`, not `tool`), and `svg.classList.contains("pan-tool")` is `false` (no such class exists yet).
 
-- [ ] **Step 3: Wire `tool === "pan"` into the pan-drag path and add cursor classes**
+- [x] **Step 3: Wire `tool === "pan"` into the pan-drag path and add cursor classes**
 
 In `packages/editor/src/lib/components/Canvas.svelte`, change `handlePointerDown` (around line 165):
 
@@ -479,12 +479,12 @@ to:
 </style>
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `cd packages/editor && npx vitest run test/Canvas.test.ts`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/editor/src/lib/components/Canvas.svelte packages/editor/test/Canvas.test.ts
@@ -503,7 +503,7 @@ git commit -m "feat(floorplan): pan tool drags the canvas with a grab cursor"
 **Interfaces:**
 - Consumes: `toolStore.setTool("pan")` (existing method, now accepts `"pan"` per Task 2); `toolStore.state.tool` for the `active` class.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 In `packages/editor/test/App.test.ts`, change the assertion at line 111 from:
 
@@ -524,12 +524,12 @@ Then, in the `"view mode hides editing tools..."` test (around line 143-179), ad
     expect(toolbarBtn(target, "Pan")).not.toBeUndefined();
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd packages/editor && npx vitest run test/App.test.ts`
 Expected: FAIL — no "Pan" button exists yet, so the title list doesn't match and `toolbarBtn(target, "Pan")` is `undefined`.
 
-- [ ] **Step 3: Add the i18n keys**
+- [x] **Step 3: Add the i18n keys**
 
 In `packages/editor/src/lib/locales/en.json`, inside the `"tools"` object (around line 223-233), add a `"pan"` key. Change:
 
@@ -569,7 +569,7 @@ to:
       "select": "Sélectionner",
 ```
 
-- [ ] **Step 4: Add the Pan button and adjust the toolbar's gating**
+- [x] **Step 4: Add the Pan button and adjust the toolbar's gating**
 
 In `packages/editor/src/App.svelte`, the tool-group block (around lines 1295-1305) currently reads:
 
@@ -606,17 +606,17 @@ Change it to:
               {/if}
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cd packages/editor && npx vitest run test/App.test.ts`
 Expected: PASS
 
-- [ ] **Step 6: Run the full editor test suite to check for regressions**
+- [x] **Step 6: Run the full editor test suite to check for regressions**
 
 Run: `cd packages/editor && npx vitest run`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add packages/editor/src/App.svelte packages/editor/src/lib/locales/en.json packages/editor/src/lib/locales/fr.json packages/editor/test/App.test.ts
@@ -633,14 +633,14 @@ git commit -m "feat(floorplan): add Pan toolbar button, visible in edit and view
 **Interfaces:**
 - Consumes: nothing new.
 
-- [ ] **Step 1: Confirm existing automated coverage passes**
+- [x] **Step 1: Confirm existing automated coverage passes**
 
 Run: `cd packages/editor && npx vitest run test/Canvas.test.ts -t "two active pointers"`
 Expected: PASS. This is the test `"two active pointers report a pan delta and a zoom factor from their centroid/distance change"` (`packages/editor/test/Canvas.test.ts:493`) — it already drives two synthetic `PointerEvent`s through `Canvas.svelte`'s real `activePointers`/`gestureBase` gesture math and asserts the resulting pan delta and zoom factor, and a companion test (`test/Canvas.test.ts:534`) confirms it reverts to single-pointer mode once a second pointer lifts. Together these are the "automated" verification the spec calls for — no new test is needed.
 
 If either test fails, that's a real regression: stop and debug it with superpowers:systematic-debugging before continuing — do not proceed to Step 2 with known-broken gesture math.
 
-- [ ] **Step 2: Manual verification (does not block the PR, but do it before considering group A fully done)**
+- [ ] **Step 2: Manual verification (does not block the PR, but do it before considering group A fully done)** — NOT DONE: no browser/touch device available in this environment. Left for a human pass before considering group A fully done.
 
 In a real browser with touch input (a tablet/phone, or Chrome DevTools' device toolbar with touch simulation enabled), open the floor plan editor and:
 1. Two-finger drag on the canvas — the view should pan smoothly, tracking the midpoint of the two touches.
