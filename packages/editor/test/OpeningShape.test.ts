@@ -186,4 +186,36 @@ describe("OpeningShape — door kind rendering", () => {
     const line = target.querySelector("line.door-sliding") as SVGLineElement;
     expect(line.getAttribute("stroke")).toBe("var(--canvas-wall-selected)");
   });
+
+  it("renders two independent leaf/arc pairs for double doorKind", () => {
+    setup({ opening: makeDoor({ doorKind: "double", offset: 1, width: 1.6 }) });
+    expect(target.querySelectorAll("line.door-leaf")).toHaveLength(2);
+    expect(target.querySelectorAll("path.door-arc")).toHaveLength(2);
+  });
+
+  it("hinges the double door's two leaves at the opening's own start and end points", () => {
+    setup({ opening: makeDoor({ doorKind: "double", offset: 1, width: 1.6 }) });
+    const leaves = target.querySelectorAll("line.door-leaf");
+    // wall (0,0)->(4,0), DEFAULT_VIEWPORT panX:400 panY:300 zoom:100 -> world x=1 -> screen x=500, world x=2.6 -> screen x=660.
+    const x1s = [Number(leaves[0].getAttribute("x1")), Number(leaves[1].getAttribute("x1"))].sort((a, b) => a - b);
+    expect(x1s[0]).toBeCloseTo(500, 5);
+    expect(x1s[1]).toBeCloseTo(660, 5);
+  });
+
+  it("swings both double-door leaves outward when swing is out", () => {
+    setup({ opening: makeDoor({ doorKind: "double", offset: 1, width: 1.6, swing: "out" }) });
+    const leaves = target.querySelectorAll("line.door-leaf");
+    // "out" perpendicular for a wall along +x is world -y (screen y decreases from the 300 baseline).
+    for (const leaf of leaves) {
+      expect(Number((leaf as SVGLineElement).getAttribute("y2"))).toBeLessThan(300);
+    }
+  });
+
+  it("defaults double door swing to in when unset", () => {
+    setup({ opening: makeDoor({ doorKind: "double", offset: 1, width: 1.6 }) });
+    const leaves = target.querySelectorAll("line.door-leaf");
+    for (const leaf of leaves) {
+      expect(Number((leaf as SVGLineElement).getAttribute("y2"))).toBeGreaterThan(300);
+    }
+  });
 });
