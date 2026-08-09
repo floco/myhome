@@ -1,5 +1,6 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
+  import { untrack } from "svelte";
   import type { Point, WallType } from "@myhome/geometry";
   import { pointsEqual, findAdjacentRooms } from "@myhome/geometry";
   import { createHouseStore } from "./lib/houseStore.svelte";
@@ -388,6 +389,21 @@
   let canvasWidth = $state(1200);
   let canvasHeight = $state(800);
   let saveStatus = $state<"idle" | "saving" | "saved" | "error">("idle");
+
+  $effect(() => {
+    const _currentFloorId = floorStore.currentFloorId;
+    const isLoaded = floorStore.loaded;
+    if (!isLoaded) return;
+    untrack(() => {
+      // An empty floor (nothing drawn yet, or the transient placeholder
+      // shown before a home's data has loaded) has nothing to fit to —
+      // leave the viewport as-is rather than recentering to a meaningless
+      // {width/2, height/2} point.
+      if (canvasWidth > 0 && canvasHeight > 0 && floorStore.floor.walls.length > 0) {
+        viewportStore.reset(floorStore.floor, canvasWidth, canvasHeight);
+      }
+    });
+  });
 
   // Furniture state
   let furnitureLibraryOpen = $state(false);
