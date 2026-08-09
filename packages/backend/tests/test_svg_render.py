@@ -45,6 +45,85 @@ def test_door_opening_renders_leaf_and_arc():
     assert 'class="door-swing"' in svg
 
 
+@pytest.mark.parametrize("door_kind", ["hinged", None])
+def test_hinged_door_renders_one_leaf_and_arc(door_kind):
+    floor = empty_floor()
+    floor.walls.append(make_wall("w1", 0, 0, 5, 0))
+    floor.openings.append(
+        Opening(id="o1", wallId="w1", type="door", offset=1.0, width=0.9, swing="left-in", doorKind=door_kind)
+    )
+    svg = render_floor_svg(floor)
+    assert svg.count('class="door-leaf"') == 1
+    assert svg.count('class="door-swing"') == 1
+
+
+def test_swinging_door_renders_two_leaves_and_arcs_from_one_hinge():
+    floor = empty_floor()
+    floor.walls.append(make_wall("w1", 0, 0, 5, 0))
+    floor.openings.append(
+        Opening(id="o1", wallId="w1", type="door", offset=1.0, width=0.9, swing="left-in", doorKind="swinging")
+    )
+    svg = render_floor_svg(floor)
+    assert svg.count('class="door-leaf"') == 2
+    assert svg.count('class="door-swing"') == 2
+    import re
+    leaves = re.findall(r'<line class="door-leaf" x1="([^"]+)" y1="([^"]+)"', svg)
+    assert leaves[0] == leaves[1]  # both leaves share the same hinge point
+
+
+def test_sliding_door_renders_a_bar_with_no_arc():
+    floor = empty_floor()
+    floor.walls.append(make_wall("w1", 0, 0, 5, 0))
+    floor.openings.append(
+        Opening(id="o1", wallId="w1", type="door", offset=1.0, width=0.9, doorKind="sliding")
+    )
+    svg = render_floor_svg(floor)
+    assert 'class="door-sliding"' in svg
+    assert 'class="door-leaf"' not in svg
+    assert 'class="door-swing"' not in svg
+
+
+def test_garage_door_renders_five_ticks_with_no_arc():
+    floor = empty_floor()
+    floor.walls.append(make_wall("w1", 0, 0, 5, 0))
+    floor.openings.append(
+        Opening(id="o1", wallId="w1", type="door", offset=1.0, width=0.9, doorKind="garage")
+    )
+    svg = render_floor_svg(floor)
+    assert svg.count('class="door-garage"') == 5
+    assert 'class="door-swing"' not in svg
+
+
+def test_double_door_renders_two_independent_leaves_and_arcs():
+    floor = empty_floor()
+    floor.walls.append(make_wall("w1", 0, 0, 5, 0))
+    floor.openings.append(
+        Opening(id="o1", wallId="w1", type="door", offset=1.0, width=1.6, doorKind="double")
+    )
+    svg = render_floor_svg(floor)
+    assert svg.count('class="door-leaf"') == 2
+    assert svg.count('class="door-swing"') == 2
+    import re
+    leaves = re.findall(r'<line class="door-leaf" x1="([\d.-]+)" y1="([\d.-]+)"', svg)
+    hinge_xs = sorted(float(x) for x, _ in leaves)
+    assert hinge_xs[0] == pytest.approx(1.0)
+    assert hinge_xs[1] == pytest.approx(2.6)
+
+
+def test_double_door_swings_out_when_swing_is_out():
+    floor = empty_floor()
+    floor.walls.append(make_wall("w1", 0, 0, 5, 0))
+    floor.openings.append(
+        Opening(id="o1", wallId="w1", type="door", offset=1.0, width=1.6, doorKind="double", swing="out")
+    )
+    svg = render_floor_svg(floor)
+    import re
+    leaves = re.findall(r'<line class="door-leaf" x1="[\d.-]+" y1="[\d.-]+" x2="[\d.-]+" y2="([\d.-]+)"', svg)
+    # wall is horizontal along +x; "out" perpendicular is -y for this convention.
+    for y2 in leaves:
+        assert float(y2) < 0
+
+
 def test_room_polygon_renders():
     floor = empty_floor()
     room = Room(

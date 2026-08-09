@@ -292,6 +292,75 @@ describe("door swing rendering", () => {
   });
 });
 
+describe("door kind rendering", () => {
+  const wall: Wall = {
+    id: "w1",
+    start: { x: 0, y: 0 },
+    end: { x: 5, y: 0 },
+    thickness: 0.2,
+    type: "wall",
+  };
+
+  function doorSvg(overrides: Partial<Opening> = {}): string {
+    const opening: Opening = {
+      id: "op1",
+      wallId: "w1",
+      type: "door",
+      offset: 1,
+      width: 0.9,
+      swing: "left-in",
+      ...overrides,
+    };
+    return renderFloorSvg(baseFloor({ walls: [wall], openings: [opening] }));
+  }
+
+  it("renders exactly one leaf and arc for hinged (default) doorKind", () => {
+    const svg = doorSvg();
+    expect((svg.match(/class="door-leaf"/g) ?? []).length).toBe(1);
+    expect((svg.match(/class="door-swing"/g) ?? []).length).toBe(1);
+  });
+
+  it("renders two leaves and arcs sharing one hinge for swinging doorKind", () => {
+    const svg = doorSvg({ doorKind: "swinging" });
+    expect((svg.match(/class="door-leaf"/g) ?? []).length).toBe(2);
+    expect((svg.match(/class="door-swing"/g) ?? []).length).toBe(2);
+    const leaves = [...svg.matchAll(/<line class="door-leaf" x1="([^"]+)" y1="([^"]+)"/g)];
+    expect(leaves[0][1]).toBe(leaves[1][1]);
+    expect(leaves[0][2]).toBe(leaves[1][2]);
+  });
+
+  it("renders a bar with no arc for sliding doorKind", () => {
+    const svg = doorSvg({ doorKind: "sliding" });
+    expect(svg).toContain('class="door-sliding"');
+    expect(svg).not.toContain('class="door-leaf"');
+    expect(svg).not.toContain('class="door-swing"');
+  });
+
+  it("renders five ticks with no arc for garage doorKind", () => {
+    const svg = doorSvg({ doorKind: "garage" });
+    expect((svg.match(/class="door-garage"/g) ?? []).length).toBe(5);
+    expect(svg).not.toContain('class="door-swing"');
+  });
+
+  it("renders two independent leaves and arcs, hinged at each jamb, for double doorKind", () => {
+    const svg = doorSvg({ offset: 1, width: 1.6, doorKind: "double", swing: undefined });
+    expect((svg.match(/class="door-leaf"/g) ?? []).length).toBe(2);
+    expect((svg.match(/class="door-swing"/g) ?? []).length).toBe(2);
+    const hingeXs = [...svg.matchAll(/<line class="door-leaf" x1="([\d.-]+)"/g)]
+      .map((m) => Number(m[1]))
+      .sort((a, b) => a - b);
+    expect(hingeXs[0]).toBeCloseTo(1, 5);
+    expect(hingeXs[1]).toBeCloseTo(2.6, 5);
+  });
+
+  it("swings a double door outward when swing is out", () => {
+    const svg = doorSvg({ offset: 1, width: 1.6, doorKind: "double", swing: "out" });
+    const y2s = [...svg.matchAll(/<line class="door-leaf" x1="[\d.-]+" y1="[\d.-]+" x2="[\d.-]+" y2="([\d.-]+)"/g)]
+      .map((m) => Number(m[1]));
+    for (const y2 of y2s) expect(y2).toBeLessThan(0);
+  });
+});
+
 describe("renderFloorSvg - miter joins", () => {
   it("two adjacent walls at a 90° corner produce miter-joined path coordinates", () => {
     // Wall A: horizontal (0,0)→(4,0); Wall B: vertical (4,0)→(4,4) going down (+y)

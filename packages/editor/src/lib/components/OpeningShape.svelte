@@ -120,17 +120,34 @@
   const doorKind = $derived.by(() => opening.type === "door" ? (opening.doorKind ?? "hinged") : "hinged");
 
   const hingedOrSwingingData = $derived.by(() => {
-    if (opening.type !== "door" || (doorKind !== "hinged" && doorKind !== "swinging")) return null;
+    if (opening.type !== "door" || (doorKind !== "hinged" && doorKind !== "swinging" && doorKind !== "double")) return null;
     const width = clampedTo - clampedFrom;
     if (width < 1e-9) return null;
+    const perpIn = { x: -dir.y, y: dir.x };
+    const perpOut = { x: dir.y, y: -dir.x };
+
+    if (doorKind === "double") {
+      const halfWidth = width / 2;
+      const perp = opening.swing === "out" ? perpOut : perpIn;
+      const midWorld = { x: (wp1.x + wp2.x) / 2, y: (wp1.y + wp2.y) / 2 };
+      const mid = worldToScreen(midWorld, viewport);
+      const radius = halfWidth * viewport.zoom;
+      const leaf = (hingeWorld: { x: number; y: number }) => {
+        const openEndWorld = { x: hingeWorld.x + perp.x * halfWidth, y: hingeWorld.y + perp.y * halfWidth };
+        const hinge = worldToScreen(hingeWorld, viewport);
+        const openEnd = worldToScreen(openEndWorld, viewport);
+        const sweep = chooseSweepFlag(mid, openEnd, radius, hinge);
+        return { hinge, other: mid, openEnd, radius, sweep };
+      };
+      return { variants: [leaf(wp1), leaf(wp2)] };
+    }
+
     const swing = opening.swing ?? "left-in";
     const isLeft = swing === "left-in" || swing === "left-out";
     const hingeWorld = isLeft ? wp1 : wp2;
     const otherWorld = isLeft ? wp2 : wp1;
     const other = worldToScreen(otherWorld, viewport);
     const radius = width * viewport.zoom;
-    const perpIn = { x: -dir.y, y: dir.x };
-    const perpOut = { x: dir.y, y: -dir.x };
 
     const variant = (perp: { x: number; y: number }) => {
       const openEndWorld = { x: hingeWorld.x + perp.x * width, y: hingeWorld.y + perp.y * width };

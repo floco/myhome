@@ -192,6 +192,40 @@ describe("OpeningPanel — door kind and orientation", () => {
     expect(onupdate).toHaveBeenCalledWith({ doorKind: "garage" });
   });
 
+  it("includes double in the door kind select", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    setup({ opening: makeDoor() });
+    const select = target.querySelector("select.door-kind") as HTMLSelectElement;
+    const values = [...select.options].map((o) => o.value);
+    expect(values).toContain("double");
+  });
+
+  it("shows the swing-direction toggle but not hinge-side for a double door", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    setup({ opening: makeDoor({ doorKind: "double", swing: "out" }) });
+    expect(target.querySelector("select.hinge-side")).toBeNull();
+    const direction = target.querySelector("select.swing-direction") as HTMLSelectElement;
+    expect(direction).not.toBeNull();
+    expect(direction.value).toBe("out");
+  });
+
+  it("defaults the double door swing-direction toggle to in when swing is unset", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    setup({ opening: makeDoor({ doorKind: "double" }) });
+    const direction = target.querySelector("select.swing-direction") as HTMLSelectElement;
+    expect(direction.value).toBe("in");
+  });
+
+  it("writes swing directly as in/out (no side) when the direction toggle changes on a double door", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    const onupdate = vi.fn();
+    setup({ opening: makeDoor({ doorKind: "double", swing: "in" }), onupdate });
+    const direction = target.querySelector("select.swing-direction") as HTMLSelectElement;
+    direction.value = "out";
+    direction.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(onupdate).toHaveBeenCalledWith({ swing: "out" });
+  });
+
   it("shows a window-side toggle for a window, defaulting to in", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
     setup({ opening: makeWindow() });

@@ -1,4 +1,4 @@
-import type { Floor, Wall, Opening, Room, Point, DoorSwing } from "./types";
+import type { Floor, Wall, Opening, Room, Point, DoorSwing, DoorKind } from "./types";
 import { computeMiterCorners, pointsEqual } from "./geometry";
 
 export interface SvgRenderOptions {
@@ -204,14 +204,20 @@ function renderOpening(wall: Wall, opening: Opening): string {
     return `<line class="window" x1="${fmt(p1.x)}" y1="${fmt(p1.y)}" x2="${fmt(p2.x)}" y2="${fmt(p2.y)}" />`;
   }
 
-  return renderDoor(p1, p2, dirX, dirY, opening.swing ?? "left-in", renderWidth);
+  const thickness = wall.thickness ?? 0.1;
+  const doorKind = opening.doorKind ?? "hinged";
+  const defaultSwing = doorKind === "double" ? "in" : "left-in";
+  const swing = opening.swing ?? defaultSwing;
+  return renderDoor(thickness, p1, p2, dirX, dirY, doorKind, swing, renderWidth);
 }
 
 function renderDoor(
+  thickness: number,
   p1: Point,
   p2: Point,
   dirX: number,
   dirY: number,
+  doorKind: DoorKind,
   swing: DoorSwing,
   width: number
 ): string {
@@ -220,23 +226,56 @@ function renderDoor(
   const perpLeft: Point = { x: -dirY, y: dirX };
   const perpRight: Point = { x: dirY, y: -dirX };
 
+  if (doorKind === "sliding") {
+    const mag = (thickness / 2) * 0.5;
+    const a: Point = { x: p1.x + perpRight.x * mag, y: p1.y + perpRight.y * mag };
+    const b: Point = { x: p2.x + perpRight.x * mag, y: p2.y + perpRight.y * mag };
+    return `<line class="door-sliding" x1="${fmt(a.x)}" y1="${fmt(a.y)}" x2="${fmt(b.x)}" y2="${fmt(b.y)}" />`;
+  }
+
+  if (doorKind === "garage") {
+    const tickCount = 5;
+    const halfThick = thickness / 2;
+    const perpFull: Point = { x: -dirY * halfThick, y: dirX * halfThick };
+    const parts: string[] = [];
+    for (let i = 0; i < tickCount; i++) {
+      const t = i / (tickCount - 1);
+      const cx = p1.x + (p2.x - p1.x) * t;
+      const cy = p1.y + (p2.y - p1.y) * t;
+      const a: Point = { x: cx + perpFull.x, y: cy + perpFull.y };
+      const b: Point = { x: cx - perpFull.x, y: cy - perpFull.y };
+      parts.push(`<line class="door-garage" x1="${fmt(a.x)}" y1="${fmt(a.y)}" x2="${fmt(b.x)}" y2="${fmt(b.y)}" />`);
+    }
+    return parts.join("\n");
+  }
+
+  if (doorKind === "double") {
+    const perp = swing === "out" ? perpRight : perpLeft;
+    const halfWidth = width / 2;
+    const mid: Point = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+    return `${doorLeafAndArc(p1, mid, perp, halfWidth)}\n${doorLeafAndArc(p2, mid, perp, halfWidth)}`;
+  }
+
+  if (doorKind === "swinging") {
+    const isLeftHinge = swing === "left-in" || swing === "left-out";
+    const hinge = isLeftHinge ? p1 : p2;
+    const other = isLeftHinge ? p2 : p1;
+    return `${doorLeafAndArc(hinge, other, perpLeft, width)}\n${doorLeafAndArc(hinge, other, perpRight, width)}`;
+  }
+
   const isLeftHinge = swing === "left-in" || swing === "left-out";
   const isInSwing = swing === "left-in" || swing === "right-in";
-
   const hinge = isLeftHinge ? p1 : p2;
   const other = isLeftHinge ? p2 : p1;
   const perp = isInSwing ? perpLeft : perpRight;
+  return doorLeafAndArc(hinge, other, perp, width);
+}
 
-  const openEnd: Point = {
-    x: hinge.x + perp.x * width,
-    y: hinge.y + perp.y * width,
-  };
-
+function doorLeafAndArc(hinge: Point, other: Point, perp: Point, width: number): string {
+  const openEnd: Point = { x: hinge.x + perp.x * width, y: hinge.y + perp.y * width };
   const leaf = `<line class="door-leaf" x1="${fmt(hinge.x)}" y1="${fmt(hinge.y)}" x2="${fmt(openEnd.x)}" y2="${fmt(openEnd.y)}" />`;
-
   const sweepFlag = chooseSweepFlag(other, openEnd, width, hinge);
   const arc = `<path class="door-swing" d="M ${fmt(other.x)} ${fmt(other.y)} A ${fmt(width)} ${fmt(width)} 0 0 ${sweepFlag} ${fmt(openEnd.x)} ${fmt(openEnd.y)}" />`;
-
   return `${leaf}\n${arc}`;
 }
 

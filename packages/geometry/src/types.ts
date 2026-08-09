@@ -20,11 +20,13 @@ export type OpeningType = "door" | "window";
  * Which corner of the opening the door hinges on, and which side of the
  * wall it swings into. "left"/"right" refer to the corner closer to the
  * wall's `start` vs `end` point; "in"/"out" refer to the two sides of the
- * wall, split by the wall's direction vector (start -> end).
+ * wall, split by the wall's direction vector (start -> end). The plain
+ * "in"/"out" values are only used by doorKind "double", which hinges at
+ * both jambs and so has no left/right axis.
  */
-export type DoorSwing = "left-in" | "right-in" | "left-out" | "right-out";
+export type DoorSwing = "left-in" | "right-in" | "left-out" | "right-out" | "in" | "out";
 
-export type DoorKind = "hinged" | "swinging" | "sliding" | "garage";
+export type DoorKind = "hinged" | "swinging" | "sliding" | "garage" | "double";
 
 export type WallSide = "in" | "out";
 

@@ -45,4 +45,12 @@ describe("Opening HA fields", () => {
     expect(door.doorKind).toBe("sliding");
     expect(window.windowSide).toBe("out");
   });
+
+  it("allows an opening with doorKind double and swing in/out", () => {
+    const doorIn: Opening = { id: "o5", wallId: "w1", type: "door", offset: 0, width: 1.6, doorKind: "double", swing: "in" };
+    const doorOut: Opening = { id: "o6", wallId: "w1", type: "door", offset: 0, width: 1.6, doorKind: "double", swing: "out" };
+    expect(doorIn.doorKind).toBe("double");
+    expect(doorIn.swing).toBe("in");
+    expect(doorOut.swing).toBe("out");
+  });
 });

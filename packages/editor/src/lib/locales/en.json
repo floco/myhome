@@ -274,6 +274,7 @@
       "doorKindSwinging": "Double-action",
       "doorKindSliding": "Sliding",
       "doorKindGarage": "Garage",
+      "doorKindDouble": "French door",
       "hingeSide": "Hinge side",
       "swingDirection": "Opens",
       "left": "Left",
