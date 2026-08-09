@@ -162,7 +162,7 @@
       suppressNextClick = true;
       return;
     }
-    if (event.button === 1 || (event.button === 0 && spacePressed)) {
+    if (event.button === 1 || (event.button === 0 && (spacePressed || tool === "pan"))) {
       event.preventDefault();
       panState = { x: event.clientX, y: event.clientY };
       suppressNextClick = true;
@@ -270,6 +270,8 @@
   {width}
   {height}
   class="canvas"
+  class:pan-tool={tool === "pan"}
+  class:panning={panState !== null}
   onclick={handleClick}
   onpointerdown={handlePointerDown}
   onpointermove={handlePointerMove}
@@ -382,5 +384,13 @@
     background: var(--canvas-bg);
     display: block;
     touch-action: none;
+  }
+
+  .canvas.pan-tool {
+    cursor: grab;
+  }
+
+  .canvas.panning {
+    cursor: grabbing;
   }
 </style>
