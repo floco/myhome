@@ -108,7 +108,7 @@ describe("App", () => {
 
     const buttons = Array.from(target.querySelectorAll(".floating-toolbar .ft-btn"));
     const titles = buttons.map((b) => (b as HTMLButtonElement).title);
-    expect(titles).toEqual(["Switch to view mode (read-only)", "Toggle item picker", "Toggle furniture library", "Save", "Reset view", "Undo (Ctrl+Z)", "Redo (Ctrl+Y)", "Select", "Wall", "Divider", "Garden Border", "Door", "Window", "Delete selected (Del)"]);
+    expect(titles).toEqual(["Switch to view mode (read-only)", "Toggle item picker", "Toggle furniture library", "Save", "Reset view", "Undo (Ctrl+Z)", "Redo (Ctrl+Y)", "Pan", "Select", "Wall", "Divider", "Garden Border", "Door", "Window", "Delete selected (Del)"]);
 
     const selectBtn = toolbarBtn(target, "Select");
     expect(selectBtn.className).toContain("active");
@@ -159,6 +159,9 @@ describe("App", () => {
     for (const title of ["Wall", "Divider", "Garden Border", "Door", "Window", "Delete selected (Del)", "Toggle item picker", "Toggle furniture library", "Save"]) {
       expect(toolbarBtn(target, title)).toBeUndefined();
     }
+
+    // Pan is not an editing tool — it stays available in view mode.
+    expect(toolbarBtn(target, "Pan")).not.toBeUndefined();
 
     // Selecting the wall again no longer exposes drag handles.
     const wallAgain = target.querySelector("polygon.wall")!;

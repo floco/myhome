@@ -279,6 +279,53 @@ describe("Canvas", () => {
     expect(moveCount).toBe(0);
   });
 
+  it("left-button drag pans when tool is 'pan', and the canvas shows a grab cursor", () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    const floor = createSampleFloor();
+    let panDelta: { dx: number; dy: number } | null = null;
+    let moveCount = 0;
+
+    app = mount(Canvas, {
+      target,
+      props: {
+        floor,
+        viewport: { ...DEFAULT_VIEWPORT },
+        width: 800,
+        height: 600,
+        tool: "pan",
+        onpan: (dx: number, dy: number) => {
+          panDelta = { dx, dy };
+        },
+        onpointermove: () => moveCount++,
+      },
+    });
+    flushSync();
+
+    const svg = target.querySelector("svg.canvas")!;
+    expect(svg.classList.contains("pan-tool")).toBe(true);
+    expect(svg.classList.contains("panning")).toBe(false);
+
+    svg.dispatchEvent(
+      new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, button: 0, clientX: 100, clientY: 100 }),
+    );
+    flushSync();
+    expect(svg.classList.contains("panning")).toBe(true);
+
+    svg.dispatchEvent(
+      new PointerEvent("pointermove", { bubbles: true, pointerId: 1, button: 0, clientX: 120, clientY: 90 }),
+    );
+    flushSync();
+
+    expect(panDelta).toEqual({ dx: 20, dy: -10 });
+    expect(moveCount).toBe(0);
+
+    svg.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
+    flushSync();
+    expect(svg.classList.contains("panning")).toBe(false);
+  });
+
   it("wheel events report a zoom factor centered on the cursor", () => {
     target = document.createElement("div");
     document.body.appendChild(target);

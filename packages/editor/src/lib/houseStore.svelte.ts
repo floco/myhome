@@ -101,6 +101,7 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
       walls: [],
       openings: [],
       rooms: [],
+      furnitureObjects: [],
     };
     floors.push(newFloor);
     currentFloorId = newFloor.id;

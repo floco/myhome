@@ -84,6 +84,12 @@ describe("toolStore — door/window tools", () => {
     store.setTool("window");
     expect(store.state.tool).toBe("window");
   });
+
+  it("setTool('pan') is valid", () => {
+    const store = createToolStore();
+    store.setTool("pan");
+    expect(store.state.tool).toBe("pan");
+  });
 });
 
 describe("toolStore — room and opening selection", () => {
