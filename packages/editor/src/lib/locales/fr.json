@@ -302,7 +302,8 @@
         "bathroom": "Salle de bain",
         "office": "Bureau",
         "outdoor": "Extérieur",
-        "garden": "Jardin"
+        "garden": "Jardin",
+        "structural": "Structurel"
       },
       "items": {
         "sofa": "Canapé",
@@ -343,7 +344,21 @@
         "deck-terrace": "Terrasse",
         "car": "Voiture",
         "plant": "Plante",
-        "grass-patch": "Pelouse"
+        "grass-patch": "Pelouse",
+        "stairs": "Escalier"
+      },
+      "params": {
+        "chairCount": "Chaises",
+        "sofaShape": "Forme",
+        "sofaShapeStraight": "Droit",
+        "sofaShapeLShaped": "En L",
+        "sofaCorner": "Coin du méridien",
+        "cornerNw": "Haut-gauche",
+        "cornerNe": "Haut-droit",
+        "cornerSe": "Bas-droit",
+        "cornerSw": "Bas-gauche",
+        "plankWidth": "Largeur des lames",
+        "plankLength": "Longueur des lames"
       }
     },
     "rotate": "Rotation"
