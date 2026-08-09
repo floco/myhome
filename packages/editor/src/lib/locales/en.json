@@ -1286,7 +1286,11 @@
       "reset": "Reset",
       "undo": "Undo",
       "redo": "Redo",
-      "delete": "Delete"
+      "delete": "Delete",
+      "editMode": "Edit",
+      "viewMode": "View",
+      "switchToViewMode": "Switch to view mode (read-only)",
+      "switchToEditMode": "Switch to edit mode"
     },
     "placeholder": {
       "insuranceDescription": "Track home insurance policies, coverage, and renewals."

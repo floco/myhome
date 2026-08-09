@@ -7,12 +7,14 @@
   let {
     opening,
     areaIds = [],
+    readOnly = false,
     onupdate,
     onstartdrag,
     ondismiss,
   }: {
     opening: Opening;
     areaIds?: string[];
+    readOnly?: boolean;
     onupdate: (patch: {
       haEntityId?: string | null;
       hasShutter?: boolean;
@@ -121,7 +123,7 @@
 
   <label>
     <span>{$_('floorPlan.openingPanel.sensor')}</span>
-    <select value={opening.haEntityId ?? ""} onchange={handleSensorChange} disabled={areaIds.length === 0}>
+    <select value={opening.haEntityId ?? ""} onchange={handleSensorChange} disabled={readOnly || areaIds.length === 0}>
       <option value="">{$_('floorPlan.openingPanel.none')}</option>
       {#each sensorEntities as entity (entity.entity_id)}
         <option value={entity.entity_id}>{entity.name}</option>
@@ -138,7 +140,7 @@
   {#if opening.type === "door"}
     <label>
       <span>{$_('floorPlan.openingPanel.doorKind')}</span>
-      <select class="door-kind" value={doorKind} onchange={handleDoorKindChange}>
+      <select class="door-kind" value={doorKind} disabled={readOnly} onchange={handleDoorKindChange}>
         <option value="hinged">{$_('floorPlan.openingPanel.doorKindHinged')}</option>
         <option value="swinging">{$_('floorPlan.openingPanel.doorKindSwinging')}</option>
         <option value="sliding">{$_('floorPlan.openingPanel.doorKindSliding')}</option>
@@ -149,7 +151,7 @@
     {#if doorKind === "hinged" || doorKind === "swinging"}
       <label>
         <span>{$_('floorPlan.openingPanel.hingeSide')}</span>
-        <select class="hinge-side" value={hingeSide} onchange={handleHingeSideChange}>
+        <select class="hinge-side" value={hingeSide} disabled={readOnly} onchange={handleHingeSideChange}>
           <option value="left">{$_('floorPlan.openingPanel.left')}</option>
           <option value="right">{$_('floorPlan.openingPanel.right')}</option>
         </select>
@@ -159,7 +161,7 @@
     {#if doorKind === "hinged"}
       <label>
         <span>{$_('floorPlan.openingPanel.swingDirection')}</span>
-        <select class="swing-direction" value={swingDirection} onchange={handleSwingDirectionChange}>
+        <select class="swing-direction" value={swingDirection} disabled={readOnly} onchange={handleSwingDirectionChange}>
           <option value="in">{$_('floorPlan.openingPanel.in')}</option>
           <option value="out">{$_('floorPlan.openingPanel.out')}</option>
         </select>
@@ -170,7 +172,7 @@
   {#if opening.type === "window"}
     <label>
       <span>{$_('floorPlan.openingPanel.windowSide')}</span>
-      <select class="window-side" value={opening.windowSide ?? "in"} onchange={handleWindowSideChange}>
+      <select class="window-side" value={opening.windowSide ?? "in"} disabled={readOnly} onchange={handleWindowSideChange}>
         <option value="in">{$_('floorPlan.openingPanel.in')}</option>
         <option value="out">{$_('floorPlan.openingPanel.out')}</option>
       </select>
@@ -179,14 +181,14 @@
 
   {#if opening.type === "window"}
     <label class="checkbox-row">
-      <input type="checkbox" checked={opening.hasShutter ?? false} onchange={handleHasShutterChange} />
+      <input type="checkbox" checked={opening.hasShutter ?? false} disabled={readOnly} onchange={handleHasShutterChange} />
       <span>{$_('floorPlan.openingPanel.hasShutter')}</span>
     </label>
 
     {#if opening.hasShutter}
       <label>
         <span>{$_('floorPlan.openingPanel.shutter')}</span>
-        <select value={opening.shutterEntityId ?? ""} onchange={handleShutterEntityChange} disabled={areaIds.length === 0}>
+        <select value={opening.shutterEntityId ?? ""} onchange={handleShutterEntityChange} disabled={readOnly || areaIds.length === 0}>
           <option value="">{$_('floorPlan.openingPanel.none')}</option>
           {#each coverEntities as entity (entity.entity_id)}
             <option value={entity.entity_id}>{entity.name}</option>

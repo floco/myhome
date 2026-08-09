@@ -70,4 +70,39 @@ describe("App furniture integration", () => {
     const items = target.querySelectorAll(".furniture-item");
     expect(items.length).toBeGreaterThan(0);
   });
+
+  it("clicking (not dragging) a furniture item drops it at the canvas center, not under the picker panel", async () => {
+    app = await setup();
+    const btn = Array.from(target.querySelectorAll(".floating-toolbar button")).find(
+      (b) => (b as HTMLButtonElement).title === "Toggle furniture library",
+    ) as HTMLButtonElement;
+    btn.click();
+    flushSync();
+
+    const canvasArea = target.querySelector(".canvas-area") as HTMLElement;
+    vi.spyOn(canvasArea, "getBoundingClientRect").mockReturnValue({
+      left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600, x: 0, y: 0, toJSON() {},
+    });
+
+    const sofaItem = target.querySelector('.furniture-item[data-template-id="sofa"]') as HTMLElement;
+    expect(sofaItem).not.toBeNull();
+
+    // A plain click: pointerdown and pointerup at the same spot, far from
+    // canvas center (near where the picker panel sits), no movement between.
+    const clickX = 750, clickY = 550;
+    sofaItem.dispatchEvent(new PointerEvent("pointerdown", { clientX: clickX, clientY: clickY, bubbles: true }));
+    flushSync();
+    canvasArea.dispatchEvent(new PointerEvent("pointerup", { clientX: clickX, clientY: clickY, bubbles: true }));
+    flushSync();
+
+    const placed = target.querySelector(".furniture-object") as SVGGElement | null;
+    expect(placed).not.toBeNull();
+    const match = placed!.getAttribute("transform")!.match(/translate\(([-\d.]+),([-\d.]+)\)/);
+    const [sx, sy] = [Number(match![1]), Number(match![2])];
+
+    // Center of the mocked 800x600 canvas is (400, 300) -- nowhere near the
+    // (750, 550) click point.
+    expect(Math.abs(sx - 400)).toBeLessThan(5);
+    expect(Math.abs(sy - 300)).toBeLessThan(5);
+  });
 });

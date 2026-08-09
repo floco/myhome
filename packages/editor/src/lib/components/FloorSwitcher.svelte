@@ -66,7 +66,13 @@
     onswitchfloor(id);
     compactOpen = false;
   }
+
+  function handleClickOutside(e: MouseEvent): void {
+    if (!(e.target as HTMLElement).closest(".compact-switcher")) compactOpen = false;
+  }
 </script>
+
+<svelte:window onclick={handleClickOutside} />
 
 {#if compact}
   <div class="compact-switcher">
