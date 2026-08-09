@@ -101,7 +101,7 @@
 
   function handleSwingDirectionChange(e: Event): void {
     const direction = (e.target as HTMLSelectElement).value as "in" | "out";
-    onupdate({ swing: composeSwing(hingeSide, direction) });
+    onupdate({ swing: doorKind === "double" ? direction : composeSwing(hingeSide, direction) });
   }
 
   function handleWindowSideChange(e: Event): void {
@@ -145,6 +145,7 @@
         <option value="swinging">{$_('floorPlan.openingPanel.doorKindSwinging')}</option>
         <option value="sliding">{$_('floorPlan.openingPanel.doorKindSliding')}</option>
         <option value="garage">{$_('floorPlan.openingPanel.doorKindGarage')}</option>
+        <option value="double">{$_('floorPlan.openingPanel.doorKindDouble')}</option>
       </select>
     </label>
 
@@ -158,7 +159,7 @@
       </label>
     {/if}
 
-    {#if doorKind === "hinged"}
+    {#if doorKind === "hinged" || doorKind === "double"}
       <label>
         <span>{$_('floorPlan.openingPanel.swingDirection')}</span>
         <select class="swing-direction" value={swingDirection} disabled={readOnly} onchange={handleSwingDirectionChange}>

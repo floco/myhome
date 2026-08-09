@@ -274,6 +274,7 @@
       "doorKindSwinging": "Battante",
       "doorKindSliding": "Coulissante",
       "doorKindGarage": "Garage",
+      "doorKindDouble": "Porte-fenêtre",
       "hingeSide": "Côté charnière",
       "swingDirection": "Ouvre",
       "left": "Gauche",
