@@ -264,6 +264,26 @@ describe("scheduleLabel", () => {
     const chore = makeChore({ frequencyType: "days_of_the_week", frequency: 1, frequencyMetadata: { days: ["Tuesday"], weekPattern: "week_of_month", occurrences: [2] } });
     expect(scheduleLabel(chore)).toBe("2nd Tue of the month");
   });
+
+  it("shows month names instead of 'Monthly' when day_of_the_month is restricted to specific months", () => {
+    const chore = makeChore({ frequencyType: "day_of_the_month", frequency: 20, frequencyMetadata: { months: [8] } });
+    expect(scheduleLabel(chore)).toBe("On day 20 (Aug)");
+  });
+
+  it("joins multiple restricted months in calendar order regardless of input order", () => {
+    const chore = makeChore({ frequencyType: "day_of_the_month", frequency: 15, frequencyMetadata: { months: [10, 1, 4, 7] } });
+    expect(scheduleLabel(chore)).toBe("On day 15 (Jan, Apr, Jul, Oct)");
+  });
+
+  it("keeps the plain 'Monthly on day N' label when no months restriction is set", () => {
+    const chore = makeChore({ frequencyType: "day_of_the_month", frequency: 20, frequencyMetadata: {} });
+    expect(scheduleLabel(chore)).toBe("Monthly on day 20");
+  });
+
+  it("handles Donetick-shaped string month names in the restriction", () => {
+    const chore = makeChore({ frequencyType: "day_of_the_month", frequency: 15, frequencyMetadata: { months: ["March", "June", "September", "December"] } });
+    expect(scheduleLabel(chore)).toBe("On day 15 (Mar, Jun, Sep, Dec)");
+  });
 });
 
 describe("choreStore — completedOn", () => {

@@ -391,6 +391,7 @@
     },
     "schedule": {
       "monthlyOnDay": "Monthly on day {n}",
+      "dayOfMonthRestricted": "On day {n} ({months})",
       "dayAbbrev": {
         "mon": "Mon",
         "tue": "Tue",
