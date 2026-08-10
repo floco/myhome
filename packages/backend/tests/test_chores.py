@@ -377,6 +377,29 @@ def test_complete_chore_advances_all_assignments(client, home_id, tmp_path):
         assert abs((due - expected).total_seconds()) < 5
 
 
+def test_complete_chore_creates_one_completion_per_assignment(client, home_id, tmp_path):
+    save_chores(home_id, make_chore_doc())
+    aid = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    resp = client.post(f"/api/homes/{home_id}/chores/c1/complete")
+    assert resp.status_code == 200
+    doc = client.get(f"/api/homes/{home_id}/chores").json()
+    assert len(doc["completions"]) == 1
+    assert doc["completions"][0]["assignmentId"] == aid
+
+
+def test_complete_chore_with_multiple_assignments_creates_one_record_per_room(client, home_id, tmp_path):
+    save_chores(home_id, make_chore_doc())
+    aid1 = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    aid2 = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r2"}).json()["id"]
+    resp = client.post(f"/api/homes/{home_id}/chores/c1/complete", json={"notes": "done"})
+    assert resp.status_code == 200
+    doc = client.get(f"/api/homes/{home_id}/chores").json()
+    assert len(doc["completions"]) == 2
+    assignment_ids = {r["assignmentId"] for r in doc["completions"]}
+    assert assignment_ids == {aid1, aid2}
+    assert all(r["notes"] == "done" for r in doc["completions"])
+
+
 # --- POST /api/homes/{home_id}/chores/import (mock Donetick) ---
 
 def _mock_public_dns(monkeypatch, hostname: str = "donetick.example.com") -> None:
