@@ -47,6 +47,7 @@
   let scheduleFilter = $state("");
   let dueFilter = $state<"all" | "attention">("attention");
   let filterModalOpen = $state(false);
+  let healthFilter = $state<HealthBucket | null>(null);
   const filtersActive = $derived(roomFilter !== "" || scheduleFilter !== "");
 
   function needsAttention(assignments: Assignment[]): boolean {
@@ -136,6 +137,16 @@
     return "other";
   }
 
+  function choreHealthBuckets(chore: Chore): HealthBucket[] {
+    return store.assignments
+      .filter((a) => a.choreId === chore.id)
+      .map((a) => healthBucket(store.getProgress(a, chore)));
+  }
+
+  function toggleHealthFilter(bucket: HealthBucket): void {
+    healthFilter = healthFilter === bucket ? null : bucket;
+  }
+
   const filteredChores = $derived(
     store.chores.filter((c) => {
       if (searchQuery && !c.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
@@ -143,6 +154,7 @@
       const assignments = store.assignments.filter((a) => a.choreId === c.id);
       if (roomFilter && !assignments.some((a) => a.roomId === roomFilter)) return false;
       if (dueFilter === "attention" && !needsAttention(assignments)) return false;
+      if (healthFilter && !choreHealthBuckets(c).includes(healthFilter)) return false;
       return true;
     }),
   );
@@ -199,12 +211,12 @@
     <div class="chart-card-wrap">
       <Card style="flex:1; min-width:0;">
         <div class="chart-label">{$_('chores.page.scheduleHealth')}</div>
-        <HorizontalBarChart segments={healthBreakdown} />
+        <HorizontalBarChart segments={healthBreakdown} activeId={healthFilter} onsegmentclick={(id) => toggleHealthFilter(id as HealthBucket)} />
       </Card>
       <div class="stat-tiles">
-        <StatTile label={$_('chores.page.active')} value={totalAssignments} />
-        <StatTile label={$_('chores.page.overdue')} value={`${overduePct}%`} variant="danger" />
-        <StatTile label={$_('chores.page.onTrack')} value={`${onTrackPct}%`} variant="success" />
+        <StatTile label={$_('chores.page.active')} value={totalAssignments} active={healthFilter === null} onclick={() => { healthFilter = null; }} />
+        <StatTile label={$_('chores.page.overdue')} value={`${overduePct}%`} variant="danger" active={healthFilter === "overdue"} onclick={() => toggleHealthFilter("overdue")} />
+        <StatTile label={$_('chores.page.onTrack')} value={`${onTrackPct}%`} variant="success" active={healthFilter === "on-track"} onclick={() => toggleHealthFilter("on-track")} />
       </div>
     </div>
   {/if}

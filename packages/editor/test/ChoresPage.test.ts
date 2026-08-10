@@ -121,6 +121,82 @@ describe("ChoresPage — schedule health summary", () => {
   });
 });
 
+describe("ChoresPage — health click-to-filter", () => {
+  function makeThreeBucketStore() {
+    const now = Date.now();
+    const chore1 = makeChore({ id: "c1", name: "On track chore", periodDays: 10 });
+    const chore2 = makeChore({ id: "c2", name: "Due soon chore", periodDays: 10 });
+    const chore3 = makeChore({ id: "c3", name: "Overdue chore", periodDays: 10 });
+    const store = makeStore([chore1, chore2, chore3]);
+    store.assignments = [
+      // All within the default "needs attention" 7-day cutoff, spanning the 3 health buckets.
+      { id: "a1", choreId: "c1", roomId: null, nextDueDate: new Date(now + 6 * 86400000).toISOString() }, // pct 0.6 -> on-track
+      { id: "a2", choreId: "c2", roomId: null, nextDueDate: new Date(now + 3 * 86400000).toISOString() }, // pct 0.3 -> due-soon
+      { id: "a3", choreId: "c3", roomId: null, nextDueDate: new Date(now - 1 * 86400000).toISOString() }, // pct 0 -> overdue
+    ] as typeof store.assignments;
+    return store;
+  }
+
+  it("clicking the Overdue stat tile filters to overdue chores; clicking it again clears the filter", () => {
+    const store = makeThreeBucketStore();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    const overdueTile = Array.from(target.querySelectorAll(".ui-stat-tile")).find((el) => el.textContent?.includes("Overdue")) as HTMLElement;
+    overdueTile.click();
+    flushSync();
+    expect(target.querySelectorAll(".name-cell")).toHaveLength(1);
+    expect(target.querySelector(".name-cell")?.textContent).toContain("Overdue chore");
+    expect(overdueTile.classList.contains("active")).toBe(true);
+
+    overdueTile.click();
+    flushSync();
+    expect(overdueTile.classList.contains("active")).toBe(false);
+    expect(target.querySelectorAll(".name-cell")).toHaveLength(3);
+
+    unmount(comp);
+  });
+
+  it("clicking a bar chart segment filters to that bucket", () => {
+    const store = makeThreeBucketStore();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    const dueSoonSegment = Array.from(target.querySelectorAll(".stacked-segment")).find((el) => el.getAttribute("title")?.startsWith("Due soon")) as HTMLElement;
+    dueSoonSegment.click();
+    flushSync();
+    expect(target.querySelectorAll(".name-cell")).toHaveLength(1);
+    expect(target.querySelector(".name-cell")?.textContent).toContain("Due soon chore");
+
+    unmount(comp);
+  });
+
+  it("clicking the Active tile clears any health filter", () => {
+    const store = makeThreeBucketStore();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    const overdueTile = Array.from(target.querySelectorAll(".ui-stat-tile")).find((el) => el.textContent?.includes("Overdue")) as HTMLElement;
+    overdueTile.click();
+    flushSync();
+    expect(target.querySelectorAll(".name-cell")).toHaveLength(1);
+
+    const activeTile = Array.from(target.querySelectorAll(".ui-stat-tile")).find((el) => el.textContent?.includes("Active")) as HTMLElement;
+    activeTile.click();
+    flushSync();
+    expect(target.querySelectorAll(".name-cell")).toHaveLength(3);
+    expect(activeTile.classList.contains("active")).toBe(true);
+
+    unmount(comp);
+  });
+});
+
 describe("ChoresPage — schedule filter", () => {
   it("matches a literal daily chore under the Daily filter and an adaptive chore under Adaptive", () => {
     const dailyChore = makeChore({ id: "c1", name: "Water plants", frequencyType: "daily", frequency: 1, frequencyMetadata: {} });

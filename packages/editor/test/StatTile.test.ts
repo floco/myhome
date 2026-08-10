@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { mount, unmount, createRawSnippet } from "svelte";
+import { describe, it, expect, vi } from "vitest";
+import { mount, unmount, createRawSnippet, flushSync } from "svelte";
 import StatTile from "../src/lib/components/ui/StatTile.svelte";
 
 describe("ui/StatTile", () => {
@@ -84,6 +84,38 @@ describe("ui/StatTile", () => {
     expect(target.querySelector(".custom-value")).not.toBeNull();
     expect(target.querySelector(".up")!.textContent).toBe("▲2%");
 
+    unmount(comp);
+    target.remove();
+  });
+
+  it("calls onclick when clicked", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const onclick = vi.fn();
+    const comp = mount(StatTile, { target, props: { value: 5, label: "Active", onclick } });
+    flushSync();
+    (target.querySelector(".ui-stat-tile") as HTMLElement).click();
+    expect(onclick).toHaveBeenCalledOnce();
+    unmount(comp);
+    target.remove();
+  });
+
+  it("is not styled clickable when no onclick is passed", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(StatTile, { target, props: { value: 5, label: "Active" } });
+    flushSync();
+    expect(target.querySelector(".ui-stat-tile")!.classList.contains("clickable")).toBe(false);
+    unmount(comp);
+    target.remove();
+  });
+
+  it("applies the active class when active is true", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(StatTile, { target, props: { value: 5, label: "Active", active: true } });
+    flushSync();
+    expect(target.querySelector(".ui-stat-tile")!.classList.contains("active")).toBe(true);
     unmount(comp);
     target.remove();
   });
