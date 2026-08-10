@@ -1064,6 +1064,7 @@
                       oncomplete={async () => { await choreStore.completeAssignment(badge.assignment.id); selectedBadge = null; }}
                       oncompleteall={async () => { await choreStore.completeChore(chore.id); selectedBadge = null; }}
                       onremove={async () => { await choreStore.deleteAssignment(badge.assignment.id); selectedBadge = null; }}
+                      onlabelchange={(label) => choreStore.updateAssignmentLabel(badge.assignment.id, label)}
                       onclose={() => { selectedBadge = null; }}
                     />
                   </div>

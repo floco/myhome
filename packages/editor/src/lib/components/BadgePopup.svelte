@@ -12,11 +12,18 @@
     oncompleteall: () => void;
     onremove: () => void;
     onclose: () => void;
+    onlabelchange: (label: string) => void;
   }
 
-  let { chore, assignment, screenX, screenY, oncomplete, oncompleteall, onremove, onclose }: Props = $props();
+  let { chore, assignment, screenX, screenY, oncomplete, oncompleteall, onremove, onclose, onlabelchange }: Props = $props();
 
   const overdue = $derived(new Date(assignment.nextDueDate).getTime() < Date.now());
+
+  function handleLabelBlur(e: FocusEvent): void {
+    const value = (e.target as HTMLInputElement).value.trim();
+    if (value === (assignment.label ?? "")) return;
+    onlabelchange(value);
+  }
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -26,6 +33,12 @@
   onclick={(e) => e.stopPropagation()}
 >
   <div class="popup-name">{chore.name}</div>
+  <input
+    class="popup-label-input"
+    placeholder={$_('chores.editModal.labelPlaceholder')}
+    value={assignment.label ?? ""}
+    onblur={handleLabelBlur}
+  />
   <div class="popup-due" class:overdue>
     {overdue ? $_('chores.badgePopup.overdueSince') : $_('chores.badgePopup.due')}: {formatDate(assignment.nextDueDate)}
   </div>
@@ -55,6 +68,18 @@
     margin-bottom: 4px;
     color: #eee;
   }
+  .popup-label-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 3px 6px;
+    margin-bottom: 8px;
+    border: 1px solid #444;
+    border-radius: 3px;
+    background: #1e1e2e;
+    color: #ccc;
+    font-size: 11px;
+  }
+  .popup-label-input:focus { outline: none; border-color: #6a6aaa; }
   .popup-due {
     color: #888;
     margin-bottom: 8px;
