@@ -19,6 +19,11 @@
 
   const overdue = $derived(new Date(assignment.nextDueDate).getTime() < Date.now());
 
+  // Clamp into the viewport -- on narrow mobile screens a badge near the
+  // canvas edge would otherwise position most of the popup off-screen.
+  const clampedLeft = $derived(Math.max(4, Math.min(screenX + 26, window.innerWidth - 212)));
+  const clampedTop = $derived(Math.max(4, Math.min(screenY - 20, window.innerHeight - 192)));
+
   function handleLabelBlur(e: FocusEvent): void {
     const value = (e.target as HTMLInputElement).value.trim();
     if (value === (assignment.label ?? "")) return;
@@ -29,7 +34,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div
   class="popup"
-  style="left:{screenX + 26}px;top:{screenY - 20}px"
+  style="left:{clampedLeft}px;top:{clampedTop}px"
   onclick={(e) => e.stopPropagation()}
 >
   <div class="popup-name">{chore.name}</div>

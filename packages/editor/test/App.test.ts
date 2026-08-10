@@ -108,7 +108,7 @@ describe("App", () => {
 
     const buttons = Array.from(target.querySelectorAll(".floating-toolbar .ft-btn"));
     const titles = buttons.map((b) => (b as HTMLButtonElement).title);
-    expect(titles).toEqual(["Switch to view mode (read-only)", "Toggle item picker", "Toggle furniture library", "Save", "Reset view", "Undo (Ctrl+Z)", "Redo (Ctrl+Y)", "Pan", "Select", "Wall", "Divider", "Garden Border", "Door", "Window", "Delete selected (Del)"]);
+    expect(titles).toEqual(["Toggle item picker", "Toggle furniture library", "Switch to view mode (read-only)", "Save", "Reset view", "Undo (Ctrl+Z)", "Redo (Ctrl+Y)", "Pan", "Select", "Wall", "Divider", "Garden Border", "Door", "Window", "Delete selected (Del)"]);
 
     const selectBtn = toolbarBtn(target, "Select");
     expect(selectBtn.className).toContain("active");
@@ -525,7 +525,7 @@ describe("App — item picker visibility across floor modes", () => {
     (target.querySelector('button[title="Toggle map layers"]') as HTMLButtonElement).click();
     await tick();
     flushSync();
-    const choresRow = Array.from(target.querySelectorAll(".layer-row")).find(
+    const choresRow = Array.from(document.querySelectorAll(".layer-row")).find(
       (r) => r.textContent?.includes("Chores"),
     ) as HTMLElement;
     (choresRow.querySelector('input[type="checkbox"]') as HTMLInputElement).click();
@@ -542,7 +542,7 @@ describe("App — item picker visibility across floor modes", () => {
     (target.querySelector('.compact-btn') as HTMLButtonElement).click();
     await tick();
     flushSync();
-    (target.querySelector('button[title="House-wide assignments — drag chores here"]') as HTMLButtonElement).click();
+    (document.querySelector('button[title="House-wide assignments — drag chores here"]') as HTMLButtonElement).click();
     await tick();
     flushSync();
     expect(target.querySelector(".all-floor-canvas")).not.toBeNull();
@@ -561,7 +561,7 @@ describe("App — item picker visibility across floor modes", () => {
     (target.querySelector('.compact-btn') as HTMLButtonElement).click();
     await tick();
     flushSync();
-    (target.querySelector('button[title="House-wide assignments — drag chores here"]') as HTMLButtonElement).click();
+    (document.querySelector('button[title="House-wide assignments — drag chores here"]') as HTMLButtonElement).click();
     await tick();
     flushSync();
 
@@ -576,7 +576,7 @@ describe("App — item picker visibility across floor modes", () => {
     compactBtn.click();
     await tick();
     flushSync();
-    const floorItem = Array.from(target.querySelectorAll(".compact-floor-item")).find(
+    const floorItem = Array.from(document.querySelectorAll(".compact-floor-item")).find(
       (b) => !b.textContent?.includes("All") && !b.classList.contains("add"),
     ) as HTMLButtonElement;
     floorItem.click();
@@ -677,7 +677,7 @@ describe("App — HA layer", () => {
     (target.querySelector('button[title="Toggle map layers"]') as HTMLButtonElement).click();
     await tick();
     flushSync();
-    const haRow = Array.from(target.querySelectorAll(".layer-row")).find(
+    const haRow = Array.from(document.querySelectorAll(".layer-row")).find(
       (r) => r.textContent?.includes("Home Assistant"),
     ) as HTMLElement;
     expect((haRow.querySelector('input[type="checkbox"]') as HTMLInputElement).checked).toBe(true);

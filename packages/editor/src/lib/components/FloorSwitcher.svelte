@@ -25,6 +25,45 @@
   let editingId = $state<string | null>(null);
   let editingName = $state("");
   let compactOpen = $state(false);
+  let compactWrapper = $state<HTMLElement | null>(null);
+  let compactTrigger = $state<HTMLButtonElement | null>(null);
+  let compactPanel = $state<HTMLElement | null>(null);
+  let compactTop = $state<number | null>(null);
+  let compactBottom = $state<number | null>(null);
+  let compactLeft = $state<number | null>(null);
+  let compactRight = $state<number | null>(null);
+
+  // Teleport the panel to <body> so position:fixed isn't clipped by an
+  // ancestor with overflow set (e.g. the mobile floating-toolbar's
+  // overflow-x:auto) -- same mechanism as EmojiPicker.svelte's portal action.
+  function portal(node: HTMLElement): { destroy(): void } {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        if (document.body.contains(node)) document.body.removeChild(node);
+      },
+    };
+  }
+
+  function toggleCompact(): void {
+    if (!compactOpen && compactTrigger) {
+      const rect = compactTrigger.getBoundingClientRect();
+      if (rect.top > window.innerHeight / 2) {
+        compactBottom = window.innerHeight - rect.top + 4;
+        compactTop = null;
+      } else {
+        compactTop = rect.bottom + 4;
+        compactBottom = null;
+      }
+      // Anchor by the panel's left edge (clamped into the viewport) rather
+      // than right-aligning to the button -- the compact switcher can sit
+      // at the far left of the mobile toolbar, where a right-anchored
+      // panel would run off the left edge of the screen.
+      compactLeft = Math.max(4, Math.min(rect.left, window.innerWidth - 140));
+      compactRight = null;
+    }
+    compactOpen = !compactOpen;
+  }
 
   const currentFloorName = $derived(
     currentFloorId === ALL_FLOOR_ID
@@ -68,17 +107,20 @@
   }
 
   function handleClickOutside(e: MouseEvent): void {
-    if (!(e.target as HTMLElement).closest(".compact-switcher")) compactOpen = false;
+    const target = e.target as Node;
+    if (compactWrapper?.contains(target) || compactPanel?.contains(target)) return;
+    compactOpen = false;
   }
 </script>
 
 <svelte:window onclick={handleClickOutside} />
 
 {#if compact}
-  <div class="compact-switcher">
+  <div class="compact-switcher" bind:this={compactWrapper}>
     <button
       class="compact-btn"
-      onclick={() => { compactOpen = !compactOpen; }}
+      bind:this={compactTrigger}
+      onclick={toggleCompact}
       title={$_('floorPlan.switcher.switchFloor')}
     >
       <span class="compact-label">{currentFloorName}</span>
@@ -86,7 +128,12 @@
     </button>
 
     {#if compactOpen}
-      <div class="compact-popover">
+      <div
+        class="compact-popover"
+        style="{compactTop !== null ? `top:${compactTop}px;` : ''}{compactBottom !== null ? `bottom:${compactBottom}px;` : ''}{compactLeft !== null ? `left:${compactLeft}px;` : ''}{compactRight !== null ? `right:${compactRight}px;` : ''}"
+        bind:this={compactPanel}
+        use:portal
+      >
         <button
           class="compact-floor-item"
           class:active={currentFloorId === ALL_FLOOR_ID}
@@ -167,10 +214,10 @@
   .compact-chevron { font-size: 9px; color: var(--text-muted); flex-shrink: 0; }
 
   .compact-popover {
-    position: absolute; right: calc(100% + 6px); top: 0;
+    position: fixed;
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    z-index: 100; padding: 4px; min-width: 130px;
+    z-index: 9999; padding: 4px; min-width: 130px;
   }
 
   .compact-floor-item {
