@@ -5,6 +5,7 @@
   import { apiUrl } from "../apiUrl";
   import { homesStore } from "../homesStore.svelte";
   import { getStoredLastPageId, setStoredLastPageId, clearStoredLastPageId } from "../kbLastPage";
+  import { setNavGuard } from "../navGuard";
   import MarkdownEditor from "./ui/MarkdownEditor.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
@@ -156,6 +157,22 @@
     } else {
       clearStoredLastPageId(homeId);
     }
+  });
+
+  $effect(() => {
+    setNavGuard(flushSave);
+    return () => { setNavGuard(null); };
+  });
+
+  $effect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent): void {
+      if (saveStatus === "pending" || saveStatus === "saving" || saveStatus === "error") {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   });
 
   function resolveKbLink(id: string): { title: string; icon: string } | null {

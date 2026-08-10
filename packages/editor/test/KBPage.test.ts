@@ -4,6 +4,7 @@ import KBPage from "../src/lib/components/KBPage.svelte";
 import { createKBStore } from "../src/lib/kbStore.svelte";
 import type { KBEntry } from "../src/lib/kbStore.svelte";
 import { homesStore } from "../src/lib/homesStore.svelte";
+import { getNavGuard } from "../src/lib/navGuard";
 
 const HOME = "home-1";
 
@@ -587,6 +588,32 @@ describe("KBPage — autosave", () => {
     await tick(); flushSync(); await tick(); flushSync();
     expect(store.entries.find((e) => e.id === "e1")?.content).toBe("hello world");
     expect(target.querySelector(".content-title")?.textContent).toBe("Page B");
+    unmount(comp); target.remove();
+  });
+});
+
+describe("KBPage — nav guard registration", () => {
+  it("registers a nav guard while mounted and clears it on unmount", async () => {
+    const { target, comp } = await setup([]);
+    expect(getNavGuard()).not.toBeNull();
+    unmount(comp); target.remove();
+    expect(getNavGuard()).toBeNull();
+  });
+
+  it("the registered guard flushes a pending autosave and returns true on success", async () => {
+    const { target, comp, store } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    textarea.value = "hello world";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    const guard = getNavGuard()!;
+    const ok = await guard();
+    expect(ok).toBe(true);
+    expect(store.entries.find((e) => e.id === "e1")?.content).toBe("hello world");
     unmount(comp); target.remove();
   });
 });
