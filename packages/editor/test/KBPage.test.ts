@@ -442,8 +442,9 @@ describe("KBPage — insert bookmark", () => {
   it("fetches a link preview and inserts the returned HTML at the cursor", async () => {
     const entries = [makeEntry({ content: "" })];
     const { target, comp } = await setup(entries, { selectedItemId: "e1" });
-    const editBtn = target.querySelector('[title="Edit"]') as HTMLElement;
-    editBtn.click();
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
     flushSync();
     (target.querySelector('[title="Insert bookmark"]') as HTMLButtonElement).click();
     flushSync();
@@ -466,8 +467,9 @@ describe("KBPage — insert bookmark", () => {
   it("Cancel closes the modal without inserting anything", async () => {
     const entries = [makeEntry({ content: "" })];
     const { target, comp } = await setup(entries, { selectedItemId: "e1" });
-    const editBtn = target.querySelector('[title="Edit"]') as HTMLElement;
-    editBtn.click();
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
     flushSync();
     (target.querySelector('[title="Insert bookmark"]') as HTMLButtonElement).click();
     flushSync();
@@ -478,6 +480,90 @@ describe("KBPage — insert bookmark", () => {
     expect(target.querySelector(".ui-modal")).toBeNull();
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
     expect(textarea.value).toBe("");
+    unmount(comp); target.remove();
+  });
+});
+
+describe("KBPage — autosave", () => {
+  function enterEditMode(target: HTMLElement): void {
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
+    flushSync();
+  }
+
+  it("double-click on the preview enters edit mode; there is no separate Edit button", async () => {
+    const { target, comp } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    expect(target.querySelector('[title="Edit"]')).toBeNull();
+    expect(target.querySelector("textarea.md-editor")).toBeNull();
+    enterEditMode(target);
+    expect(target.querySelector("textarea.md-editor")).not.toBeNull();
+    unmount(comp); target.remove();
+  });
+
+  it("saves automatically ~1.2s after the user stops typing, without a Save button", async () => {
+    const { target, comp, store } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    expect(target.querySelector('[title="Save"]')).toBeNull();
+    enterEditMode(target);
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    textarea.value = "hello world";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    expect(target.textContent).toContain("Saving");
+    await new Promise((r) => setTimeout(r, 1300));
+    flushSync();
+    await tick(); flushSync();
+    expect(store.entries.find((e) => e.id === "e1")?.content).toBe("hello world");
+    unmount(comp); target.remove();
+  });
+
+  it("shows a Saved indicator after a successful autosave", async () => {
+    const { target, comp } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    enterEditMode(target);
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    textarea.value = "hello world";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    await new Promise((r) => setTimeout(r, 1300));
+    await tick(); flushSync();
+    expect(target.textContent).toContain("Saved");
+    unmount(comp); target.remove();
+  });
+
+  it("does not autosave when the draft is unchanged from the loaded entry", async () => {
+    const { target, comp } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    enterEditMode(target);
+    await new Promise((r) => setTimeout(r, 1300));
+    flushSync();
+    expect(target.textContent).not.toContain("Saving");
+    unmount(comp); target.remove();
+  });
+
+  it("the Done button flushes any pending save and returns to preview", async () => {
+    const { target, comp, store } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    enterEditMode(target);
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    textarea.value = "hello world";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    (target.querySelector('[title="Done editing"]') as HTMLElement).click();
+    await tick(); flushSync(); await tick(); flushSync();
+    expect(target.querySelector("textarea.md-editor")).toBeNull();
+    expect(store.entries.find((e) => e.id === "e1")?.content).toBe("hello world");
+    unmount(comp); target.remove();
+  });
+
+  it("blocks an empty title from being saved and shows an error instead", async () => {
+    const { target, comp, store } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    enterEditMode(target);
+    const titleInput = target.querySelector(".title-input") as HTMLInputElement;
+    titleInput.value = "   ";
+    titleInput.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    await new Promise((r) => setTimeout(r, 1300));
+    await tick(); flushSync();
+    expect(target.textContent).toContain("Title cannot be empty");
+    expect(store.entries.find((e) => e.id === "e1")?.title).toBe("How to paint");
     unmount(comp); target.remove();
   });
 });

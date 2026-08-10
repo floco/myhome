@@ -32,7 +32,7 @@
   let draftContent = $state("");
   let draftIcon = $state("📄");
   let confirmDelete = $state<{ id: string; title: string; count: number } | null>(null);
-  let saving = $state(false);
+  let saveStatus = $state<"idle" | "pending" | "saving" | "saved" | "error">("idle");
   let error = $state<string | null>(null);
   let searchQuery = $state("");
   let uploading = $state(false);
@@ -49,6 +49,9 @@
   let bookmarkError = $state<string | null>(null);
   let bookmarkResolve: ((html: string | null) => void) | null = null;
   let sidebarExpanded = $state(false);
+  let saveTimer: ReturnType<typeof setTimeout> | null = null;
+  let savedStatusTimer: ReturnType<typeof setTimeout> | null = null;
+  let inFlightSave: Promise<boolean> | null = null;
 
   const selectedEntry = $derived(
     selectedId ? (store.entries.find((e) => e.id === selectedId) ?? null) : null,
@@ -232,31 +235,67 @@
     }
   }
 
-  async function handleSave(): Promise<void> {
-    if (!selectedId) return;
-    if (!draftTitle.trim()) { error = $_('kb.page.titleEmpty'); return; }
-    saving = true;
-    error = null;
-    try {
-      await store.updateEntry(selectedId, {
-        title: draftTitle.trim(),
-        content: draftContent,
-      });
-      editing = false;
-    } catch (e) {
-      error = e instanceof Error ? e.message : $_('kb.page.saveFailed');
-    } finally {
-      saving = false;
-    }
+  function isDraftDirty(): boolean {
+    if (!selectedEntry) return false;
+    return draftTitle !== selectedEntry.title || draftContent !== selectedEntry.content;
   }
 
-  function handleCancel(): void {
-    if (selectedEntry) {
-      draftTitle = selectedEntry.title;
-      draftContent = selectedEntry.content;
+  $effect(() => {
+    if (!editing || !isDraftDirty()) return;
+    saveStatus = "pending";
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => { flushSave(); }, 1200);
+    return () => { if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; } };
+  });
+
+  async function flushSave(): Promise<boolean> {
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+    if (inFlightSave) {
+      const ok = await inFlightSave;
+      return ok ? flushSave() : false;
     }
-    editing = false;
+    if (!isDraftDirty()) { saveStatus = "idle"; return true; }
+    if (!selectedId) return true;
+    if (!draftTitle.trim()) {
+      error = $_('kb.page.titleEmpty');
+      saveStatus = "error";
+      return false;
+    }
+    saveStatus = "saving";
     error = null;
+    const id = selectedId;
+    const title = draftTitle.trim();
+    const content = draftContent;
+    const p = (async (): Promise<boolean> => {
+      try {
+        await store.updateEntry(id, { title, content });
+        draftTitle = title;
+        saveStatus = "saved";
+        if (savedStatusTimer) clearTimeout(savedStatusTimer);
+        savedStatusTimer = setTimeout(() => { saveStatus = "idle"; }, 2000);
+        return true;
+      } catch (e) {
+        error = e instanceof Error ? e.message : $_('kb.page.saveFailed');
+        saveStatus = "error";
+        return false;
+      } finally {
+        inFlightSave = null;
+      }
+    })();
+    inFlightSave = p;
+    return p;
+  }
+
+  async function handleDoneEditing(): Promise<void> {
+    const ok = await flushSave();
+    if (ok) editing = false;
+  }
+
+  async function handleSwitchToMedia(): Promise<void> {
+    const ok = await flushSave();
+    if (!ok) return;
+    contentTab = "media";
+    editing = false;
   }
 
   async function handleIconChange(icon: string): Promise<void> {
@@ -488,19 +527,20 @@
             <button class="content-tab" class:active={contentTab === "content"}
               onclick={() => { contentTab = "content"; }}>{$_('kb.page.contentTab')}</button>
             <button class="content-tab" class:active={contentTab === "media"}
-              onclick={() => { contentTab = "media"; editing = false; }}>
+              onclick={handleSwitchToMedia}>
               {$_('chores.editModal.media')}{(selectedEntry.attachments?.length ?? 0) > 0 ? ` (${selectedEntry.attachments.length})` : ""}
             </button>
           </div>
         </div>
         <div class="header-actions">
           {#if contentTab === "content" && editing}
-            <Button variant="primary" disabled={saving} onclick={handleSave} title={saving ? $_('settings.security.saving') : $_('common.save')}>
-              💾
-            </Button>
-            <Button variant="secondary" onclick={handleCancel} title={$_('common.cancel')}>✕</Button>
-          {:else if contentTab === "content" && !editing}
-            <Button variant="secondary" onclick={() => { editing = true; }} title={$_('common.edit')}>✏️</Button>
+            <span class="save-status" class:save-status-error={saveStatus === "error"}>
+              {#if saveStatus === "saving" || saveStatus === "pending"}{$_('kb.page.saving')}
+              {:else if saveStatus === "saved"}{$_('kb.page.saved')}
+              {:else if saveStatus === "error"}{$_('kb.page.saveFailed')}
+              {/if}
+            </span>
+            <Button variant="primary" onclick={handleDoneEditing} title={$_('works.modal.doneEditing')}>✓</Button>
           {/if}
           <Button variant="ghost" onclick={() => handleAskDelete(selectedEntry.id)} title={$_('kb.page.deletePage')}>🗑</Button>
         </div>
@@ -512,7 +552,8 @@
             bind:value={draftContent}
             bind:editing
             mediaItems={contentTab === "content" ? mediaItems : []}
-            clickToEdit={false}
+            clickToEdit={true}
+            editTrigger="dblclick"
             placeholder={$_('kb.page.startWritingPlaceholder')}
             {resolveKbLink}
             onSlashPage={handleSlashPage}
@@ -672,6 +713,9 @@
   .content-body :global(.md-editor) { flex: 1; }
 
   .content-error { padding: 0 var(--space-4); font-size: 11px; color: var(--danger); }
+
+  .save-status { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .save-status-error { color: var(--danger); }
 
   .bookmark-error { color: var(--danger); font-size: 12px; margin: 6px 0 0; }
 </style>
