@@ -292,16 +292,30 @@ def complete_chore(
     notes = body.notes if body else ""
     now = datetime.now(timezone.utc)
     completed_at = _resolve_completed_at(body.completedOn, now) if body and body.completedOn else now
-    new_completion = CompletionRecord(
-        id=str(uuid.uuid4()),
-        choreId=chore_id,
-        completedAt=completed_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        scheduledDue=chore.nextDueDate,
-        notes=notes,
-    )
-    doc.completions.append(new_completion)
+    completed_at_str = completed_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    # One completion record per assignment, tagged with that assignment's id,
+    # so history resolves the real room(s) instead of always falling back to
+    # whole-house. A chore with no assignments yet still gets exactly one
+    # untagged record -- there's nothing to attach it to.
+    chore_assignments = [a for a in doc.assignments if a.choreId == chore_id]
+    target_assignment_ids: list[str | None] = [a.id for a in chore_assignments] if chore_assignments else [None]
+    new_completions = [
+        CompletionRecord(
+            id=str(uuid.uuid4()),
+            choreId=chore_id,
+            assignmentId=aid,
+            completedAt=completed_at_str,
+            scheduledDue=chore.nextDueDate,
+            notes=notes,
+        )
+        for aid in target_assignment_ids
+    ]
+    doc.completions.extend(new_completions)
+
     completions_for_chore = [c for c in doc.completions if c.choreId == chore_id]
-    other_completions = [c for c in completions_for_chore if c.id != new_completion.id]
+    new_ids = {c.id for c in new_completions}
+    other_completions = [c for c in completions_for_chore if c.id not in new_ids]
     if is_most_recent_completion(completed_at, other_completions):
         if chore.scheduleFromDue and chore.nextDueDate:
             try:

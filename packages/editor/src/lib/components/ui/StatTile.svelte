@@ -7,11 +7,19 @@
     label: string;
     variant?: "success" | "danger" | "warning";
     valueContent?: Snippet;
+    active?: boolean;
+    onclick?: () => void;
   }
-  let { value, label, variant, valueContent }: Props = $props();
+  let { value, label, variant, valueContent, active = false, onclick }: Props = $props();
 </script>
 
-<div class="ui-card ui-stat-tile">
+<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+<div
+  class="ui-card ui-stat-tile"
+  class:clickable={!!onclick}
+  class:active
+  onclick={() => onclick?.()}
+>
   <div class="ui-stat-label">{label}</div>
   <div
     class="ui-stat-value"
@@ -35,6 +43,8 @@
     justify-content: center;
     text-align: center;
   }
+  .ui-stat-tile.clickable { cursor: pointer; }
+  .ui-stat-tile.active { outline: 2px solid var(--accent); outline-offset: -2px; }
   .ui-stat-label {
     font-family: var(--font-sans);
     font-size: 11px; color: var(--text-faint);

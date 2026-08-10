@@ -1,6 +1,6 @@
-import { _ } from "svelte-i18n";
+import { _, locale } from "svelte-i18n";
 import { get } from "svelte/store";
-import { toWeekdayNum } from "./scheduleNames";
+import { toWeekdayNum, toMonthNum } from "./scheduleNames";
 
 export interface Chore {
   id: string;
@@ -30,7 +30,19 @@ export function scheduleLabel(chore: Chore): string {
   const { frequencyType: ft, frequency: n, frequencyMetadata: meta } = chore;
   const unit = (meta as Record<string, string>)?.unit ?? "days";
   const t = get(_);
-  if (ft === "day_of_the_month") return t("chores.schedule.monthlyOnDay", { values: { n } });
+  if (ft === "day_of_the_month") {
+    const rawMonths = (meta as Record<string, unknown[]>)?.months ?? [];
+    const months = rawMonths.map(toMonthNum).filter((m): m is number => m !== null);
+    if (months.length > 0) {
+      const loc = get(locale) ?? "en";
+      const monthNames = months
+        .slice()
+        .sort((a, b) => a - b)
+        .map((m) => new Intl.DateTimeFormat(loc, { month: "short" }).format(new Date(2000, m - 1, 1)));
+      return t("chores.schedule.dayOfMonthRestricted", { values: { n, months: monthNames.join(", ") } });
+    }
+    return t("chores.schedule.monthlyOnDay", { values: { n } });
+  }
   if (ft === "days_of_the_week") {
     const dayKeys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
     const weekPattern = (meta as Record<string, string>)?.weekPattern;

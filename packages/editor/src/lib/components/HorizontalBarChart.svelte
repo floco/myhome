@@ -4,8 +4,10 @@
 
   interface Props {
     segments: DonutSegment[];
+    activeId?: string | null;
+    onsegmentclick?: (id: string) => void;
   }
-  let { segments }: Props = $props();
+  let { segments, activeId = null, onsegmentclick }: Props = $props();
 
   // A segment narrower than this can't plausibly hold its value text without
   // spilling into its neighbors, so the number is dropped (the legend below
@@ -16,10 +18,14 @@
 <div class="stacked-bar-chart">
   <div class="stacked-bar">
     {#each segments as seg (seg.id)}
+      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
       <div
         class="stacked-segment"
-        style="width:{seg.pct}%; background:{seg.color}; color:{textColorForFill(seg.color)}"
+        class:dimmed={activeId !== null && activeId !== seg.id}
+        class:active={activeId === seg.id}
+        style="width:{seg.pct}%; background:{seg.color}; color:{textColorForFill(seg.color)}; cursor:{onsegmentclick ? 'pointer' : 'default'}"
         title="{seg.label}: {seg.valueLabel} ({seg.pct.toFixed(0)}%)"
+        onclick={() => onsegmentclick?.(seg.id)}
       >{seg.pct >= INSIDE_VALUE_MIN_PCT ? seg.valueLabel : ""}</div>
     {/each}
   </div>
@@ -55,9 +61,11 @@
     font-weight: 600;
     overflow: hidden;
     white-space: nowrap;
-    transition: width .2s;
+    transition: width .2s, opacity .15s;
   }
   .stacked-segment:last-child { border-right: none; }
+  .stacked-segment.dimmed { opacity: .35; }
+  .stacked-segment.active { outline: 2px solid var(--text); outline-offset: -2px; }
   .stacked-legend { display: flex; flex-flow: row wrap; gap: 6px 16px; }
   .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; white-space: nowrap; }
   .legend-label { color: var(--text); }
