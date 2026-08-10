@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import HorizontalBarChart from "../src/lib/components/HorizontalBarChart.svelte";
 
@@ -92,6 +92,40 @@ describe("HorizontalBarChart", () => {
     flushSync();
     const seg = target.querySelector(".stacked-segment") as HTMLElement;
     expect(seg.title).toBe("OK: 8 (80%)");
+    unmount(comp);
+    target.remove();
+  });
+
+  it("calls onsegmentclick with the segment's id when clicked", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const onsegmentclick = vi.fn();
+    const comp = mount(HorizontalBarChart, { target, props: { segments, onsegmentclick } });
+    flushSync();
+    (target.querySelectorAll(".stacked-segment")[1] as HTMLElement).click();
+    expect(onsegmentclick).toHaveBeenCalledWith("low");
+    unmount(comp);
+    target.remove();
+  });
+
+  it("marks the segment matching activeId as active and dims the others", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(HorizontalBarChart, { target, props: { segments, activeId: "low" } });
+    flushSync();
+    const segs = Array.from(target.querySelectorAll(".stacked-segment"));
+    expect(segs[0].classList.contains("dimmed")).toBe(true);
+    expect(segs[1].classList.contains("active")).toBe(true);
+    unmount(comp);
+    target.remove();
+  });
+
+  it("dims no segments when activeId is null", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(HorizontalBarChart, { target, props: { segments, activeId: null } });
+    flushSync();
+    expect(target.querySelectorAll(".stacked-segment.dimmed")).toHaveLength(0);
     unmount(comp);
     target.remove();
   });
