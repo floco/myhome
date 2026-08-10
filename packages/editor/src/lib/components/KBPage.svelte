@@ -94,14 +94,17 @@
   // own internal navigation (not a fresh external one) while it's in flight.
   let pendingNavigateId = $state<string | null>(null);
 
-  function navigate(entry: KBEntry): void {
+  async function navigate(entry: KBEntry): Promise<boolean> {
+    const ok = await flushSave();
+    if (!ok) return false;
     selectEntry(entry);
     pendingNavigateId = entry.id;
     onnavigate?.(entry.id);
+    return true;
   }
 
-  function handleTreeSelect(entry: KBEntry): void {
-    navigate(entry);
+  async function handleTreeSelect(entry: KBEntry): Promise<void> {
+    await navigate(entry);
     sidebarExpanded = false;
   }
 
@@ -161,9 +164,11 @@
   }
 
   async function handleNewPage(): Promise<void> {
+    const ok = await flushSave();
+    if (!ok) return;
     try {
       const entry = await store.createEntry({ title: $_('kb.page.newPageTitle'), content: "" });
-      navigate(entry);
+      await navigate(entry);
       editing = true;
       sidebarExpanded = false;
     } catch (e) {
@@ -179,13 +184,15 @@
   }
 
   async function handleCreateChild(parentId: string): Promise<void> {
+    const ok = await flushSave();
+    if (!ok) return;
     try {
       const entry = await store.createEntry({ title: $_('kb.page.newPageTitle'), content: "", parentId });
       await appendChildLink(parentId, entry);
       const next = new Set(collapsedIds);
       next.delete(parentId);
       collapsedIds = next;
-      navigate(entry);
+      await navigate(entry);
       editing = true;
       sidebarExpanded = false;
     } catch (e) {
@@ -426,6 +433,8 @@
   }
 
   async function openTrash(): Promise<void> {
+    const ok = await flushSave();
+    if (!ok) return;
     contentMode = "trash";
     selectedId = null;
     sidebarExpanded = false;

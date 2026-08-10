@@ -11,6 +11,7 @@ afterEach(() => vi.unstubAllGlobals());
 beforeEach(() => {
   homesStore._reset();
   homesStore.setActiveHomeId(HOME);
+  localStorage.clear();
 });
 
 function makeEntry(overrides: Partial<KBEntry> = {}): KBEntry {
@@ -220,14 +221,13 @@ describe("KBPage — selection and deep links", () => {
     const { target, comp } = await setup(entries, { onnavigate });
     const rows = target.querySelectorAll(".tree-row");
     (rows[1] as HTMLElement).click();
+    await tick(); flushSync();
     expect(onnavigate).toHaveBeenCalledWith("e2");
     unmount(comp); target.remove();
   });
 });
 
 describe("KBPage — reopen last-viewed page", () => {
-  beforeEach(() => localStorage.clear());
-
   it("redirects to the stored last-viewed page when opened with no page id", async () => {
     localStorage.setItem("myhome-kb-last-page-home-1", "e2");
     const entries = [makeEntry(), makeEntry({ id: "e2", title: "Second page", order: 1 })];
@@ -564,6 +564,29 @@ describe("KBPage — autosave", () => {
     await tick(); flushSync();
     expect(target.textContent).toContain("Title cannot be empty");
     expect(store.entries.find((e) => e.id === "e1")?.title).toBe("How to paint");
+    unmount(comp); target.remove();
+  });
+
+  it("flushes a pending save before switching to a different page, and the new page shows the saved content", async () => {
+    const entries = [
+      makeEntry({ id: "e1", title: "Page A", content: "hello" }),
+      makeEntry({ id: "e2", title: "Page B", order: 1 }),
+    ];
+    const { target, comp, store } = await setup(entries, { selectedItemId: "e1" });
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    textarea.value = "hello world";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    const rows = target.querySelectorAll(".tree-row");
+    const pageBRow = Array.from(rows).find((r) => r.textContent?.includes("Page B")) as HTMLElement;
+    pageBRow.click();
+    await tick(); flushSync(); await tick(); flushSync();
+    expect(store.entries.find((e) => e.id === "e1")?.content).toBe("hello world");
+    expect(target.querySelector(".content-title")?.textContent).toBe("Page B");
     unmount(comp); target.remove();
   });
 });
