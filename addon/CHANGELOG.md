@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.20.0 - 2026-08-10
+
+- Fixed the Chores history always showing "Whole house" for a completed chore even when it was assigned to a specific room — "Mark all done" and the floor-plan pin's "All done" action now record which room(s) were actually completed
+- Fixed the Chores Planning column showing "Monthly on day N" for a schedule restricted to specific months (e.g. day 20, August only) — it now shows the day plus the actual allowed month(s)
+- Added click-to-filter on the Chores KPI tiles and schedule-health chart — click a tile or bar segment to filter the list to that bucket, click again to clear
+- Added the ability to set a per-assignment label from the floor-plan pin popup, so multiple assignments of the same chore in the same room (e.g. two windows) can be told apart
+
 ## 0.19.0 - 2026-08-07
 
 - Added door kinds (hinged, swinging, sliding, garage) and a window in/out side toggle to the floor plan opening panel, each rendered with its own door/window symbol instead of one generic symbol for all doors and windows
