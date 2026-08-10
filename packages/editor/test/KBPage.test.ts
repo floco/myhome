@@ -1,12 +1,17 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import KBPage from "../src/lib/components/KBPage.svelte";
 import { createKBStore } from "../src/lib/kbStore.svelte";
 import type { KBEntry } from "../src/lib/kbStore.svelte";
+import { homesStore } from "../src/lib/homesStore.svelte";
 
 const HOME = "home-1";
 
 afterEach(() => vi.unstubAllGlobals());
+beforeEach(() => {
+  homesStore._reset();
+  homesStore.setActiveHomeId(HOME);
+});
 
 function makeEntry(overrides: Partial<KBEntry> = {}): KBEntry {
   return {
@@ -216,6 +221,52 @@ describe("KBPage — selection and deep links", () => {
     const rows = target.querySelectorAll(".tree-row");
     (rows[1] as HTMLElement).click();
     expect(onnavigate).toHaveBeenCalledWith("e2");
+    unmount(comp); target.remove();
+  });
+});
+
+describe("KBPage — reopen last-viewed page", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("redirects to the stored last-viewed page when opened with no page id", async () => {
+    localStorage.setItem("myhome-kb-last-page-home-1", "e2");
+    const entries = [makeEntry(), makeEntry({ id: "e2", title: "Second page", order: 1 })];
+    const onnavigate = vi.fn();
+    const { target, comp } = await setup(entries, { onnavigate });
+    await tick(); flushSync();
+    expect(onnavigate).toHaveBeenCalledWith("e2");
+    unmount(comp); target.remove();
+  });
+
+  it("falls back to the empty-state placeholder and clears the stale id when the stored page no longer exists", async () => {
+    localStorage.setItem("myhome-kb-last-page-home-1", "gone");
+    const onnavigate = vi.fn();
+    const { target, comp } = await setup([makeEntry()], { onnavigate });
+    await tick(); flushSync();
+    expect(onnavigate).not.toHaveBeenCalled();
+    expect(localStorage.getItem("myhome-kb-last-page-home-1")).toBeNull();
+    expect(target.textContent).toContain("Select a page or create one");
+    unmount(comp); target.remove();
+  });
+
+  it("does not redirect when a page id is already given in the URL (deep link wins)", async () => {
+    localStorage.setItem("myhome-kb-last-page-home-1", "e1");
+    const entries = [makeEntry(), makeEntry({ id: "e2", title: "Second page", order: 1 })];
+    const onnavigate = vi.fn();
+    const { target, comp } = await setup(entries, { selectedItemId: "e2", onnavigate });
+    await tick(); flushSync();
+    expect(onnavigate).not.toHaveBeenCalled();
+    expect(target.querySelector(".content-title")?.textContent).toBe("Second page");
+    unmount(comp); target.remove();
+  });
+
+  it("persists the selected page as the new last-viewed page when a tree row is clicked", async () => {
+    const entries = [makeEntry(), makeEntry({ id: "e2", title: "Second page", order: 1 })];
+    const { target, comp } = await setup(entries);
+    const rows = target.querySelectorAll(".tree-row");
+    (rows[1] as HTMLElement).click();
+    await tick(); flushSync();
+    expect(localStorage.getItem("myhome-kb-last-page-home-1")).toBe("e2");
     unmount(comp); target.remove();
   });
 });

@@ -4,6 +4,7 @@
   import type { MediaItem } from "./ui/mediaTypes";
   import { apiUrl } from "../apiUrl";
   import { homesStore } from "../homesStore.svelte";
+  import { getStoredLastPageId, setStoredLastPageId, clearStoredLastPageId } from "../kbLastPage";
   import MarkdownEditor from "./ui/MarkdownEditor.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
@@ -81,6 +82,8 @@
     contentTab = "content";
     contentMode = "page";
     error = null;
+    const homeId = homesStore.activeHomeId;
+    if (homeId) setStoredLastPageId(homeId, entry.id);
   }
 
   // Set right before calling onnavigate() so the reconciliation effect below
@@ -123,6 +126,29 @@
     if (selectedItemId && selectedItemId !== selectedId) {
       const found = store.entries.find((e) => e.id === selectedItemId);
       if (found) selectEntry(found);
+    }
+  });
+
+  // On a bare "#/kb" open (no page id in the URL), redirect to whichever
+  // page was last viewed in this browser for the active home, once entries
+  // have actually loaded. Runs at most once per mount; a deep-linked
+  // selectedItemId always wins and skips this entirely.
+  let lastPageRedirectAttempted = $state(false);
+
+  $effect(() => {
+    if (lastPageRedirectAttempted) return;
+    if (selectedItemId) { lastPageRedirectAttempted = true; return; }
+    if (!store.loaded) return;
+    lastPageRedirectAttempted = true;
+    const homeId = homesStore.activeHomeId;
+    if (!homeId) return;
+    const storedId = getStoredLastPageId(homeId);
+    if (!storedId) return;
+    const found = store.entries.find((e) => e.id === storedId);
+    if (found) {
+      navigate(found);
+    } else {
+      clearStoredLastPageId(homeId);
     }
   });
 
