@@ -160,4 +160,48 @@ describe("App furniture integration", () => {
 
     expect(target.querySelector(".furniture-params-panel")).toBeNull();
   });
+
+  it("enables the toolbar Delete button once a furniture object is selected", async () => {
+    app = await setup();
+    const btn = Array.from(target.querySelectorAll(".floating-toolbar button")).find(
+      (b) => (b as HTMLButtonElement).title === "Toggle furniture library",
+    ) as HTMLButtonElement;
+    btn.click();
+    flushSync();
+
+    const canvasArea = target.querySelector(".canvas-area") as HTMLElement;
+    vi.spyOn(canvasArea, "getBoundingClientRect").mockReturnValue({
+      left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600, x: 0, y: 0, toJSON() {},
+    });
+
+    const sofaItem = target.querySelector('.furniture-item[data-template-id="sofa"]') as HTMLElement;
+    const clickX = 750, clickY = 550;
+    sofaItem.dispatchEvent(new PointerEvent("pointerdown", { clientX: clickX, clientY: clickY, bubbles: true }));
+    flushSync();
+    canvasArea.dispatchEvent(new PointerEvent("pointerup", { clientX: clickX, clientY: clickY, bubbles: true }));
+    flushSync();
+
+    const deleteBtn = Array.from(target.querySelectorAll(".floating-toolbar button")).find(
+      (b) => (b as HTMLButtonElement).title === "Delete selected (Del)",
+    ) as HTMLButtonElement;
+    expect(deleteBtn.disabled).toBe(true);
+
+    const placed = target.querySelector(".furniture-object") as SVGGElement;
+    placed.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+
+    // Placing/selecting furniture must enable the toolbar delete button --
+    // it previously stayed disabled because `hasSelection` only checked
+    // wall/opening selection, not furniture. On touch devices there's no
+    // Delete/Backspace key to fall back on, so this button is the only way
+    // to delete furniture on mobile.
+    expect(deleteBtn.disabled).toBe(false);
+
+    const furnitureBefore = target.querySelectorAll(".furniture-object").length;
+    deleteBtn.click();
+    flushSync();
+
+    expect(target.querySelectorAll(".furniture-object").length).toBe(furnitureBefore - 1);
+    expect(deleteBtn.disabled).toBe(true);
+  });
 });

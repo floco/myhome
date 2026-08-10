@@ -15,7 +15,7 @@ describe("LayersDropdown — ha layer", () => {
     const { target, comp } = setup(new Set(["ha"]));
     (target.querySelector(".layers-btn") as HTMLButtonElement).click();
     flushSync();
-    const haRow = Array.from(target.querySelectorAll(".layer-row")).find(
+    const haRow = Array.from(document.querySelectorAll(".layer-row")).find(
       (r) => r.textContent?.includes("Home Assistant"),
     ) as HTMLElement;
     expect(haRow).not.toBeUndefined();
@@ -27,7 +27,7 @@ describe("LayersDropdown — ha layer", () => {
     const { target, comp, ontoggle } = setup(new Set(["ha"]));
     (target.querySelector(".layers-btn") as HTMLButtonElement).click();
     flushSync();
-    const haRow = Array.from(target.querySelectorAll(".layer-row")).find(
+    const haRow = Array.from(document.querySelectorAll(".layer-row")).find(
       (r) => r.textContent?.includes("Home Assistant"),
     ) as HTMLElement;
     (haRow.querySelector('input[type="checkbox"]') as HTMLInputElement).dispatchEvent(

@@ -129,7 +129,7 @@ describe("App — viewport auto-fit", () => {
     // in App.test.ts's "house-wide assignments" test.
     (target.querySelector(".compact-btn") as HTMLButtonElement).click();
     flushSync();
-    (target.querySelector(".compact-floor-item.add") as HTMLButtonElement).click();
+    (document.querySelector(".compact-floor-item.add") as HTMLButtonElement).click();
     flushSync();
 
     expect(target.querySelector("line.divider")).toBeNull();
@@ -137,7 +137,7 @@ describe("App — viewport auto-fit", () => {
     // Switch back to Ground Floor.
     (target.querySelector(".compact-btn") as HTMLButtonElement).click();
     flushSync();
-    const groundFloorItem = Array.from(target.querySelectorAll(".compact-floor-item")).find(
+    const groundFloorItem = Array.from(document.querySelectorAll(".compact-floor-item")).find(
       (b) => b.textContent?.trim() === "Ground Floor",
     ) as HTMLButtonElement;
     groundFloorItem.click();

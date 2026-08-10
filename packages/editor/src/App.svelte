@@ -443,7 +443,7 @@
   let haAreas = $state<Array<{ area_id: string; name: string }>>([]);
 
   const hasSelection = $derived(
-    toolStore.state.selectedId !== null || toolStore.state.selectedOpeningId !== null
+    toolStore.state.selectedId !== null || toolStore.state.selectedOpeningId !== null || selectedFurnitureId !== null
   );
   const saveIcon = $derived(
     saveStatus === "saving" ? "⋯" : saveStatus === "saved" ? "✓" : saveStatus === "error" ? "⚠" : "💾"
@@ -1298,14 +1298,7 @@
                 compact={true}
               />
               <div class="ft-sep"></div>
-              <button
-                class="ft-btn"
-                class:active={viewMode}
-                title={viewMode ? $_('app.floatingToolbar.switchToEditMode') : $_('app.floatingToolbar.switchToViewMode')}
-                onclick={toggleViewMode}
-              >{viewMode ? '👁' : '✏️'} <span class="ft-label">{viewMode ? $_('app.floatingToolbar.viewMode') : $_('app.floatingToolbar.editMode')}</span></button>
-              <div class="ft-sep"></div>
-              <LayersDropdown {activeLayers} ontoggle={toggleLayer} popoverAlign="left" />
+              <LayersDropdown {activeLayers} ontoggle={toggleLayer} popoverAlign="left" variant="toolbar" />
               {#if !viewMode}
                 <button
                   class="ft-btn"
@@ -1319,7 +1312,15 @@
                   title={$_('app.floatingToolbar.toggleFurniture')}
                   onclick={() => { furnitureLibraryOpen = !furnitureLibraryOpen; }}
                 >🪑 <span class="ft-label">{$_('app.floatingToolbar.furniture')}</span></button>
-                <div class="ft-sep"></div>
+              {/if}
+              <div class="ft-sep"></div>
+              <button
+                class="ft-btn"
+                class:active={viewMode}
+                title={viewMode ? $_('app.floatingToolbar.switchToEditMode') : $_('app.floatingToolbar.switchToViewMode')}
+                onclick={toggleViewMode}
+              >{viewMode ? '👁' : '✏️'} <span class="ft-label">{viewMode ? $_('app.floatingToolbar.viewMode') : $_('app.floatingToolbar.editMode')}</span></button>
+              {#if !viewMode}
                 <button
                   class="ft-btn save-btn"
                   class:saved={saveStatus === "saved"}
