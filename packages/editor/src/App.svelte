@@ -64,6 +64,7 @@
   import WorksPinPopup from "./lib/components/WorksPinPopup.svelte";
   import { createKBStore } from "./lib/kbStore.svelte";
   import KBPage from "./lib/components/KBPage.svelte";
+  import { createGuardedHashRouter } from "./lib/navGuard";
   import { getStoredTheme, toggleTheme, type Theme } from "./lib/theme";
   import { createAuthStore } from "./lib/authStore.svelte";
   import LoginPage from "./lib/components/LoginPage.svelte";
@@ -343,10 +344,14 @@
   }
 
   let currentRoute = $state(window.location.hash || "#/");
+  const hashRouter = createGuardedHashRouter({
+    getHash: () => window.location.hash || "#/",
+    setHash: (hash) => { window.location.hash = hash; },
+    onRoute: (hash) => { currentRoute = hash; },
+  });
   $effect(() => {
-    const onHashChange = () => { currentRoute = window.location.hash || "#/"; };
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
+    window.addEventListener("hashchange", hashRouter.handleHashChange);
+    return () => window.removeEventListener("hashchange", hashRouter.handleHashChange);
   });
 
   const isFloorPlan = $derived(currentRoute === "#/plan");

@@ -36,6 +36,7 @@
     minHeight?: string;
     mediaItems?: MediaItem[];
     clickToEdit?: boolean;
+    editTrigger?: "click" | "dblclick";
     resolveKbLink?: (id: string) => { title: string; icon: string } | null;
     onSlashPage?: () => Promise<{ id: string; title: string } | null>;
     onInsertBookmark?: () => Promise<string | null>;
@@ -48,6 +49,7 @@
     minHeight = "200px",
     mediaItems = [],
     clickToEdit = true,
+    editTrigger = "click",
     resolveKbLink,
     onSlashPage,
     onInsertBookmark,
@@ -242,7 +244,8 @@
     class:md-clickable={clickToEdit}
     class:md-empty={!renderedHtml}
     style:min-height={minHeight}
-    onclick={clickToEdit ? () => { editing = true; } : undefined}
+    onclick={clickToEdit && editTrigger === "click" ? () => { editing = true; } : undefined}
+    ondblclick={clickToEdit && editTrigger === "dblclick" ? () => { editing = true; } : undefined}
     onkeydown={clickToEdit ? (e) => { if (e.key === "Enter" || e.key === " ") editing = true; } : undefined}
     title={clickToEdit ? $_('markdownEditor.clickToEdit') : undefined}
   >

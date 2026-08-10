@@ -544,6 +544,55 @@ describe("MarkdownEditor — clickToEdit", () => {
   });
 });
 
+describe("MarkdownEditor — editTrigger", () => {
+  it("double-click enters edit mode when editTrigger is dblclick", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "content", editing: false, editTrigger: "dblclick" },
+    });
+    flushSync();
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
+    flushSync();
+    expect(target.querySelector("textarea.md-editor")).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("a single click does not enter edit mode when editTrigger is dblclick", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "content", editing: false, editTrigger: "dblclick" },
+    });
+    flushSync();
+    (target.querySelector(".md-preview") as HTMLElement).click();
+    flushSync();
+    expect(target.querySelector("textarea.md-editor")).toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("defaults to single-click behavior when editTrigger is omitted", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "content", editing: false },
+    });
+    flushSync();
+    (target.querySelector(".md-preview") as HTMLElement).click();
+    flushSync();
+    expect(target.querySelector("textarea.md-editor")).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+});
+
 describe("MarkdownEditor — resolveKbLink", () => {
   it("replaces the link text with the live title and icon when resolvable", () => {
     const target = document.createElement("div");
