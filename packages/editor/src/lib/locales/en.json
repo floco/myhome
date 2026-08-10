@@ -1228,6 +1228,8 @@
       "createFailed": "Create failed",
       "titleEmpty": "Title cannot be empty",
       "saveFailed": "Save failed",
+      "saving": "Saving…",
+      "saved": "Saved",
       "iconUpdateFailed": "Icon update failed",
       "renameFailed": "Rename failed",
       "moveFailed": "Move failed",

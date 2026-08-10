@@ -1,12 +1,19 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import KBPage from "../src/lib/components/KBPage.svelte";
 import { createKBStore } from "../src/lib/kbStore.svelte";
 import type { KBEntry } from "../src/lib/kbStore.svelte";
+import { homesStore } from "../src/lib/homesStore.svelte";
+import { getNavGuard } from "../src/lib/navGuard";
 
 const HOME = "home-1";
 
 afterEach(() => vi.unstubAllGlobals());
+beforeEach(() => {
+  homesStore._reset();
+  homesStore.setActiveHomeId(HOME);
+  localStorage.clear();
+});
 
 function makeEntry(overrides: Partial<KBEntry> = {}): KBEntry {
   return {
@@ -215,7 +222,52 @@ describe("KBPage — selection and deep links", () => {
     const { target, comp } = await setup(entries, { onnavigate });
     const rows = target.querySelectorAll(".tree-row");
     (rows[1] as HTMLElement).click();
+    await tick(); flushSync();
     expect(onnavigate).toHaveBeenCalledWith("e2");
+    unmount(comp); target.remove();
+  });
+});
+
+describe("KBPage — reopen last-viewed page", () => {
+  it("redirects to the stored last-viewed page when opened with no page id", async () => {
+    localStorage.setItem("myhome-kb-last-page-home-1", "e2");
+    const entries = [makeEntry(), makeEntry({ id: "e2", title: "Second page", order: 1 })];
+    const onnavigate = vi.fn();
+    const { target, comp } = await setup(entries, { onnavigate });
+    await tick(); flushSync();
+    expect(onnavigate).toHaveBeenCalledWith("e2");
+    unmount(comp); target.remove();
+  });
+
+  it("falls back to the empty-state placeholder and clears the stale id when the stored page no longer exists", async () => {
+    localStorage.setItem("myhome-kb-last-page-home-1", "gone");
+    const onnavigate = vi.fn();
+    const { target, comp } = await setup([makeEntry()], { onnavigate });
+    await tick(); flushSync();
+    expect(onnavigate).not.toHaveBeenCalled();
+    expect(localStorage.getItem("myhome-kb-last-page-home-1")).toBeNull();
+    expect(target.textContent).toContain("Select a page or create one");
+    unmount(comp); target.remove();
+  });
+
+  it("does not redirect when a page id is already given in the URL (deep link wins)", async () => {
+    localStorage.setItem("myhome-kb-last-page-home-1", "e1");
+    const entries = [makeEntry(), makeEntry({ id: "e2", title: "Second page", order: 1 })];
+    const onnavigate = vi.fn();
+    const { target, comp } = await setup(entries, { selectedItemId: "e2", onnavigate });
+    await tick(); flushSync();
+    expect(onnavigate).not.toHaveBeenCalled();
+    expect(target.querySelector(".content-title")?.textContent).toBe("Second page");
+    unmount(comp); target.remove();
+  });
+
+  it("persists the selected page as the new last-viewed page when a tree row is clicked", async () => {
+    const entries = [makeEntry(), makeEntry({ id: "e2", title: "Second page", order: 1 })];
+    const { target, comp } = await setup(entries);
+    const rows = target.querySelectorAll(".tree-row");
+    (rows[1] as HTMLElement).click();
+    await tick(); flushSync();
+    expect(localStorage.getItem("myhome-kb-last-page-home-1")).toBe("e2");
     unmount(comp); target.remove();
   });
 });
@@ -391,8 +443,9 @@ describe("KBPage — insert bookmark", () => {
   it("fetches a link preview and inserts the returned HTML at the cursor", async () => {
     const entries = [makeEntry({ content: "" })];
     const { target, comp } = await setup(entries, { selectedItemId: "e1" });
-    const editBtn = target.querySelector('[title="Edit"]') as HTMLElement;
-    editBtn.click();
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
     flushSync();
     (target.querySelector('[title="Insert bookmark"]') as HTMLButtonElement).click();
     flushSync();
@@ -415,8 +468,9 @@ describe("KBPage — insert bookmark", () => {
   it("Cancel closes the modal without inserting anything", async () => {
     const entries = [makeEntry({ content: "" })];
     const { target, comp } = await setup(entries, { selectedItemId: "e1" });
-    const editBtn = target.querySelector('[title="Edit"]') as HTMLElement;
-    editBtn.click();
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
     flushSync();
     (target.querySelector('[title="Insert bookmark"]') as HTMLButtonElement).click();
     flushSync();
@@ -427,6 +481,139 @@ describe("KBPage — insert bookmark", () => {
     expect(target.querySelector(".ui-modal")).toBeNull();
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
     expect(textarea.value).toBe("");
+    unmount(comp); target.remove();
+  });
+});
+
+describe("KBPage — autosave", () => {
+  function enterEditMode(target: HTMLElement): void {
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
+    flushSync();
+  }
+
+  it("double-click on the preview enters edit mode; there is no separate Edit button", async () => {
+    const { target, comp } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    expect(target.querySelector('[title="Edit"]')).toBeNull();
+    expect(target.querySelector("textarea.md-editor")).toBeNull();
+    enterEditMode(target);
+    expect(target.querySelector("textarea.md-editor")).not.toBeNull();
+    unmount(comp); target.remove();
+  });
+
+  it("saves automatically ~1.2s after the user stops typing, without a Save button", async () => {
+    const { target, comp, store } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    expect(target.querySelector('[title="Save"]')).toBeNull();
+    enterEditMode(target);
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    textarea.value = "hello world";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    expect(target.textContent).toContain("Saving");
+    await new Promise((r) => setTimeout(r, 1300));
+    flushSync();
+    await tick(); flushSync();
+    expect(store.entries.find((e) => e.id === "e1")?.content).toBe("hello world");
+    unmount(comp); target.remove();
+  });
+
+  it("shows a Saved indicator after a successful autosave", async () => {
+    const { target, comp } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    enterEditMode(target);
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    textarea.value = "hello world";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    await new Promise((r) => setTimeout(r, 1300));
+    await tick(); flushSync();
+    expect(target.textContent).toContain("Saved");
+    unmount(comp); target.remove();
+  });
+
+  it("does not autosave when the draft is unchanged from the loaded entry", async () => {
+    const { target, comp } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    enterEditMode(target);
+    await new Promise((r) => setTimeout(r, 1300));
+    flushSync();
+    expect(target.textContent).not.toContain("Saving");
+    unmount(comp); target.remove();
+  });
+
+  it("the Done button flushes any pending save and returns to preview", async () => {
+    const { target, comp, store } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    enterEditMode(target);
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    textarea.value = "hello world";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    (target.querySelector('[title="Done editing"]') as HTMLElement).click();
+    await tick(); flushSync(); await tick(); flushSync();
+    expect(target.querySelector("textarea.md-editor")).toBeNull();
+    expect(store.entries.find((e) => e.id === "e1")?.content).toBe("hello world");
+    unmount(comp); target.remove();
+  });
+
+  it("blocks an empty title from being saved and shows an error instead", async () => {
+    const { target, comp, store } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    enterEditMode(target);
+    const titleInput = target.querySelector(".title-input") as HTMLInputElement;
+    titleInput.value = "   ";
+    titleInput.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    await new Promise((r) => setTimeout(r, 1300));
+    await tick(); flushSync();
+    expect(target.textContent).toContain("Title cannot be empty");
+    expect(store.entries.find((e) => e.id === "e1")?.title).toBe("How to paint");
+    unmount(comp); target.remove();
+  });
+
+  it("flushes a pending save before switching to a different page, and the new page shows the saved content", async () => {
+    const entries = [
+      makeEntry({ id: "e1", title: "Page A", content: "hello" }),
+      makeEntry({ id: "e2", title: "Page B", order: 1 }),
+    ];
+    const { target, comp, store } = await setup(entries, { selectedItemId: "e1" });
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    textarea.value = "hello world";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    const rows = target.querySelectorAll(".tree-row");
+    const pageBRow = Array.from(rows).find((r) => r.textContent?.includes("Page B")) as HTMLElement;
+    pageBRow.click();
+    await tick(); flushSync(); await tick(); flushSync();
+    expect(store.entries.find((e) => e.id === "e1")?.content).toBe("hello world");
+    expect(target.querySelector(".content-title")?.textContent).toBe("Page B");
+    unmount(comp); target.remove();
+  });
+});
+
+describe("KBPage — nav guard registration", () => {
+  it("registers a nav guard while mounted and clears it on unmount", async () => {
+    const { target, comp } = await setup([]);
+    expect(getNavGuard()).not.toBeNull();
+    unmount(comp); target.remove();
+    expect(getNavGuard()).toBeNull();
+  });
+
+  it("the registered guard flushes a pending autosave and returns true on success", async () => {
+    const { target, comp, store } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    textarea.value = "hello world";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    const guard = getNavGuard()!;
+    const ok = await guard();
+    expect(ok).toBe(true);
+    expect(store.entries.find((e) => e.id === "e1")?.content).toBe("hello world");
     unmount(comp); target.remove();
   });
 });

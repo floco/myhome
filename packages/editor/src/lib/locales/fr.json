@@ -1228,6 +1228,8 @@
       "createFailed": "Échec de la création",
       "titleEmpty": "Le titre ne peut pas être vide",
       "saveFailed": "Échec de l'enregistrement",
+      "saving": "Enregistrement…",
+      "saved": "Enregistré",
       "iconUpdateFailed": "Échec de la mise à jour de l'icône",
       "renameFailed": "Échec du renommage",
       "moveFailed": "Échec du déplacement",

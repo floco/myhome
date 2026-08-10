@@ -4,6 +4,8 @@
   import type { MediaItem } from "./ui/mediaTypes";
   import { apiUrl } from "../apiUrl";
   import { homesStore } from "../homesStore.svelte";
+  import { getStoredLastPageId, setStoredLastPageId, clearStoredLastPageId } from "../kbLastPage";
+  import { setNavGuard } from "../navGuard";
   import MarkdownEditor from "./ui/MarkdownEditor.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
@@ -31,7 +33,7 @@
   let draftContent = $state("");
   let draftIcon = $state("📄");
   let confirmDelete = $state<{ id: string; title: string; count: number } | null>(null);
-  let saving = $state(false);
+  let saveStatus = $state<"idle" | "pending" | "saving" | "saved" | "error">("idle");
   let error = $state<string | null>(null);
   let searchQuery = $state("");
   let uploading = $state(false);
@@ -48,6 +50,9 @@
   let bookmarkError = $state<string | null>(null);
   let bookmarkResolve: ((html: string | null) => void) | null = null;
   let sidebarExpanded = $state(false);
+  let saveTimer: ReturnType<typeof setTimeout> | null = null;
+  let savedStatusTimer: ReturnType<typeof setTimeout> | null = null;
+  let inFlightSave: Promise<boolean> | null = null;
 
   const selectedEntry = $derived(
     selectedId ? (store.entries.find((e) => e.id === selectedId) ?? null) : null,
@@ -81,6 +86,8 @@
     contentTab = "content";
     contentMode = "page";
     error = null;
+    const homeId = homesStore.activeHomeId;
+    if (homeId) setStoredLastPageId(homeId, entry.id);
   }
 
   // Set right before calling onnavigate() so the reconciliation effect below
@@ -88,14 +95,17 @@
   // own internal navigation (not a fresh external one) while it's in flight.
   let pendingNavigateId = $state<string | null>(null);
 
-  function navigate(entry: KBEntry): void {
+  async function navigate(entry: KBEntry): Promise<boolean> {
+    const ok = await flushSave();
+    if (!ok) return false;
     selectEntry(entry);
     pendingNavigateId = entry.id;
     onnavigate?.(entry.id);
+    return true;
   }
 
-  function handleTreeSelect(entry: KBEntry): void {
-    navigate(entry);
+  async function handleTreeSelect(entry: KBEntry): Promise<void> {
+    await navigate(entry);
     sidebarExpanded = false;
   }
 
@@ -126,15 +136,56 @@
     }
   });
 
+  // On a bare "#/kb" open (no page id in the URL), redirect to whichever
+  // page was last viewed in this browser for the active home, once entries
+  // have actually loaded. Runs at most once per mount; a deep-linked
+  // selectedItemId always wins and skips this entirely.
+  let lastPageRedirectAttempted = $state(false);
+
+  $effect(() => {
+    if (lastPageRedirectAttempted) return;
+    if (selectedItemId) { lastPageRedirectAttempted = true; return; }
+    if (!store.loaded) return;
+    lastPageRedirectAttempted = true;
+    const homeId = homesStore.activeHomeId;
+    if (!homeId) return;
+    const storedId = getStoredLastPageId(homeId);
+    if (!storedId) return;
+    const found = store.entries.find((e) => e.id === storedId);
+    if (found) {
+      navigate(found);
+    } else {
+      clearStoredLastPageId(homeId);
+    }
+  });
+
+  $effect(() => {
+    setNavGuard(flushSave);
+    return () => { setNavGuard(null); };
+  });
+
+  $effect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent): void {
+      if (saveStatus === "pending" || saveStatus === "saving" || saveStatus === "error") {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  });
+
   function resolveKbLink(id: string): { title: string; icon: string } | null {
     const found = store.entries.find((e) => e.id === id);
     return found ? { title: found.title, icon: found.icon } : null;
   }
 
   async function handleNewPage(): Promise<void> {
+    const ok = await flushSave();
+    if (!ok) return;
     try {
       const entry = await store.createEntry({ title: $_('kb.page.newPageTitle'), content: "" });
-      navigate(entry);
+      await navigate(entry);
       editing = true;
       sidebarExpanded = false;
     } catch (e) {
@@ -150,13 +201,15 @@
   }
 
   async function handleCreateChild(parentId: string): Promise<void> {
+    const ok = await flushSave();
+    if (!ok) return;
     try {
       const entry = await store.createEntry({ title: $_('kb.page.newPageTitle'), content: "", parentId });
       await appendChildLink(parentId, entry);
       const next = new Set(collapsedIds);
       next.delete(parentId);
       collapsedIds = next;
-      navigate(entry);
+      await navigate(entry);
       editing = true;
       sidebarExpanded = false;
     } catch (e) {
@@ -206,31 +259,67 @@
     }
   }
 
-  async function handleSave(): Promise<void> {
-    if (!selectedId) return;
-    if (!draftTitle.trim()) { error = $_('kb.page.titleEmpty'); return; }
-    saving = true;
-    error = null;
-    try {
-      await store.updateEntry(selectedId, {
-        title: draftTitle.trim(),
-        content: draftContent,
-      });
-      editing = false;
-    } catch (e) {
-      error = e instanceof Error ? e.message : $_('kb.page.saveFailed');
-    } finally {
-      saving = false;
-    }
+  function isDraftDirty(): boolean {
+    if (!selectedEntry) return false;
+    return draftTitle !== selectedEntry.title || draftContent !== selectedEntry.content;
   }
 
-  function handleCancel(): void {
-    if (selectedEntry) {
-      draftTitle = selectedEntry.title;
-      draftContent = selectedEntry.content;
+  $effect(() => {
+    if (!editing || !isDraftDirty()) return;
+    saveStatus = "pending";
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => { flushSave(); }, 1200);
+    return () => { if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; } };
+  });
+
+  async function flushSave(): Promise<boolean> {
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+    if (inFlightSave) {
+      const ok = await inFlightSave;
+      return ok ? flushSave() : false;
     }
-    editing = false;
+    if (!isDraftDirty()) { saveStatus = "idle"; return true; }
+    if (!selectedId) return true;
+    if (!draftTitle.trim()) {
+      error = $_('kb.page.titleEmpty');
+      saveStatus = "error";
+      return false;
+    }
+    saveStatus = "saving";
     error = null;
+    const id = selectedId;
+    const title = draftTitle.trim();
+    const content = draftContent;
+    const p = (async (): Promise<boolean> => {
+      try {
+        await store.updateEntry(id, { title, content });
+        draftTitle = title;
+        saveStatus = "saved";
+        if (savedStatusTimer) clearTimeout(savedStatusTimer);
+        savedStatusTimer = setTimeout(() => { saveStatus = "idle"; }, 2000);
+        return true;
+      } catch (e) {
+        error = e instanceof Error ? e.message : $_('kb.page.saveFailed');
+        saveStatus = "error";
+        return false;
+      } finally {
+        inFlightSave = null;
+      }
+    })();
+    inFlightSave = p;
+    return p;
+  }
+
+  async function handleDoneEditing(): Promise<void> {
+    const ok = await flushSave();
+    if (ok) editing = false;
+  }
+
+  async function handleSwitchToMedia(): Promise<void> {
+    const ok = await flushSave();
+    if (!ok) return;
+    contentTab = "media";
+    editing = false;
   }
 
   async function handleIconChange(icon: string): Promise<void> {
@@ -361,6 +450,8 @@
   }
 
   async function openTrash(): Promise<void> {
+    const ok = await flushSave();
+    if (!ok) return;
     contentMode = "trash";
     selectedId = null;
     sidebarExpanded = false;
@@ -462,19 +553,20 @@
             <button class="content-tab" class:active={contentTab === "content"}
               onclick={() => { contentTab = "content"; }}>{$_('kb.page.contentTab')}</button>
             <button class="content-tab" class:active={contentTab === "media"}
-              onclick={() => { contentTab = "media"; editing = false; }}>
+              onclick={handleSwitchToMedia}>
               {$_('chores.editModal.media')}{(selectedEntry.attachments?.length ?? 0) > 0 ? ` (${selectedEntry.attachments.length})` : ""}
             </button>
           </div>
         </div>
         <div class="header-actions">
           {#if contentTab === "content" && editing}
-            <Button variant="primary" disabled={saving} onclick={handleSave} title={saving ? $_('settings.security.saving') : $_('common.save')}>
-              💾
-            </Button>
-            <Button variant="secondary" onclick={handleCancel} title={$_('common.cancel')}>✕</Button>
-          {:else if contentTab === "content" && !editing}
-            <Button variant="secondary" onclick={() => { editing = true; }} title={$_('common.edit')}>✏️</Button>
+            <span class="save-status" class:save-status-error={saveStatus === "error"}>
+              {#if saveStatus === "saving" || saveStatus === "pending"}{$_('kb.page.saving')}
+              {:else if saveStatus === "saved"}{$_('kb.page.saved')}
+              {:else if saveStatus === "error"}{$_('kb.page.saveFailed')}
+              {/if}
+            </span>
+            <Button variant="primary" onclick={handleDoneEditing} title={$_('works.modal.doneEditing')}>✓</Button>
           {/if}
           <Button variant="ghost" onclick={() => handleAskDelete(selectedEntry.id)} title={$_('kb.page.deletePage')}>🗑</Button>
         </div>
@@ -486,7 +578,8 @@
             bind:value={draftContent}
             bind:editing
             mediaItems={contentTab === "content" ? mediaItems : []}
-            clickToEdit={false}
+            clickToEdit={true}
+            editTrigger="dblclick"
             placeholder={$_('kb.page.startWritingPlaceholder')}
             {resolveKbLink}
             onSlashPage={handleSlashPage}
@@ -646,6 +739,9 @@
   .content-body :global(.md-editor) { flex: 1; }
 
   .content-error { padding: 0 var(--space-4); font-size: 11px; color: var(--danger); }
+
+  .save-status { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .save-status-error { color: var(--danger); }
 
   .bookmark-error { color: var(--danger); font-size: 12px; margin: 6px 0 0; }
 </style>
