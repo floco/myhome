@@ -1860,18 +1860,19 @@
       gap: 0;
       border-radius: 0;
       border-left: none; border-right: none; border-bottom: none;
-      overflow-x: auto;
       z-index: 30;
     }
     .ft-handle { display: none; }
     .ft-btn {
+      flex: 1 1 0;
+      max-width: 44px;
       width: auto;
-      flex-direction: column;
-      gap: 1px;
-      font-size: 10px;
+      aspect-ratio: 1 / 1;
+      justify-content: center;
+      font-size: 22px;
     }
-    .ft-label { font-size: 8px; }
-    .ft-sep { width: 1px; height: 24px; margin: 0 2px; }
+    .ft-label { display: none; }
+    .ft-sep { width: 1px; height: 24px; margin: 0 2px; flex-shrink: 0; }
     .ft-desktop-item { display: none; }
     .ft-mobile-item { display: flex; }
     .ft-tool-indicator {
