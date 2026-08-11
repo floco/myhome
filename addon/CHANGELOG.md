@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.20.1 - 2026-08-11
+
+- Fixed wall, divider, and garden-border drag handles being too small to grab reliably on touchscreens (e.g. iPad) — a slightly imprecise touch missed the handle entirely with no visible feedback, making it look like selection worked but dragging didn't
+
 ## 0.20.0 - 2026-08-10
 
 - Fixed the Chores history always showing "Whole house" for a completed chore even when it was assigned to a specific room — "Mark all done" and the floor-plan pin's "All done" action now record which room(s) were actually completed
