@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.21.0 - 2026-08-11
+
+- Changed the floor plan editor's mobile toolbar to group tools into View, Draw, and Actions icon buttons that open a modal with larger touch targets, instead of a single row requiring horizontal scrolling to reach every tool
+- Changed the floor and layers pickers in the floor plan toolbar to icon-only on mobile, freeing up space for the new tool groups
+- Added a floating indicator above the mobile toolbar showing the currently active drawing tool, which reopens the relevant tool group when tapped
+- Changed the floor plan edit/view mode icon to a slashed pencil in view mode instead of an eye, since the eye icon is now used for the View tools group
+
 ## 0.20.1 - 2026-08-11
 
 - Fixed wall, divider, and garden-border drag handles being too small to grab reliably on touchscreens (e.g. iPad) — a slightly imprecise touch missed the handle entirely with no visible feedback, making it look like selection worked but dragging didn't
