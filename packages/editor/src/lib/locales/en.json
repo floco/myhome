@@ -1311,7 +1311,10 @@
       "editMode": "Edit",
       "viewMode": "View",
       "switchToViewMode": "Switch to view mode (read-only)",
-      "switchToEditMode": "Switch to edit mode"
+      "switchToEditMode": "Switch to edit mode",
+      "viewGroup": "View tools",
+      "drawGroup": "Draw tools",
+      "actionsGroup": "Actions"
     },
     "placeholder": {
       "insuranceDescription": "Track home insurance policies, coverage, and renewals."

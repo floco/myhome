@@ -1311,7 +1311,10 @@
       "editMode": "Édition",
       "viewMode": "Lecture",
       "switchToViewMode": "Passer en mode lecture seule",
-      "switchToEditMode": "Passer en mode édition"
+      "switchToEditMode": "Passer en mode édition",
+      "viewGroup": "Outils de vue",
+      "drawGroup": "Outils de dessin",
+      "actionsGroup": "Actions"
     },
     "placeholder": {
       "insuranceDescription": "Suivez les polices d'assurance habitation, les garanties et les renouvellements."

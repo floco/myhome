@@ -5,7 +5,7 @@
   import { pointsEqual, findAdjacentRooms } from "@myhome/geometry";
   import { createHouseStore } from "./lib/houseStore.svelte";
   import { createViewportStore } from "./lib/viewportStore.svelte";
-  import { createToolStore } from "./lib/toolStore.svelte";
+  import { createToolStore, type ToolType } from "./lib/toolStore.svelte";
   import { createFloatingDrag } from "./lib/floatingDrag.svelte";
   import { createHaStateStore } from "./lib/haStateStore.svelte";
   import { placePoint, allEndpoints } from "./lib/drawingTool";
@@ -298,9 +298,11 @@
   const ALL_FLOOR_ID = "__all__";
   let allFloorsMode = $state(false);
   let viewMode = $state(false);
+  let openGroup = $state<"view" | "draw" | "actions" | null>(null);
 
   function toggleViewMode(): void {
     viewMode = !viewMode;
+    openGroup = null;
     if (viewMode) {
       toolStore.setTool("select");
       pickerOpen = false;
@@ -1331,27 +1333,64 @@
                   onclick={handleSave}
                 >{saveIcon} <span class="ft-label">{saveStatus === 'error' ? $_('app.floatingToolbar.errorLabel') : saveStatus === 'saving' ? $_('settings.security.saving') : saveStatus === 'saved' ? $_('app.floatingToolbar.saved') : $_('common.save')}</span></button>
               {/if}
-              <button class="ft-btn" title={$_('app.floatingToolbar.resetView')} onclick={() => viewportStore.reset(floorStore.floor, canvasWidth, canvasHeight)}>↺ <span class="ft-label">{$_('app.floatingToolbar.reset')}</span></button>
+              <button class="ft-btn ft-desktop-item" title={$_('app.floatingToolbar.resetView')} onclick={() => viewportStore.reset(floorStore.floor, canvasWidth, canvasHeight)}>↺ <span class="ft-label">{$_('app.floatingToolbar.reset')}</span></button>
               {#if !viewMode}
-                <div class="ft-sep"></div>
-                <button class="ft-btn" title={$_('floorPlan.tools.undo')} disabled={!floorStore.hasUndo} onclick={handleUndo}>↩ <span class="ft-label">{$_('app.floatingToolbar.undo')}</span></button>
-                <button class="ft-btn" title={$_('floorPlan.tools.redo')} disabled={!floorStore.hasRedo} onclick={handleRedo}>↪ <span class="ft-label">{$_('app.floatingToolbar.redo')}</span></button>
+                <div class="ft-sep ft-desktop-item"></div>
+                <button class="ft-btn ft-desktop-item" title={$_('floorPlan.tools.undo')} disabled={!floorStore.hasUndo} onclick={handleUndo}>↩ <span class="ft-label">{$_('app.floatingToolbar.undo')}</span></button>
+                <button class="ft-btn ft-desktop-item" title={$_('floorPlan.tools.redo')} disabled={!floorStore.hasRedo} onclick={handleRedo}>↪ <span class="ft-label">{$_('app.floatingToolbar.redo')}</span></button>
               {/if}
               {#if !choreLayerActive && !allFloorsMode}
-                <div class="ft-sep"></div>
-                <button class="ft-btn" title={$_('floorPlan.tools.pan')} class:active={toolStore.state.tool === "pan"} onclick={() => toolStore.setTool("pan")}>✋ <span class="ft-label">{$_('floorPlan.tools.pan')}</span></button>
+                <div class="ft-sep ft-desktop-item"></div>
+                <button class="ft-btn ft-desktop-item" title={$_('floorPlan.tools.pan')} class:active={toolStore.state.tool === "pan"} onclick={() => toolStore.setTool("pan")}>✋ <span class="ft-label">{$_('floorPlan.tools.pan')}</span></button>
                 {#if !viewMode}
-                  <button class="ft-btn" title={$_('floorPlan.tools.select')} class:active={toolStore.state.tool === "select"} onclick={() => toolStore.setTool("select")}>🖱 <span class="ft-label">{$_('floorPlan.tools.select')}</span></button>
-                  <button class="ft-btn" title={$_('floorPlan.tools.wall')} class:active={toolStore.state.tool === "wall"} onclick={() => toolStore.setTool("wall")}>🧱 <span class="ft-label">{$_('floorPlan.tools.wall')}</span></button>
-                  <button class="ft-btn" title={$_('floorPlan.tools.divider')} class:active={toolStore.state.tool === "divider"} onclick={() => toolStore.setTool("divider")}>╌ <span class="ft-label">{$_('floorPlan.tools.divider')}</span></button>
-                  <button class="ft-btn" title={$_('floorPlan.tools.garden')} class:active={toolStore.state.tool === "garden"} onclick={() => toolStore.setTool("garden")}>🌿 <span class="ft-label">{$_('floorPlan.tools.garden')}</span></button>
-                  <button class="ft-btn" title={$_('floorPlan.tools.door')} class:active={toolStore.state.tool === "door"} onclick={() => toolStore.setTool("door")}>🚪 <span class="ft-label">{$_('floorPlan.tools.door')}</span></button>
-                  <button class="ft-btn" title={$_('floorPlan.tools.window')} class:active={toolStore.state.tool === "window"} onclick={() => toolStore.setTool("window")}>🪟 <span class="ft-label">{$_('floorPlan.tools.window')}</span></button>
-                  <div class="ft-sep"></div>
-                  <button class="ft-btn delete" disabled={!hasSelection} onclick={handleDelete} title={$_('floorPlan.tools.delete')}>🗑 <span class="ft-label">{$_('app.floatingToolbar.delete')}</span></button>
+                  <button class="ft-btn ft-desktop-item" title={$_('floorPlan.tools.select')} class:active={toolStore.state.tool === "select"} onclick={() => toolStore.setTool("select")}>🖱 <span class="ft-label">{$_('floorPlan.tools.select')}</span></button>
+                  <button class="ft-btn ft-desktop-item" title={$_('floorPlan.tools.wall')} class:active={toolStore.state.tool === "wall"} onclick={() => toolStore.setTool("wall")}>🧱 <span class="ft-label">{$_('floorPlan.tools.wall')}</span></button>
+                  <button class="ft-btn ft-desktop-item" title={$_('floorPlan.tools.divider')} class:active={toolStore.state.tool === "divider"} onclick={() => toolStore.setTool("divider")}>╌ <span class="ft-label">{$_('floorPlan.tools.divider')}</span></button>
+                  <button class="ft-btn ft-desktop-item" title={$_('floorPlan.tools.garden')} class:active={toolStore.state.tool === "garden"} onclick={() => toolStore.setTool("garden")}>🌿 <span class="ft-label">{$_('floorPlan.tools.garden')}</span></button>
+                  <button class="ft-btn ft-desktop-item" title={$_('floorPlan.tools.door')} class:active={toolStore.state.tool === "door"} onclick={() => toolStore.setTool("door")}>🚪 <span class="ft-label">{$_('floorPlan.tools.door')}</span></button>
+                  <button class="ft-btn ft-desktop-item" title={$_('floorPlan.tools.window')} class:active={toolStore.state.tool === "window"} onclick={() => toolStore.setTool("window")}>🪟 <span class="ft-label">{$_('floorPlan.tools.window')}</span></button>
+                  <div class="ft-sep ft-desktop-item"></div>
+                  <button class="ft-btn ft-desktop-item delete" disabled={!hasSelection} onclick={handleDelete} title={$_('floorPlan.tools.delete')}>🗑 <span class="ft-label">{$_('app.floatingToolbar.delete')}</span></button>
                 {/if}
               {/if}
+              <div class="ft-sep ft-mobile-item"></div>
+              <button class="ft-btn ft-mobile-item" title={$_('app.floatingToolbar.viewGroup')} onclick={() => { openGroup = "view"; }}>👁 <span class="ft-label">{$_('app.floatingToolbar.viewGroup')}</span></button>
+              {#if !choreLayerActive && !allFloorsMode && !viewMode}
+                <button class="ft-btn ft-mobile-item" title={$_('app.floatingToolbar.drawGroup')} onclick={() => { openGroup = "draw"; }}>📐 <span class="ft-label">{$_('app.floatingToolbar.drawGroup')}</span></button>
+              {/if}
+              {#if !viewMode}
+                <button class="ft-btn ft-mobile-item" title={$_('app.floatingToolbar.actionsGroup')} onclick={() => { openGroup = "actions"; }}>⚡ <span class="ft-label">{$_('app.floatingToolbar.actionsGroup')}</span></button>
+              {/if}
             </div>
+            <Modal open={openGroup === "view"} title={$_('app.floatingToolbar.viewGroup')} onclose={() => { openGroup = null; }}>
+              <div class="ft-modal-grid">
+                {#if !choreLayerActive && !allFloorsMode}
+                  <button class="ft-modal-btn" class:active={toolStore.state.tool === "pan"} onclick={() => { toolStore.setTool("pan"); openGroup = null; }}>✋ <span>{$_('floorPlan.tools.pan')}</span></button>
+                  {#if !viewMode}
+                    <button class="ft-modal-btn" class:active={toolStore.state.tool === "select"} onclick={() => { toolStore.setTool("select"); openGroup = null; }}>🖱 <span>{$_('floorPlan.tools.select')}</span></button>
+                  {/if}
+                {/if}
+                <button class="ft-modal-btn" onclick={() => { viewportStore.reset(floorStore.floor, canvasWidth, canvasHeight); openGroup = null; }}>↺ <span>{$_('app.floatingToolbar.reset')}</span></button>
+              </div>
+            </Modal>
+            <Modal open={openGroup === "draw"} title={$_('app.floatingToolbar.drawGroup')} onclose={() => { openGroup = null; }}>
+              <div class="ft-modal-grid">
+                <button class="ft-modal-btn" class:active={toolStore.state.tool === "wall"} onclick={() => { toolStore.setTool("wall"); openGroup = null; }}>🧱 <span>{$_('floorPlan.tools.wall')}</span></button>
+                <button class="ft-modal-btn" class:active={toolStore.state.tool === "divider"} onclick={() => { toolStore.setTool("divider"); openGroup = null; }}>╌ <span>{$_('floorPlan.tools.divider')}</span></button>
+                <button class="ft-modal-btn" class:active={toolStore.state.tool === "garden"} onclick={() => { toolStore.setTool("garden"); openGroup = null; }}>🌿 <span>{$_('floorPlan.tools.garden')}</span></button>
+                <button class="ft-modal-btn" class:active={toolStore.state.tool === "door"} onclick={() => { toolStore.setTool("door"); openGroup = null; }}>🚪 <span>{$_('floorPlan.tools.door')}</span></button>
+                <button class="ft-modal-btn" class:active={toolStore.state.tool === "window"} onclick={() => { toolStore.setTool("window"); openGroup = null; }}>🪟 <span>{$_('floorPlan.tools.window')}</span></button>
+              </div>
+            </Modal>
+            <Modal open={openGroup === "actions"} title={$_('app.floatingToolbar.actionsGroup')} onclose={() => { openGroup = null; }}>
+              <div class="ft-modal-grid">
+                <button class="ft-modal-btn" disabled={!floorStore.hasUndo} onclick={() => { handleUndo(); openGroup = null; }}>↩ <span>{$_('app.floatingToolbar.undo')}</span></button>
+                <button class="ft-modal-btn" disabled={!floorStore.hasRedo} onclick={() => { handleRedo(); openGroup = null; }}>↪ <span>{$_('app.floatingToolbar.redo')}</span></button>
+                {#if !choreLayerActive && !allFloorsMode}
+                  <button class="ft-modal-btn ft-modal-danger" disabled={!hasSelection} onclick={() => { handleDelete(); openGroup = null; }}>🗑 <span>{$_('app.floatingToolbar.delete')}</span></button>
+                {/if}
+              </div>
+            </Modal>
           {/if}
         </div>
 
@@ -1762,6 +1801,24 @@
     height: 1px; background: var(--border); flex-shrink: 0; margin: 2px 0;
   }
 
+  .ft-mobile-item { display: none; }
+
+  .ft-modal-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 8px;
+  }
+  .ft-modal-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 10px 4px; min-height: 44px;
+    border: 1px solid var(--border); border-radius: var(--radius-md);
+    background: var(--surface); color: var(--text);
+    font-size: 12px; cursor: pointer;
+  }
+  .ft-modal-btn:hover:not(:disabled) { background: var(--surface-hover); }
+  .ft-modal-btn.active { border-color: var(--accent); color: var(--accent); }
+  .ft-modal-btn:disabled { opacity: 0.35; cursor: default; }
+  .ft-modal-btn.ft-modal-danger { color: var(--danger); }
+
   @media (max-width: 480px) { /* --bp-mobile */
     .floating-toolbar {
       position: fixed;
@@ -1788,6 +1845,8 @@
     }
     .ft-label { font-size: 8px; }
     .ft-sep { width: 1px; height: 24px; margin: 0 2px; }
+    .ft-desktop-item { display: none; }
+    .ft-mobile-item { display: flex; }
   }
 
   .loading {
