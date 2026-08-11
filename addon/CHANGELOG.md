@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.22.0 - 2026-08-11
+
+- Changed the floor plan editor's mobile toolbar to show bigger, uniform, icon-only buttons for every tool (including the floor and layers pickers) instead of small icons with text labels underneath
+- Changed the View, Draw, and Actions tool groups to open as a small popup anchored near the toolbar instead of a full-screen dialog, listing each tool as an icon with its label
+
 ## 0.21.0 - 2026-08-11
 
 - Changed the floor plan editor's mobile toolbar to group tools into View, Draw, and Actions icon buttons that open a modal with larger touch targets, instead of a single row requiring horizontal scrolling to reach every tool
