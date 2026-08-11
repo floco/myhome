@@ -216,8 +216,11 @@
   .compact-chevron { font-size: 9px; color: var(--text-muted); flex-shrink: 0; }
 
   @media (max-width: 480px) { /* --bp-mobile */
-    .compact-icon { display: inline-block; }
+    .compact-switcher { flex: 1 1 0; max-width: 44px; aspect-ratio: 1 / 1; }
+    .compact-btn { width: 100%; height: 100%; padding: 0; }
+    .compact-icon { display: inline-block; font-size: 22px; }
     .compact-label { display: none; }
+    .compact-chevron { display: none; }
   }
 
   .compact-popover {
