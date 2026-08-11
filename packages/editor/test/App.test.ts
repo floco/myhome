@@ -203,6 +203,34 @@ describe("App", () => {
     expect(target.querySelectorAll("polygon.wall").length).toBe(wallsBefore - 1);
   });
 
+  it("shows a floating active-tool indicator that reopens the owning group's modal", async () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = await mountAndLoad(target);
+
+    const indicator = target.querySelector(".ft-tool-indicator") as HTMLButtonElement;
+    expect(indicator).toBeTruthy();
+    expect(indicator.title).toBe("Select");
+
+    indicator.click();
+    flushSync();
+
+    expect(target.querySelector(".ui-modal")?.textContent).toContain("View tools");
+  });
+
+  it("hides the floating active-tool indicator in view mode", async () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = await mountAndLoad(target);
+
+    toolbarBtn(target, "Switch to view mode (read-only)").click();
+    flushSync();
+
+    expect(target.querySelector(".ft-tool-indicator")).toBeNull();
+  });
+
   it("selects a wall and deletes it with the Delete key", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);

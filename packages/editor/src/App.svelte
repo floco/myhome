@@ -296,6 +296,15 @@
   });
   let pickerOpen = $state(false);
   const ALL_FLOOR_ID = "__all__";
+  const TOOL_ICONS: Record<ToolType, string> = {
+    pan: "✋",
+    select: "🖱",
+    wall: "🧱",
+    divider: "╌",
+    garden: "🌿",
+    door: "🚪",
+    window: "🪟",
+  };
   let allFloorsMode = $state(false);
   let viewMode = $state(false);
   let openGroup = $state<"view" | "draw" | "actions" | null>(null);
@@ -1391,6 +1400,13 @@
                 {/if}
               </div>
             </Modal>
+            {#if !viewMode && !choreLayerActive && !allFloorsMode}
+              <button
+                class="ft-tool-indicator"
+                title={$_(`floorPlan.tools.${toolStore.state.tool}`)}
+                onclick={() => { openGroup = (toolStore.state.tool === "pan" || toolStore.state.tool === "select") ? "view" : "draw"; }}
+              >{TOOL_ICONS[toolStore.state.tool]}</button>
+            {/if}
           {/if}
         </div>
 
@@ -1803,6 +1819,17 @@
 
   .ft-mobile-item { display: none; }
 
+  .ft-tool-indicator {
+    display: none;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    box-shadow: var(--shadow-md);
+    font-size: 18px;
+    cursor: pointer;
+  }
+
   .ft-modal-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
     gap: 8px;
@@ -1847,6 +1874,12 @@
     .ft-sep { width: 1px; height: 24px; margin: 0 2px; }
     .ft-desktop-item { display: none; }
     .ft-mobile-item { display: flex; }
+    .ft-tool-indicator {
+      display: flex; align-items: center; justify-content: center;
+      position: fixed; right: 8px; bottom: 56px;
+      width: 40px; height: 40px;
+      z-index: 31;
+    }
   }
 
   .loading {
