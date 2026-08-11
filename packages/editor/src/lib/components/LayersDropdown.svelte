@@ -139,7 +139,8 @@
   .layers-btn.toolbar .ft-label { font-size: 11px; font-weight: 500; }
 
   @media (max-width: 480px) { /* --bp-mobile */
-    .layers-btn.toolbar { width: auto; flex-direction: column; gap: 1px; font-size: 10px; height: auto; }
+    .layers-dropdown { flex: 1 1 0; max-width: 44px; aspect-ratio: 1 / 1; }
+    .layers-btn.toolbar { width: 100%; height: 100%; font-size: 22px; justify-content: center; }
     .layers-btn.toolbar .ft-label { display: none; }
   }
 

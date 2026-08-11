@@ -134,7 +134,7 @@ describe("App", () => {
     expect(viewBtn.querySelector(".mode-icon")?.className).toContain("crossed");
   });
 
-  it("opens the View tools modal and selects Pan from it", async () => {
+  it("opens the View tools popover and selects Pan from it", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);
 
@@ -143,20 +143,20 @@ describe("App", () => {
     toolbarBtn(target, "View tools").click();
     flushSync();
 
-    const modal = target.querySelector(".ui-modal");
-    expect(modal?.textContent).toContain("View tools");
+    const popover = document.querySelector(".ui-popover");
+    expect(popover?.textContent).toContain("Pan");
 
-    const panBtn = Array.from(modal!.querySelectorAll("button")).find(
+    const panBtn = Array.from(popover!.querySelectorAll("button")).find(
       (b) => b.textContent?.includes("Pan"),
     ) as HTMLButtonElement;
     panBtn.click();
     flushSync();
 
-    expect(target.querySelector(".ui-modal")).toBeNull();
+    expect(document.querySelector(".ui-popover")).toBeNull();
     expect(toolbarBtn(target, "Pan").className).toContain("active");
   });
 
-  it("opens the Draw tools modal and selects Wall from it", async () => {
+  it("opens the Draw tools popover and selects Wall from it", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);
 
@@ -165,20 +165,20 @@ describe("App", () => {
     toolbarBtn(target, "Draw tools").click();
     flushSync();
 
-    const modal = target.querySelector(".ui-modal");
-    expect(modal?.textContent).toContain("Draw tools");
+    const popover = document.querySelector(".ui-popover");
+    expect(popover?.textContent).toContain("Wall");
 
-    const wallBtn = Array.from(modal!.querySelectorAll("button")).find(
+    const wallBtn = Array.from(popover!.querySelectorAll("button")).find(
       (b) => b.textContent?.includes("Wall"),
     ) as HTMLButtonElement;
     wallBtn.click();
     flushSync();
 
-    expect(target.querySelector(".ui-modal")).toBeNull();
+    expect(document.querySelector(".ui-popover")).toBeNull();
     expect(toolbarBtn(target, "Wall").className).toContain("active");
   });
 
-  it("opens the Actions modal and triggers Undo from it", async () => {
+  it("opens the Actions popover and triggers Undo from it", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);
 
@@ -190,16 +190,16 @@ describe("App", () => {
     toolbarBtn(target, "Actions").click();
     flushSync();
 
-    const modal = target.querySelector(".ui-modal");
-    expect(modal?.textContent).toContain("Actions");
+    const popover = document.querySelector(".ui-popover");
+    expect(popover?.textContent).toContain("Undo");
 
-    const undoBtn = Array.from(modal!.querySelectorAll("button")).find(
+    const undoBtn = Array.from(popover!.querySelectorAll("button")).find(
       (b) => b.textContent?.includes("Undo"),
     ) as HTMLButtonElement;
     undoBtn.click();
     flushSync();
 
-    expect(target.querySelector(".ui-modal")).toBeNull();
+    expect(document.querySelector(".ui-popover")).toBeNull();
     expect(target.querySelectorAll("polygon.wall").length).toBe(wallsBefore - 1);
   });
 
@@ -216,7 +216,7 @@ describe("App", () => {
     indicator.click();
     flushSync();
 
-    expect(target.querySelector(".ui-modal")?.textContent).toContain("View tools");
+    expect(document.querySelector(".ui-popover")?.textContent).toContain("Pan");
   });
 
   it("hides the floating active-tool indicator in view mode", async () => {
