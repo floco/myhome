@@ -108,13 +108,127 @@ describe("App", () => {
 
     const buttons = Array.from(target.querySelectorAll(".floating-toolbar .ft-btn"));
     const titles = buttons.map((b) => (b as HTMLButtonElement).title);
-    expect(titles).toEqual(["Toggle item picker", "Toggle furniture library", "Switch to view mode (read-only)", "Save", "Reset view", "Undo (Ctrl+Z)", "Redo (Ctrl+Y)", "Pan", "Select", "Wall", "Divider", "Garden Border", "Door", "Window", "Delete selected (Del)"]);
+    expect(titles).toEqual(["Toggle item picker", "Toggle furniture library", "Switch to view mode (read-only)", "Save", "Reset view", "Undo (Ctrl+Z)", "Redo (Ctrl+Y)", "Pan", "Select", "Wall", "Divider", "Garden Border", "Door", "Window", "Delete selected (Del)", "View tools", "Draw tools", "Actions"]);
 
     const selectBtn = toolbarBtn(target, "Select");
     expect(selectBtn.className).toContain("active");
 
     const deleteBtn = toolbarBtn(target, "Delete selected (Del)") as HTMLButtonElement;
     expect(deleteBtn.disabled).toBe(true);
+  });
+
+  it("shows a slashed pencil icon on the mode toggle when in view mode, and a plain pencil in edit mode", async () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = await mountAndLoad(target);
+
+    const editBtn = toolbarBtn(target, "Switch to view mode (read-only)");
+    expect(editBtn.querySelector(".mode-icon")).toBeTruthy();
+    expect(editBtn.querySelector(".mode-icon")?.className).not.toContain("crossed");
+
+    editBtn.click();
+    flushSync();
+
+    const viewBtn = toolbarBtn(target, "Switch to edit mode");
+    expect(viewBtn.querySelector(".mode-icon")?.className).toContain("crossed");
+  });
+
+  it("opens the View tools modal and selects Pan from it", async () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = await mountAndLoad(target);
+
+    toolbarBtn(target, "View tools").click();
+    flushSync();
+
+    const modal = target.querySelector(".ui-modal");
+    expect(modal?.textContent).toContain("View tools");
+
+    const panBtn = Array.from(modal!.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Pan"),
+    ) as HTMLButtonElement;
+    panBtn.click();
+    flushSync();
+
+    expect(target.querySelector(".ui-modal")).toBeNull();
+    expect(toolbarBtn(target, "Pan").className).toContain("active");
+  });
+
+  it("opens the Draw tools modal and selects Wall from it", async () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = await mountAndLoad(target);
+
+    toolbarBtn(target, "Draw tools").click();
+    flushSync();
+
+    const modal = target.querySelector(".ui-modal");
+    expect(modal?.textContent).toContain("Draw tools");
+
+    const wallBtn = Array.from(modal!.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Wall"),
+    ) as HTMLButtonElement;
+    wallBtn.click();
+    flushSync();
+
+    expect(target.querySelector(".ui-modal")).toBeNull();
+    expect(toolbarBtn(target, "Wall").className).toContain("active");
+  });
+
+  it("opens the Actions modal and triggers Undo from it", async () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = await mountAndLoad(target);
+    drawWalls(target, SAMPLE_RECT_CORNERS);
+
+    const wallsBefore = target.querySelectorAll("polygon.wall").length;
+
+    toolbarBtn(target, "Actions").click();
+    flushSync();
+
+    const modal = target.querySelector(".ui-modal");
+    expect(modal?.textContent).toContain("Actions");
+
+    const undoBtn = Array.from(modal!.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Undo"),
+    ) as HTMLButtonElement;
+    undoBtn.click();
+    flushSync();
+
+    expect(target.querySelector(".ui-modal")).toBeNull();
+    expect(target.querySelectorAll("polygon.wall").length).toBe(wallsBefore - 1);
+  });
+
+  it("shows a floating active-tool indicator that reopens the owning group's modal", async () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = await mountAndLoad(target);
+
+    const indicator = target.querySelector(".ft-tool-indicator") as HTMLButtonElement;
+    expect(indicator).toBeTruthy();
+    expect(indicator.title).toBe("Select");
+
+    indicator.click();
+    flushSync();
+
+    expect(target.querySelector(".ui-modal")?.textContent).toContain("View tools");
+  });
+
+  it("hides the floating active-tool indicator in view mode", async () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = await mountAndLoad(target);
+
+    toolbarBtn(target, "Switch to view mode (read-only)").click();
+    flushSync();
+
+    expect(target.querySelector(".ft-tool-indicator")).toBeNull();
   });
 
   it("selects a wall and deletes it with the Delete key", async () => {

@@ -140,7 +140,7 @@
 
   @media (max-width: 480px) { /* --bp-mobile */
     .layers-btn.toolbar { width: auto; flex-direction: column; gap: 1px; font-size: 10px; height: auto; }
-    .layers-btn.toolbar .ft-label { font-size: 8px; }
+    .layers-btn.toolbar .ft-label { display: none; }
   }
 
   .dropdown {
