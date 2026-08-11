@@ -17,6 +17,29 @@ function setup(overrides: Record<string, unknown> = {}) {
   return { target, comp };
 }
 
+describe("SelectionHandles — touch hit target", () => {
+  it("renders an enlarged invisible hit-testing circle around each visible handle dot", () => {
+    const { target, comp } = setup();
+    const hitCircles = target.querySelectorAll(".handle-hit");
+    expect(hitCircles.length).toBe(2);
+    hitCircles.forEach((c) => {
+      // At least a 44px diameter, per WCAG/Apple's minimum recommended touch target size.
+      expect(Number(c.getAttribute("r"))).toBeGreaterThanOrEqual(22);
+    });
+    unmount(comp); target.remove();
+  });
+
+  it("triggers ondragstart from a pointerdown on the enlarged hit circle, not just the visible dot", () => {
+    const ondragstart = vi.fn();
+    const { target, comp } = setup({ ondragstart });
+    const hitCircle = target.querySelector(".handle-hit") as SVGCircleElement;
+    hitCircle.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+    expect(ondragstart).toHaveBeenCalledTimes(1);
+    expect(ondragstart.mock.calls[0][0]).toEqual({ x: 0, y: 0 });
+    unmount(comp); target.remove();
+  });
+});
+
 describe("SelectionHandles — resize length label", () => {
   it("shows no length label when not dragging", () => {
     const { target, comp } = setup({ draggingPoint: null });

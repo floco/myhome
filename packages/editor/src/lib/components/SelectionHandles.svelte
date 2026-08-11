@@ -27,11 +27,25 @@
 
 <g class="selection-handles">
   <circle
+    class="handle-hit"
+    cx={startScreen.x}
+    cy={startScreen.y}
+    r="22"
+    onpointerdown={(e) => ondragstart(wall.start, e)}
+  />
+  <circle
     class="handle"
     cx={startScreen.x}
     cy={startScreen.y}
     r="5"
     onpointerdown={(e) => ondragstart(wall.start, e)}
+  />
+  <circle
+    class="handle-hit"
+    cx={endScreen.x}
+    cy={endScreen.y}
+    r="22"
+    onpointerdown={(e) => ondragstart(wall.end, e)}
   />
   <circle
     class="handle"
@@ -53,6 +67,12 @@
     stroke: var(--text);
     stroke-width: 1;
     cursor: grab;
+  }
+  .handle-hit {
+    fill: transparent;
+    pointer-events: all;
+    cursor: grab;
+    touch-action: none;
   }
   .length-label {
     fill: var(--canvas-label);
