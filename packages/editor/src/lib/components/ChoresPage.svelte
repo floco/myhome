@@ -209,7 +209,7 @@
     </div>
   {:else}
     <div class="chart-card-wrap">
-      <Card style="flex:1; min-width:0;">
+      <Card style="flex: 2 1 260px; min-width: 0;">
         <div class="chart-label">{$_('chores.page.scheduleHealth')}</div>
         <HorizontalBarChart segments={healthBreakdown} activeId={healthFilter} onsegmentclick={(id) => toggleHealthFilter(id as HealthBucket)} />
       </Card>
@@ -317,9 +317,9 @@
   .empty-icon { font-size: 36px; }
   .empty-charts p { margin: 0; font-size: 13px; }
 
-  .chart-card-wrap { display: flex; gap: var(--space-3); align-items: stretch; padding: var(--space-4); flex-shrink: 0; }
-  .stat-tiles { display: flex; gap: var(--space-3); flex-shrink: 0; }
-  .stat-tiles :global(.ui-stat-tile) { flex: 0 0 140px; }
+  .chart-card-wrap { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: stretch; padding: var(--space-4); flex-shrink: 0; }
+  .stat-tiles { display: flex; flex-wrap: nowrap; gap: var(--space-3); flex: 1 1 300px; min-width: 0; }
+  .stat-tiles :global(.ui-stat-tile) { flex: 1 1 0; min-width: 0; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;
@@ -331,9 +331,6 @@
   .filter-modal-body .native-input { width: 100%; }
 
   @media (max-width: 700px) {
-    .chart-card-wrap { flex-direction: column; }
-    .stat-tiles { flex-wrap: wrap; }
-    .stat-tiles :global(.ui-stat-tile) { flex: 1 1 90px; }
     .page { overflow-y: auto; }
     .table-card-wrap { flex: none; min-height: auto; }
     .table-card-wrap :global(.ui-card) { flex: none !important; width: 100%; overflow: visible !important; min-height: auto !important; }
