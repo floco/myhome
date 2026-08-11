@@ -1319,7 +1319,7 @@
                 class:active={viewMode}
                 title={viewMode ? $_('app.floatingToolbar.switchToEditMode') : $_('app.floatingToolbar.switchToViewMode')}
                 onclick={toggleViewMode}
-              >{viewMode ? '👁' : '✏️'} <span class="ft-label">{viewMode ? $_('app.floatingToolbar.viewMode') : $_('app.floatingToolbar.editMode')}</span></button>
+              ><span class="mode-icon" class:crossed={viewMode}>✏️</span> <span class="ft-label">{viewMode ? $_('app.floatingToolbar.viewMode') : $_('app.floatingToolbar.editMode')}</span></button>
               {#if !viewMode}
                 <button
                   class="ft-btn save-btn"
@@ -1742,6 +1742,21 @@
   .ft-btn.save-btn.save-error { color: var(--danger); }
 
   .ft-label { font-size: 11px; font-weight: 500; }
+
+  .mode-icon {
+    position: relative;
+    display: inline-block;
+    line-height: 1;
+  }
+  .mode-icon.crossed::after {
+    content: '';
+    position: absolute;
+    left: -2px; right: -2px; top: 50%;
+    height: 2px;
+    background: var(--danger);
+    transform: translateY(-50%) rotate(-45deg);
+    border-radius: 1px;
+  }
 
   .ft-sep {
     height: 1px; background: var(--border); flex-shrink: 0; margin: 2px 0;

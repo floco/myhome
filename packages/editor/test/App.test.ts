@@ -117,6 +117,23 @@ describe("App", () => {
     expect(deleteBtn.disabled).toBe(true);
   });
 
+  it("shows a slashed pencil icon on the mode toggle when in view mode, and a plain pencil in edit mode", async () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = await mountAndLoad(target);
+
+    const editBtn = toolbarBtn(target, "Switch to view mode (read-only)");
+    expect(editBtn.querySelector(".mode-icon")).toBeTruthy();
+    expect(editBtn.querySelector(".mode-icon")?.className).not.toContain("crossed");
+
+    editBtn.click();
+    flushSync();
+
+    const viewBtn = toolbarBtn(target, "Switch to edit mode");
+    expect(viewBtn.querySelector(".mode-icon")?.className).toContain("crossed");
+  });
+
   it("selects a wall and deletes it with the Delete key", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);
