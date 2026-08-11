@@ -6,6 +6,22 @@
 - Fixed the Chores Planning column showing "Monthly on day N" for a schedule restricted to specific months (e.g. day 20, August only) — it now shows the day plus the actual allowed month(s)
 - Added click-to-filter on the Chores KPI tiles and schedule-health chart — click a tile or bar segment to filter the list to that bucket, click again to clear
 - Added the ability to set a per-assignment label from the floor-plan pin popup, so multiple assignments of the same chore in the same room (e.g. two windows) can be told apart
+- Added an Assignments tab to the chore edit modal for managing a chore's room assignments (view, complete, delay, delete, create) and giving each one an optional label
+- Fixed the Chores "mark done" action expanding inline into a note field and date picker, which broke layout and caused horizontal scrolling on mobile — replaced with a modal used consistently across the home dashboard, the chores table, and per-assignment completion
+- Fixed the Chores History tab ordering completions by insertion order instead of completion date, so a backdated entry could appear out of order
+- Added a view/edit mode toggle to the floor plan editor — view mode hides the editing toolbar and disables drag handles while keeping pan, zoom, and click-to-inspect
+- Fixed "Ajouter un étage" (add floor) appearing to do nothing when clicked from the "All floors" overview
+- Fixed sliding doors and window orientation not actually saving — the backend was silently dropping both fields
+- Fixed long furniture labels overflowing the floating panel instead of truncating, and fixed clicking (not dragging) a furniture item dropping it invisibly behind the toolbar instead of on the visible canvas
+- Fixed the floor picker not closing on an outside click, and a partially-closed roller shutter blocking clicks on the window underneath it
+- Added a "Garden Border" wall type for marking a garden/plot boundary, rendered as a dashed green line and detected as an enclosed area when drawn as a closed loop
+- Fixed the floor plan editor rendering blank on load or floor switch when a floor's content fell outside the default view — the viewport now auto-fits to the floor's content
+- Added a dedicated Pan tool to the floor plan toolbar, available in both edit and view mode
+- Added a "double" (French) door kind with two independent hinged leaves, and fixed exported floor plan SVGs rendering every door as a plain single leaf regardless of its actual kind
+- Added configurable per-item parameters to floor plan furniture — a new Stairs item, chair count for dining/round tables, straight or L-shaped sofas with a choice of corner, and adjustable plank size for decks/terraces
+- Added autosave to the Knowledge Base editor, replacing the manual Save/Cancel buttons with a Saving…/Saved status indicator, and changed editing to start on double-click instead of an Edit button
+- Added a navigation guard to the Knowledge Base editor so leaving a page (switching pages, other modules, browser back/forward, or closing the tab) waits for a pending autosave to finish first
+- Added reopening the last-viewed Knowledge Base page when returning to the module instead of showing an empty placeholder
 
 ## 0.19.0 - 2026-08-07
 
