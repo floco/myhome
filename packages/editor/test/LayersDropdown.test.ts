@@ -37,3 +37,21 @@ describe("LayersDropdown — ha layer", () => {
     unmount(comp); target.remove();
   });
 });
+
+describe("LayersDropdown — toolbar variant", () => {
+  it("renders the toolbar-variant trigger with both icon and label present in the DOM", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(LayersDropdown, {
+      target,
+      props: { activeLayers: new Set(), ontoggle: vi.fn(), variant: "toolbar" },
+    });
+    flushSync();
+
+    const btn = target.querySelector(".layers-btn.toolbar") as HTMLButtonElement;
+    expect(btn.textContent).toContain("🗂️");
+    expect(btn.querySelector(".ft-label")?.textContent).toBe("Layers");
+
+    unmount(comp); target.remove();
+  });
+});
