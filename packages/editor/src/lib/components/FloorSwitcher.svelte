@@ -123,6 +123,7 @@
       onclick={toggleCompact}
       title={$_('floorPlan.switcher.switchFloor')}
     >
+      <span class="compact-icon" aria-hidden="true">🏢</span>
       <span class="compact-label">{currentFloorName}</span>
       <span class="compact-chevron">{compactOpen ? "▴" : "▾"}</span>
     </button>
@@ -210,8 +211,14 @@
     white-space: nowrap; justify-content: center;
   }
   .compact-btn:hover { background: var(--surface-hover); }
+  .compact-icon { display: none; font-size: 13px; line-height: 1; }
   .compact-label { max-width: 70px; overflow: hidden; text-overflow: ellipsis; }
   .compact-chevron { font-size: 9px; color: var(--text-muted); flex-shrink: 0; }
+
+  @media (max-width: 480px) { /* --bp-mobile */
+    .compact-icon { display: inline-block; }
+    .compact-label { display: none; }
+  }
 
   .compact-popover {
     position: fixed;
