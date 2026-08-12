@@ -560,10 +560,15 @@
         </div>
         <div class="header-actions">
           {#if contentTab === "content" && editing}
-            <span class="save-status" class:save-status-error={saveStatus === "error"}>
-              {#if saveStatus === "saving" || saveStatus === "pending"}{$_('kb.page.saving')}
-              {:else if saveStatus === "saved"}{$_('kb.page.saved')}
-              {:else if saveStatus === "error"}{$_('kb.page.saveFailed')}
+            <span
+              class="save-status"
+              class:save-status-saving={saveStatus === "saving" || saveStatus === "pending"}
+              class:save-status-error={saveStatus === "error"}
+              title={saveStatus === "saving" || saveStatus === "pending" ? $_('kb.page.saving') : saveStatus === "saved" ? $_('kb.page.saved') : saveStatus === "error" ? $_('kb.page.saveFailed') : undefined}
+            >
+              {#if saveStatus === "saving" || saveStatus === "pending"}↻
+              {:else if saveStatus === "saved"}✓
+              {:else if saveStatus === "error"}⚠
               {/if}
             </span>
             <Button variant="primary" onclick={handleDoneEditing} title={$_('works.modal.doneEditing')}>✓</Button>
@@ -740,8 +745,14 @@
 
   .content-error { padding: 0 var(--space-4); font-size: 11px; color: var(--danger); }
 
-  .save-status { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .save-status { font-size: 13px; color: var(--text-muted); white-space: nowrap; display: inline-flex; align-items: center; }
+  .save-status-saving { display: inline-block; animation: kb-spin 0.8s linear infinite; }
   .save-status-error { color: var(--danger); }
+
+  @keyframes kb-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
 
   .bookmark-error { color: var(--danger); font-size: 12px; margin: 6px 0 0; }
 </style>

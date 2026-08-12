@@ -168,7 +168,7 @@ describe("KBPage — default tree collapse state", () => {
       makeEntry({ id: "c", title: "Child", parentId: "p", order: 0 }),
     ];
     const { target, comp } = await setup(entries);
-    expect(target.querySelector(".disclosure")?.textContent).toBe("▶");
+    expect(target.querySelector(".disclosure")?.className).not.toContain("open");
     expect(target.querySelectorAll(".tree-row").length).toBe(1);
     unmount(comp); target.remove();
   });
@@ -502,7 +502,7 @@ describe("KBPage — autosave", () => {
     unmount(comp); target.remove();
   });
 
-  it("saves automatically ~1.2s after the user stops typing, without a Save button", async () => {
+  it("saves automatically ~1.2s after the user stops typing, without a Save button, showing a spinning save-status icon", async () => {
     const { target, comp, store } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
     expect(target.querySelector('[title="Save"]')).toBeNull();
     enterEditMode(target);
@@ -510,7 +510,9 @@ describe("KBPage — autosave", () => {
     textarea.value = "hello world";
     textarea.dispatchEvent(new Event("input", { bubbles: true }));
     flushSync();
-    expect(target.textContent).toContain("Saving");
+    const status = target.querySelector(".save-status") as HTMLElement;
+    expect(status.getAttribute("title")).toBe("Saving…");
+    expect(status.className).toContain("save-status-saving");
     await new Promise((r) => setTimeout(r, 1300));
     flushSync();
     await tick(); flushSync();
@@ -518,7 +520,7 @@ describe("KBPage — autosave", () => {
     unmount(comp); target.remove();
   });
 
-  it("shows a Saved indicator after a successful autosave", async () => {
+  it("shows a Saved indicator (checkmark icon with tooltip) after a successful autosave", async () => {
     const { target, comp } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
     enterEditMode(target);
     const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
@@ -527,7 +529,9 @@ describe("KBPage — autosave", () => {
     flushSync();
     await new Promise((r) => setTimeout(r, 1300));
     await tick(); flushSync();
-    expect(target.textContent).toContain("Saved");
+    const status = target.querySelector(".save-status") as HTMLElement;
+    expect(status.getAttribute("title")).toBe("Saved");
+    expect(status.className).not.toContain("save-status-saving");
     unmount(comp); target.remove();
   });
 
