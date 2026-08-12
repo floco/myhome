@@ -117,6 +117,25 @@ describe("App", () => {
     expect(deleteBtn.disabled).toBe(true);
   });
 
+  it("disables the Picker button when no module layer is active, and enables it once one is", async () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+    app = await mountAndLoad(target);
+
+    const pickerBtn = toolbarBtn(target, "Toggle item picker");
+    expect(pickerBtn.disabled).toBe(true);
+
+    (target.querySelector('button[title="Toggle map layers"]') as HTMLButtonElement).click();
+    flushSync();
+    const choresRow = Array.from(document.querySelectorAll(".layer-row")).find(
+      (r) => r.textContent?.includes("Chores"),
+    ) as HTMLElement;
+    (choresRow.querySelector('input[type="checkbox"]') as HTMLInputElement).click();
+    flushSync();
+
+    expect(pickerBtn.disabled).toBe(false);
+  });
+
   it("shows a slashed pencil icon on the mode toggle when in view mode, and a plain pencil in edit mode", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);

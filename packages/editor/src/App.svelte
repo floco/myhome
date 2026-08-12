@@ -1318,6 +1318,7 @@
                 <button
                   class="ft-btn"
                   class:active={pickerOpen}
+                  disabled={pickerLayers.length === 0}
                   title={$_('app.floatingToolbar.togglePicker')}
                   onclick={() => { pickerOpen = !pickerOpen; }}
                 >📋 <span class="ft-label">{$_('app.floatingToolbar.picker')}</span></button>
