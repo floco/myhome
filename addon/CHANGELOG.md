@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.23.0 - 2026-08-12
+
+- Fixed the floor plan editor's mobile Picker button appearing to do nothing when tapped — it's now greyed out until a module layer (Chores, Inventory, Consumables, Costs, or Works) is turned on
+- Changed the floor plan editor's mobile Picker and Furniture panels to open as a small popup anchored near the toolbar instead of a full-width panel covering most of the screen, matching the View/Draw/Actions tool groups
+- Changed the mobile Picker and Furniture panels to close automatically after placing an item, so the floor plan is immediately visible again
+
 ## 0.22.0 - 2026-08-11
 
 - Changed the floor plan editor's mobile toolbar to show bigger, uniform, icon-only buttons for every tool (including the floor and layers pickers) instead of small icons with text labels underneath
