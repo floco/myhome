@@ -37,6 +37,17 @@ function toolbarBtn(target: HTMLElement, title: string): HTMLButtonElement {
   ) as HTMLButtonElement;
 }
 
+const desktopMatchMedia = window.matchMedia;
+
+function mockMobileViewport(): void {
+  window.matchMedia = ((query: string) => ({
+    matches: true,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  })) as typeof window.matchMedia;
+}
+
 /** Draw a closed wall loop through the given world-space corners (repeat the
  *  first corner at the end to close it), then switch back to the Select tool.
  *  Screen = world*100 + (400,300), matching the rest of this file's mapping. */
@@ -96,6 +107,7 @@ describe("App", () => {
       app = undefined;
     }
     target?.remove();
+    window.matchMedia = desktopMatchMedia;
   });
 
   it("renders the title and toolbar with the select tool active", async () => {
@@ -558,6 +570,43 @@ describe("App", () => {
 
     const wallAfterPan = target.querySelector("polygon.wall")!.getAttribute("points");
     expect(wallAfterPan).not.toBe(wallBefore);
+  });
+
+  it("opens the Furniture panel inside an anchored popover on mobile instead of a full-width float", async () => {
+    mockMobileViewport();
+    target = document.createElement("div");
+    document.body.appendChild(target);
+    app = await mountAndLoad(target);
+
+    toolbarBtn(target, "Toggle furniture library").click();
+    flushSync();
+
+    expect(target.querySelector(".furniture-float")).toBeNull();
+    const popover = document.querySelector(".ui-popover");
+    expect(popover).not.toBeNull();
+    expect(popover!.querySelector(".furniture-panel")).not.toBeNull();
+  });
+
+  it("opens the Picker panel inside an anchored popover on mobile instead of a full-width float", async () => {
+    mockMobileViewport();
+    target = document.createElement("div");
+    document.body.appendChild(target);
+    app = await mountAndLoad(target);
+
+    (target.querySelector('button[title="Toggle map layers"]') as HTMLButtonElement).click();
+    flushSync();
+    const choresRow = Array.from(document.querySelectorAll(".layer-row")).find(
+      (r) => r.textContent?.includes("Chores"),
+    ) as HTMLElement;
+    (choresRow.querySelector('input[type="checkbox"]') as HTMLInputElement).click();
+    flushSync();
+
+    toolbarBtn(target, "Toggle item picker").click();
+    flushSync();
+
+    expect(target.querySelector(".picker-float")).toBeNull();
+    const popover = document.querySelector(".ui-popover");
+    expect(popover).not.toBeNull();
   });
 });
 
