@@ -5,9 +5,10 @@
     open: boolean;
     anchorEl: HTMLElement | null;
     onclose: () => void;
+    width?: number;
     children?: Snippet;
   }
-  let { open, anchorEl, onclose, children }: Props = $props();
+  let { open, anchorEl, onclose, width, children }: Props = $props();
 
   const PANEL_WIDTH = 200;
 
@@ -38,7 +39,7 @@
         panelTop = rect.bottom + 4;
         panelBottom = null;
       }
-      panelLeft = Math.max(4, Math.min(rect.left, window.innerWidth - PANEL_WIDTH - 4));
+      panelLeft = Math.max(4, Math.min(rect.left, window.innerWidth - (width ?? PANEL_WIDTH) - 4));
     }
   });
 
@@ -59,7 +60,7 @@
 {#if open}
   <div
     class="ui-popover"
-    style="left:{panelLeft}px;{panelTop !== null ? `top:${panelTop}px;` : ''}{panelBottom !== null ? `bottom:${panelBottom}px;` : ''}"
+    style="left:{panelLeft}px;{width ? `width:${width}px;` : ''}{panelTop !== null ? `top:${panelTop}px;` : ''}{panelBottom !== null ? `bottom:${panelBottom}px;` : ''}"
     bind:this={panelEl}
     use:portal
   >
