@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.24.0 - 2026-08-12
+
+- Added a "Details" button to floor plan chore pins to open the full chore edit view, not just the small popup
+- Fixed room labels for a zone room containing other rooms (e.g. an outdoor zone with a shed inside) overlapping the child room instead of moving to the most open point
+- Fixed touch-drag on mobile being hijacked as a page scroll when dragging items from the floor plan's Picker or Furniture panel
+- Added a straight/L-shaped variant for stairs furniture
+- Fixed the floor plan editor's mobile Edit/View toggle button jumping position when switching modes
+- Fixed the knowledge base page-tree expand/collapse icon not clearly showing its state — it now rotates and shows a tooltip
+- Changed the knowledge base save-status indicator from text to a spinner/checkmark/warning icon
+- Added an Edit icon button to knowledge base pages, alongside double-click-to-edit
+- Renamed "Room" to "Zone" throughout the floor plan editor, Chores, Costs, and Inventory (e.g. a garden is a zone, not a room)
+
 ## 0.23.0 - 2026-08-12
 
 - Fixed the floor plan editor's mobile Picker button appearing to do nothing when tapped — it's now greyed out until a module layer (Chores, Inventory, Consumables, Costs, or Works) is turned on
