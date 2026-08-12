@@ -62,4 +62,34 @@ describe("ui/Popover", () => {
     target.remove();
     anchor.remove();
   });
+
+  it("applies a custom width when provided", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const anchor = document.createElement("button");
+    document.body.appendChild(anchor);
+    const comp = mount(Popover, { target, props: { open: true, anchorEl: anchor, onclose: vi.fn(), width: 280 } });
+
+    const panel = document.querySelector(".ui-popover") as HTMLElement;
+    expect(panel.style.width).toBe("280px");
+
+    unmount(comp);
+    target.remove();
+    anchor.remove();
+  });
+
+  it("has no explicit width style when width is omitted", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const anchor = document.createElement("button");
+    document.body.appendChild(anchor);
+    const comp = mount(Popover, { target, props: { open: true, anchorEl: anchor, onclose: vi.fn() } });
+
+    const panel = document.querySelector(".ui-popover") as HTMLElement;
+    expect(panel.style.width).toBe("");
+
+    unmount(comp);
+    target.remove();
+    anchor.remove();
+  });
 });
