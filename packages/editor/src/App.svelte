@@ -193,6 +193,13 @@
   } | null>(null);
 
   let activeLayers = $state(new Set<string>(["ha"]));
+  let isMobileViewport = $state(window.matchMedia("(max-width: 480px)").matches);
+  $effect(() => {
+    const mq = window.matchMedia("(max-width: 480px)");
+    const update = () => { isMobileViewport = mq.matches; };
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  });
   const choreLayerActive = $derived(activeLayers.has("chores"));
   const inventoryLayerActive = $derived(activeLayers.has("inventory"));
   const costsLayerActive = $derived(activeLayers.has("costs"));
@@ -312,6 +319,8 @@
   let viewTriggerEl = $state<HTMLButtonElement | null>(null);
   let drawTriggerEl = $state<HTMLButtonElement | null>(null);
   let actionsTriggerEl = $state<HTMLButtonElement | null>(null);
+  let pickerTriggerEl = $state<HTMLButtonElement | null>(null);
+  let furnitureTriggerEl = $state<HTMLButtonElement | null>(null);
 
   function toggleViewMode(): void {
     viewMode = !viewMode;
@@ -807,6 +816,7 @@
         const worldX = (dropScreenX - rect.left - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
         const worldY = (dropScreenY - rect.top - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
         floorStore.addFurniture(pointerDragFurnitureTemplateId, worldX, worldY, template.defaultWidth, template.defaultHeight);
+        if (isMobileViewport) furnitureLibraryOpen = false;
       }
       furniturePointerDownAt = null;
       return;
@@ -820,6 +830,7 @@
       if (layerId !== "chores") return;
       const chore = choreStore.chores.find(c => c.id === itemId);
       choreStore.createAssignment({ choreId: itemId, roomId: null, position: null, nextDueDate: chore?.nextDueDate ?? "", label: null });
+      if (isMobileViewport) pickerOpen = false;
       return;
     }
 
@@ -834,6 +845,7 @@
         roomId: room?.id ?? null,
         position: { x: worldX, y: worldY },
       });
+      if (isMobileViewport) pickerOpen = false;
       return;
     }
 
@@ -844,6 +856,7 @@
         roomId: room?.id ?? null,
         position: { x: worldX, y: worldY },
       });
+      if (isMobileViewport) pickerOpen = false;
       return;
     }
 
@@ -852,6 +865,7 @@
         floorId: floorStore.currentFloorId,
         position: { x: worldX, y: worldY },
       });
+      if (isMobileViewport) pickerOpen = false;
       return;
     }
 
@@ -860,6 +874,7 @@
         floorId: floorStore.currentFloorId,
         position: { x: worldX, y: worldY },
       });
+      if (isMobileViewport) pickerOpen = false;
       return;
     }
 
@@ -868,6 +883,7 @@
       if (!room) return;
       const chore = choreStore.chores.find(c => c.id === itemId);
       choreStore.createAssignment({ choreId: itemId, roomId: room.id, position: { x: worldX, y: worldY }, nextDueDate: chore?.nextDueDate ?? "", label: null });
+      if (isMobileViewport) pickerOpen = false;
     }
   }
 
@@ -1262,7 +1278,16 @@
               </div>
             {/if}
           {/if}
-          {#if pickerOpen && pickerLayers.length > 0}
+          <Popover open={isMobileViewport && pickerOpen && pickerLayers.length > 0} anchorEl={pickerTriggerEl} onclose={() => { pickerOpen = false; }} width={280}>
+            <ItemPickerPanel
+              layers={pickerLayers}
+              draggingId={draggingItemId}
+              highlightId={pickerHighlightId}
+              ondismiss={() => { pickerOpen = false; }}
+              onitempointerdown={(layerId, item, e) => { pickerHighlightId = null; handleItemPointerDown(layerId, item, e); }}
+            />
+          </Popover>
+          {#if !isMobileViewport && pickerOpen && pickerLayers.length > 0}
             <div class="picker-float" style={ipDrag.pos ? `left:${ipDrag.pos.x}px;top:${ipDrag.pos.y}px;right:auto;transform:none` : ''}>
               <ItemPickerPanel
                 layers={pickerLayers}
@@ -1274,7 +1299,10 @@
               />
             </div>
           {/if}
-          {#if furnitureLibraryOpen}
+          <Popover open={isMobileViewport && furnitureLibraryOpen} anchorEl={furnitureTriggerEl} onclose={() => { furnitureLibraryOpen = false; }} width={280}>
+            <FurnitureLibraryPanel ondismiss={() => { furnitureLibraryOpen = false; }} onitempointerdown={handleFurniturePointerDown} />
+          </Popover>
+          {#if !isMobileViewport && furnitureLibraryOpen}
             <div class="furniture-float" style={fpDrag.pos ? `left:${fpDrag.pos.x}px;top:${fpDrag.pos.y}px;right:auto;transform:none` : ''}>
               <FurnitureLibraryPanel onstartdrag={fpDrag.startDrag} ondismiss={() => { furnitureLibraryOpen = false; }} onitempointerdown={handleFurniturePointerDown} />
             </div>
@@ -1318,12 +1346,15 @@
                 <button
                   class="ft-btn"
                   class:active={pickerOpen}
+                  disabled={pickerLayers.length === 0}
+                  bind:this={pickerTriggerEl}
                   title={$_('app.floatingToolbar.togglePicker')}
                   onclick={() => { pickerOpen = !pickerOpen; }}
                 >📋 <span class="ft-label">{$_('app.floatingToolbar.picker')}</span></button>
                 <button
                   class="ft-btn"
                   class:active={furnitureLibraryOpen}
+                  bind:this={furnitureTriggerEl}
                   title={$_('app.floatingToolbar.toggleFurniture')}
                   onclick={() => { furnitureLibraryOpen = !furnitureLibraryOpen; }}
                 >🪑 <span class="ft-label">{$_('app.floatingToolbar.furniture')}</span></button>
@@ -1670,19 +1701,6 @@
     overflow: hidden;
   }
 
-  @media (max-width: 480px) { /* --bp-mobile */
-    .picker-float {
-      position: fixed;
-      left: 0; right: 0; bottom: 48px; top: auto;
-      transform: none !important;
-      width: 100%;
-      max-height: 45vh;
-      border-radius: 0;
-      border-left: none; border-right: none; border-bottom: none;
-      z-index: 26;
-    }
-  }
-
   .furniture-float {
     position: absolute; right: 120px; top: 50%; transform: translateY(-50%);
     max-height: min(460px, calc(100% - 16px));
@@ -1691,19 +1709,6 @@
     border-radius: var(--radius-md); padding: 0;
     box-shadow: var(--shadow-md); z-index: 20;
     overflow: hidden;
-  }
-
-  @media (max-width: 480px) { /* --bp-mobile */
-    .furniture-float {
-      position: fixed;
-      left: 0; right: 0; bottom: 48px; top: auto;
-      transform: none !important;
-      width: 100%;
-      max-height: 45vh;
-      border-radius: 0;
-      border-left: none; border-right: none; border-bottom: none;
-      z-index: 26;
-    }
   }
 
   .room-panel-float {

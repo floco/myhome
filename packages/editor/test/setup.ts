@@ -6,6 +6,16 @@
   disconnect() {}
 };
 
+// Polyfill matchMedia for jsdom (used by App.svelte's mobile-viewport check)
+(globalThis as any).matchMedia = (globalThis as any).matchMedia || function (query: string) {
+  return {
+    matches: false,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  };
+};
+
 import { addMessages, init } from "svelte-i18n";
 import en from "../src/lib/locales/en.json";
 import fr from "../src/lib/locales/fr.json";
