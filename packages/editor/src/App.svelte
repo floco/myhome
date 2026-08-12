@@ -16,11 +16,12 @@
   import OpeningPanel from "./lib/components/OpeningPanel.svelte";
   import FloorSwitcher from "./lib/components/FloorSwitcher.svelte";
   import { createChoreStore } from "./lib/choreStore.svelte";
-  import type { Assignment } from "./lib/choreStore.svelte";
+  import type { Assignment, Chore } from "./lib/choreStore.svelte";
   import ChoreOverlay from "./lib/components/ChoreOverlay.svelte";
   import ItemPickerPanel from "./lib/components/ItemPickerPanel.svelte";
   import type { PickerLayer } from "./lib/components/ItemPickerPanel.svelte";
   import BadgePopup from "./lib/components/BadgePopup.svelte";
+  import ChoreEditModal from "./lib/components/ChoreEditModal.svelte";
   import ChoresPage from "./lib/components/ChoresPage.svelte";
   import NavMenu from "./lib/components/NavMenu.svelte";
   import HomePage from "./lib/components/HomePage.svelte";
@@ -298,6 +299,7 @@
   }
 
   let selectedBadge = $state<{ assignment: Assignment; screenX: number; screenY: number } | null>(null);
+  let mapEditChore = $state<Chore | null>(null);
 
   $effect(() => {
     if (!choreLayerActive) selectedBadge = null;
@@ -1097,10 +1099,19 @@
                       onremove={async () => { await choreStore.deleteAssignment(badge.assignment.id); selectedBadge = null; }}
                       onlabelchange={(label) => choreStore.updateAssignmentLabel(badge.assignment.id, label)}
                       onclose={() => { selectedBadge = null; }}
+                      ondetails={() => { mapEditChore = chore; selectedBadge = null; }}
                     />
                   </div>
                 {/if}
               {/if}
+            {/if}
+            {#if mapEditChore}
+              <ChoreEditModal
+                chore={mapEditChore}
+                store={choreStore}
+                rooms={floorStore.floors.flatMap((f) => f.rooms)}
+                onclose={() => { mapEditChore = null; }}
+              />
             {/if}
             {#if inventoryLayerActive}
             <InventoryOverlay
