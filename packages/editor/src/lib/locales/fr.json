@@ -425,6 +425,7 @@
     "badgePopup": {
       "overdueSince": "En retard depuis",
       "due": "Échéance",
+      "details": "Détails",
       "allDone": "Tout fait",
       "thisRoom": "Cette pièce",
       "remove": "Retirer"

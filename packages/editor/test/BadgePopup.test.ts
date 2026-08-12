@@ -37,6 +37,7 @@ function baseProps(overrides: Record<string, unknown> = {}) {
     onremove: vi.fn(),
     onclose: vi.fn(),
     onlabelchange: vi.fn(),
+    ondetails: vi.fn(),
     ...overrides,
   };
 }
@@ -107,6 +108,17 @@ describe("BadgePopup — existing behavior", () => {
     flushSync();
     (Array.from(el.querySelectorAll("button")).find((b) => b.textContent?.includes("All done")) as HTMLButtonElement).click();
     expect(oncompleteall).toHaveBeenCalledOnce();
+    unmount(comp);
+    el.remove();
+  });
+
+  it("calls ondetails when the details button is clicked", () => {
+    const el = target();
+    const ondetails = vi.fn();
+    const comp = mount(BadgePopup, { target: el, props: baseProps({ ondetails }) });
+    flushSync();
+    (el.querySelector(".details-btn") as HTMLButtonElement).click();
+    expect(ondetails).toHaveBeenCalledOnce();
     unmount(comp);
     el.remove();
   });

@@ -425,6 +425,7 @@
     "badgePopup": {
       "overdueSince": "Overdue since",
       "due": "Due",
+      "details": "Details",
       "allDone": "All done",
       "thisRoom": "This room",
       "remove": "Remove"
