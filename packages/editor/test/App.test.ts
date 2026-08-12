@@ -608,6 +608,32 @@ describe("App", () => {
     const popover = document.querySelector(".ui-popover");
     expect(popover).not.toBeNull();
   });
+
+  it("closes the Furniture panel after placing an item, on mobile only", async () => {
+    mockMobileViewport();
+    target = document.createElement("div");
+    document.body.appendChild(target);
+    app = await mountAndLoad(target);
+
+    toolbarBtn(target, "Toggle furniture library").click();
+    flushSync();
+    expect(document.querySelector(".furniture-panel")).not.toBeNull();
+
+    const canvasArea = target.querySelector(".canvas-area") as HTMLElement;
+    vi.spyOn(canvasArea, "getBoundingClientRect").mockReturnValue({
+      left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600, x: 0, y: 0, toJSON() {},
+    } as DOMRect);
+
+    const sofaItem = document.querySelector('.furniture-item[data-template-id="sofa"]') as HTMLElement;
+    const clickX = 400, clickY = 300;
+    sofaItem.dispatchEvent(new PointerEvent("pointerdown", { clientX: clickX, clientY: clickY, bubbles: true }));
+    flushSync();
+    canvasArea.dispatchEvent(new PointerEvent("pointerup", { clientX: clickX, clientY: clickY, bubbles: true }));
+    flushSync();
+
+    expect(target.querySelectorAll(".furniture-object").length).toBe(1);
+    expect(document.querySelector(".furniture-panel")).toBeNull();
+  });
 });
 
 describe("App — room panel", () => {

@@ -816,6 +816,7 @@
         const worldX = (dropScreenX - rect.left - viewportStore.viewport.panX) / viewportStore.viewport.zoom;
         const worldY = (dropScreenY - rect.top - viewportStore.viewport.panY) / viewportStore.viewport.zoom;
         floorStore.addFurniture(pointerDragFurnitureTemplateId, worldX, worldY, template.defaultWidth, template.defaultHeight);
+        if (isMobileViewport) furnitureLibraryOpen = false;
       }
       furniturePointerDownAt = null;
       return;
@@ -829,6 +830,7 @@
       if (layerId !== "chores") return;
       const chore = choreStore.chores.find(c => c.id === itemId);
       choreStore.createAssignment({ choreId: itemId, roomId: null, position: null, nextDueDate: chore?.nextDueDate ?? "", label: null });
+      if (isMobileViewport) pickerOpen = false;
       return;
     }
 
@@ -843,6 +845,7 @@
         roomId: room?.id ?? null,
         position: { x: worldX, y: worldY },
       });
+      if (isMobileViewport) pickerOpen = false;
       return;
     }
 
@@ -853,6 +856,7 @@
         roomId: room?.id ?? null,
         position: { x: worldX, y: worldY },
       });
+      if (isMobileViewport) pickerOpen = false;
       return;
     }
 
@@ -861,6 +865,7 @@
         floorId: floorStore.currentFloorId,
         position: { x: worldX, y: worldY },
       });
+      if (isMobileViewport) pickerOpen = false;
       return;
     }
 
@@ -869,6 +874,7 @@
         floorId: floorStore.currentFloorId,
         position: { x: worldX, y: worldY },
       });
+      if (isMobileViewport) pickerOpen = false;
       return;
     }
 
@@ -877,6 +883,7 @@
       if (!room) return;
       const chore = choreStore.chores.find(c => c.id === itemId);
       choreStore.createAssignment({ choreId: itemId, roomId: room.id, position: { x: worldX, y: worldY }, nextDueDate: chore?.nextDueDate ?? "", label: null });
+      if (isMobileViewport) pickerOpen = false;
     }
   }
 
