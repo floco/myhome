@@ -1353,6 +1353,13 @@
               />
               <div class="ft-sep"></div>
               <LayersDropdown {activeLayers} ontoggle={toggleLayer} popoverAlign="left" variant="toolbar" />
+              <div class="ft-sep"></div>
+              <button
+                class="ft-btn"
+                class:active={viewMode}
+                title={viewMode ? $_('app.floatingToolbar.switchToEditMode') : $_('app.floatingToolbar.switchToViewMode')}
+                onclick={toggleViewMode}
+              ><span class="mode-icon" class:crossed={viewMode}>✏️</span> <span class="ft-label">{viewMode ? $_('app.floatingToolbar.viewMode') : $_('app.floatingToolbar.editMode')}</span></button>
               {#if !viewMode}
                 <button
                   class="ft-btn"
@@ -1369,15 +1376,6 @@
                   title={$_('app.floatingToolbar.toggleFurniture')}
                   onclick={() => { furnitureLibraryOpen = !furnitureLibraryOpen; }}
                 >🪑 <span class="ft-label">{$_('app.floatingToolbar.furniture')}</span></button>
-              {/if}
-              <div class="ft-sep"></div>
-              <button
-                class="ft-btn"
-                class:active={viewMode}
-                title={viewMode ? $_('app.floatingToolbar.switchToEditMode') : $_('app.floatingToolbar.switchToViewMode')}
-                onclick={toggleViewMode}
-              ><span class="mode-icon" class:crossed={viewMode}>✏️</span> <span class="ft-label">{viewMode ? $_('app.floatingToolbar.viewMode') : $_('app.floatingToolbar.editMode')}</span></button>
-              {#if !viewMode}
                 <button
                   class="ft-btn save-btn"
                   class:saved={saveStatus === "saved"}

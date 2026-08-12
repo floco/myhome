@@ -120,7 +120,7 @@ describe("App", () => {
 
     const buttons = Array.from(target.querySelectorAll(".floating-toolbar .ft-btn"));
     const titles = buttons.map((b) => (b as HTMLButtonElement).title);
-    expect(titles).toEqual(["Toggle item picker", "Toggle furniture library", "Switch to view mode (read-only)", "Save", "Reset view", "Undo (Ctrl+Z)", "Redo (Ctrl+Y)", "Pan", "Select", "Wall", "Divider", "Garden Border", "Door", "Window", "Delete selected (Del)", "View tools", "Draw tools", "Actions"]);
+    expect(titles).toEqual(["Switch to view mode (read-only)", "Toggle item picker", "Toggle furniture library", "Save", "Reset view", "Undo (Ctrl+Z)", "Redo (Ctrl+Y)", "Pan", "Select", "Wall", "Divider", "Garden Border", "Door", "Window", "Delete selected (Del)", "View tools", "Draw tools", "Actions"]);
 
     const selectBtn = toolbarBtn(target, "Select");
     expect(selectBtn.className).toContain("active");
