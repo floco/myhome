@@ -692,39 +692,34 @@ git commit -m "feat(floorplan): move zone room labels off contained child rooms"
 
 - [ ] **Step 1: Write the failing tests**
 
-Add to `packages/editor/test/ItemPickerPanel.test.ts` (new test in the `describe("ItemPickerPanel", ...)` block):
+`getComputedStyle` cannot be used here: this project's vitest/jsdom setup does not inject Svelte component `<style>` blocks into the DOM at all (verified empirically — `document.head.querySelectorAll("style").length` is `0` after mounting any component), so a CSS-cascade assertion always reads the browser default (`"auto"`) regardless of what the component's stylesheet says. Check the compiled `.svelte` source text directly instead — it's a weaker (implementation-level) check, but it's the only thing this suite can actually verify for CSS, and it still catches an accidental removal of the rule.
+
+Add to `packages/editor/test/ItemPickerPanel.test.ts` (new test in the `describe("ItemPickerPanel", ...)` block; add `import { readFileSync } from "node:fs";` near the top):
 
 ```ts
   it("sets touch-action: none on item rows so mobile drag isn't hijacked by scroll", () => {
-    const app = mount(ItemPickerPanel, {
-      target,
-      props: { layers: [CHORES_LAYER], draggingId: null, onitempointerdown: vi.fn() },
-    });
-    flushSync();
-    const row = target.querySelector(".item-row") as HTMLElement;
-    expect(row).not.toBeNull();
-    expect(getComputedStyle(row).touchAction).toBe("none");
-    unmount(app);
+    const source = readFileSync("src/lib/components/ItemPickerPanel.svelte", "utf-8");
+    const rule = source.slice(source.indexOf(".item-row {"), source.indexOf(".item-row {") + 300);
+    expect(rule).toContain("touch-action: none;");
   });
 ```
 
-Add to `packages/editor/test/FurnitureLibraryPanel.test.ts` (check the file first for its existing mount/target pattern and mirror it):
+Add to `packages/editor/test/FurnitureLibraryPanel.test.ts` (check the file first for its existing mount/target pattern; add the same `readFileSync` import):
 
 ```ts
   it("sets touch-action: none on furniture items so mobile drag isn't hijacked by scroll", () => {
-    // mount FurnitureLibraryPanel using this file's existing target/mount helper
-    flushSync();
-    const item = target.querySelector(".furniture-item") as HTMLElement;
-    expect(item).not.toBeNull();
-    expect(getComputedStyle(item).touchAction).toBe("none");
-    // unmount per this file's existing pattern
+    const source = readFileSync("src/lib/components/FurnitureLibraryPanel.svelte", "utf-8");
+    const rule = source.slice(source.indexOf(".furniture-item {"), source.indexOf(".furniture-item {") + 400);
+    expect(rule).toContain("touch-action: none;");
   });
 ```
+
+(`readFileSync` with a bare relative path resolves against `process.cwd()`, which `npm test -w @myhome/editor` sets to `packages/editor` — no `import.meta.url`/`fileURLToPath` needed, and that approach doesn't work here anyway since Vitest's module URLs aren't a plain `file:` scheme.)
 
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npm test -w @myhome/editor -- test/ItemPickerPanel.test.ts test/FurnitureLibraryPanel.test.ts`
-Expected: FAIL — `touchAction` computes to `"auto"` (the default), not `"none"`.
+Expected: FAIL — the source doesn't contain `touch-action: none;` yet.
 
 - [ ] **Step 3: Add `touch-action: none` to `.item-row` in ItemPickerPanel.svelte**
 

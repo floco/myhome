@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
+import { readFileSync } from "node:fs";
 import ItemPickerPanel from "../src/lib/components/ItemPickerPanel.svelte";
 import type { PickerLayer } from "../src/lib/components/ItemPickerPanel.svelte";
 
@@ -179,5 +180,15 @@ describe("ItemPickerPanel", () => {
     expect(draggingRow).toBeTruthy();
     expect(draggingRow?.querySelector(".item-emoji")?.textContent).toBe("🧹");
     unmount(app);
+  });
+
+  it("sets touch-action: none on item rows so mobile drag isn't hijacked by scroll", () => {
+    // jsdom in this test environment doesn't inject Svelte component <style>
+    // blocks into the DOM (verified empirically: document.head has zero
+    // <style> tags after mount), so getComputedStyle can never see this rule
+    // here -- check the compiled source's CSS block directly instead.
+    const source = readFileSync("src/lib/components/ItemPickerPanel.svelte", "utf-8");
+    const rule = source.slice(source.indexOf(".item-row {"), source.indexOf(".item-row {") + 300);
+    expect(rule).toContain("touch-action: none;");
   });
 });
