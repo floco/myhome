@@ -572,6 +572,8 @@
               {/if}
             </span>
             <Button variant="primary" onclick={handleDoneEditing} title={$_('works.modal.doneEditing')}>✓</Button>
+          {:else if contentTab === "content" && !editing}
+            <Button variant="ghost" onclick={() => { editing = true; }} title={$_('common.edit')}>✏</Button>
           {/if}
           <Button variant="ghost" onclick={() => handleAskDelete(selectedEntry.id)} title={$_('kb.page.deletePage')}>🗑</Button>
         </div>

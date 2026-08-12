@@ -493,12 +493,23 @@ describe("KBPage — autosave", () => {
     flushSync();
   }
 
-  it("double-click on the preview enters edit mode; there is no separate Edit button", async () => {
+  it("double-click on the preview enters edit mode", async () => {
     const { target, comp } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
-    expect(target.querySelector('[title="Edit"]')).toBeNull();
     expect(target.querySelector("textarea.md-editor")).toBeNull();
     enterEditMode(target);
     expect(target.querySelector("textarea.md-editor")).not.toBeNull();
+    unmount(comp); target.remove();
+  });
+
+  it("shows an Edit icon button that also enters edit mode, and hides itself once editing", async () => {
+    const { target, comp } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    const editBtn = target.querySelector('[title="Edit"]') as HTMLElement;
+    expect(editBtn).not.toBeNull();
+    expect(target.querySelector("textarea.md-editor")).toBeNull();
+    editBtn.click();
+    flushSync();
+    expect(target.querySelector("textarea.md-editor")).not.toBeNull();
+    expect(target.querySelector('[title="Edit"]')).toBeNull();
     unmount(comp); target.remove();
   });
 
