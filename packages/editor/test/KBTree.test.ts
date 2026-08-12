@@ -123,6 +123,30 @@ describe("KBTree — selection", () => {
     expect(onselect).not.toHaveBeenCalled();
     unmount(comp); target.remove();
   });
+
+  it("shows the disclosure button rotated open and with a title tooltip when expanded", () => {
+    const { target, comp } = setup({
+      entries: [makeEntry({ id: "p" }), makeEntry({ id: "c", parentId: "p", order: 0 })],
+      collapsedIds: new Set(),
+    });
+    const disclosure = target.querySelector(".disclosure") as HTMLElement;
+    expect(disclosure.className).toContain("open");
+    expect(disclosure.getAttribute("title")).toBe("Collapse");
+    expect(disclosure.textContent).toBe("▸");
+    unmount(comp); target.remove();
+  });
+
+  it("shows the disclosure button not rotated and with a title tooltip when collapsed", () => {
+    const { target, comp } = setup({
+      entries: [makeEntry({ id: "p" }), makeEntry({ id: "c", parentId: "p", order: 0 })],
+      collapsedIds: new Set(["p"]),
+    });
+    const disclosure = target.querySelector(".disclosure") as HTMLElement;
+    expect(disclosure.className).not.toContain("open");
+    expect(disclosure.getAttribute("title")).toBe("Expand");
+    expect(disclosure.textContent).toBe("▸");
+    unmount(comp); target.remove();
+  });
 });
 
 describe("KBTree — search filtering", () => {
