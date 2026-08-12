@@ -357,6 +357,10 @@
         "cornerNe": "Haut-droit",
         "cornerSe": "Bas-droit",
         "cornerSw": "Bas-gauche",
+        "stairsShape": "Forme",
+        "stairsShapeStraight": "Droit",
+        "stairsShapeLShaped": "En L",
+        "stairsCorner": "Coin du palier",
         "plankWidth": "Largeur des lames",
         "plankLength": "Longueur des lames"
       }
@@ -425,6 +429,7 @@
     "badgePopup": {
       "overdueSince": "En retard depuis",
       "due": "Échéance",
+      "details": "Détails",
       "allDone": "Tout fait",
       "thisRoom": "Cette pièce",
       "remove": "Retirer"

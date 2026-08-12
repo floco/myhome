@@ -1,17 +1,19 @@
 <script lang="ts">
   import type { Room } from "@myhome/geometry";
-  import { polygonCentroid } from "@myhome/geometry";
+  import { computeLabelPosition } from "@myhome/geometry";
   import type { ViewportState } from "../viewportStore.svelte";
   import type { ToolType } from "../toolStore.svelte";
 
   let {
     room,
+    allRooms,
     viewport,
     tool = "select",
     selected = false,
     onselectroom,
   }: {
     room: Room;
+    allRooms: Room[];
     viewport: ViewportState;
     tool?: ToolType;
     selected?: boolean;
@@ -28,9 +30,13 @@
 
   const points = $derived(screenPoints.map((p) => `${p.x},${p.y}`).join(" "));
 
-  const labelPos = $derived.by(() => {
+  const labelWorldPos = $derived.by(() => {
     if (!room.polygon) return { x: 0, y: 0 };
-    const c = polygonCentroid(room.polygon);
+    return computeLabelPosition(room, allRooms);
+  });
+
+  const labelPos = $derived.by(() => {
+    const c = labelWorldPos;
     return { x: c.x * viewport.zoom + viewport.panX, y: c.y * viewport.zoom + viewport.panY };
   });
 

@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
+import { readFileSync } from "node:fs";
 import FurnitureLibraryPanel from "../src/lib/components/FurnitureLibraryPanel.svelte";
 import { FURNITURE_TEMPLATES } from "../src/lib/furnitureLibrary";
 
@@ -92,5 +93,15 @@ describe("FurnitureLibraryPanel", () => {
     expect(widths.size).toBe(1);
     expect(heights.size).toBe(1);
     expect([...widths][0]).toBe([...heights][0]);
+  });
+
+  it("sets touch-action: none on furniture items so mobile drag isn't hijacked by scroll", () => {
+    // jsdom in this test environment doesn't inject Svelte component <style>
+    // blocks into the DOM, so getComputedStyle can never see this rule here
+    // -- check the compiled source's CSS block directly instead (see the
+    // identical note in ItemPickerPanel.test.ts).
+    const source = readFileSync("src/lib/components/FurnitureLibraryPanel.svelte", "utf-8");
+    const rule = source.slice(source.indexOf(".furniture-item {"), source.indexOf(".furniture-item {") + 400);
+    expect(rule).toContain("touch-action: none;");
   });
 });

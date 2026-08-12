@@ -175,6 +175,7 @@
     user-select: none;
     min-height: 64px;
     min-width: 0;
+    touch-action: none;
   }
 
   .furniture-item:hover {

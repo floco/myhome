@@ -201,6 +201,7 @@
   .item-row {
     display: flex; align-items: center; gap: 8px; padding: 5px 10px;
     cursor: grab; user-select: none; border-radius: var(--radius-sm); margin: 1px 4px;
+    touch-action: none;
   }
   .item-row:hover { background: var(--surface-hover); }
   .item-row.placed { opacity: .45; }

@@ -55,13 +55,11 @@ describe("furnitureLibrary", () => {
     expect(cats.has("garden")).toBe(true);
   });
 
-  it("includes the structural category with a Stairs template that has no params", () => {
+  it("includes the structural category with a Stairs template", () => {
     expect(FURNITURE_CATEGORIES).toContain("structural");
     const stairs = getTemplate("stairs");
     expect(stairs).toBeDefined();
     expect(stairs?.category).toBe("structural");
-    expect(stairs?.params).toBeUndefined();
-    expect(stairs?.render).toBeUndefined();
   });
 
   it("defaultFurnitureParams returns undefined for templates without a params schema", () => {
@@ -151,6 +149,38 @@ describe("furnitureLibrary", () => {
     expect(svgNw).toContain('x="5" y="5" width="40" height="90"'); // vertical arm at left
     expect(svgSe).toContain('x="5" y="55" width="90" height="40"'); // horizontal arm at bottom
     expect(svgSe).toContain('x="55" y="5" width="40" height="90"'); // vertical arm at right
+  });
+
+  it("stairs declares shape and corner params, with shape defaulting to straight", () => {
+    const t = getTemplate("stairs")!;
+    expect(defaultFurnitureParams(t)).toEqual({ shape: "straight", corner: "se" });
+  });
+
+  it("stairs corner param is visibleWhen shape is l-shaped", () => {
+    const t = getTemplate("stairs")!;
+    const corner = t.params?.find((p) => p.id === "corner") as Extract<FurnitureParamDef, { type: "enum" }> | undefined;
+    expect(corner?.visibleWhen).toEqual({ paramId: "shape", equals: "l-shaped" });
+  });
+
+  it("renders straight tread lines when shape is straight", () => {
+    const t = getTemplate("stairs")!;
+    const obj: FurnitureObject = { id: "f1", templateId: "stairs", x: 0, y: 0, width: 1.0, height: 3.0, rotation: 0, params: { shape: "straight" } };
+    const svg = resolveFurnitureSvg(t, obj);
+    expect(svg).toContain('x="5" y="5" width="90" height="90"');
+    expect((svg.match(/<line/g) ?? []).length).toBeGreaterThan(1);
+  });
+
+  it("renders an L-shaped stair with the landing at the requested corner", () => {
+    const t = getTemplate("stairs")!;
+    const nw: FurnitureObject = { id: "f2", templateId: "stairs", x: 0, y: 0, width: 2.0, height: 2.0, rotation: 0, params: { shape: "l-shaped", corner: "nw" } };
+    const se: FurnitureObject = { id: "f3", templateId: "stairs", x: 0, y: 0, width: 2.0, height: 2.0, rotation: 0, params: { shape: "l-shaped", corner: "se" } };
+    const svgNw = resolveFurnitureSvg(t, nw);
+    const svgSe = resolveFurnitureSvg(t, se);
+    expect(svgNw).toContain('x="5" y="5" width="90" height="40"'); // horizontal arm at top
+    expect(svgNw).toContain('x="5" y="5" width="40" height="90"'); // vertical arm at left
+    expect(svgSe).toContain('x="5" y="55" width="90" height="40"'); // horizontal arm at bottom
+    expect(svgSe).toContain('x="55" y="5" width="40" height="90"'); // vertical arm at right
+    expect(svgNw).not.toBe(svgSe);
   });
 
   it("computeDeckPlankLayout adds more rows as the deck gets taller (fixed real plank width)", () => {

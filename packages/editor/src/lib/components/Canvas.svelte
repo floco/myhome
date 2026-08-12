@@ -285,6 +285,7 @@
   {#each floor.rooms as room (room.id)}
     <RoomShape
       {room}
+      allRooms={floor.rooms}
       {viewport}
       {tool}
       selected={room.id === selectedRoomId}

@@ -13,9 +13,10 @@
     onremove: () => void;
     onclose: () => void;
     onlabelchange: (label: string) => void;
+    ondetails: () => void;
   }
 
-  let { chore, assignment, screenX, screenY, oncomplete, oncompleteall, onremove, onclose, onlabelchange }: Props = $props();
+  let { chore, assignment, screenX, screenY, oncomplete, oncompleteall, onremove, onclose, onlabelchange, ondetails }: Props = $props();
 
   const overdue = $derived(new Date(assignment.nextDueDate).getTime() < Date.now());
 
@@ -48,6 +49,7 @@
     {overdue ? $_('chores.badgePopup.overdueSince') : $_('chores.badgePopup.due')}: {formatDate(assignment.nextDueDate)}
   </div>
   <div class="popup-actions">
+    <button class="details-btn" onclick={ondetails} title={$_('chores.badgePopup.details')}>🔍 {$_('chores.badgePopup.details')}</button>
     <button onclick={oncompleteall}>✓ {$_('chores.badgePopup.allDone')}</button>
     <button onclick={oncomplete}>✓ {$_('chores.badgePopup.thisRoom')}</button>
     <button onclick={onremove}>✕ {$_('chores.badgePopup.remove')}</button>

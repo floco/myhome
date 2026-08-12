@@ -357,6 +357,10 @@
         "cornerNe": "Top-right",
         "cornerSe": "Bottom-right",
         "cornerSw": "Bottom-left",
+        "stairsShape": "Shape",
+        "stairsShapeStraight": "Straight",
+        "stairsShapeLShaped": "L-shaped",
+        "stairsCorner": "Landing corner",
         "plankWidth": "Plank width",
         "plankLength": "Plank length"
       }
@@ -425,6 +429,7 @@
     "badgePopup": {
       "overdueSince": "Overdue since",
       "due": "Due",
+      "details": "Details",
       "allDone": "All done",
       "thisRoom": "This room",
       "remove": "Remove"

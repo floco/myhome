@@ -16,11 +16,12 @@
   import OpeningPanel from "./lib/components/OpeningPanel.svelte";
   import FloorSwitcher from "./lib/components/FloorSwitcher.svelte";
   import { createChoreStore } from "./lib/choreStore.svelte";
-  import type { Assignment } from "./lib/choreStore.svelte";
+  import type { Assignment, Chore } from "./lib/choreStore.svelte";
   import ChoreOverlay from "./lib/components/ChoreOverlay.svelte";
   import ItemPickerPanel from "./lib/components/ItemPickerPanel.svelte";
   import type { PickerLayer } from "./lib/components/ItemPickerPanel.svelte";
   import BadgePopup from "./lib/components/BadgePopup.svelte";
+  import ChoreEditModal from "./lib/components/ChoreEditModal.svelte";
   import ChoresPage from "./lib/components/ChoresPage.svelte";
   import NavMenu from "./lib/components/NavMenu.svelte";
   import HomePage from "./lib/components/HomePage.svelte";
@@ -298,6 +299,7 @@
   }
 
   let selectedBadge = $state<{ assignment: Assignment; screenX: number; screenY: number } | null>(null);
+  let mapEditChore = $state<Chore | null>(null);
 
   $effect(() => {
     if (!choreLayerActive) selectedBadge = null;
@@ -1097,10 +1099,19 @@
                       onremove={async () => { await choreStore.deleteAssignment(badge.assignment.id); selectedBadge = null; }}
                       onlabelchange={(label) => choreStore.updateAssignmentLabel(badge.assignment.id, label)}
                       onclose={() => { selectedBadge = null; }}
+                      ondetails={() => { mapEditChore = chore; selectedBadge = null; }}
                     />
                   </div>
                 {/if}
               {/if}
+            {/if}
+            {#if mapEditChore}
+              <ChoreEditModal
+                chore={mapEditChore}
+                store={choreStore}
+                rooms={floorStore.floors.flatMap((f) => f.rooms)}
+                onclose={() => { mapEditChore = null; }}
+              />
             {/if}
             {#if inventoryLayerActive}
             <InventoryOverlay
@@ -1342,6 +1353,13 @@
               />
               <div class="ft-sep"></div>
               <LayersDropdown {activeLayers} ontoggle={toggleLayer} popoverAlign="left" variant="toolbar" />
+              <div class="ft-sep"></div>
+              <button
+                class="ft-btn"
+                class:active={viewMode}
+                title={viewMode ? $_('app.floatingToolbar.switchToEditMode') : $_('app.floatingToolbar.switchToViewMode')}
+                onclick={toggleViewMode}
+              ><span class="mode-icon" class:crossed={viewMode}>✏️</span> <span class="ft-label">{viewMode ? $_('app.floatingToolbar.viewMode') : $_('app.floatingToolbar.editMode')}</span></button>
               {#if !viewMode}
                 <button
                   class="ft-btn"
@@ -1358,15 +1376,6 @@
                   title={$_('app.floatingToolbar.toggleFurniture')}
                   onclick={() => { furnitureLibraryOpen = !furnitureLibraryOpen; }}
                 >🪑 <span class="ft-label">{$_('app.floatingToolbar.furniture')}</span></button>
-              {/if}
-              <div class="ft-sep"></div>
-              <button
-                class="ft-btn"
-                class:active={viewMode}
-                title={viewMode ? $_('app.floatingToolbar.switchToEditMode') : $_('app.floatingToolbar.switchToViewMode')}
-                onclick={toggleViewMode}
-              ><span class="mode-icon" class:crossed={viewMode}>✏️</span> <span class="ft-label">{viewMode ? $_('app.floatingToolbar.viewMode') : $_('app.floatingToolbar.editMode')}</span></button>
-              {#if !viewMode}
                 <button
                   class="ft-btn save-btn"
                   class:saved={saveStatus === "saved"}

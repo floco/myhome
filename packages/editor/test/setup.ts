@@ -6,6 +6,15 @@
   disconnect() {}
 };
 
+// Polyfill pointer capture for jsdom (used by drag handlers on map overlay
+// badges — ChoreOverlay, InventoryOverlay, CostsOverlay, etc.)
+if (!Element.prototype.setPointerCapture) {
+  Element.prototype.setPointerCapture = function () {};
+}
+if (!Element.prototype.releasePointerCapture) {
+  Element.prototype.releasePointerCapture = function () {};
+}
+
 // Polyfill matchMedia for jsdom (used by App.svelte's mobile-viewport check)
 (globalThis as any).matchMedia = (globalThis as any).matchMedia || function (query: string) {
   return {
