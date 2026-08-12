@@ -174,9 +174,11 @@
         {#if hasChildren(entry.id)}
           <button
             class="disclosure"
+            class:open={isOpen(entry.id)}
             onclick={(e) => { e.stopPropagation(); ontoggle(entry.id); }}
             aria-label={isOpen(entry.id) ? $_('kb.tree.collapse') : $_('kb.tree.expand')}
-          >{isOpen(entry.id) ? "▼" : "▶"}</button>
+            title={isOpen(entry.id) ? $_('kb.tree.collapse') : $_('kb.tree.expand')}
+          >▸</button>
         {:else}
           <span class="disclosure-spacer"></span>
         {/if}
@@ -259,7 +261,9 @@
     display: flex; align-items: center; justify-content: center;
     background: none; border: none; padding: 0; width: 18px; height: 18px; flex-shrink: 0;
     color: var(--text); font-size: 13px; line-height: 1; cursor: pointer; border-radius: var(--radius-sm);
+    transition: transform 0.15s ease;
   }
+  .disclosure.open { transform: rotate(90deg); }
   .disclosure:hover { background: var(--surface-hover); }
   .disclosure-spacer { width: 18px; flex-shrink: 0; }
   .page-icon { flex-shrink: 0; font-size: 13px; }
