@@ -612,6 +612,32 @@ export const FURNITURE_TEMPLATES: FurnitureTemplate[] = [
       <line x1="62" y1="38" x2="62" y2="19" fill="none"/>
       <line x1="62" y1="19" x2="81" y2="19" fill="none"/>
     `,
+    params: [
+      {
+        id: "shape",
+        type: "enum",
+        labelKey: "floorPlan.furnitureLibrary.params.stairsShape",
+        options: [
+          { value: "straight", labelKey: "floorPlan.furnitureLibrary.params.stairsShapeStraight" },
+          { value: "l-shaped", labelKey: "floorPlan.furnitureLibrary.params.stairsShapeLShaped" },
+        ],
+        default: "straight",
+      },
+      {
+        id: "corner",
+        type: "enum",
+        labelKey: "floorPlan.furnitureLibrary.params.stairsCorner",
+        options: [
+          { value: "nw", labelKey: "floorPlan.furnitureLibrary.params.cornerNw" },
+          { value: "ne", labelKey: "floorPlan.furnitureLibrary.params.cornerNe" },
+          { value: "se", labelKey: "floorPlan.furnitureLibrary.params.cornerSe" },
+          { value: "sw", labelKey: "floorPlan.furnitureLibrary.params.cornerSw" },
+        ],
+        default: "se",
+        visibleWhen: { paramId: "shape", equals: "l-shaped" },
+      },
+    ],
+    render: renderStairs,
   },
 ];
 
@@ -716,6 +742,38 @@ function renderSofa(ctx: FurnitureRenderContext): string {
     <rect x="5" y="${armY}" width="90" height="40" rx="6"/>
     <rect x="${chaiseX}" y="5" width="40" height="90" rx="6"/>
   `;
+}
+
+function renderStairs(ctx: FurnitureRenderContext): string {
+  const shape = ctx.params.shape === "l-shaped" ? "l-shaped" : "straight";
+  if (shape === "straight") {
+    const parts = [`<rect x="5" y="5" width="90" height="90" rx="2"/>`];
+    const steps = 8;
+    for (let i = 1; i < steps; i++) {
+      const y = 5 + (90 / steps) * i;
+      parts.push(`<line x1="5" y1="${y.toFixed(2)}" x2="95" y2="${y.toFixed(2)}" fill="none"/>`);
+    }
+    return parts.join("\n");
+  }
+  const corner = typeof ctx.params.corner === "string" ? ctx.params.corner : "se";
+  const north = corner === "nw" || corner === "ne";
+  const west = corner === "nw" || corner === "sw";
+  const armY = north ? 5 : 55;
+  const armX = west ? 5 : 55;
+  const parts = [
+    `<rect x="5" y="${armY}" width="90" height="40" rx="2"/>`,
+    `<rect x="${armX}" y="5" width="40" height="90" rx="2"/>`,
+  ];
+  const steps = 5;
+  for (let i = 1; i < steps; i++) {
+    const x = 5 + (90 / steps) * i;
+    parts.push(`<line x1="${x.toFixed(2)}" y1="${armY}" x2="${x.toFixed(2)}" y2="${armY + 40}" fill="none"/>`);
+  }
+  for (let i = 1; i < steps; i++) {
+    const y = 5 + (90 / steps) * i;
+    parts.push(`<line x1="${armX}" y1="${y.toFixed(2)}" x2="${armX + 40}" y2="${y.toFixed(2)}" fill="none"/>`);
+  }
+  return parts.join("\n");
 }
 
 export function computeDeckPlankLayout(
