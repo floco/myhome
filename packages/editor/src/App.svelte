@@ -900,6 +900,7 @@
   onblur={() => { spacePressed = false; }}
   onpointermove={(e) => { if (dragGhost) dragGhost = { ...dragGhost, x: e.clientX, y: e.clientY }; }}
   onpointerup={() => { handleDragEnd(); endFurnitureDrag(); cancelItemDrag(); }}
+  onpointercancel={() => { handleDragEnd(); endFurnitureDrag(); cancelItemDrag(); }}
 />
 
 <CommandPalette

@@ -244,6 +244,22 @@ function findOpenPoint(outer: Point[], children: Point[][]): Point | null {
 }
 
 /**
+ * True if other rooms' polygons are substantially contained inside this
+ * room's polygon (e.g. a garden boundary with a shed or pool drawn inside
+ * it). Such a room's fill overlaps its children's, so callers should avoid
+ * treating the whole fill as this room's click target.
+ */
+export function roomContainsOtherRooms(room: Room, allRooms: Room[]): boolean {
+  if (!room.polygon) return false;
+  return allRooms.some(
+    (other) =>
+      other.id !== room.id &&
+      other.polygon &&
+      estimateContainmentRatio(room.polygon!, other.polygon!) >= CONTAINMENT_THRESHOLD,
+  );
+}
+
+/**
  * Where to draw a room's label. If other rooms' polygons are substantially
  * contained inside this room's polygon (a "zone" spanning child rooms), the
  * label is moved to the most open point of the zone's polygon that isn't
