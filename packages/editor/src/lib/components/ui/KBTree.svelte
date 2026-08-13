@@ -266,6 +266,11 @@
   .disclosure.open { transform: rotate(90deg); }
   .disclosure:hover { background: var(--surface-hover); }
   .disclosure-spacer { width: 18px; flex-shrink: 0; }
+
+  @media (max-width: 700px) {
+    .disclosure, .disclosure-spacer { width: 26px; height: 26px; }
+    .disclosure { font-size: 18px; font-weight: 700; }
+  }
   .page-icon { flex-shrink: 0; font-size: 13px; }
   .page-title {
     flex: 1; min-width: 0; font-size: 13px; color: var(--text); font-weight: 500;
