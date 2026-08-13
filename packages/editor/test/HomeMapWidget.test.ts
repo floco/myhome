@@ -55,7 +55,7 @@ describe("HomeMapWidget", () => {
     await tick();
     flushSync();
 
-    expect(target.querySelector(".floor-switcher")).not.toBeNull();
+    expect(target.querySelector(".compact-switcher")).not.toBeNull();
     expect(target.querySelector(".layers-dropdown")).not.toBeNull();
 
     unmount(comp);
@@ -91,7 +91,7 @@ describe("HomeMapWidget", () => {
     await tick();
     flushSync();
 
-    (target.querySelector(".floor-switcher .floor-label") as HTMLElement).dispatchEvent(
+    (target.querySelector(".compact-switcher .compact-btn") as HTMLElement).dispatchEvent(
       new MouseEvent("click", { bubbles: true })
     );
     flushSync();
