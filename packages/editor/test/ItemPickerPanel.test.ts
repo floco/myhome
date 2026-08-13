@@ -182,13 +182,18 @@ describe("ItemPickerPanel", () => {
     unmount(app);
   });
 
-  it("sets touch-action: none on item rows so mobile drag isn't hijacked by scroll", () => {
+  it("sets touch-action: pan-y on item rows so the list still scrolls on touch", () => {
     // jsdom in this test environment doesn't inject Svelte component <style>
     // blocks into the DOM (verified empirically: document.head has zero
     // <style> tags after mount), so getComputedStyle can never see this rule
     // here -- check the compiled source's CSS block directly instead.
+    //
+    // touch-action: none here would block native scrolling entirely --
+    // since rows fill nearly the whole list, that made the panel
+    // unscrollable on touch. pan-y keeps vertical scroll native while
+    // leaving horizontal/diagonal pointer movement free for drag-to-place.
     const source = readFileSync("src/lib/components/ItemPickerPanel.svelte", "utf-8");
     const rule = source.slice(source.indexOf(".item-row {"), source.indexOf(".item-row {") + 300);
-    expect(rule).toContain("touch-action: none;");
+    expect(rule).toContain("touch-action: pan-y;");
   });
 });
