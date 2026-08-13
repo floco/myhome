@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.24.1 - 2026-08-13
+
+- Fixed the floor plan editor's mobile zone/opening/furniture panels overflowing off the right edge of the screen, putting the close button out of reach
+- Fixed the floor plan editor's mobile Picker and Furniture panels not scrolling on touch
+- Fixed a zone containing other zones (e.g. a garden boundary with a shed inside it) intercepting clicks meant for the nested zone underneath — it's now only selectable by tapping its label
+- Fixed the home dashboard floor selector to be a proper dropdown, and fixed mobile layers alignment
+- Fixed the knowledge base page-tree "toggle all" icon not rotating and the mobile disclosure triangle being too small to tap
+
 ## 0.24.0 - 2026-08-12
 
 - Added a "Details" button to floor plan chore pins to open the full chore edit view, not just the small popup
