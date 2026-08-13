@@ -92,6 +92,7 @@
           floors={floorStore.floors}
           currentFloorId={effectiveFloorId ?? ""}
           onswitchfloor={handleSwitchFloor}
+          compact={true}
         />
       </div>
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -160,7 +161,7 @@
 
 <style>
   .map-widget-body { display: flex; flex-direction: column; gap: var(--space-2); }
-  .map-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; }
+  .map-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: nowrap; }
   .map-area {
     position: relative; overflow: hidden; height: 360px;
     border-radius: var(--radius-md); background: var(--canvas-bg); cursor: pointer;
