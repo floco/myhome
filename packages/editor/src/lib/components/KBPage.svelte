@@ -485,7 +485,7 @@
     <div class="sidebar-toolbar">
       <Input placeholder={$_('floorPlan.itemPicker.search')} bind:value={searchQuery} />
       <Button onclick={toggleAllTree} title={allParentsExpanded ? $_('kb.tree.collapseAll') : $_('kb.tree.expandAll')}>
-        {allParentsExpanded ? "⊟" : "⊞"}
+        <span class="toggle-all-icon" class:open={allParentsExpanded}>▸</span>
       </Button>
       <Button onclick={handleNewPage} title={$_('kb.page.newPage')}>＋</Button>
     </div>
@@ -677,6 +677,11 @@
     background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
   .sidebar-toolbar :global(.ui-input) { flex: 1; }
+  .toggle-all-icon {
+    display: inline-block; font-size: 13px; line-height: 1;
+    transition: transform 0.15s ease;
+  }
+  .toggle-all-icon.open { transform: rotate(90deg); }
 
   .entry-list {
     flex: 1; overflow-y: auto; padding: var(--space-2);
