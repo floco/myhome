@@ -159,6 +159,16 @@ describe("KBPage — empty state", () => {
     expect(titles).not.toContain("＋ Folder");
     unmount(comp); target.remove();
   });
+
+  it("gives the expand/collapse-all and new-page buttons matching icon-button sizing", async () => {
+    const { target, comp } = await setup([]);
+    const toolbarButtons = target.querySelectorAll(".sidebar-toolbar button");
+    expect(toolbarButtons.length).toBe(2);
+    for (const btn of toolbarButtons) {
+      expect(btn.className).toContain("ui-button-icon");
+    }
+    unmount(comp); target.remove();
+  });
 });
 
 describe("KBPage — default tree collapse state", () => {
@@ -510,6 +520,22 @@ describe("KBPage — autosave", () => {
     flushSync();
     expect(target.querySelector("textarea.md-editor")).not.toBeNull();
     expect(target.querySelector('[title="Edit"]')).toBeNull();
+    unmount(comp); target.remove();
+  });
+
+  it("styles the Edit button to match the primary Save button instead of a ghost button", async () => {
+    const { target, comp } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    const editBtn = target.querySelector('[title="Edit"]') as HTMLElement;
+    expect(editBtn.className).toContain("ui-button-primary");
+    expect(editBtn.textContent).toContain("✏️");
+    unmount(comp); target.remove();
+  });
+
+  it("nests the autosave status indicator inside the Done-editing save button", async () => {
+    const { target, comp } = await setup([makeEntry({ content: "hello" })], { selectedItemId: "e1" });
+    enterEditMode(target);
+    const saveBtn = target.querySelector('[title="Done editing"]');
+    expect(saveBtn?.querySelector(".save-status")).not.toBeNull();
     unmount(comp); target.remove();
   });
 
