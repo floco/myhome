@@ -202,36 +202,23 @@ function makeRoom(id: string, polygon: Point[] | null): Room {
 describe("computeLabelPosition", () => {
   const outerSquare: Point[] = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }];
 
-  it("returns the plain centroid when no other room is contained inside it", () => {
+  it("returns the polygon centroid", () => {
     const room = makeRoom("outer", outerSquare);
-    const other = makeRoom("far", [{ x: 20, y: 20 }, { x: 22, y: 20 }, { x: 22, y: 22 }, { x: 20, y: 22 }]);
-    const pos = computeLabelPosition(room, [room, other]);
+    const pos = computeLabelPosition(room);
     expect(pos.x).toBeCloseTo(5, 5);
     expect(pos.y).toBeCloseTo(5, 5);
   });
 
-  it("ignores a room that only barely overlaps (below the 50% containment threshold)", () => {
-    const room = makeRoom("outer", outerSquare);
-    // 12x12 room overlapping the outer square only in its bottom-left 2x2 corner (~2.8% of its own area)
-    const sliver = makeRoom("sliver", [{ x: 8, y: 8 }, { x: 20, y: 8 }, { x: 20, y: 20 }, { x: 8, y: 20 }]);
-    const pos = computeLabelPosition(room, [room, sliver]);
-    expect(pos.x).toBeCloseTo(5, 5);
-    expect(pos.y).toBeCloseTo(5, 5);
-  });
-
-  it("moves the label off a fully-contained child room's area", () => {
+  it("returns the centroid even when another room's polygon fully contains it", () => {
     const room = makeRoom("zone", outerSquare);
-    // Fully inside the outer square, and it covers the outer square's own centroid (5,5).
-    const child = makeRoom("child", [{ x: 3, y: 3 }, { x: 7, y: 3 }, { x: 7, y: 7 }, { x: 3, y: 7 }]);
-    const pos = computeLabelPosition(room, [room, child]);
-    expect(pointInPolygon(pos, child.polygon!)).toBe(false);
-    expect(pointInPolygon(pos, room.polygon!)).toBe(true);
-    // The plain centroid (5,5) would have landed inside the child -- confirm we moved off it.
-    expect(pos.x === 5 && pos.y === 5).toBe(false);
+    // Previously this would have pushed the label off (5,5); it must not anymore.
+    const pos = computeLabelPosition(room);
+    expect(pos.x).toBeCloseTo(5, 5);
+    expect(pos.y).toBeCloseTo(5, 5);
   });
 
   it("returns {x:0,y:0} when the room has no polygon", () => {
     const room = makeRoom("unresolved", null);
-    expect(computeLabelPosition(room, [room])).toEqual({ x: 0, y: 0 });
+    expect(computeLabelPosition(room)).toEqual({ x: 0, y: 0 });
   });
 });

@@ -242,9 +242,11 @@
                 onblur={(e) => handleLabelBlur(a.id, (e.target as HTMLInputElement).value)}
               />
               <span class="assign-due">{$_('chores.badgePopup.due')}: {formatDate(a.nextDueDate)}</span>
-              <button class="icon-btn" title={$_('chores.row.markDone')} onclick={() => { completing = { id: a.id, title: `${chore.emoji} ${chore.name}` }; }}>✓</button>
-              <button class="icon-btn" title={$_('chores.page.delayByWeek')} onclick={() => store.delayAssignment(a.id, 7)}>⏭</button>
-              <button class="icon-btn danger" onclick={() => store.deleteAssignment(a.id)}>✕</button>
+              <div class="assignment-actions">
+                <button class="icon-btn" title={$_('chores.row.markDone')} onclick={() => { completing = { id: a.id, title: `${chore.emoji} ${chore.name}` }; }}>✓</button>
+                <button class="icon-btn" title={$_('chores.page.delayByWeek')} onclick={() => store.delayAssignment(a.id, 7)}>⏭</button>
+                <button class="icon-btn danger" onclick={() => store.deleteAssignment(a.id)}>✕</button>
+              </div>
             </div>
           {/each}
         {/if}
@@ -302,11 +304,9 @@
       {#if onplaceonmap && activeTab === "info"}
         <Button variant="secondary" onclick={() => { onplaceonmap!(chore!.id); }}>📍 {$_('chores.editModal.placeOnMap')}</Button>
       {/if}
-      {#if activeTab === "info"}
-        <Button variant="primary" disabled={saving || !draftScheduleValid} onclick={handleSave}>
-          {saving ? $_('settings.security.saving') : $_('common.save')}
-        </Button>
-      {/if}
+      <Button variant="primary" disabled={saving || !draftScheduleValid} onclick={handleSave}>
+        {saving ? $_('settings.security.saving') : $_('common.save')}
+      </Button>
       <Button variant="secondary" onclick={onclose}>{$_('common.cancel')}</Button>
     {/snippet}
   </Modal>
@@ -355,6 +355,7 @@
   .assign-where { flex: 1; min-width: 80px; color: var(--text-muted); }
   .assign-label-input { flex: 1; min-width: 100px; }
   .assign-due { color: var(--text-faint); font-size: 11px; white-space: nowrap; }
+  .assignment-actions { display: flex; gap: 4px; flex-shrink: 0; }
   .add-assignment-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 4px; }
   .add-assignment-row select { flex: 1; min-width: 120px; }
   .icon-btn {

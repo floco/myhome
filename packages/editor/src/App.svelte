@@ -1,7 +1,7 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
   import { untrack } from "svelte";
-  import type { Point, WallType } from "@myhome/geometry";
+  import type { Point, WallType, Room } from "@myhome/geometry";
   import { pointsEqual, findAdjacentRooms } from "@myhome/geometry";
   import { createHouseStore } from "./lib/houseStore.svelte";
   import { createViewportStore } from "./lib/viewportStore.svelte";
@@ -441,6 +441,13 @@
   // Furniture state
   let furnitureLibraryOpen = $state(false);
   let selectedFurnitureId = $state<string | null>(null);
+  let pendingWallDeleteId = $state<string | null>(null);
+  let roomsAtRisk = $state<Room[]>([]);
+
+  function isCustomizedRoom(room: Room): boolean {
+    const hasCustomLabel = !!room.label && !/^Room \d+$/.test(room.label);
+    return hasCustomLabel || room.haAreaId !== null;
+  }
   const selectedFurnitureObject = $derived(
     selectedFurnitureId
       ? (floorStore.currentFurniture.find((f) => f.id === selectedFurnitureId) ?? null)
@@ -558,8 +565,31 @@
       return;
     }
     const { selectedId, selectedOpeningId } = toolStore.state;
-    if (selectedId) { floorStore.removeWall(selectedId); toolStore.select(null); }
+    if (selectedId) {
+      const atRisk = floorStore.roomsAtRiskFromWallRemoval(selectedId).filter(isCustomizedRoom);
+      if (atRisk.length > 0) {
+        pendingWallDeleteId = selectedId;
+        roomsAtRisk = atRisk;
+        return;
+      }
+      floorStore.removeWall(selectedId);
+      toolStore.select(null);
+    }
     else if (selectedOpeningId) { floorStore.removeOpening(selectedOpeningId); toolStore.selectOpening(null); }
+  }
+
+  function confirmWallDelete(): void {
+    if (pendingWallDeleteId) {
+      floorStore.removeWall(pendingWallDeleteId);
+      toolStore.select(null);
+    }
+    pendingWallDeleteId = null;
+    roomsAtRisk = [];
+  }
+
+  function cancelWallDelete(): void {
+    pendingWallDeleteId = null;
+    roomsAtRisk = [];
   }
 
   function handleUndo(): void {
@@ -1590,6 +1620,24 @@
           </Button>
         </div>
       </div>
+    </Modal>
+  {/if}
+
+  {#if pendingWallDeleteId}
+    <Modal open={true} title={$_('floorPlan.deleteWallConfirm.title')} onclose={cancelWallDelete}>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <p style="margin:0;font-size:13px;color:var(--text-muted)">{$_('floorPlan.deleteWallConfirm.message')}</p>
+        <ul style="margin:0;padding-left:20px;font-size:13px">
+          {#each roomsAtRisk as room (room.id)}
+            <li>{room.label || $_('floorPlan.deleteWallConfirm.unnamedRoom')}</li>
+          {/each}
+        </ul>
+        <p style="margin:0;font-size:11px;color:var(--text-faint)">{$_('floorPlan.deleteWallConfirm.note')}</p>
+      </div>
+      {#snippet footer()}
+        <Button variant="secondary" onclick={cancelWallDelete}>{$_('common.cancel')}</Button>
+        <Button variant="danger" onclick={confirmWallDelete}>{$_('floorPlan.deleteWallConfirm.confirm')}</Button>
+      {/snippet}
     </Modal>
   {/if}
 

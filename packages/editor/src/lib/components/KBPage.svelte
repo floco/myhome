@@ -484,10 +484,10 @@
   <div class="kb-sidebar" class:expanded={sidebarExpanded}>
     <div class="sidebar-toolbar">
       <Input placeholder={$_('floorPlan.itemPicker.search')} bind:value={searchQuery} />
-      <Button onclick={toggleAllTree} title={allParentsExpanded ? $_('kb.tree.collapseAll') : $_('kb.tree.expandAll')}>
+      <Button iconOnly onclick={toggleAllTree} title={allParentsExpanded ? $_('kb.tree.collapseAll') : $_('kb.tree.expandAll')}>
         <span class="toggle-all-icon" class:open={allParentsExpanded}>▸</span>
       </Button>
-      <Button onclick={handleNewPage} title={$_('kb.page.newPage')}>＋</Button>
+      <Button iconOnly onclick={handleNewPage} title={$_('kb.page.newPage')}>＋</Button>
     </div>
     <div class="entry-list">
       <KBTree
@@ -560,20 +560,21 @@
         </div>
         <div class="header-actions">
           {#if contentTab === "content" && editing}
-            <span
-              class="save-status"
-              class:save-status-saving={saveStatus === "saving" || saveStatus === "pending"}
-              class:save-status-error={saveStatus === "error"}
-              title={saveStatus === "saving" || saveStatus === "pending" ? $_('kb.page.saving') : saveStatus === "saved" ? $_('kb.page.saved') : saveStatus === "error" ? $_('kb.page.saveFailed') : undefined}
-            >
-              {#if saveStatus === "saving" || saveStatus === "pending"}↻
-              {:else if saveStatus === "saved"}✓
-              {:else if saveStatus === "error"}⚠
-              {/if}
-            </span>
-            <Button variant="primary" onclick={handleDoneEditing} title={$_('works.modal.doneEditing')}>✓</Button>
+            <Button variant="primary" onclick={handleDoneEditing} title={$_('works.modal.doneEditing')}>
+              <span
+                class="save-status"
+                class:save-status-saving={saveStatus === "saving" || saveStatus === "pending"}
+                class:save-status-error={saveStatus === "error"}
+                title={saveStatus === "saving" || saveStatus === "pending" ? $_('kb.page.saving') : saveStatus === "saved" ? $_('kb.page.saved') : saveStatus === "error" ? $_('kb.page.saveFailed') : undefined}
+              >
+                {#if saveStatus === "saving" || saveStatus === "pending"}↻
+                {:else if saveStatus === "error"}⚠
+                {:else}✓
+                {/if}
+              </span>
+            </Button>
           {:else if contentTab === "content" && !editing}
-            <Button variant="ghost" onclick={() => { editing = true; }} title={$_('common.edit')}>✏</Button>
+            <Button variant="primary" onclick={() => { editing = true; }} title={$_('common.edit')}>✏️</Button>
           {/if}
           <Button variant="ghost" onclick={() => handleAskDelete(selectedEntry.id)} title={$_('kb.page.deletePage')}>🗑</Button>
         </div>
@@ -678,7 +679,7 @@
   }
   .sidebar-toolbar :global(.ui-input) { flex: 1; }
   .toggle-all-icon {
-    display: inline-block; font-size: 13px; line-height: 1;
+    display: inline-block; line-height: 1;
     transition: transform 0.15s ease;
   }
   .toggle-all-icon.open { transform: rotate(90deg); }
@@ -752,7 +753,7 @@
 
   .content-error { padding: 0 var(--space-4); font-size: 11px; color: var(--danger); }
 
-  .save-status { font-size: 13px; color: var(--text-muted); white-space: nowrap; display: inline-flex; align-items: center; }
+  .save-status { font-size: 13px; white-space: nowrap; display: inline-flex; align-items: center; }
   .save-status-saving { display: inline-block; animation: kb-spin 0.8s linear infinite; }
   .save-status-error { color: var(--danger); }
 

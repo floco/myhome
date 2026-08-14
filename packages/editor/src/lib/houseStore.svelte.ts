@@ -90,6 +90,16 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
     recomputeRooms();
   }
 
+  function roomsAtRiskFromWallRemoval(id: string): Room[] {
+    const floor = currentFloor();
+    if (!floor.walls.some((w) => w.id === id)) return [];
+    const wallsAfter = floor.walls.filter((w) => w.id !== id);
+    const detected = detectRooms(wallsAfter);
+    const { rooms } = matchRooms(detected, floor.rooms);
+    const survivingIds = new Set(rooms.filter((r) => r.polygon !== null).map((r) => r.id));
+    return floor.rooms.filter((r) => !survivingIds.has(r.id));
+  }
+
   // Floor management
 
   function addFloor(name: string): void {
@@ -379,6 +389,7 @@ export function createHouseStore(getHomeId: () => string | null = () => null) {
     switchFloor,
     addWall,
     removeWall,
+    roomsAtRiskFromWallRemoval,
     moveSharedPoint,
     addOpening,
     removeOpening,

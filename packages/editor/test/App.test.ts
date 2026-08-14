@@ -285,6 +285,55 @@ describe("App", () => {
     expect(deleteBtn.disabled).toBe(true);
   });
 
+  it("confirms before deleting a wall that would drop a named room, and can be cancelled", async () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+
+    app = await mountAndLoad(target);
+    drawWalls(target, SAMPLE_RECT_CORNERS);
+
+    // Name the room so it counts as "customized" and triggers the guard.
+    (target.querySelector("polygon.room") as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+    const labelInput = target.querySelector(".room-panel input[type='text']") as HTMLInputElement;
+    labelInput.value = "Kitchen";
+    labelInput.dispatchEvent(new Event("input", { bubbles: true }));
+    labelInput.dispatchEvent(new FocusEvent("blur", { bubbles: true }));
+    flushSync();
+
+    const wall = target.querySelector("polygon.wall")!;
+    wall.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+
+    const wallsBefore = target.querySelectorAll("polygon.wall").length;
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete" }));
+    flushSync();
+
+    // Deletion is held pending — wall still present, confirmation shown.
+    expect(target.querySelectorAll("polygon.wall").length).toBe(wallsBefore);
+    expect(target.textContent).toContain("Kitchen");
+
+    // Cancel: nothing is deleted.
+    const cancelBtn = Array.from(target.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "Cancel",
+    ) as HTMLButtonElement;
+    cancelBtn.click();
+    flushSync();
+    expect(target.querySelectorAll("polygon.wall").length).toBe(wallsBefore);
+
+    // Re-select and delete again, this time confirm.
+    target.querySelector("polygon.wall")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete" }));
+    flushSync();
+    const confirmBtn = Array.from(target.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim() === "Delete anyway",
+    ) as HTMLButtonElement;
+    confirmBtn.click();
+    flushSync();
+    expect(target.querySelectorAll("polygon.wall").length).toBe(wallsBefore - 1);
+  });
+
   it("view mode hides editing tools and blocks wall/furniture mutation, without blocking selection", async () => {
     target = document.createElement("div");
     document.body.appendChild(target);

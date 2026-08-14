@@ -165,6 +165,30 @@ describe("ChoreEditModal — tabs", () => {
     unmount(app);
     target.remove();
   });
+
+  it("keeps the Save button visible when switching to non-info tabs", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn() },
+    });
+    flushSync();
+    for (const tabText of ["Assignments", "Media", "History"]) {
+      const tab = Array.from(target.querySelectorAll(".tab")).find(
+        (t) => t.textContent?.includes(tabText),
+      ) as HTMLButtonElement;
+      tab.click();
+      flushSync();
+      const saveBtn = Array.from(target.querySelectorAll("button")).find(
+        (b) => b.textContent?.trim() === "Save",
+      );
+      expect(saveBtn, `Save button missing on ${tabText} tab`).toBeDefined();
+    }
+    unmount(app);
+    target.remove();
+  });
 });
 
 describe("ChoreEditModal — Assignments tab", () => {
@@ -198,6 +222,31 @@ describe("ChoreEditModal — Assignments tab", () => {
     completeBtn.click();
     flushSync();
     expect(target.querySelector(".complete-form")).not.toBeNull(); // ChoreCompleteModal is open
+
+    unmount(app);
+    target.remove();
+  });
+
+  it("groups the assignment row's action buttons together so they wrap as a unit", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore({
+      assignments: [
+        { id: "a1", choreId: "c1", roomId: "r1", position: { x: 1, y: 1 }, nextDueDate: "2027-01-01T00:00:00Z", label: "Balcony plants" },
+      ],
+    });
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: [SQUARE_ROOM], onclose: vi.fn() },
+    });
+    flushSync();
+    (Array.from(target.querySelectorAll(".tab")).find((t) => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
+    flushSync();
+
+    const row = target.querySelector(".assignment-row")!;
+    const actions = row.querySelector(".assignment-actions");
+    expect(actions).not.toBeNull();
+    expect(actions?.querySelectorAll(".icon-btn").length).toBe(3);
 
     unmount(app);
     target.remove();
