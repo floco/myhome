@@ -143,6 +143,62 @@ describe("houseStore — floor management", () => {
   });
 });
 
+describe("houseStore — roomsAtRiskFromWallRemoval", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", makeFetchStub(404));
+  });
+
+  /** Builds a 10x10 outer zone with a 2x2 inner room T-junctioned into two
+   *  of the zone's own boundary walls (south and west) — the exact shape
+   *  that triggers the reported bug: the inner room's divider walls never
+   *  get touched, but it still depends on the shared wall. */
+  async function buildZoneWithTJunctionedInnerRoom() {
+    const store = createHouseStore(getHomeId);
+    await tick();
+    store.addWall({ id: "z-south", start: { x: 0, y: 0 }, end: { x: 10, y: 0 }, type: "wall" });
+    store.addWall({ id: "z-east", start: { x: 10, y: 0 }, end: { x: 10, y: 10 }, type: "wall" });
+    store.addWall({ id: "z-north", start: { x: 10, y: 10 }, end: { x: 0, y: 10 }, type: "wall" });
+    store.addWall({ id: "z-west", start: { x: 0, y: 10 }, end: { x: 0, y: 0 }, type: "wall" });
+    store.addWall({ id: "i-east", start: { x: 2, y: 0 }, end: { x: 2, y: 2 }, type: "wall" });
+    store.addWall({ id: "i-north", start: { x: 2, y: 2 }, end: { x: 0, y: 2 }, type: "wall" });
+    expect(store.floor.rooms).toHaveLength(2);
+    return store;
+  }
+
+  it("flags the inner room as at-risk when deleting the shared wall it's T-junctioned into", async () => {
+    const store = await buildZoneWithTJunctionedInnerRoom();
+    const innerRoom = store.floor.rooms.find((r) => r.areaM2 === 4);
+    expect(innerRoom).toBeDefined();
+
+    const atRisk = store.roomsAtRiskFromWallRemoval("z-south");
+    expect(atRisk.some((r) => r.id === innerRoom!.id)).toBe(true);
+  });
+
+  it("does not flag the inner room when deleting a wall it doesn't depend on", async () => {
+    const store = await buildZoneWithTJunctionedInnerRoom();
+    const innerRoom = store.floor.rooms.find((r) => r.areaM2 === 4);
+    expect(innerRoom).toBeDefined();
+
+    const atRisk = store.roomsAtRiskFromWallRemoval("z-east");
+    expect(atRisk.some((r) => r.id === innerRoom!.id)).toBe(false);
+  });
+
+  it("is a pure dry-run — does not mutate walls or rooms", async () => {
+    const store = await buildZoneWithTJunctionedInnerRoom();
+    const wallsBefore = store.floor.walls.length;
+    const roomsBefore = store.floor.rooms.length;
+    store.roomsAtRiskFromWallRemoval("z-south");
+    expect(store.floor.walls.length).toBe(wallsBefore);
+    expect(store.floor.rooms.length).toBe(roomsBefore);
+  });
+
+  it("returns an empty array for a wall id that doesn't exist", async () => {
+    const store = createHouseStore(getHomeId);
+    await tick();
+    expect(store.roomsAtRiskFromWallRemoval("nope")).toEqual([]);
+  });
+});
+
 describe("houseStore — floor isolation", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", makeFetchStub(404));
