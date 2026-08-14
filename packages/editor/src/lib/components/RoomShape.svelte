@@ -30,10 +30,7 @@
 
   const points = $derived(screenPoints.map((p) => `${p.x},${p.y}`).join(" "));
 
-  const labelWorldPos = $derived.by(() => {
-    if (!room.polygon) return { x: 0, y: 0 };
-    return computeLabelPosition(room, allRooms);
-  });
+  const labelWorldPos = $derived.by(() => computeLabelPosition(room));
 
   const labelPos = $derived.by(() => {
     const c = labelWorldPos;

@@ -199,50 +199,6 @@ function estimateContainmentRatio(outer: Point[], inner: Point[]): number {
   return total === 0 ? 0 : contained / total;
 }
 
-function distanceToSegment(p: Point, a: Point, b: Point): number {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const lenSq = dx * dx + dy * dy;
-  if (lenSq < EPSILON) return Math.hypot(p.x - a.x, p.y - a.y);
-  let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq;
-  t = Math.max(0, Math.min(1, t));
-  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
-}
-
-function distanceToPolygon(point: Point, polygon: Point[]): number {
-  let min = Infinity;
-  const n = polygon.length;
-  for (let i = 0, j = n - 1; i < n; j = i++) {
-    min = Math.min(min, distanceToSegment(point, polygon[j], polygon[i]));
-  }
-  return min;
-}
-
-const LABEL_GRID_STEPS = 20;
-
-/** Grid-samples `outer` for the point farthest (in min-distance terms) from every polygon in `children`, skipping points inside any child. Returns null if no valid point survives. */
-function findOpenPoint(outer: Point[], children: Point[][]): Point | null {
-  const b = polygonBounds(outer);
-  let best: Point | null = null;
-  let bestScore = -Infinity;
-  for (let i = 0; i <= LABEL_GRID_STEPS; i++) {
-    for (let j = 0; j <= LABEL_GRID_STEPS; j++) {
-      const point = {
-        x: b.minX + ((b.maxX - b.minX) * i) / LABEL_GRID_STEPS,
-        y: b.minY + ((b.maxY - b.minY) * j) / LABEL_GRID_STEPS,
-      };
-      if (!pointInPolygon(point, outer)) continue;
-      if (children.some((c) => pointInPolygon(point, c))) continue;
-      const score = children.reduce((min, c) => Math.min(min, distanceToPolygon(point, c)), Infinity);
-      if (score > bestScore) {
-        bestScore = score;
-        best = point;
-      }
-    }
-  }
-  return best;
-}
-
 /**
  * True if other rooms' polygons are substantially contained inside this
  * room's polygon (e.g. a garden boundary with a shed or pool drawn inside
@@ -259,21 +215,8 @@ export function roomContainsOtherRooms(room: Room, allRooms: Room[]): boolean {
   );
 }
 
-/**
- * Where to draw a room's label. If other rooms' polygons are substantially
- * contained inside this room's polygon (a "zone" spanning child rooms), the
- * label is moved to the most open point of the zone's polygon that isn't
- * covered by any child room, instead of the zone's own (likely obscured)
- * centroid.
- */
-export function computeLabelPosition(room: Room, allRooms: Room[]): Point {
+/** Where to draw a room's label — always the polygon centroid. */
+export function computeLabelPosition(room: Room): Point {
   if (!room.polygon) return { x: 0, y: 0 };
-  const children = allRooms
-    .filter((other) => other.id !== room.id && other.polygon)
-    .filter((other) => estimateContainmentRatio(room.polygon!, other.polygon!) >= CONTAINMENT_THRESHOLD)
-    .map((other) => other.polygon!);
-
-  if (children.length === 0) return polygonCentroid(room.polygon);
-
-  return findOpenPoint(room.polygon, children) ?? polygonCentroid(room.polygon);
+  return polygonCentroid(room.polygon);
 }

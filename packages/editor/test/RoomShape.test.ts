@@ -36,7 +36,7 @@ describe("RoomShape — label placement", () => {
     unmount(comp);
   });
 
-  it("moves the label off a fully-contained child room", () => {
+  it("places the label at the plain centroid even when another room is fully contained inside it", () => {
     const zone: Room = {
       id: "zone", label: "Zone", haAreaId: null, areaM2: 100,
       polygon: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }],
@@ -48,10 +48,8 @@ describe("RoomShape — label placement", () => {
     const comp = mount(RoomShape, { target, props: { room: zone, allRooms: [zone, child], viewport: identityViewport() } });
     flushSync();
     const text = target.querySelector("text.room-label") as SVGTextElement;
-    const x = Number(text.getAttribute("x"));
-    const y = Number(text.getAttribute("y"));
-    // Plain centroid (5,5) sits inside the child room; confirm the label moved off it.
-    expect(x === 5 && y === 5).toBe(false);
+    expect(Number(text.getAttribute("x"))).toBeCloseTo(5, 5);
+    expect(Number(text.getAttribute("y"))).toBeCloseTo(5, 5);
     unmount(comp);
   });
 });
