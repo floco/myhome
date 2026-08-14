@@ -227,6 +227,31 @@ describe("ChoreEditModal — Assignments tab", () => {
     target.remove();
   });
 
+  it("groups the assignment row's action buttons together so they wrap as a unit", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore({
+      assignments: [
+        { id: "a1", choreId: "c1", roomId: "r1", position: { x: 1, y: 1 }, nextDueDate: "2027-01-01T00:00:00Z", label: "Balcony plants" },
+      ],
+    });
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: [SQUARE_ROOM], onclose: vi.fn() },
+    });
+    flushSync();
+    (Array.from(target.querySelectorAll(".tab")).find((t) => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
+    flushSync();
+
+    const row = target.querySelector(".assignment-row")!;
+    const actions = row.querySelector(".assignment-actions");
+    expect(actions).not.toBeNull();
+    expect(actions?.querySelectorAll(".icon-btn").length).toBe(3);
+
+    unmount(app);
+    target.remove();
+  });
+
   it("editing the label input blur calls updateAssignmentLabel only when changed", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
