@@ -165,6 +165,30 @@ describe("ChoreEditModal — tabs", () => {
     unmount(app);
     target.remove();
   });
+
+  it("keeps the Save button visible when switching to non-info tabs", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn() },
+    });
+    flushSync();
+    for (const tabText of ["Assignments", "Media", "History"]) {
+      const tab = Array.from(target.querySelectorAll(".tab")).find(
+        (t) => t.textContent?.includes(tabText),
+      ) as HTMLButtonElement;
+      tab.click();
+      flushSync();
+      const saveBtn = Array.from(target.querySelectorAll("button")).find(
+        (b) => b.textContent?.trim() === "Save",
+      );
+      expect(saveBtn, `Save button missing on ${tabText} tab`).toBeDefined();
+    }
+    unmount(app);
+    target.remove();
+  });
 });
 
 describe("ChoreEditModal — Assignments tab", () => {

@@ -302,11 +302,9 @@
       {#if onplaceonmap && activeTab === "info"}
         <Button variant="secondary" onclick={() => { onplaceonmap!(chore!.id); }}>📍 {$_('chores.editModal.placeOnMap')}</Button>
       {/if}
-      {#if activeTab === "info"}
-        <Button variant="primary" disabled={saving || !draftScheduleValid} onclick={handleSave}>
-          {saving ? $_('settings.security.saving') : $_('common.save')}
-        </Button>
-      {/if}
+      <Button variant="primary" disabled={saving || !draftScheduleValid} onclick={handleSave}>
+        {saving ? $_('settings.security.saving') : $_('common.save')}
+      </Button>
       <Button variant="secondary" onclick={onclose}>{$_('common.cancel')}</Button>
     {/snippet}
   </Modal>
