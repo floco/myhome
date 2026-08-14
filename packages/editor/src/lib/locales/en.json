@@ -232,6 +232,13 @@
       "window": "Window",
       "delete": "Delete selected (Del)"
     },
+    "deleteWallConfirm": {
+      "title": "Delete this wall?",
+      "message": "This will also remove the following room(s), and any chores, inventory, consumables, or costs assigned to them will no longer show a room:",
+      "note": "You can undo this afterwards with Ctrl+Z.",
+      "confirm": "Delete anyway",
+      "unnamedRoom": "Unnamed room"
+    },
     "switcher": {
       "all": "All",
       "switchFloor": "Switch floor",

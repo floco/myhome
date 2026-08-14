@@ -232,6 +232,13 @@
       "window": "Fenêtre",
       "delete": "Supprimer la sélection (Suppr)"
     },
+    "deleteWallConfirm": {
+      "title": "Supprimer ce mur ?",
+      "message": "Cela supprimera également la ou les pièces suivantes, et les tâches, éléments d'inventaire, consommables ou coûts qui leur sont associés n'afficheront plus de pièce :",
+      "note": "Vous pourrez annuler cette action ensuite avec Ctrl+Z.",
+      "confirm": "Supprimer quand même",
+      "unnamedRoom": "Pièce sans nom"
+    },
     "switcher": {
       "all": "Tous",
       "switchFloor": "Changer d'étage",
