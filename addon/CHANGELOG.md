@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.24.2 - 2026-08-14
+
+- Fixed the knowledge base autosave indicator to show inside the save button instead of flickering as a separate icon
+- Fixed the knowledge base expand/collapse-all and new-page toolbar buttons to be the same size
+- Replaced the knowledge base edit icon with a clearer pencil icon styled to match the save button
+- Fixed the chore edit modal's Save button being hidden on the Assignments/Media/History tabs
+- Fixed the chore assignment row's mark-done/delay/delete buttons splitting across two lines
+- Reverted floor plan zone/room labels to always stay centered, undoing the off-center placement for zones containing other rooms
+- Fixed a bug where deleting a floor plan wall shared between a zone and a room nested inside it could silently drop the nested room and orphan its chores/inventory/consumables/costs — now shows a confirmation listing the affected room(s) before deleting
+
 ## 0.24.1 - 2026-08-13
 
 - Fixed the floor plan editor's mobile zone/opening/furniture panels overflowing off the right edge of the screen, putting the close button out of reach
