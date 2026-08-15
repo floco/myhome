@@ -4,6 +4,7 @@
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
   import EmojiPicker from "./ui/EmojiPicker.svelte";
+  import ScheduleAnchorPicker from "./ui/ScheduleAnchorPicker.svelte";
   import ScheduleEditor from "./ScheduleEditor.svelte";
   import { parseScheduleText } from "../scheduleParser";
 
@@ -126,11 +127,8 @@
       <input id="chore-due" type="date" class="native-input" bind:value={nextDue} />
     </div>
 
-    <div class="field-row">
-      <input type="checkbox" id="sfd" bind:checked={scheduleFromDue} />
-      <label for="sfd" class="checkbox-label" title={$_('chores.newModal.scheduleFromDueTitle')}>
-        {$_('chores.editModal.scheduleFromDue')}
-      </label>
+    <div class="field">
+      <ScheduleAnchorPicker bind:scheduleFromDue idPrefix="new-sfd" />
     </div>
 
     {#if error}<div class="error">{error}</div>{/if}
@@ -148,8 +146,6 @@
   .chore-form { display: flex; flex-direction: column; gap: var(--space-3); }
   .field { display: flex; flex-direction: column; gap: 4px; }
   .field label { font-size: 11px; color: var(--text-muted); }
-  .field-row { display: flex; align-items: center; gap: 8px; }
-  .checkbox-label { font-size: 12px; color: var(--text-muted); cursor: pointer; }
   .quickadd-row { display: flex; gap: 8px; align-items: center; }
   .quickadd-row .native-input { flex: 1; }
 

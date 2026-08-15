@@ -129,6 +129,31 @@ def test_complete_chore_404(client, home_id):
     assert resp.status_code == 404
 
 
+# --- POST /api/homes/{home_id}/chores/preview-next-due ---
+
+def test_preview_next_due_schedule_from_due_anchors_on_due_date(client, home_id):
+    # Due in 2027, "schedule from due date" -- an early completion today must
+    # not shift the computed date; it should stay anchored to the due date.
+    resp = client.post(f"/api/homes/{home_id}/chores/preview-next-due", json={
+        "frequencyType": "interval", "frequency": 3, "frequencyMetadata": {"unit": "years"},
+        "scheduleFromDue": True, "nextDueDate": "2027-08-01T00:00:00Z",
+    })
+    assert resp.status_code == 200
+    assert resp.json()["nextDueDate"].startswith("2030-08-01")
+
+
+def test_preview_next_due_from_completion_anchors_on_now(client, home_id):
+    from datetime import datetime, timezone, timedelta
+    resp = client.post(f"/api/homes/{home_id}/chores/preview-next-due", json={
+        "frequencyType": "interval", "frequency": 7, "frequencyMetadata": {"unit": "days"},
+        "scheduleFromDue": False, "nextDueDate": "2027-08-01T00:00:00Z",
+    })
+    assert resp.status_code == 200
+    next_due = datetime.fromisoformat(resp.json()["nextDueDate"].replace("Z", "+00:00"))
+    expected = datetime.now(timezone.utc) + timedelta(days=7)
+    assert abs((next_due - expected).total_seconds()) < 5
+
+
 def test_complete_chore_with_past_completedOn_is_latest_advances_next_due(client, home_id, tmp_path):
     """No prior completions exist, so a single backdated completion is
     trivially the most recent one -- next-due must be computed from the

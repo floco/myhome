@@ -221,6 +221,26 @@ export function createChoreStore(getHomeId: () => string | null = () => null) {
     await init();
   }
 
+  async function previewNextDue(schedule: {
+    frequencyType: string;
+    frequency: number;
+    frequencyMetadata: Record<string, unknown>;
+    scheduleFromDue: boolean;
+    nextDueDate: string;
+    periodDays: number;
+  }): Promise<string> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/chores/preview-next-due`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(schedule),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const { nextDueDate } = await resp.json();
+    return nextDueDate as string;
+  }
+
   async function importFromDonetick(token: string, url: string): Promise<number> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
@@ -351,6 +371,7 @@ export function createChoreStore(getHomeId: () => string | null = () => null) {
     updateChore,
     deleteChore,
     completeChore,
+    previewNextDue,
     importFromDonetick,
     createAssignment,
     completeAssignment,

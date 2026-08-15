@@ -63,6 +63,34 @@ describe("NewChoreModal", () => {
     unmount(app);
   });
 
+  it("defaults to the 'schedule from completion date' radio and selecting the due-date one sends scheduleFromDue: true", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(NewChoreModal, { target, props: { open: true, store, onclose: vi.fn() } });
+    flushSync();
+
+    expect(target.querySelector('input[type="checkbox"]#sfd')).toBeNull();
+    const dueRadio = target.querySelector("#new-sfd-due") as HTMLInputElement;
+    const completionRadio = target.querySelector("#new-sfd-completion") as HTMLInputElement;
+    expect(completionRadio.checked).toBe(true);
+    expect(dueRadio.checked).toBe(false);
+
+    const nameInput = target.querySelector("#chore-name") as HTMLInputElement;
+    nameInput.value = "Sweep";
+    nameInput.dispatchEvent(new Event("input", { bubbles: true }));
+    dueRadio.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+
+    const createBtn = Array.from(target.querySelectorAll("button")).find((b) => b.textContent?.trim() === "Create") as HTMLButtonElement;
+    createBtn.click();
+    await tick();
+
+    expect(store.createChore).toHaveBeenCalledWith(expect.objectContaining({ scheduleFromDue: true }));
+
+    unmount(app);
+  });
+
   it("Create is disabled when the schedule is invalid (e.g. Weekly-on-days with no day selected)", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);

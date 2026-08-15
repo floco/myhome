@@ -91,6 +91,19 @@ class CompleteRequest(BaseModel):
     completedOn: str | None = None  # ISO date, YYYY-MM-DD; None = use current time
 
 
+class ChoreSchedulePreviewRequest(BaseModel):
+    frequencyType: str = "interval"
+    frequency: int = 1
+    frequencyMetadata: dict = {}
+    scheduleFromDue: bool = False
+    nextDueDate: str = ""
+    periodDays: float = 30
+
+
+class ChoreSchedulePreviewResponse(BaseModel):
+    nextDueDate: str
+
+
 class ImportRequest(BaseModel):
     token: str
     url: str

@@ -14,6 +14,8 @@ from ..models_chores import (
     Chore,
     ChoreCreate,
     ChoreDocument,
+    ChoreSchedulePreviewRequest,
+    ChoreSchedulePreviewResponse,
     ChoreUpdate,
     CompleteRequest,
     CompletionRecord,
@@ -247,6 +249,32 @@ def create_chore(
     save_chores(home_id, doc)
     log_activity(home_id, current_user_id, "chores", "create", chore.name, chore.id)
     return chore
+
+
+@router.post("/api/homes/{home_id}/chores/preview-next-due", response_model=ChoreSchedulePreviewResponse)
+def preview_next_due(
+    home_id: str, body: ChoreSchedulePreviewRequest,
+    current_user_id: str = Depends(get_current_user_id),
+) -> ChoreSchedulePreviewResponse:
+    """Read-only calculation of what `next_due_from_schedule` would produce for
+    the given (unsaved) schedule settings -- lets the edit modal show a live
+    preview without requiring an actual completion first."""
+    now = datetime.now(timezone.utc)
+    if body.scheduleFromDue and body.nextDueDate:
+        try:
+            from_dt = datetime.fromisoformat(body.nextDueDate.replace("Z", "+00:00"))
+        except ValueError:
+            from_dt = now
+    else:
+        from_dt = now
+    dummy_chore = Chore(
+        id="preview", name="", emoji="", periodDays=body.periodDays,
+        frequencyType=body.frequencyType, frequency=body.frequency,
+        frequencyMetadata=body.frequencyMetadata, scheduleFromDue=body.scheduleFromDue,
+        nextDueDate=body.nextDueDate or now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+    )
+    next_due = next_due_from_schedule(dummy_chore, from_dt, [])
+    return ChoreSchedulePreviewResponse(nextDueDate=next_due.strftime("%Y-%m-%dT%H:%M:%SZ"))
 
 
 @router.put("/api/homes/{home_id}/chores/{chore_id}", status_code=204)

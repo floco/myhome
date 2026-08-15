@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync, tick } from "svelte";
 import ChoreEditModal from "../src/lib/components/ChoreEditModal.svelte";
 import type { Chore } from "../src/lib/choreStore.svelte";
@@ -35,6 +35,7 @@ function makeStore(overrides = {}) {
     deleteAssignment: vi.fn().mockResolvedValue(undefined),
     delayAssignment: vi.fn().mockResolvedValue(undefined),
     completeAssignment: vi.fn().mockResolvedValue(undefined),
+    previewNextDue: vi.fn().mockResolvedValue("2027-02-01T00:00:00Z"),
     ...overrides,
   };
 }
@@ -186,6 +187,80 @@ describe("ChoreEditModal — tabs", () => {
       );
       expect(saveBtn, `Save button missing on ${tabText} tab`).toBeDefined();
     }
+    unmount(app);
+    target.remove();
+  });
+});
+
+describe("ChoreEditModal — schedule anchor + next-due preview", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("renders the due-date/completion-date radio options instead of a checkbox, checked to match the chore", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore({ scheduleFromDue: true }), store, rooms: NO_ROOMS, onclose: vi.fn() },
+    });
+    flushSync();
+
+    expect(target.querySelector('input[type="checkbox"]#sfd-modal')).toBeNull();
+    const dueRadio = target.querySelector("#edit-sfd-due") as HTMLInputElement;
+    const completionRadio = target.querySelector("#edit-sfd-completion") as HTMLInputElement;
+    expect(dueRadio.checked).toBe(true);
+    expect(completionRadio.checked).toBe(false);
+
+    unmount(app);
+    target.remove();
+  });
+
+  it("selecting 'schedule from completion date' and saving sends scheduleFromDue: false", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore({ scheduleFromDue: true }), store, rooms: NO_ROOMS, onclose: vi.fn() },
+    });
+    flushSync();
+
+    const completionRadio = target.querySelector("#edit-sfd-completion") as HTMLInputElement;
+    completionRadio.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+
+    const saveBtn = Array.from(target.querySelectorAll("button")).find(
+      b => b.textContent?.trim() === "Save",
+    ) as HTMLButtonElement;
+    saveBtn.click();
+    await tick();
+    expect(store.updateChore).toHaveBeenCalledWith("c1", expect.objectContaining({ scheduleFromDue: false }));
+
+    unmount(app);
+    target.remove();
+  });
+
+  it("shows a live computed next-due preview from previewNextDue", async () => {
+    vi.useFakeTimers();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore({ previewNextDue: vi.fn().mockResolvedValue("2027-02-01T00:00:00Z") });
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn() },
+    });
+    flushSync();
+
+    await vi.advanceTimersByTimeAsync(300);
+    flushSync();
+
+    expect(store.previewNextDue).toHaveBeenCalledWith(expect.objectContaining({
+      frequencyType: "interval", frequency: 14, scheduleFromDue: false,
+    }));
+    expect(target.querySelector(".next-due-preview-value")?.textContent).toBe("02/01/2027");
+
     unmount(app);
     target.remove();
   });
