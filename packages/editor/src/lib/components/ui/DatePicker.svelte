@@ -14,6 +14,8 @@
   let open = $state(false);
   let viewYear = $state(new Date().getFullYear());
   let viewMonth = $state(new Date().getMonth());
+  let editing = $state(false);
+  let editText = $state("");
 
   function monthNames(loc: string): string[] {
     return Array.from({ length: 12 }, (_unused, i) =>
@@ -56,6 +58,44 @@
     return `${d} ${MONTH_NAMES[parseInt(m) - 1]} ${y}`;
   }
 
+  function isValidCalendarDate(y: number, m: number, d: number): boolean {
+    if (m < 1 || m > 12 || d < 1) return false;
+    const dt = new Date(y, m - 1, d);
+    return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+  }
+
+  function parseDisplayValue(text: string): string | null {
+    const trimmed = text.trim();
+    if (!trimmed) return null;
+    const format = getDateFormat();
+    let y: number, m: number, d: number;
+
+    if (format === "MDY" || format === "DMY") {
+      const match = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (!match) return null;
+      if (format === "MDY") { m = parseInt(match[1]); d = parseInt(match[2]); }
+      else { d = parseInt(match[1]); m = parseInt(match[2]); }
+      y = parseInt(match[3]);
+    } else if (format === "ISO") {
+      const match = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (!match) return null;
+      y = parseInt(match[1]); m = parseInt(match[2]); d = parseInt(match[3]);
+    } else {
+      const match = trimmed.match(/^(\d{1,2})\s+(\S+)\s+(\d{4})$/);
+      if (!match) return null;
+      d = parseInt(match[1]);
+      y = parseInt(match[3]);
+      const monthIndex = MONTH_NAMES.findIndex((n) => n.toLowerCase() === match[2].toLowerCase());
+      if (monthIndex === -1) return null;
+      m = monthIndex + 1;
+    }
+
+    if (!isValidCalendarDate(y, m, d)) return null;
+    const iso = `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    if (max && iso > max) return null;
+    return iso;
+  }
+
   function isSelected(day: number): boolean {
     if (!value) return false;
     const [y, m, d] = value.split("-");
@@ -91,6 +131,30 @@
     if (viewMonth === 11) { viewMonth = 0; viewYear++; } else viewMonth++;
   }
 
+  function toggleOpen(): void {
+    open = !open;
+  }
+
+  function handleFocus(): void {
+    editText = displayValue();
+    editing = true;
+  }
+
+  function commitEdit(): void {
+    const parsed = parseDisplayValue(editText);
+    if (parsed !== null) value = parsed;
+    editing = false;
+  }
+
+  function handleKeydown(e: KeyboardEvent): void {
+    if (e.key === "Enter") {
+      (e.target as HTMLInputElement).blur();
+    } else if (e.key === "Escape") {
+      editText = displayValue();
+      (e.target as HTMLInputElement).blur();
+    }
+  }
+
   function handleWindowClick(e: MouseEvent): void {
     if (!(e.target as HTMLElement).closest?.(".dp-wrap")) open = false;
   }
@@ -104,24 +168,37 @@
       }
     }
   });
+
+  $effect(() => {
+    if (!editing) editText = displayValue();
+  });
 </script>
 
 <svelte:window onclick={handleWindowClick} />
 
 <div class="dp-wrap">
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="dp-field" class:compact onclick={() => { open = !open; }}>
-    <span class="dp-text">{displayValue() || effectivePlaceholder}</span>
-    <span class="dp-icon">📅</span>
+  <div class="dp-field" class:compact>
+    <input
+      class="dp-input"
+      type="text"
+      bind:value={editText}
+      placeholder={effectivePlaceholder}
+      onfocus={handleFocus}
+      onblur={commitEdit}
+      onkeydown={handleKeydown}
+    />
+    <button type="button" class="dp-icon-btn" onclick={toggleOpen}>
+      <span class="dp-icon">📅</span>
+    </button>
   </div>
 
   {#if open}
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <div class="dp-calendar" onclick={(e) => e.stopPropagation()}>
       <div class="dp-header">
-        <button class="dp-nav" onclick={prevMonth}>‹</button>
+        <button type="button" class="dp-nav" onclick={prevMonth}>‹</button>
         <span class="dp-month-label">{MONTH_NAMES[viewMonth]} {viewYear}</span>
-        <button class="dp-nav" onclick={nextMonth}>›</button>
+        <button type="button" class="dp-nav" onclick={nextMonth}>›</button>
       </div>
       <div class="dp-grid">
         {#each DAY_HEADERS as h}
@@ -132,6 +209,7 @@
             <div class="dp-cell dp-empty"></div>
           {:else}
             <button
+              type="button"
               class="dp-cell"
               class:dp-selected={isSelected(day)}
               class:dp-today={isToday(day)}
@@ -151,17 +229,27 @@
   .dp-field {
     display: flex; align-items: center; gap: 6px;
     background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
-    padding: 8px 12px; border-radius: var(--radius-md); cursor: pointer;
+    padding: 8px 12px; border-radius: var(--radius-md);
     font-size: 13px; font-family: var(--font-sans); min-width: 160px;
-    user-select: none; box-sizing: border-box;
+    box-sizing: border-box;
   }
-  .dp-field.compact {
-    min-width: 0; width: 100%; padding: 4px 8px; font-size: 11px; gap: 4px;
-  }
+  .dp-field.compact { min-width: 0; width: 100%; padding: 4px 8px; font-size: 11px; gap: 4px; }
   .dp-field.compact .dp-icon { font-size: 11px; }
   .dp-field:hover { border-color: var(--accent); }
-  .dp-text { flex: 1; }
-  .dp-icon { font-size: 13px; flex-shrink: 0; }
+  .dp-field:focus-within { border-color: var(--accent); }
+
+  .dp-input {
+    flex: 1; min-width: 0; background: none; border: none; color: var(--text);
+    font-size: inherit; font-family: inherit; padding: 0;
+  }
+  .dp-input:focus { outline: none; }
+  .dp-input::placeholder { color: var(--text-faint); }
+
+  .dp-icon-btn {
+    flex-shrink: 0; background: none; border: none; padding: 0; cursor: pointer;
+    display: flex; align-items: center;
+  }
+  .dp-icon { font-size: 13px; }
 
   .dp-calendar {
     position: absolute; top: calc(100% + 4px); left: 0;
