@@ -1,7 +1,7 @@
-<!-- packages/editor/src/lib/components/DatePicker.svelte -->
+<!-- packages/editor/src/lib/components/ui/DatePicker.svelte -->
 <script lang="ts">
   import { _, locale } from "svelte-i18n";
-  import { getWeekStart, getDateFormat } from "../localization";
+  import { getWeekStart, getDateFormat } from "../../localization";
 
   interface Props {
     value?: string;

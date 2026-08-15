@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
-import DatePicker from "../src/lib/components/DatePicker.svelte";
+import DatePicker from "../src/lib/components/ui/DatePicker.svelte";
 
 describe("DatePicker week start", () => {
   let target: HTMLDivElement;
