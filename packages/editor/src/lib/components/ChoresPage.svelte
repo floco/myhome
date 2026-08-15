@@ -18,8 +18,17 @@
   import ChoreCompleteModal from "./ChoreCompleteModal.svelte";
   import type { Point } from "@myhome/geometry";
 
-  type ChoreStore = ReturnType<typeof createChoreStore>;
-  type Assignment = ChoreStore["assignments"][number];
+  type FullChoreStore = ReturnType<typeof createChoreStore>;
+  type Assignment = FullChoreStore["assignments"][number];
+  // Only what this component uses directly, plus what it forwards through
+  // to ChoreEditModal's own (narrower) store prop -- not the whole store.
+  type ChoreStore = Pick<FullChoreStore,
+    | "chores" | "assignments" | "completeChore" | "delayChore" | "getProgress"
+    | "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment"
+    | "getCompletionsForChore" | "deleteCompletion" | "createAssignment"
+    | "updateAssignmentLabel" | "deleteAssignment" | "delayAssignment"
+    | "completeAssignment" | "previewNextDue"
+  >;
 
   interface Props {
     store: ChoreStore;

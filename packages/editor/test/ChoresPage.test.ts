@@ -29,14 +29,19 @@ function makeStore(chores: Chore[]) {
     updateChore: vi.fn(),
     deleteChore: vi.fn(),
     completeChore: vi.fn(),
+    delayChore: vi.fn(),
     createAssignment: vi.fn(),
     updateAssignmentPosition: vi.fn(),
+    updateAssignmentLabel: vi.fn(),
     removeAssignment: vi.fn(),
+    deleteAssignment: vi.fn(),
+    delayAssignment: vi.fn(),
     completeAssignment: vi.fn(),
     getCompletionsForChore: vi.fn().mockReturnValue([]),
     deleteCompletion: vi.fn(),
     uploadAttachment: vi.fn(),
     deleteAttachment: vi.fn(),
+    previewNextDue: vi.fn().mockResolvedValue("2027-01-01T00:00:00Z"),
     getProgress: vi.fn((assignment: { nextDueDate: string }, chore: Chore) => {
       const now = Date.now();
       const due = new Date(assignment.nextDueDate).getTime();
