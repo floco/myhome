@@ -15,7 +15,7 @@
 
   let { chores, assignments, viewport, choreMode, width, height, onclick, ondragend }: Props = $props();
 
-  const R = 18;
+  const R = 36;
   const C = 2 * Math.PI * R;
 
   const badgeScale = $derived(Math.max(0.35, Math.min(1.2, viewport.zoom / 80)));
@@ -110,15 +110,15 @@
           onpointerdown={(e) => handlePointerDown(e, a)}
           onpointerup={(e) => handlePointerUp(e, a)}
         >
-          <circle r={R + 3} fill="#1a1a2e" opacity="0.75"/>
-          <circle r={R} fill="none" stroke="#3a3a3a" stroke-width="5"/>
-          <circle r={R} fill="none" stroke={color} stroke-width="5"
+          <circle r={R + 6} fill="#1a1a2e" opacity="0.75"/>
+          <circle r={R} fill="none" stroke="#3a3a3a" stroke-width="10"/>
+          <circle r={R} fill="none" stroke={color} stroke-width="10"
             stroke-dasharray="{dashFill} {C}" stroke-linecap="round"
             transform="rotate(-90 0 0)"/>
           <text
             text-anchor="middle"
             dominant-baseline="central"
-            font-size="13"
+            font-size="26"
             style="user-select:none;pointer-events:none"
           >{chore.emoji}</text>
         </g>

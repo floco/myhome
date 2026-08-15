@@ -61,6 +61,7 @@
       : []
   );
   const assignmentsForChore = $derived(chore ? store.assignments.filter((a) => a.choreId === chore.id) : []);
+  const sortedRooms = $derived([...rooms].sort((a, b) => a.label.localeCompare(b.label)));
   let deletingCompletion = $state<string | null>(null);
 
   function getRoomName(assignmentId: string | null): string {
@@ -224,12 +225,14 @@
 
     {#if activeTab === "info"}
       <div class="edit-form">
-        <label>{$_('chores.editModal.name')}
-          <Input bind:value={draftName} placeholder={$_('chores.editModal.choreName')} />
-        </label>
-        <label>{$_('chores.editModal.emoji')}
-          <EmojiPicker bind:value={draftEmoji} />
-        </label>
+        <div class="name-emoji-row">
+          <label class="emoji-field">{$_('chores.editModal.emoji')}
+            <EmojiPicker bind:value={draftEmoji} />
+          </label>
+          <label class="name-row-field">{$_('chores.editModal.name')}
+            <Input bind:value={draftName} placeholder={$_('chores.editModal.choreName')} />
+          </label>
+        </div>
         {#key chore.id}
           <ScheduleEditor
             bind:frequencyType={draftFrequencyType}
@@ -256,6 +259,9 @@
       </div>
     {:else if activeTab === "assignments"}
       <div class="assignments-pane">
+        {#if onplaceonmap}
+          <Button variant="secondary" onclick={() => { onplaceonmap!(chore!.id); }}>📍 {$_('chores.editModal.placeOnMap')}</Button>
+        {/if}
         {#if assignmentsForChore.length === 0}
           <div class="no-assignments">{$_('chores.page.notAssigned')}</div>
         {:else}
@@ -280,7 +286,7 @@
         <div class="add-assignment-row">
           <select class="native-input" bind:value={newAssignmentRoomId}>
             <option value="">{$_('chores.editModal.selectRoom')}</option>
-            {#each rooms as room}
+            {#each sortedRooms as room}
               <option value={room.id}>{room.label}</option>
             {/each}
           </select>
@@ -327,14 +333,11 @@
         <Button variant="ghost" onclick={() => { confirmDelete = false; }}>{$_('common.cancel')}</Button>
       {:else}
         <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 {$_('common.delete')}</Button>
+        <Button variant="secondary" onclick={onclose}>{$_('common.cancel')}</Button>
+        <Button variant="primary" disabled={saving || !draftScheduleValid} onclick={handleSave}>
+          {saving ? $_('settings.security.saving') : $_('common.save')}
+        </Button>
       {/if}
-      {#if onplaceonmap && activeTab === "info"}
-        <Button variant="secondary" onclick={() => { onplaceonmap!(chore!.id); }}>📍 {$_('chores.editModal.placeOnMap')}</Button>
-      {/if}
-      <Button variant="primary" disabled={saving || !draftScheduleValid} onclick={handleSave}>
-        {saving ? $_('settings.security.saving') : $_('common.save')}
-      </Button>
-      <Button variant="secondary" onclick={onclose}>{$_('common.cancel')}</Button>
     {/snippet}
   </Modal>
 {/if}
@@ -357,7 +360,9 @@
     background: var(--surface-alt); color: var(--text); font-size: 13px;
   }
   .native-input:focus { outline: none; border-color: var(--accent); }
-  .emoji-field { width: 70px; }
+  .name-emoji-row { display: flex; gap: 8px; align-items: flex-end; }
+  .name-emoji-row .emoji-field { width: 70px; flex-shrink: 0; }
+  .name-emoji-row .name-row-field { flex: 1; min-width: 0; }
   .next-due-preview {
     display: flex; align-items: center; gap: 6px; font-size: 12px;
     padding: 6px 8px; border-radius: var(--radius-sm); background: var(--surface-alt);

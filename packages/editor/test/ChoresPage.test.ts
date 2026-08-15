@@ -2,8 +2,12 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import ChoresPage from "../src/lib/components/ChoresPage.svelte";
 import type { Chore } from "../src/lib/choreStore.svelte";
+import { choreFilterState } from "../src/lib/choreFilterState.svelte";
 
-afterEach(() => { document.body.innerHTML = ""; });
+afterEach(() => {
+  document.body.innerHTML = "";
+  choreFilterState.dueFilter = "attention"; // module-level state -- reset so it doesn't leak between tests
+});
 
 function makeChore(overrides: Partial<Chore> = {}): Chore {
   return {
@@ -242,6 +246,33 @@ describe("ChoresPage — unassigned chores stay visible by default", () => {
 
     expect(target.querySelector(".name-cell")?.textContent).toContain("Imported chore");
     expect(target.querySelector(".footer")?.textContent).toContain("1 chore");
+
+    unmount(comp);
+  });
+});
+
+describe("ChoresPage — due-filter toggle persists across remounts", () => {
+  it("keeps the 'all chores' selection after the page is unmounted and remounted", () => {
+    const chore = makeChore();
+    const store = makeStore([chore]);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+
+    let comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+    expect(target.querySelector('button[title="Needs attention"]')?.className).toContain("active");
+
+    (target.querySelector('button[title="All chores"]') as HTMLButtonElement).click();
+    flushSync();
+    expect(target.querySelector('button[title="All chores"]')?.className).toContain("active");
+
+    unmount(comp);
+    target.innerHTML = "";
+    comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    expect(target.querySelector('button[title="All chores"]')?.className).toContain("active");
+    expect(target.querySelector('button[title="Needs attention"]')?.className).not.toContain("active");
 
     unmount(comp);
   });

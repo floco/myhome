@@ -3,6 +3,7 @@
   import type { createChoreStore } from "../choreStore.svelte";
   import type { Chore } from "../choreStore.svelte";
   import { scheduleLabel } from "../choreStore.svelte";
+  import { choreFilterState } from "../choreFilterState.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
   import ChoreEditModal from "./ChoreEditModal.svelte";
@@ -45,7 +46,6 @@
   let searchQuery = $state("");
   let roomFilter = $state("");
   let scheduleFilter = $state("");
-  let dueFilter = $state<"all" | "attention">("attention");
   let filterModalOpen = $state(false);
   let healthFilter = $state<HealthBucket | null>(null);
   const filtersActive = $derived(roomFilter !== "" || scheduleFilter !== "");
@@ -153,7 +153,7 @@
       if (scheduleFilter && scheduleCategory(c) !== scheduleFilter) return false;
       const assignments = store.assignments.filter((a) => a.choreId === c.id);
       if (roomFilter && !assignments.some((a) => a.roomId === roomFilter)) return false;
-      if (dueFilter === "attention" && !needsAttention(assignments)) return false;
+      if (choreFilterState.dueFilter === "attention" && !needsAttention(assignments)) return false;
       if (healthFilter && !choreHealthBuckets(c).includes(healthFilter)) return false;
       return true;
     }),
@@ -227,8 +227,8 @@
       <Input placeholder={$_('chores.page.search')} bind:value={searchQuery} />
       <FilterButton active={filtersActive} title={$_('common.filters')} onclick={() => { filterModalOpen = true; }} />
       <div class="filter-toggle">
-        <button class="toggle-btn" class:active={dueFilter === "all"} title={$_('chores.page.allChores')} onclick={() => { dueFilter = "all"; }}>☰</button>
-        <button class="toggle-btn" class:active={dueFilter === "attention"} title={$_('chores.page.needsAttentionTitle')} onclick={() => { dueFilter = "attention"; }}>⚠</button>
+        <button class="toggle-btn" class:active={choreFilterState.dueFilter === "all"} title={$_('chores.page.allChores')} onclick={() => { choreFilterState.dueFilter = "all"; }}>☰</button>
+        <button class="toggle-btn" class:active={choreFilterState.dueFilter === "attention"} title={$_('chores.page.needsAttentionTitle')} onclick={() => { choreFilterState.dueFilter = "attention"; }}>⚠</button>
       </div>
       <Button iconOnly title={$_('chores.page.addChore')} onclick={() => onnewchore?.()}>＋</Button>
     </div>
@@ -288,7 +288,7 @@
         rowClick={(chore) => { editChore = chore; }}
         emptyMessage={store.chores.length === 0
           ? $_('chores.page.emptyNoChores')
-          : dueFilter === "attention"
+          : choreFilterState.dueFilter === "attention"
             ? $_('chores.page.emptyNoneNeedAttention')
             : $_('chores.page.emptyNoMatch')}
       />

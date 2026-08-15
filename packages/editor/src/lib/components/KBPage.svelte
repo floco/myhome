@@ -679,7 +679,8 @@
   }
   .sidebar-toolbar :global(.ui-input) { flex: 1; }
   .toggle-all-icon {
-    display: inline-block; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%; font-size: 18px; line-height: 1;
     transition: transform 0.15s ease;
   }
   .toggle-all-icon.open { transform: rotate(90deg); }

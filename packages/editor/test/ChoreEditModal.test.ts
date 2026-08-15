@@ -190,6 +190,107 @@ describe("ChoreEditModal — tabs", () => {
     unmount(app);
     target.remove();
   });
+
+  it("orders the footer buttons Delete, Cancel, Save on every tab", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn() },
+    });
+    flushSync();
+    for (const tabText of ["Info", "Assignments", "Media", "History"]) {
+      const tab = Array.from(target.querySelectorAll(".tab")).find(
+        (t) => t.textContent?.includes(tabText),
+      ) as HTMLButtonElement;
+      tab.click();
+      flushSync();
+      const footerLabels = Array.from(target.querySelectorAll(".ui-modal-footer button")).map(
+        (b) => b.textContent?.trim(),
+      );
+      expect(footerLabels, `footer order wrong on ${tabText} tab`).toEqual(["🗑 Delete", "Cancel", "Save"]);
+    }
+    unmount(app);
+    target.remove();
+  });
+
+  it("does not show a Place on map button in the footer, even on the Info tab", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn(), onplaceonmap: vi.fn() },
+    });
+    flushSync();
+    const footerText = target.querySelector(".ui-modal-footer")?.textContent ?? "";
+    expect(footerText).not.toContain("Place on map");
+    unmount(app);
+    target.remove();
+  });
+
+  it("shows Place on map in the Assignments tab body and calls onplaceonmap with the chore id", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const onplaceonmap = vi.fn();
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn(), onplaceonmap },
+    });
+    flushSync();
+    (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
+    flushSync();
+    const placeBtn = Array.from(target.querySelectorAll(".assignments-pane button")).find(
+      (b) => b.textContent?.includes("Place on map"),
+    ) as HTMLButtonElement;
+    expect(placeBtn).toBeDefined();
+    placeBtn.click();
+    expect(onplaceonmap).toHaveBeenCalledWith("c1");
+    unmount(app);
+    target.remove();
+  });
+
+  it("shows the emoji picker and name input on the same row, emoji first", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn() },
+    });
+    flushSync();
+    const row = target.querySelector(".name-emoji-row");
+    expect(row).not.toBeNull();
+    const [emojiField, nameField] = Array.from(row!.children);
+    expect(emojiField.querySelector(".ep-trigger")).not.toBeNull();
+    expect(nameField.querySelector("#chore-name, input")).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("sorts the assignment room picker alphabetically regardless of input order", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const rooms = [
+      { id: "r1", label: "Zebra room", polygon: null },
+      { id: "r2", label: "Attic", polygon: null },
+      { id: "r3", label: "Master bedroom", polygon: null },
+    ];
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms, onclose: vi.fn() },
+    });
+    flushSync();
+    (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
+    flushSync();
+    const options = Array.from(target.querySelectorAll(".add-assignment-row select option")).map(o => o.textContent);
+    expect(options.slice(1)).toEqual(["Attic", "Master bedroom", "Zebra room"]);
+    unmount(app);
+    target.remove();
+  });
 });
 
 describe("ChoreEditModal — schedule anchor + next-due preview", () => {

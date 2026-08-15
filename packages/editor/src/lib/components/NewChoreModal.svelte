@@ -102,14 +102,16 @@
       </div>
     </div>
 
-    <div class="field">
-      <label for="chore-name">{$_('chores.editModal.name')}</label>
-      <input id="chore-name" class="native-input" bind:value={name} placeholder={$_('chores.editModal.choreName')} />
-    </div>
+    <div class="name-emoji-row">
+      <div class="field emoji-input">
+        <label for="chore-emoji">{$_('chores.editModal.emoji')}</label>
+        <EmojiPicker bind:value={emoji} />
+      </div>
 
-    <div class="field">
-      <label for="chore-emoji">{$_('chores.editModal.emoji')}</label>
-      <EmojiPicker bind:value={emoji} />
+      <div class="field name-row-field">
+        <label for="chore-name">{$_('chores.editModal.name')}</label>
+        <input id="chore-name" class="native-input" bind:value={name} placeholder={$_('chores.editModal.choreName')} />
+      </div>
     </div>
 
     {#key resetKey}
@@ -156,6 +158,9 @@
   }
   .native-input:focus { outline: none; border-color: var(--accent); }
   input[type="date"].native-input { width: 160px; }
+  .name-emoji-row { display: flex; gap: 8px; align-items: flex-end; }
+  .name-emoji-row .emoji-input { flex-shrink: 0; }
+  .name-emoji-row .name-row-field { flex: 1; min-width: 0; }
   .emoji-input { width: 80px; }
 
   .error { font-size: 11px; color: var(--danger); padding: 4px 0; }

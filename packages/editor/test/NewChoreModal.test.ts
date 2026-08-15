@@ -91,6 +91,22 @@ describe("NewChoreModal", () => {
     unmount(app);
   });
 
+  it("shows the emoji picker just before the name field on the same row", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(NewChoreModal, { target, props: { open: true, store, onclose: vi.fn() } });
+    flushSync();
+
+    const row = target.querySelector(".name-emoji-row");
+    expect(row).not.toBeNull();
+    const [emojiField, nameField] = Array.from(row!.children);
+    expect(emojiField.querySelector(".ep-trigger")).not.toBeNull();
+    expect(nameField.querySelector("#chore-name")).not.toBeNull();
+
+    unmount(app);
+  });
+
   it("Create is disabled when the schedule is invalid (e.g. Weekly-on-days with no day selected)", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
