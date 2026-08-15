@@ -5,6 +5,7 @@
   import Button from "./ui/Button.svelte";
   import EmojiPicker from "./ui/EmojiPicker.svelte";
   import ScheduleAnchorPicker from "./ui/ScheduleAnchorPicker.svelte";
+  import DatePicker from "./ui/DatePicker.svelte";
   import ScheduleEditor from "./ScheduleEditor.svelte";
   import { parseScheduleText } from "../scheduleParser";
 
@@ -125,8 +126,9 @@
     {/key}
 
     <div class="field">
-      <label for="chore-due">{$_('chores.newModal.firstDue')}</label>
-      <input id="chore-due" type="date" class="native-input" bind:value={nextDue} />
+      <label>{$_('chores.newModal.firstDue')}
+        <DatePicker bind:value={nextDue} />
+      </label>
     </div>
 
     <div class="field">
@@ -157,7 +159,6 @@
     font-size: 13px; font-family: var(--font-sans); width: 100%; box-sizing: border-box;
   }
   .native-input:focus { outline: none; border-color: var(--accent); }
-  input[type="date"].native-input { width: 160px; }
   .name-emoji-row { display: flex; gap: 8px; align-items: flex-end; }
   .name-emoji-row .emoji-input { flex-shrink: 0; }
   .name-emoji-row .name-row-field { flex: 1; min-width: 0; }

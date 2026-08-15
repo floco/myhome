@@ -63,6 +63,19 @@ describe("NewChoreModal", () => {
     unmount(app);
   });
 
+  it("uses the shared DatePicker for the first-due date instead of a native date input", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(NewChoreModal, { target, props: { open: true, store, onclose: vi.fn() } });
+    flushSync();
+
+    expect(target.querySelector('input[type="date"]')).toBeNull();
+    expect(target.querySelector(".dp-field")).not.toBeNull();
+
+    unmount(app);
+  });
+
   it("defaults to the 'schedule from completion date' radio and selecting the due-date one sends scheduleFromDue: true", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);

@@ -2,7 +2,7 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
   import { formatDateTime } from "../../dateFormat";
-  import Input from "../ui/Input.svelte";
+  import DatePicker from "../ui/DatePicker.svelte";
   import Button from "../ui/Button.svelte";
   import Card from "../ui/Card.svelte";
   import { homesStore } from "../../homesStore.svelte";
@@ -87,11 +87,11 @@
       </div>
       <div class="modal-field">
         <span class="modal-label">{$_('settings.activityLog.from')}</span>
-        <Input type="date" bind:value={activitySinceFilter} />
+        <DatePicker bind:value={activitySinceFilter} />
       </div>
       <div class="modal-field">
         <span class="modal-label">{$_('settings.activityLog.to')}</span>
-        <Input type="date" bind:value={activityUntilFilter} />
+        <DatePicker bind:value={activityUntilFilter} />
       </div>
       <div class="modal-actions">
         <Button variant="secondary" onclick={applyActivityFilters}>{$_('settings.activityLog.filter')}</Button>
