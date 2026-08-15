@@ -12,8 +12,10 @@
   let { value = $bindable(""), placeholder, max, compact = false }: Props = $props();
 
   let open = $state(false);
+  let view = $state<"days" | "years">("days");
   let viewYear = $state(new Date().getFullYear());
   let viewMonth = $state(new Date().getMonth());
+  let yearGridStart = $state(Math.floor(new Date().getFullYear() / 12) * 12);
   let editing = $state(false);
   let editText = $state("");
 
@@ -47,6 +49,8 @@
     while (cells.length % 7 !== 0) cells.push(null);
     return cells;
   })());
+
+  const yearGridCells = $derived(Array.from({ length: 12 }, (_unused, i) => yearGridStart + i));
 
   function displayValue(): string {
     if (!value) return "";
@@ -131,7 +135,21 @@
     if (viewMonth === 11) { viewMonth = 0; viewYear++; } else viewMonth++;
   }
 
+  function openYearGrid(): void {
+    yearGridStart = Math.floor(viewYear / 12) * 12;
+    view = "years";
+  }
+
+  function selectYear(year: number): void {
+    viewYear = year;
+    view = "days";
+  }
+
+  function prevDecade(): void { yearGridStart -= 12; }
+  function nextDecade(): void { yearGridStart += 12; }
+
   function toggleOpen(): void {
+    if (!open) view = "days";
     open = !open;
   }
 
@@ -195,30 +213,48 @@
   {#if open}
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
     <div class="dp-calendar" onclick={(e) => e.stopPropagation()}>
-      <div class="dp-header">
-        <button type="button" class="dp-nav" onclick={prevMonth}>‹</button>
-        <span class="dp-month-label">{MONTH_NAMES[viewMonth]} {viewYear}</span>
-        <button type="button" class="dp-nav" onclick={nextMonth}>›</button>
-      </div>
-      <div class="dp-grid">
-        {#each DAY_HEADERS as h}
-          <div class="dp-dh">{h}</div>
-        {/each}
-        {#each monthGrid as day}
-          {#if day === null}
-            <div class="dp-cell dp-empty"></div>
-          {:else}
+      {#if view === "days"}
+        <div class="dp-header">
+          <button type="button" class="dp-nav" onclick={prevMonth}>‹</button>
+          <button type="button" class="dp-month-label" onclick={openYearGrid}>{MONTH_NAMES[viewMonth]} {viewYear}</button>
+          <button type="button" class="dp-nav" onclick={nextMonth}>›</button>
+        </div>
+        <div class="dp-grid">
+          {#each DAY_HEADERS as h}
+            <div class="dp-dh">{h}</div>
+          {/each}
+          {#each monthGrid as day}
+            {#if day === null}
+              <div class="dp-cell dp-empty"></div>
+            {:else}
+              <button
+                type="button"
+                class="dp-cell"
+                class:dp-selected={isSelected(day)}
+                class:dp-today={isToday(day)}
+                disabled={isDisabled(day)}
+                onclick={() => selectDay(day)}
+              >{day}</button>
+            {/if}
+          {/each}
+        </div>
+      {:else}
+        <div class="dp-header">
+          <button type="button" class="dp-nav" onclick={prevDecade}>‹</button>
+          <span class="dp-month-label">{yearGridStart}–{yearGridStart + 11}</span>
+          <button type="button" class="dp-nav" onclick={nextDecade}>›</button>
+        </div>
+        <div class="dp-year-grid">
+          {#each yearGridCells as y}
             <button
               type="button"
-              class="dp-cell"
-              class:dp-selected={isSelected(day)}
-              class:dp-today={isToday(day)}
-              disabled={isDisabled(day)}
-              onclick={() => selectDay(day)}
-            >{day}</button>
-          {/if}
-        {/each}
-      </div>
+              class="dp-year-cell"
+              class:dp-selected={y === viewYear}
+              onclick={() => selectYear(y)}
+            >{y}</button>
+          {/each}
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -267,7 +303,10 @@
     cursor: pointer; padding: 0 6px; line-height: 1;
   }
   .dp-nav:hover { color: var(--text); }
-  .dp-month-label { font-size: 12px; color: var(--text); font-family: var(--font-sans); font-weight: 600; }
+  .dp-month-label {
+    background: none; border: none; cursor: pointer;
+    font-size: 12px; color: var(--text); font-family: var(--font-sans); font-weight: 600;
+  }
 
   .dp-grid {
     display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
@@ -288,4 +327,12 @@
   .dp-selected:hover { opacity: 0.85; }
   .dp-cell:disabled { color: var(--text-faint); cursor: default; opacity: 0.5; }
   .dp-cell:disabled:hover { background: none; color: var(--text-faint); }
+
+  .dp-year-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .dp-year-cell {
+    text-align: center; font-size: 12px; font-family: var(--font-sans);
+    padding: 8px 2px; border-radius: 3px; cursor: pointer;
+    background: none; border: none; color: var(--text-muted);
+  }
+  .dp-year-cell:hover:not(.dp-selected) { background: var(--surface-hover); color: var(--text); }
 </style>

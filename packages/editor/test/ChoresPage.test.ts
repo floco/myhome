@@ -295,7 +295,7 @@ describe("ChoresPage — mark-all-done backdating", () => {
     (target.querySelector('button[title="Mark all done"]') as HTMLButtonElement).click();
     flushSync();
 
-    expect(target.querySelector(".dp-text")).not.toBeNull();
+    expect(target.querySelector(".dp-input")).not.toBeNull();
 
     (target.querySelector(".ui-modal-footer .ui-button-primary") as HTMLButtonElement).click();
     await Promise.resolve();
@@ -317,7 +317,7 @@ describe("ChoresPage — mark-all-done backdating", () => {
     (target.querySelector('button[title="Mark all done"]') as HTMLButtonElement).click();
     flushSync();
 
-    (target.querySelector(".dp-field") as HTMLElement).click();
+    (target.querySelector(".dp-icon-btn") as HTMLElement).click();
     flushSync();
     const cells = [...target.querySelectorAll(".dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
     const firstOfMonth = cells.find((c) => c.textContent === "1")!;

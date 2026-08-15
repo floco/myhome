@@ -289,3 +289,93 @@ describe("DatePicker manual entry", () => {
     unmount(app);
   });
 });
+
+describe("DatePicker year grid", () => {
+  let target: HTMLDivElement;
+
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem("myhome-locale", "en");
+    target = document.createElement("div");
+    document.body.appendChild(target);
+  });
+
+  afterEach(() => {
+    target.remove();
+  });
+
+  function openCalendar(): void {
+    (target.querySelector(".dp-icon-btn") as HTMLElement).click();
+    flushSync();
+  }
+
+  it("switches to a 12-year grid when the month/year label is clicked", () => {
+    const app = mount(DatePicker, { target, props: { value: "2024-06-15" } });
+    flushSync();
+    openCalendar();
+
+    (target.querySelector(".dp-month-label") as HTMLElement).click();
+    flushSync();
+
+    const years = [...target.querySelectorAll(".dp-year-cell")].map((c) => c.textContent);
+    expect(years).toEqual(["2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026", "2027"]);
+    const selected = target.querySelector(".dp-year-cell.dp-selected");
+    expect(selected?.textContent).toBe("2024");
+    unmount(app);
+  });
+
+  it("pages the year grid forward and backward by 12 years", () => {
+    const app = mount(DatePicker, { target, props: { value: "2024-06-15" } });
+    flushSync();
+    openCalendar();
+    (target.querySelector(".dp-month-label") as HTMLElement).click();
+    flushSync();
+
+    const [prevBtn, nextBtn] = [...target.querySelectorAll(".dp-nav")] as HTMLButtonElement[];
+    nextBtn.click();
+    flushSync();
+    let years = [...target.querySelectorAll(".dp-year-cell")].map((c) => c.textContent);
+    expect(years[0]).toBe("2028");
+
+    prevBtn.click();
+    flushSync();
+    years = [...target.querySelectorAll(".dp-year-cell")].map((c) => c.textContent);
+    expect(years[0]).toBe("2016");
+    unmount(app);
+  });
+
+  it("selecting a year returns to the day grid for that year, keeping the month", () => {
+    const app = mount(DatePicker, { target, props: { value: "2024-06-15" } });
+    flushSync();
+    openCalendar();
+    (target.querySelector(".dp-month-label") as HTMLElement).click();
+    flushSync();
+
+    const yearCell = [...target.querySelectorAll(".dp-year-cell")].find((c) => c.textContent === "2018") as HTMLButtonElement;
+    yearCell.click();
+    flushSync();
+
+    expect(target.querySelector(".dp-grid")).not.toBeNull();
+    expect(target.querySelector(".dp-year-grid")).toBeNull();
+    expect(target.querySelector(".dp-month-label")!.textContent).toBe("June 2018");
+    unmount(app);
+  });
+
+  it("reopening the calendar always starts on the day view", () => {
+    const app = mount(DatePicker, { target, props: { value: "2024-06-15" } });
+    flushSync();
+    openCalendar();
+    (target.querySelector(".dp-month-label") as HTMLElement).click();
+    flushSync();
+    expect(target.querySelector(".dp-year-grid")).not.toBeNull();
+
+    // close (click icon again) and reopen
+    (target.querySelector(".dp-icon-btn") as HTMLElement).click();
+    flushSync();
+    openCalendar();
+
+    expect(target.querySelector(".dp-grid")).not.toBeNull();
+    expect(target.querySelector(".dp-year-grid")).toBeNull();
+    unmount(app);
+  });
+});
