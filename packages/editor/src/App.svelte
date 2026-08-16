@@ -428,13 +428,21 @@
     const isLoaded = floorStore.loaded;
     if (!isLoaded) return;
     untrack(() => {
-      // An empty floor (nothing drawn yet, or the transient placeholder
-      // shown before a home's data has loaded) has nothing to fit to —
-      // leave the viewport as-is rather than recentering to a meaningless
-      // {width/2, height/2} point.
-      if (canvasWidth > 0 && canvasHeight > 0 && floorStore.floor.walls.length > 0) {
-        viewportStore.reset(floorStore.floor, canvasWidth, canvasHeight);
-      }
+      // The canvas-area may have just mounted (e.g. first navigation into
+      // the floor plan route) so its bind:clientWidth/clientHeight hasn't
+      // been measured yet at this point in the render — canvasWidth/Height
+      // would still hold their stale defaults. Defer to the next frame,
+      // after layout has settled, so the fit uses the real container size
+      // instead of producing a view that needs a manual Reset View click.
+      requestAnimationFrame(() => {
+        // An empty floor (nothing drawn yet, or the transient placeholder
+        // shown before a home's data has loaded) has nothing to fit to —
+        // leave the viewport as-is rather than recentering to a meaningless
+        // {width/2, height/2} point.
+        if (canvasWidth > 0 && canvasHeight > 0 && floorStore.floor.walls.length > 0) {
+          viewportStore.reset(floorStore.floor, canvasWidth, canvasHeight);
+        }
+      });
     });
   });
 

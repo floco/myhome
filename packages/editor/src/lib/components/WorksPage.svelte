@@ -62,15 +62,22 @@
       if (!w.title.toLowerCase().includes(q) && !w.description.toLowerCase().includes(q)) return false;
     }
     return true;
+  }).sort((a, b) => {
+    // Default order (before the user picks a column to sort by): work
+    // still to be done outranks work that's done, and within each group
+    // the most recent date comes first.
+    const aNotDone = a.status === "done" ? 0 : 1;
+    const bNotDone = b.status === "done" ? 0 : 1;
+    if (aNotDone !== bNotDone) return bNotDone - aNotDone;
+    const aTime = a.date ? new Date(a.date).getTime() : 0;
+    const bTime = b.date ? new Date(b.date).getTime() : 0;
+    return bTime - aTime;
   }));
 
   const totalCost = $derived(
     filteredWorks.reduce((sum, w) => sum + (w.totalCost ?? 0), 0)
   );
 
-  const plannedCount = $derived(store.works.filter((w) => w.status === "planned").length);
-  const inProgressCount = $derived(store.works.filter((w) => w.status === "in_progress").length);
-  const doneCount = $derived(store.works.filter((w) => w.status === "done").length);
   const allTimeCost = $derived(store.works.reduce((sum, w) => sum + (w.totalCost ?? 0), 0));
 
   function handleTimelineClick(id: string): void {
@@ -109,9 +116,6 @@
         <WorksTimeline works={store.works} onworkclick={handleTimelineClick} />
       </Card>
       <div class="stat-tiles">
-        <StatTile label={$_('works.status.planned')} value={plannedCount} />
-        <StatTile label={$_('works.status.inProgress')} value={inProgressCount} />
-        <StatTile label={$_('works.status.done')} value={doneCount} />
         <StatTile label={$_('works.page.totalCost')} value={`${fmt(allTimeCost)} €`} />
       </div>
     </div>
