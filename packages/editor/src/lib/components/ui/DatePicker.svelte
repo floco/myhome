@@ -166,8 +166,10 @@
 
   function handleKeydown(e: KeyboardEvent): void {
     if (e.key === "Enter") {
+      e.stopPropagation();
       (e.target as HTMLInputElement).blur();
     } else if (e.key === "Escape") {
+      e.stopPropagation();
       editText = displayValue();
       (e.target as HTMLInputElement).blur();
     }

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import DatePicker from "../src/lib/components/ui/DatePicker.svelte";
 
@@ -286,6 +286,36 @@ describe("DatePicker manual entry", () => {
     flushSync();
 
     expect(input.value).toBe("25/12/2024");
+    unmount(app);
+  });
+
+  it("stops the Enter keydown from propagating, so an ancestor form can't treat it as a submit", () => {
+    const app = mount(DatePicker, { target, props: { value: "2024-01-10" } });
+    flushSync();
+
+    const input = target.querySelector(".dp-input") as HTMLInputElement;
+    input.focus();
+    const event = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+    const stopSpy = vi.spyOn(event, "stopPropagation");
+    input.dispatchEvent(event);
+    flushSync();
+
+    expect(stopSpy).toHaveBeenCalled();
+    unmount(app);
+  });
+
+  it("stops the Escape keydown from propagating, so an ancestor modal can't treat it as a close", () => {
+    const app = mount(DatePicker, { target, props: { value: "2024-01-10" } });
+    flushSync();
+
+    const input = target.querySelector(".dp-input") as HTMLInputElement;
+    input.focus();
+    const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    const stopSpy = vi.spyOn(event, "stopPropagation");
+    input.dispatchEvent(event);
+    flushSync();
+
+    expect(stopSpy).toHaveBeenCalled();
     unmount(app);
   });
 });
