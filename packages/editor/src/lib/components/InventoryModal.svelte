@@ -4,7 +4,7 @@
   import type { MediaItem } from "./ui/mediaTypes";
   import { apiUrl } from "../apiUrl";
   import { homesStore } from "../homesStore.svelte";
-  import DatePicker from "./DatePicker.svelte";
+  import DatePicker from "./ui/DatePicker.svelte";
   import Modal from "./ui/Modal.svelte";
   import Input from "./ui/Input.svelte";
   import Button from "./ui/Button.svelte";

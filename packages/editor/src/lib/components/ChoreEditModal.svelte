@@ -9,7 +9,7 @@
   import Input from "./ui/Input.svelte";
   import Tabs from "./ui/Tabs.svelte";
   import ScheduleAnchorPicker from "./ui/ScheduleAnchorPicker.svelte";
-  import DatePicker from "./DatePicker.svelte";
+  import DatePicker from "./ui/DatePicker.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
   import EmojiPicker from "./ui/EmojiPicker.svelte";

@@ -43,6 +43,17 @@ describe("SettingsActivityLog", () => {
     unmount(app);
   });
 
+  it("uses the shared DatePicker for the from/to filters instead of native date inputs", async () => {
+    const app = mount(SettingsActivityLog, { target });
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+
+    expect(target.querySelectorAll('input[type="date"]').length).toBe(0);
+    expect(target.querySelectorAll(".dp-field").length).toBe(2);
+
+    unmount(app);
+  });
+
   it("renders returned entries with description", async () => {
     fetchMock.mockImplementation((url: string) => {
       if (url.startsWith("/api/homes/home-1/activity")) {

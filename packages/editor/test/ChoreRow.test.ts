@@ -189,9 +189,9 @@ describe("ChoreRow", () => {
     (target.querySelector(".done-btn") as HTMLButtonElement).click();
     flushSync();
 
-    const dateField = document.querySelector(".ui-modal .dp-text");
+    const dateField = document.querySelector(".ui-modal .dp-input") as HTMLInputElement;
     expect(dateField).not.toBeNull();
-    expect(dateField!.textContent).not.toBe("");
+    expect(dateField.value).not.toBe("");
 
     unmount(comp);
     target.remove();
@@ -230,7 +230,7 @@ describe("ChoreRow", () => {
     (target.querySelector(".done-btn") as HTMLButtonElement).click();
     flushSync();
 
-    (document.querySelector(".ui-modal .dp-field") as HTMLElement).click();
+    (document.querySelector(".ui-modal .dp-icon-btn") as HTMLElement).click();
     flushSync();
     const cells = [...document.querySelectorAll(".ui-modal .dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
     const firstOfMonth = cells.find((c) => c.textContent === "1")!;
