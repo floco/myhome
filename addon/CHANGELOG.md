@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.25.0 - 2026-08-16
+
+- Added the ability to type a date directly into any date field, alongside the existing calendar picker
+- Added a year-grid view to the calendar picker (click the month/year label) for quickly jumping to a distant year, paged by decade
+- Replaced the chore schedule-anchor checkbox with a two-option picker with explanatory captions, plus a live "next due (calculated)" preview
+- Fixed the knowledge base sidebar expand/collapse-all icon rendering small and off-center
+- Fixed the chore edit modal's footer button order to stay consistent across tabs, moved "Place on map" into the Assignments tab, and put the emoji field on the same row as Name
+- Sorted the chore assignment zone picker alphabetically
+- Fixed the All/Needs-attention chores list toggle not persisting across in-session navigation
+- Doubled the floor plan chore badge size
+
 ## 0.24.2 - 2026-08-14
 
 - Fixed the knowledge base autosave indicator to show inside the save button instead of flickering as a separate icon
