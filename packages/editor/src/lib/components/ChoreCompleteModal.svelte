@@ -4,7 +4,7 @@
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
-  import DatePicker from "./DatePicker.svelte";
+  import DatePicker from "./ui/DatePicker.svelte";
   import { todayIso } from "../dateFormat";
 
   interface Props {
