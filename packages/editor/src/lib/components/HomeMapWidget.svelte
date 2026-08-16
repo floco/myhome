@@ -93,6 +93,8 @@
           currentFloorId={effectiveFloorId ?? ""}
           onswitchfloor={handleSwitchFloor}
           compact={true}
+          variant="pill"
+          showAllOption={false}
         />
       </div>
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -116,6 +118,7 @@
             height={mapHeight}
             onclick={noop}
             ondragend={noop}
+            minScale={0.12}
           />
         {/if}
         {#if activeLayers.has("inventory")}
@@ -127,6 +130,7 @@
             height={mapHeight}
             onclick={noop}
             ondragend={noop}
+            minScale={0.12}
           />
         {/if}
         {#if activeLayers.has("costs")}
@@ -138,6 +142,7 @@
             height={mapHeight}
             onclick={noop}
             ondragend={noop}
+            minScale={0.12}
           />
         {/if}
         {#if activeLayers.has("works")}
@@ -150,6 +155,7 @@
             height={mapHeight}
             onclick={noop}
             ondragend={noop}
+            minScale={0.12}
           />
         {/if}
       {:else}

@@ -31,6 +31,12 @@
     return $_("works.status.planned");
   }
 
+  const statusCounts = $derived((() => {
+    const counts: Record<Work["status"], number> = { done: 0, in_progress: 0, planned: 0 };
+    for (const w of works) counts[w.status]++;
+    return counts;
+  })());
+
   const timeRange = $derived((() => {
     if (works.length === 0) {
       const now = Date.now();
@@ -136,9 +142,9 @@
   </svg>
 
   <div class="legend">
-    <span class="legend-item"><span class="dot" style="background:{STATUS_COLOR.done}"></span>{$_('works.status.done')}</span>
-    <span class="legend-item"><span class="dot" style="background:{STATUS_COLOR.in_progress}"></span>{$_('works.status.inProgress')}</span>
-    <span class="legend-item"><span class="dot" style="background:{STATUS_COLOR.planned}"></span>{$_('works.status.planned')}</span>
+    <span class="legend-item"><span class="dot" style="background:{STATUS_COLOR.done}"></span>{$_('works.status.done')} ({statusCounts.done})</span>
+    <span class="legend-item"><span class="dot" style="background:{STATUS_COLOR.in_progress}"></span>{$_('works.status.inProgress')} ({statusCounts.in_progress})</span>
+    <span class="legend-item"><span class="dot" style="background:{STATUS_COLOR.planned}"></span>{$_('works.status.planned')} ({statusCounts.planned})</span>
   </div>
 </div>
 

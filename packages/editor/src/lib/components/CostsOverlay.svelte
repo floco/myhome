@@ -10,9 +10,13 @@
     height: number;
     onclick: (categoryId: string) => void;
     ondragend: (categoryId: string, worldPos: { x: number; y: number }) => void;
+    /** Floor for the zoom-based badge scale. Lower for small preview maps
+     *  (e.g. the home dashboard widget) so badges shrink along with the
+     *  rest of the floor plan instead of bottoming out oversized. */
+    minScale?: number;
   }
 
-  let { categories, viewport, active, width, height, onclick, ondragend }: Props = $props();
+  let { categories, viewport, active, width, height, onclick, ondragend, minScale = 0.35 }: Props = $props();
 
   let dragId = $state<string | null>(null);
   let dragStartScreen = $state({ x: 0, y: 0 });
@@ -58,7 +62,7 @@
   }
 
   const placedCategories = $derived(categories.filter(c => c.placement !== null));
-  const badgeScale = $derived(Math.max(0.35, Math.min(1.2, viewport.zoom / 80)));
+  const badgeScale = $derived(Math.max(minScale, Math.min(1.2, viewport.zoom / 80)));
 
   function groupStyle(cat: CostCategory): string {
     const pe = active ? "all" : "none";

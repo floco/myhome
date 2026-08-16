@@ -295,6 +295,7 @@
         rows={filteredChores}
         rowKey={(chore) => chore.id}
         rowClick={(chore) => { editChore = chore; }}
+        defaultSort={{ key: "nextDue", direction: "asc" }}
         emptyMessage={store.chores.length === 0
           ? $_('chores.page.emptyNoChores')
           : choreFilterState.dueFilter === "attention"

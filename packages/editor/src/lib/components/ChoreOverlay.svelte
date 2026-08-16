@@ -11,14 +11,18 @@
     height: number;
     onclick: (assignmentId: string) => void;
     ondragend: (assignmentId: string, worldPos: Position) => void;
+    /** Floor for the zoom-based badge scale. Lower for small preview maps
+     *  (e.g. the home dashboard widget) so badges shrink along with the
+     *  rest of the floor plan instead of bottoming out oversized. */
+    minScale?: number;
   }
 
-  let { chores, assignments, viewport, choreMode, width, height, onclick, ondragend }: Props = $props();
+  let { chores, assignments, viewport, choreMode, width, height, onclick, ondragend, minScale = 0.35 }: Props = $props();
 
   const R = 36;
   const C = 2 * Math.PI * R;
 
-  const badgeScale = $derived(Math.max(0.35, Math.min(1.2, viewport.zoom / 80)));
+  const badgeScale = $derived(Math.max(minScale, Math.min(1.2, viewport.zoom / 80)));
 
   function findChore(choreId: string): Chore | undefined {
     return chores.find((c) => c.id === choreId);

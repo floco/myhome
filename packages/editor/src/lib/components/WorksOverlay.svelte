@@ -14,9 +14,13 @@
     height: number;
     onclick: (workId: string) => void;
     ondragend: (workId: string, worldPos: { x: number; y: number }) => void;
+    /** Floor for the zoom-based badge scale. Lower for small preview maps
+     *  (e.g. the home dashboard widget) so badges shrink along with the
+     *  rest of the floor plan instead of bottoming out oversized. */
+    minScale?: number;
   }
 
-  let { works, settingsStore, viewport, active, width, height, onclick, ondragend }: Props = $props();
+  let { works, settingsStore, viewport, active, width, height, onclick, ondragend, minScale = 0.35 }: Props = $props();
 
   const categoryMap = $derived(
     new Map(settingsStore.workCategories.map(c => [c.id, c]))
@@ -69,7 +73,7 @@
   }
 
   const placedWorks = $derived(works.filter(w => w.placement !== null));
-  const badgeScale = $derived(Math.max(0.35, Math.min(1.2, viewport.zoom / 80)));
+  const badgeScale = $derived(Math.max(minScale, Math.min(1.2, viewport.zoom / 80)));
 
   function groupStyle(work: Work): string {
     const pe = active ? "all" : "none";

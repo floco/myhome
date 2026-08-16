@@ -66,6 +66,15 @@ function restoreContainerSize(): void {
   if (originalClientHeight) Object.defineProperty(HTMLElement.prototype, "clientHeight", originalClientHeight);
 }
 
+// The auto-fit effect defers its viewportStore.reset() call to the next
+// animation frame (so it reads canvasWidth/Height after the canvas-area's
+// bind:clientWidth/clientHeight has actually settled — see App.svelte).
+// Wait for a real frame, then flush the resulting state update.
+async function flushAutoFit(): Promise<void> {
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  flushSync();
+}
+
 async function mountApp(target: HTMLElement): Promise<ReturnType<typeof mount>> {
   window.location.hash = "#/plan";
   const app = mount(App, { target });
@@ -78,6 +87,7 @@ async function mountApp(target: HTMLElement): Promise<ReturnType<typeof mount>> 
   // here; 10 leaves margin.
   for (let i = 0; i < 10; i++) await tick();
   flushSync();
+  await flushAutoFit();
   return app;
 }
 
@@ -131,6 +141,7 @@ describe("App — viewport auto-fit", () => {
     flushSync();
     (document.querySelector(".compact-floor-item.add") as HTMLButtonElement).click();
     flushSync();
+    await flushAutoFit();
 
     expect(target.querySelector("line.divider")).toBeNull();
 
@@ -142,6 +153,7 @@ describe("App — viewport auto-fit", () => {
     ) as HTMLButtonElement;
     groundFloorItem.click();
     flushSync();
+    await flushAutoFit();
 
     // Re-fit produces the same numbers as the initial load, proving the
     // effect fires again on every switch, not just once.

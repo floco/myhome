@@ -10,6 +10,8 @@
     onrenamefloor,
     onremovefloor,
     compact = false,
+    showAllOption = true,
+    variant = 'toolbar',
   }: {
     floors: Floor[];
     currentFloorId: string;
@@ -18,6 +20,14 @@
     onrenamefloor?: (id: string, name: string) => void;
     onremovefloor?: (id: string) => void;
     compact?: boolean;
+    /** Whether the "All floors" (house-wide) entry is offered. Off for
+     *  contexts like the home dashboard widget, which always shows a
+     *  single floor and has no whole-house mode. */
+    showAllOption?: boolean;
+    /** Compact-mode trigger look: 'toolbar' (default) is borderless, for the
+     *  floor-plan editor's floating toolbar; 'pill' is a bordered box,
+     *  matching LayersDropdown's standalone-widget look. */
+    variant?: 'toolbar' | 'pill';
   } = $props();
 
   const ALL_FLOOR_ID = "__all__";
@@ -119,6 +129,7 @@
   <div class="compact-switcher" bind:this={compactWrapper}>
     <button
       class="compact-btn"
+      class:pill={variant === 'pill'}
       bind:this={compactTrigger}
       onclick={toggleCompact}
       title={$_('floorPlan.switcher.switchFloor')}
@@ -135,12 +146,14 @@
         bind:this={compactPanel}
         use:portal
       >
-        <button
-          class="compact-floor-item"
-          class:active={currentFloorId === ALL_FLOOR_ID}
-          title={$_('floorPlan.switcher.houseWide')}
-          onclick={() => selectCompact(ALL_FLOOR_ID)}
-        >🏠 {$_('floorPlan.switcher.all')}</button>
+        {#if showAllOption}
+          <button
+            class="compact-floor-item"
+            class:active={currentFloorId === ALL_FLOOR_ID}
+            title={$_('floorPlan.switcher.houseWide')}
+            onclick={() => selectCompact(ALL_FLOOR_ID)}
+          >🏠 {$_('floorPlan.switcher.all')}</button>
+        {/if}
         {#each floors as floor (floor.id)}
           <button
             class="compact-floor-item"
@@ -214,6 +227,16 @@
   .compact-icon { display: none; font-size: 13px; line-height: 1; }
   .compact-label { max-width: 70px; overflow: hidden; text-overflow: ellipsis; }
   .compact-chevron { font-size: 9px; color: var(--text-muted); flex-shrink: 0; }
+
+  /* 'pill' variant mirrors LayersDropdown's standalone-widget look (bordered
+     box) for contexts like the home dashboard, as opposed to the borderless
+     look that blends into the floor-plan editor's floating toolbar. */
+  .compact-btn.pill {
+    padding: 3px 10px; height: 26px; box-sizing: border-box;
+    border: 1px solid var(--border); background: var(--surface-alt);
+    color: var(--text-muted);
+  }
+  .compact-btn.pill:hover { background: var(--surface-hover); }
 
   @media (max-width: 480px) { /* --bp-mobile */
     .compact-switcher { flex: 1 1 0; max-width: 44px; aspect-ratio: 1 / 1; }
