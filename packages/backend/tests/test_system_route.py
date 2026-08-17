@@ -4,6 +4,7 @@ from httpx import Response
 
 from myhome import system_info
 from myhome.main import app
+from myhome.migrations import CURRENT_VERSION
 
 
 def test_get_system_info_requires_auth(tmp_path, monkeypatch):
@@ -28,7 +29,7 @@ def test_get_system_info_returns_full_shape(client, tmp_path, monkeypatch):
     data = resp.json()
     assert data["version"] == "0.8.0"
     assert data["deploymentMode"] == "standalone"
-    assert data["dbSchemaVersion"] == 8
+    assert data["dbSchemaVersion"] == CURRENT_VERSION
     assert isinstance(data["pythonVersion"], str)
     assert isinstance(data["arch"], str)
     assert data["uptimeSeconds"] >= 0

@@ -80,6 +80,13 @@
 
   const allTimeCost = $derived(store.works.reduce((sum, w) => sum + (w.totalCost ?? 0), 0));
 
+  const yearsSpan = $derived.by(() => {
+    if (store.works.length === 0) return 0;
+    const times = store.works.map((w) => new Date(w.date).getTime());
+    const spanMs = Math.max(...times) - Math.min(...times);
+    return Math.floor(spanMs / (1000 * 60 * 60 * 24 * 365.25));
+  });
+
   function handleTimelineClick(id: string): void {
     const found = store.works.find((w) => w.id === id);
     if (found) modalWork = found;
@@ -116,6 +123,7 @@
         <WorksTimeline works={store.works} onworkclick={handleTimelineClick} />
       </Card>
       <div class="stat-tiles">
+        <StatTile label={$_('works.page.yearsSpan')} value={yearsSpan} />
         <StatTile label={$_('works.page.totalCost')} value={`${fmt(allTimeCost)} €`} />
       </div>
     </div>
@@ -151,8 +159,10 @@
         {categoryMap.get(work.categoryId ?? "")?.emoji ?? "🔧"}
       {/snippet}
       {#snippet titleCell(work: Work)}
-        {work.title}
-        {#if work.description}<span class="desc">{work.description}</span>{/if}
+        <div class="title-desc">
+          {work.title}
+          {#if work.description}<span class="desc">{work.description}</span>{/if}
+        </div>
       {/snippet}
       {#snippet categoryCell(work: Work)}
         {categoryMap.get(work.categoryId ?? "")?.name ?? "—"}
@@ -256,6 +266,13 @@
   .table-wrapper { flex: 1; overflow-y: auto; }
   :global(.emoji-cell) { font-size: 16px; width: 32px; text-align: center; }
   :global(.name-cell) { color: var(--text); font-weight: 600; }
+  .title-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .desc { font-size: 11px; color: var(--text-faint); font-weight: 400; margin-left: 6px; }
   .status-chip { padding: 2px 7px; border-radius: var(--radius-sm); font-size: 10px; font-weight: 500; }
   .pin-indicator { font-size: 11px; margin-left: 4px; }
