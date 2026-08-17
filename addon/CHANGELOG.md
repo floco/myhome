@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.25.1 - 2026-08-17
+
+- Fixed the home dashboard's chore/inventory/costs/works floor-plan badges appearing oversized instead of scaling down with the widget
+- Restyled the home dashboard's floor picker to match the layers dropdown, and removed its non-functional "All floors" option
+- Fixed the floor plan editor needing a manual "Reset View" click to show the floor plan correctly on load
+- Sorted the chores list by next due date by default
+- Sorted the works list by not-yet-done status and most recent date by default
+- Moved the works timeline's planned/in-progress/done counts into its legend, keeping only the total cost as a stat tile, and fixed the timeline card stretching taller than its content
+
 ## 0.25.0 - 2026-08-16
 
 - Added the ability to type a date directly into any date field, alongside the existing calendar picker
