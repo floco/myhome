@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.26.0 - 2026-08-17
+
+- Added a "years span" stat card to the works timeline, showing the number of years between the first and last work
+- Fixed the works list's title/description cell to clamp to two lines with an ellipsis instead of overflowing
+- Replaced the knowledge base expand/collapse-all icon with a clearer chevron-and-bar icon
+- Fixed every inventory item save failing with a server error on installs upgraded from an older version
+
 ## 0.25.1 - 2026-08-17
 
 - Fixed the home dashboard's chore/inventory/costs/works floor-plan badges appearing oversized instead of scaling down with the widget
