@@ -396,6 +396,20 @@ def test_run_migrations_adds_label_to_pre_existing_chore_assignments_table(tmp_p
             "INSERT INTO chore_assignments (id, home_id, order_index, chore_id, room_id, position_x, position_y, next_due_date) "
             "VALUES ('a1', 'h1', 0, 'c1', 'r1', NULL, NULL, '2027-01-01T00:00:00Z')"
         ))
+        # inventory_items is needed too since this snapshot (schema_version 7)
+        # now also runs migration 9 (_drop_inventory_legacy_category_column)
+        # on its way to CURRENT_VERSION -- already in the post-migration-7
+        # shape (category_id/owner_id/store_id present, legacy `category`
+        # column still lingering) since migration 7 is behind this snapshot.
+        conn.execute(text(
+            "CREATE TABLE inventory_items (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+            "category VARCHAR NOT NULL, category_id VARCHAR, owner_id VARCHAR, store_id VARCHAR, "
+            "brand VARCHAR, model VARCHAR, serial_number VARCHAR, "
+            "purchase_date VARCHAR, purchase_price FLOAT, warranty_expiry_date VARCHAR, "
+            "notes VARCHAR NOT NULL, attachments TEXT NOT NULL, placement_floor_id VARCHAR, "
+            "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
+        ))
         conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
         conn.execute(text("INSERT INTO schema_version (version) VALUES (7)"))
 
@@ -407,3 +421,53 @@ def test_run_migrations_adds_label_to_pre_existing_chore_assignments_table(tmp_p
 
     assert version == CURRENT_VERSION
     assert row["label"] is None
+
+
+def test_run_migrations_drops_inventory_legacy_category_column(tmp_path):
+    # Reproduces the production bug: a database that already ran migration 7
+    # (has category_id/owner_id/store_id, but still carries the old NOT NULL
+    # `category` column migration 7 backfilled from and never dropped) fails
+    # every subsequent inventory save, because save_inventory()'s INSERT --
+    # built from schema.py's Table, which has no `category` column -- never
+    # supplies a value for that still-NOT-NULL column.
+    db_path = tmp_path / "legacy.db"
+    engine = create_engine(f"sqlite:///{db_path}")
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE inventory_items (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+            "category VARCHAR NOT NULL, category_id VARCHAR, owner_id VARCHAR, store_id VARCHAR, "
+            "brand VARCHAR, model VARCHAR, serial_number VARCHAR, "
+            "purchase_date VARCHAR, purchase_price FLOAT, warranty_expiry_date VARCHAR, "
+            "notes VARCHAR NOT NULL, attachments TEXT NOT NULL, placement_floor_id VARCHAR, "
+            "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
+        ))
+        conn.execute(text(
+            "INSERT INTO inventory_items "
+            "(id, home_id, order_index, name, emoji, category, category_id, notes, attachments) "
+            "VALUES ('i1', 'h1', 0, 'TV', '📺', 'Electronics', 'inv-electronics', '', '[]')"
+        ))
+        conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
+        conn.execute(text("INSERT INTO schema_version (version) VALUES (8)"))
+
+    run_migrations(engine)
+
+    with engine.begin() as conn:
+        version = conn.execute(text("SELECT version FROM schema_version")).scalar()
+        row = conn.execute(text("SELECT id, category_id FROM inventory_items WHERE id = 'i1'")).mappings().first()
+        columns = {c[1] for c in conn.execute(text("PRAGMA table_info(inventory_items)")).all()}
+        # The exact statement shape save_inventory() issues on every save --
+        # this raised sqlite3.IntegrityError before the fix.
+        conn.execute(text(
+            "INSERT INTO inventory_items "
+            "(id, home_id, order_index, name, emoji, category_id, owner_id, store_id, "
+            "brand, model, serial_number, purchase_date, purchase_price, warranty_expiry_date, "
+            "notes, attachments, placement_floor_id, placement_room_id, placement_x, placement_y) "
+            "VALUES ('i2', 'h1', 1, 'Drill', '🔩', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, "
+            "'', '[]', NULL, NULL, NULL, NULL)"
+        ))
+
+    assert version == CURRENT_VERSION
+    assert row["id"] == "i1"
+    assert row["category_id"] == "inv-electronics"
+    assert "category" not in columns

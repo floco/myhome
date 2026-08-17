@@ -4,6 +4,7 @@ import respx
 from httpx import Response
 
 from myhome import system_info
+from myhome.migrations import CURRENT_VERSION
 
 
 def test_get_app_version_reads_version_file(tmp_path, monkeypatch):
@@ -61,7 +62,7 @@ def test_get_static_system_info_shape(tmp_path, monkeypatch):
     info = system_info.get_static_system_info()
     assert info["version"] == "0.8.0"
     assert info["deploymentMode"] == "standalone"
-    assert info["dbSchemaVersion"] == 8
+    assert info["dbSchemaVersion"] == CURRENT_VERSION
     assert info["homeCount"] == 0
     # get_home_count() above already opened the DB engine, which runs schema
     # migrations on first connect -- so the file is non-empty even with zero

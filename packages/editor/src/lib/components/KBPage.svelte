@@ -485,7 +485,17 @@
     <div class="sidebar-toolbar">
       <Input placeholder={$_('floorPlan.itemPicker.search')} bind:value={searchQuery} />
       <Button iconOnly onclick={toggleAllTree} title={allParentsExpanded ? $_('kb.tree.collapseAll') : $_('kb.tree.expandAll')}>
-        <span class="toggle-all-icon" class:open={allParentsExpanded}>▸</span>
+        {#if allParentsExpanded}
+          <svg class="toggle-all-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path d="M3 4h10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            <path d="M4 11l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        {:else}
+          <svg class="toggle-all-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path d="M4 5l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M3 12h10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          </svg>
+        {/if}
       </Button>
       <Button iconOnly onclick={handleNewPage} title={$_('kb.page.newPage')}>＋</Button>
     </div>
@@ -678,12 +688,7 @@
     background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
   .sidebar-toolbar :global(.ui-input) { flex: 1; }
-  .toggle-all-icon {
-    display: flex; align-items: center; justify-content: center;
-    width: 100%; height: 100%; font-size: 18px; line-height: 1;
-    transition: transform 0.15s ease;
-  }
-  .toggle-all-icon.open { transform: rotate(90deg); }
+  .toggle-all-icon { display: block; }
 
   .entry-list {
     flex: 1; overflow-y: auto; padding: var(--space-2);

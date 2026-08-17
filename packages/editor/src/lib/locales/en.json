@@ -567,6 +567,7 @@
     "page": {
       "emptyCharts": "No works yet — click ＋ Add work to get started.",
       "houseTimeline": "House timeline",
+      "yearsSpan": "Years span",
       "totalCost": "Total cost",
       "allStatuses": "All statuses",
       "addWork": "Add work",

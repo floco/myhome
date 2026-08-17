@@ -567,6 +567,7 @@
     "page": {
       "emptyCharts": "Aucun travail pour l'instant — cliquez sur ＋ Ajouter un travail pour commencer.",
       "houseTimeline": "Chronologie de la maison",
+      "yearsSpan": "Durée (années)",
       "totalCost": "Coût total",
       "allStatuses": "Tous les statuts",
       "addWork": "Ajouter un travail",

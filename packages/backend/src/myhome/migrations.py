@@ -20,11 +20,12 @@ from .schema import (
     consumable_categories,
     cost_categories,
     inventory_categories,
+    inventory_items,
     suppliers,
     work_categories,
 )
 
-CURRENT_VERSION = 8
+CURRENT_VERSION = 9
 
 
 def _drop_kb_folders_table(conn: Connection) -> None:
@@ -183,6 +184,25 @@ def _add_assignment_label_column(conn: Connection) -> None:
     conn.execute(text("ALTER TABLE chore_assignments ADD COLUMN label VARCHAR"))
 
 
+def _drop_inventory_legacy_category_column(conn: Connection) -> None:
+    # Migration 7 backfilled category_id from the legacy free-text
+    # `category` column but never dropped it -- SQLite's ALTER TABLE can't
+    # drop a column outright, so any database that ran migration 7 still
+    # has a NOT NULL `category` column that schema.py's Table (and every
+    # INSERT built from it) no longer supplies a value for. That makes
+    # every inventory save fail with a NOT NULL constraint violation on an
+    # upgraded install. Same rename-recreate-copy-drop dance as
+    # _scope_category_tables_by_home, here to drop a column instead of
+    # changing a primary key.
+    columns = ", ".join(c.name for c in inventory_items.columns)
+    conn.execute(text("ALTER TABLE inventory_items RENAME TO inventory_items_old"))
+    inventory_items.create(conn)
+    conn.execute(text(
+        f"INSERT INTO inventory_items ({columns}) SELECT {columns} FROM inventory_items_old"
+    ))
+    conn.execute(text("DROP TABLE inventory_items_old"))
+
+
 MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (2, _drop_kb_folders_table),
     (3, _add_ha_user_id_column),
@@ -191,6 +211,7 @@ MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (6, _add_insurance_support),
     (7, _add_inventory_owner_store_and_category_id),
     (8, _add_assignment_label_column),
+    (9, _drop_inventory_legacy_category_column),
 ]
 
 
