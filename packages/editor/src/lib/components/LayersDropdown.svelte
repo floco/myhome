@@ -84,9 +84,9 @@
     title={$_('floorPlan.layers.toggle')}
   >
     {#if variant === 'toolbar'}
-      🗂️ <span class="ft-label">{$_('floorPlan.layers.title')}</span>
+      <span class="layers-icon" aria-hidden="true">🗂️</span><span class="ft-label">{$_('floorPlan.layers.title')}</span>
     {:else}
-      {$_('floorPlan.layers.title')} <span class="caret">▾</span>
+      <span class="layers-icon" aria-hidden="true">🗂️</span><span class="layers-label">{$_('floorPlan.layers.title')}</span> <span class="caret">▾</span>
     {/if}
   </button>
 
@@ -125,6 +125,7 @@
   .layers-btn:hover { background: var(--surface-hover); }
   .layers-btn.active { border-color: var(--accent); color: var(--text); }
   .caret { font-size: 9px; }
+  .layers-icon { display: none; }
 
   /* 'toolbar' variant mirrors App.svelte's .ft-btn styling so this button
      reads as part of the same icon-over-label group as Picker/Furniture. */
@@ -136,12 +137,19 @@
   }
   .layers-btn.toolbar:hover { background: var(--surface-hover); color: var(--text); }
   .layers-btn.toolbar.active { background: var(--surface-hover); border-color: transparent; color: var(--accent); }
+  .layers-btn.toolbar .layers-icon { display: inline; }
   .layers-btn.toolbar .ft-label { font-size: 11px; font-weight: 500; }
 
+  /* Below --bp-mobile the trigger's wrapper (.layers-dropdown, sized by the
+     parent toolbar) is capped to a 44px icon-only square -- the button's
+     text content must shrink to match in both variants, or it overflows
+     past its capped wrapper and off the edge of whatever card/toolbar
+     contains it. */
   @media (max-width: 480px) { /* --bp-mobile */
     .layers-dropdown { flex: 1 1 0; max-width: 44px; aspect-ratio: 1 / 1; }
-    .layers-btn.toolbar { width: 100%; height: 100%; font-size: 22px; justify-content: center; }
-    .layers-btn.toolbar .ft-label { display: none; }
+    .layers-btn { width: 100%; height: 100%; font-size: 22px; padding: 0; justify-content: center; }
+    .layers-btn .layers-label, .layers-btn .caret, .layers-btn .ft-label { display: none; }
+    .layers-btn .layers-icon { display: inline; }
   }
 
   .dropdown {

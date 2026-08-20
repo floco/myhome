@@ -1,6 +1,5 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
-  import { untrack } from "svelte";
   import type { Point, WallType, Room } from "@myhome/geometry";
   import { pointsEqual, findAdjacentRooms } from "@myhome/geometry";
   import { createHouseStore } from "./lib/houseStore.svelte";
@@ -419,30 +418,36 @@
   );
 
   let spacePressed = $state(false);
-  let canvasWidth = $state(1200);
-  let canvasHeight = $state(800);
+  // 0 (rather than a guessed default like 1200x800) so the "has the real
+  // container size landed yet" check below can't be trivially satisfied by
+  // a stale placeholder — bind:clientWidth/Height only deliver the true
+  // measurement asynchronously (via ResizeObserver, after the initial
+  // mount), so a non-zero default would let the fit-to-floor effect run
+  // once against the wrong size and never again.
+  let canvasWidth = $state(0);
+  let canvasHeight = $state(0);
   let saveStatus = $state<"idle" | "saving" | "saved" | "error">("idle");
+  let fittedFloorId = $state<string | null>(null);
 
   $effect(() => {
-    const _currentFloorId = floorStore.currentFloorId;
+    const currentFloorId = floorStore.currentFloorId;
     const isLoaded = floorStore.loaded;
-    if (!isLoaded) return;
-    untrack(() => {
-      // The canvas-area may have just mounted (e.g. first navigation into
-      // the floor plan route) so its bind:clientWidth/clientHeight hasn't
-      // been measured yet at this point in the render — canvasWidth/Height
-      // would still hold their stale defaults. Defer to the next frame,
-      // after layout has settled, so the fit uses the real container size
-      // instead of producing a view that needs a manual Reset View click.
-      requestAnimationFrame(() => {
-        // An empty floor (nothing drawn yet, or the transient placeholder
-        // shown before a home's data has loaded) has nothing to fit to —
-        // leave the viewport as-is rather than recentering to a meaningless
-        // {width/2, height/2} point.
-        if (canvasWidth > 0 && canvasHeight > 0 && floorStore.floor.walls.length > 0) {
-          viewportStore.reset(floorStore.floor, canvasWidth, canvasHeight);
-        }
-      });
+    const width = canvasWidth;
+    const height = canvasHeight;
+    // Skip until: the home has loaded, the canvas-area has reported its
+    // real size, and this floor hasn't already been fitted (switching
+    // floors should re-fit; a later window resize on the same floor
+    // shouldn't).
+    if (!isLoaded || width <= 0 || height <= 0 || currentFloorId === fittedFloorId) return;
+    requestAnimationFrame(() => {
+      // An empty floor (nothing drawn yet, or the transient placeholder
+      // shown before a home's data has loaded) has nothing to fit to —
+      // leave the viewport as-is rather than recentering to a meaningless
+      // {width/2, height/2} point.
+      if (floorStore.floor.walls.length > 0) {
+        viewportStore.reset(floorStore.floor, width, height);
+        fittedFloorId = currentFloorId;
+      }
     });
   });
 
