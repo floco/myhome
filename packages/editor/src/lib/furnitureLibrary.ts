@@ -671,25 +671,50 @@ export interface ChairPosition {
   rotation: number; // degrees, so the chair's back faces away from the table
 }
 
-export function computeRectTableChairPositions(chairCount: number): ChairPosition[] {
-  if (chairCount <= 0) return [];
+function placeChairsOnSide(side: "top" | "right" | "bottom" | "left", count: number): ChairPosition[] {
   const positions: ChairPosition[] = [];
-  const sides: Array<"top" | "right" | "bottom" | "left"> = ["top", "right", "bottom", "left"];
-  const perSide = Math.ceil(chairCount / 4);
-  let remaining = chairCount;
-  for (const side of sides) {
-    const count = Math.min(perSide, remaining);
-    for (let i = 0; i < count; i++) {
-      const t = (i + 1) / (count + 1);
-      if (side === "top") positions.push({ x: 10 + t * 80, y: -8, rotation: 180 });
-      else if (side === "bottom") positions.push({ x: 10 + t * 80, y: 108, rotation: 0 });
-      else if (side === "left") positions.push({ x: -8, y: 10 + t * 80, rotation: 90 });
-      else positions.push({ x: 108, y: 10 + t * 80, rotation: 270 });
-    }
-    remaining -= count;
-    if (remaining <= 0) break;
+  for (let i = 0; i < count; i++) {
+    const t = (i + 1) / (count + 1);
+    if (side === "top") positions.push({ x: 10 + t * 80, y: -8, rotation: 180 });
+    else if (side === "bottom") positions.push({ x: 10 + t * 80, y: 108, rotation: 0 });
+    else if (side === "left") positions.push({ x: -8, y: 10 + t * 80, rotation: 90 });
+    else positions.push({ x: 108, y: 10 + t * 80, rotation: 270 });
   }
   return positions;
+}
+
+// Chairs split as evenly as possible between two sides (e.g. 6 -> 3/3, 5 -> 3/2).
+function splitEvenly(count: number): [number, number] {
+  return [Math.ceil(count / 2), Math.floor(count / 2)];
+}
+
+export function computeRectTableChairPositions(
+  chairCount: number,
+  longAxis: "horizontal" | "vertical" = "horizontal"
+): ChairPosition[] {
+  if (chairCount <= 0) return [];
+  // A rectangular dining table reads best with chairs balanced across its
+  // two long sides first (e.g. "table à manger" with 6 chairs -> 3 per long
+  // side), only spilling onto the two short ends once the long sides are
+  // full, rather than the old fixed top/right/bottom/left fill order that
+  // could park chairs on a short end while a long side sat empty.
+  const MAX_PER_LONG_SIDE = 4;
+  const [longSideA, longSideB]: Array<"top" | "right" | "bottom" | "left"> =
+    longAxis === "horizontal" ? ["top", "bottom"] : ["left", "right"];
+  const [shortSideA, shortSideB]: Array<"top" | "right" | "bottom" | "left"> =
+    longAxis === "horizontal" ? ["left", "right"] : ["top", "bottom"];
+
+  const longPoolSize = Math.min(chairCount, MAX_PER_LONG_SIDE * 2);
+  const shortPoolSize = chairCount - longPoolSize;
+  const [longACount, longBCount] = splitEvenly(longPoolSize);
+  const [shortACount, shortBCount] = splitEvenly(shortPoolSize);
+
+  return [
+    ...placeChairsOnSide(longSideA, longACount),
+    ...placeChairsOnSide(longSideB, longBCount),
+    ...placeChairsOnSide(shortSideA, shortACount),
+    ...placeChairsOnSide(shortSideB, shortBCount),
+  ];
 }
 
 export function computeRoundTableChairPositions(chairCount: number): ChairPosition[] {
@@ -710,7 +735,11 @@ function chairMarker(pos: ChairPosition): string {
 function renderDiningTableRect(ctx: FurnitureRenderContext): string {
   const chairCount = typeof ctx.params.chairCount === "number" ? ctx.params.chairCount : 4;
   const table = `<rect x="10" y="10" width="80" height="80" rx="3"/>`;
-  const chairs = computeRectTableChairPositions(chairCount).map(chairMarker).join("\n");
+  // The 100x100 local square is stretched non-uniformly to the object's
+  // actual width/height, so which pair of sides is the "long" pair depends
+  // on the real dimensions, not just the default landscape orientation.
+  const longAxis = ctx.width >= ctx.height ? "horizontal" : "vertical";
+  const chairs = computeRectTableChairPositions(chairCount, longAxis).map(chairMarker).join("\n");
   return [table, chairs].filter(Boolean).join("\n");
 }
 
@@ -765,12 +794,20 @@ function renderStairs(ctx: FurnitureRenderContext): string {
     `<rect x="${armX}" y="5" width="40" height="90" rx="2"/>`,
   ];
   const steps = 5;
+  // Each arm's treads must stop at the shared landing square (where the two
+  // arm rects overlap, in the corner) rather than spanning the full 5..95
+  // run -- otherwise both sets of tread lines cross straight through the
+  // landing instead of the flights turning 90° at it.
+  const hFlightStart = west ? armX + 40 : 5;
+  const hFlightEnd = west ? 95 : armX;
   for (let i = 1; i < steps; i++) {
-    const x = 5 + (90 / steps) * i;
+    const x = hFlightStart + ((hFlightEnd - hFlightStart) / steps) * i;
     parts.push(`<line x1="${x.toFixed(2)}" y1="${armY}" x2="${x.toFixed(2)}" y2="${armY + 40}" fill="none"/>`);
   }
+  const vFlightStart = north ? armY + 40 : 5;
+  const vFlightEnd = north ? 95 : armY;
   for (let i = 1; i < steps; i++) {
-    const y = 5 + (90 / steps) * i;
+    const y = vFlightStart + ((vFlightEnd - vFlightStart) / steps) * i;
     parts.push(`<line x1="${armX}" y1="${y.toFixed(2)}" x2="${armX + 40}" y2="${y.toFixed(2)}" fill="none"/>`);
   }
   return parts.join("\n");

@@ -79,10 +79,24 @@ describe("furnitureLibrary", () => {
     expect(resolveFurnitureParams(t, obj)).toEqual({});
   });
 
-  it("computeRectTableChairPositions distributes chairs evenly across all 4 sides", () => {
+  it("computeRectTableChairPositions balances the two long sides before spilling onto the short ends", () => {
     expect(computeRectTableChairPositions(0)).toEqual([]);
     expect(computeRectTableChairPositions(4)).toHaveLength(4);
     expect(computeRectTableChairPositions(8)).toHaveLength(8);
+
+    // 6 chairs on the default (horizontal-long-axis) orientation -> 3 on the
+    // top long side, 3 on the bottom long side, none on the short left/right
+    // ends (the "table à manger" case from the bug report).
+    const six = computeRectTableChairPositions(6, "horizontal");
+    expect(six).toHaveLength(6);
+    expect(six.filter((c) => c.y === -8)).toHaveLength(3); // top
+    expect(six.filter((c) => c.y === 108)).toHaveLength(3); // bottom
+    expect(six.filter((c) => c.x === -8 || c.x === 108)).toHaveLength(0); // left/right
+
+    // A portrait table (longAxis "vertical") balances left/right instead.
+    const sixVertical = computeRectTableChairPositions(6, "vertical");
+    expect(sixVertical.filter((c) => c.x === -8)).toHaveLength(3); // left
+    expect(sixVertical.filter((c) => c.x === 108)).toHaveLength(3); // right
   });
 
   it("computeRoundTableChairPositions spaces chairs evenly by angle", () => {
@@ -181,6 +195,26 @@ describe("furnitureLibrary", () => {
     expect(svgSe).toContain('x="5" y="55" width="90" height="40"'); // horizontal arm at bottom
     expect(svgSe).toContain('x="55" y="5" width="40" height="90"'); // vertical arm at right
     expect(svgNw).not.toBe(svgSe);
+  });
+
+  it("L-shaped stair treads stop at the landing instead of crossing through it", () => {
+    const t = getTemplate("stairs")!;
+    const se: FurnitureObject = { id: "f4", templateId: "stairs", x: 0, y: 0, width: 2.0, height: 2.0, rotation: 0, params: { shape: "l-shaped", corner: "se" } };
+    const svg = resolveFurnitureSvg(t, se);
+    const lines = [...svg.matchAll(/<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"/g)].map(
+      (m) => ({ x1: Number(m[1]), y1: Number(m[2]), x2: Number(m[3]), y2: Number(m[4]) })
+    );
+    // Horizontal-arm treads (vertical dividers spanning the bottom band,
+    // y 55..95) must stay left of the landing (x < 55), not run into the
+    // vertical arm's column.
+    const horizontalArmTreads = lines.filter((l) => l.y1 === 55 && l.y2 === 95);
+    expect(horizontalArmTreads.length).toBeGreaterThan(0);
+    for (const l of horizontalArmTreads) expect(l.x1).toBeLessThan(55);
+    // Vertical-arm treads (horizontal dividers spanning the right band,
+    // x 55..95) must stay above the landing (y < 55).
+    const verticalArmTreads = lines.filter((l) => l.x1 === 55 && l.x2 === 95);
+    expect(verticalArmTreads.length).toBeGreaterThan(0);
+    for (const l of verticalArmTreads) expect(l.y1).toBeLessThan(55);
   });
 
   it("computeDeckPlankLayout adds more rows as the deck gets taller (fixed real plank width)", () => {
