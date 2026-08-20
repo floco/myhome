@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.26.1 - 2026-08-20
+
+- Fixed the home dashboard's layer picker overflowing its card on mobile
+- Fixed the floor plan editor still not fitting the screen on first load in some cases
+- Fixed L-shaped stairs rendering with steps crossing through the corner instead of turning
+- Fixed rectangular dining table chairs not balancing evenly across the two long sides
+
 ## 0.26.0 - 2026-08-17
 
 - Added a "years span" stat card to the works timeline, showing the number of years between the first and last work
