@@ -25,7 +25,7 @@ from .schema import (
     work_categories,
 )
 
-CURRENT_VERSION = 9
+CURRENT_VERSION = 10
 
 
 def _drop_kb_folders_table(conn: Connection) -> None:
@@ -203,6 +203,11 @@ def _drop_inventory_legacy_category_column(conn: Connection) -> None:
     conn.execute(text("DROP TABLE inventory_items_old"))
 
 
+def _add_locations_notes_and_attachments(conn: Connection) -> None:
+    conn.execute(text("ALTER TABLE locations ADD COLUMN notes VARCHAR NOT NULL DEFAULT ''"))
+    conn.execute(text("ALTER TABLE locations ADD COLUMN attachments TEXT NOT NULL DEFAULT '[]'"))
+
+
 MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (2, _drop_kb_folders_table),
     (3, _add_ha_user_id_column),
@@ -212,6 +217,7 @@ MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (7, _add_inventory_owner_store_and_category_id),
     (8, _add_assignment_label_column),
     (9, _drop_inventory_legacy_category_column),
+    (10, _add_locations_notes_and_attachments),
 ]
 
 

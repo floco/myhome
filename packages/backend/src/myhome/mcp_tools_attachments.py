@@ -155,7 +155,7 @@ async def upload_attachment(
     bigger, call request_attachment_upload instead and curl the file directly.
 
     module: one of "inventory", "kb", "works", "costs", "properties", "build",
-    "chores", "insurance" -- for "build", item_id is the task id (see
+    "chores", "insurance", "locations" -- for "build", item_id is the task id (see
     list_build_tasks). filename must include its extension (.pdf, .jpg, .jpeg,
     .png, or .webp). data_base64 is the raw file bytes, base64-encoded (no
     data: URI prefix)."""

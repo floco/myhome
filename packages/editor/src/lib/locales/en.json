@@ -792,7 +792,8 @@
       "addLocation": "Add location",
       "editLocation": "Edit location",
       "flag": "Flag",
-      "namePlaceholder": "e.g. Nantes, France"
+      "namePlaceholder": "e.g. Nantes, France",
+      "notesPlaceholder": "Notes about this location…"
     },
     "criterionModal": {
       "addCriterion": "Add criterion",

@@ -1,10 +1,14 @@
 # packages/backend/src/myhome/persistence_locations.py
 from __future__ import annotations
 
+import json
 import uuid
+from pathlib import Path
 
 from sqlalchemy import select
 
+from . import attachment_storage
+from .attachment_storage import generate_pdf_thumbnail
 from .db import get_engine
 from .models_locations import Location, LocationCriterion, LocationRating, LocationsDocument
 from .schema import (
@@ -12,6 +16,8 @@ from .schema import (
     location_ratings as location_ratings_table,
     locations as locations_table,
 )
+
+_MODULE = "locations"
 
 DEFAULT_CRITERIA: list[tuple[str, str]] = [
     ("Geography & Climate", "Geographic location, climate patterns, seasonal temperatures."),
@@ -47,7 +53,13 @@ def load_locations(home_id: str) -> LocationsDocument:
         LocationCriterion(id=r["id"], name=r["name"], description=r["description"], weight=r["weight"])
         for r in criterion_rows
     ]
-    locations = [Location(id=r["id"], name=r["name"], emoji=r["emoji"]) for r in location_rows]
+    locations = [
+        Location(
+            id=r["id"], name=r["name"], emoji=r["emoji"],
+            notes=r["notes"], attachments=json.loads(r["attachments"]),
+        )
+        for r in location_rows
+    ]
     ratings = [
         LocationRating(locationId=r["location_id"], criterionId=r["criterion_id"], score=r["score"], note=r["note"])
         for r in rating_rows
@@ -71,7 +83,10 @@ def save_locations(home_id: str, doc: LocationsDocument) -> None:
             ])
         if doc.locations:
             conn.execute(locations_table.insert(), [
-                {"id": l.id, "home_id": home_id, "order_index": i, "name": l.name, "emoji": l.emoji}
+                {
+                    "id": l.id, "home_id": home_id, "order_index": i, "name": l.name, "emoji": l.emoji,
+                    "notes": l.notes, "attachments": json.dumps(l.attachments),
+                }
                 for i, l in enumerate(doc.locations)
             ])
         if doc.ratings:
@@ -99,3 +114,20 @@ def reset_locations(home_id: str) -> None:
     with engine.begin() as conn:
         conn.execute(location_ratings_table.delete().where(location_ratings_table.c.home_id == home_id))
         conn.execute(locations_table.delete().where(locations_table.c.home_id == home_id))
+    attachment_storage.delete_all_module_attachments(home_id, _MODULE)
+
+
+def get_attachment_path(home_id: str, location_id: str, filename: str) -> Path:
+    return attachment_storage.get_attachment_path(home_id, _MODULE, location_id, filename)
+
+
+def save_attachment(home_id: str, location_id: str, filename: str, data: bytes) -> None:
+    attachment_storage.save_attachment(home_id, _MODULE, location_id, filename, data)
+
+
+def delete_attachment(home_id: str, location_id: str, filename: str) -> bool:
+    return attachment_storage.delete_attachment(home_id, _MODULE, location_id, filename)
+
+
+def delete_all_attachments(home_id: str, location_id: str) -> None:
+    attachment_storage.delete_all_attachments(home_id, _MODULE, location_id)

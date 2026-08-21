@@ -18,6 +18,7 @@ from . import persistence_costs as _cst
 from . import persistence_insurance as _ins
 from . import persistence_inventory as _inv
 from . import persistence_kb as _kb
+from . import persistence_locations as _loc
 from . import persistence_properties as _prop
 from . import persistence_works as _wrk
 
@@ -87,6 +88,12 @@ def _insurance_find(home_id: str, item_id: str):
     return item, (lambda: _ins.save_insurance(home_id, doc))
 
 
+def _locations_find(home_id: str, item_id: str):
+    doc = _loc.load_locations(home_id)
+    item = next((l for l in doc.locations if l.id == item_id), None)
+    return item, (lambda: _loc.save_locations(home_id, doc))
+
+
 MODULES: dict[str, ModuleAdapter] = {
     "inventory": ModuleAdapter(
         _inventory_find, _inv.save_attachment, _inv.get_attachment_path,
@@ -119,6 +126,10 @@ MODULES: dict[str, ModuleAdapter] = {
     "insurance": ModuleAdapter(
         _insurance_find, _ins.save_attachment, _ins.get_attachment_path,
         _ins.delete_attachment, _ins.generate_pdf_thumbnail,
+    ),
+    "locations": ModuleAdapter(
+        _locations_find, _loc.save_attachment, _loc.get_attachment_path,
+        _loc.delete_attachment, _loc.generate_pdf_thumbnail,
     ),
 }
 

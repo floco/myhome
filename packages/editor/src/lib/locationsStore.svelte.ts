@@ -11,6 +11,8 @@ export interface Location {
   id: string;
   name: string;
   emoji: string;
+  notes: string;
+  attachments: string[];
 }
 
 export interface LocationRating {
@@ -133,7 +135,7 @@ export function createLocationsStore(getHomeId: () => string | null = () => null
     await init();
   }
 
-  async function createLocation(data: Omit<Location, "id">): Promise<void> {
+  async function createLocation(data: Omit<Location, "id" | "attachments">): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
     const resp = await fetch(`/api/homes/${homeId}/locations/locations`, {
@@ -143,7 +145,7 @@ export function createLocationsStore(getHomeId: () => string | null = () => null
     await init();
   }
 
-  async function updateLocation(id: string, patch: Partial<Omit<Location, "id">>): Promise<void> {
+  async function updateLocation(id: string, patch: Partial<Omit<Location, "id" | "attachments">>): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
     const resp = await fetch(`/api/homes/${homeId}/locations/locations/${id}`, {
@@ -157,6 +159,31 @@ export function createLocationsStore(getHomeId: () => string | null = () => null
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
     const resp = await fetch(`/api/homes/${homeId}/locations/locations/${id}`, { method: "DELETE" });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    await init();
+  }
+
+  async function uploadAttachment(id: string, file: File): Promise<string> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const form = new FormData();
+    form.append("file", file);
+    const resp = await fetch(`/api/homes/${homeId}/attachments/locations/${id}`, {
+      method: "POST",
+      body: form,
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const result = await resp.json();
+    await init();
+    return result.filename as string;
+  }
+
+  async function deleteAttachment(id: string, filename: string): Promise<void> {
+    const homeId = getHomeId();
+    if (!homeId) throw new Error("No active home");
+    const resp = await fetch(`/api/homes/${homeId}/attachments/locations/${id}/${filename}`, {
+      method: "DELETE",
+    });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
   }
@@ -205,6 +232,8 @@ export function createLocationsStore(getHomeId: () => string | null = () => null
     updateLocation,
     deleteLocation,
     reorderLocations,
+    uploadAttachment,
+    deleteAttachment,
     setRating,
     clearRating,
     reload: init,

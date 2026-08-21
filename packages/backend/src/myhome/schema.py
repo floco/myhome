@@ -422,6 +422,8 @@ locations = Table(
     Column("order_index", Integer, nullable=False),
     Column("name", String, nullable=False),
     Column("emoji", String, nullable=False),
+    Column("notes", String, nullable=False),
+    Column("attachments", Text, nullable=False),
 )
 
 location_ratings = Table(

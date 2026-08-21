@@ -45,14 +45,6 @@
     await store.reorderLocations(ids);
   }
 
-  async function handleSaveLocation(data: { name: string; emoji: string }): Promise<void> {
-    if (showLocationModal === "new") {
-      await store.createLocation(data);
-    } else if (showLocationModal) {
-      await store.updateLocation(showLocationModal.id, data);
-    }
-  }
-
   async function handleSaveCriterion(data: { name: string; description: string; weight: Weight }): Promise<void> {
     if (showCriterionModal === "new") {
       await store.createCriterion(data);
@@ -199,7 +191,7 @@
 {#if showLocationModal}
   <LocationModal
     location={showLocationModal === "new" ? null : showLocationModal}
-    onsave={handleSaveLocation}
+    {store}
     onclose={() => { showLocationModal = null; }}
   />
 {/if}

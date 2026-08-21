@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import LocationRatingPopup from "../src/lib/components/LocationRatingPopup.svelte";
 
-const location = { id: "l1", name: "Nantes", emoji: "🇫🇷" };
+const location = { id: "l1", name: "Nantes", emoji: "🇫🇷", notes: "", attachments: [] };
 const criterion = { id: "c1", name: "Cost of Living", description: "", weight: "medium" as const };
 
 function target(): HTMLElement {

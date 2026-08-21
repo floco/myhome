@@ -125,7 +125,7 @@ describe("locationsStore — locations CRUD", () => {
     vi.stubGlobal("fetch", fetchFn);
     const store = createLocationsStore(getHomeId);
     await tick();
-    await store.createLocation({ name: "Zagreb", emoji: "🇭🇷" });
+    await store.createLocation({ name: "Zagreb", emoji: "🇭🇷", notes: "" });
     expect(fetchFn).toHaveBeenCalledWith(
       `/api/homes/${HOME}/locations/locations`,
       expect.objectContaining({ method: "POST" }),
