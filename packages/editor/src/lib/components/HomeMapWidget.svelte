@@ -107,7 +107,7 @@
     <div class="map-area" bind:clientWidth={mapWidth} bind:clientHeight={mapHeight} onclick={onnavigate}>
       {#if currentFloor}
         <Canvas floor={currentFloor} {viewport} width={mapWidth} height={mapHeight} showGrid={false}
-          furnitureObjects={currentFloor.furnitureObjects ?? []} />
+          furnitureObjects={currentFloor.furnitureObjects ?? []} allowPageScroll={true} />
         {#if activeLayers.has("chores")}
           <ChoreOverlay
             chores={choreStore.chores}

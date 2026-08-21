@@ -52,6 +52,7 @@
     haLayerActive = false,
     haStates = new Map<string, HaEntityState>(),
     readOnly = false,
+    allowPageScroll = false,
   }: {
     floor: Floor;
     viewport: ViewportState;
@@ -87,6 +88,11 @@
     haStates?: Map<string, HaEntityState>;
     /** Disables all draw/edit interactions; pan, zoom and selection stay live. */
     readOnly?: boolean;
+    /** Lets touch swipes fall through to the page's own vertical scrolling
+     *  instead of being captured for canvas pan/zoom gestures -- for
+     *  non-interactive previews (e.g. the home dashboard widget) embedded
+     *  in a scrolling page. */
+    allowPageScroll?: boolean;
   } = $props();
 
   const snapResult = $derived.by(() => {
@@ -272,6 +278,7 @@
   class="canvas"
   class:pan-tool={tool === "pan"}
   class:panning={panState !== null}
+  class:allow-page-scroll={allowPageScroll}
   onclick={handleClick}
   onpointerdown={handlePointerDown}
   onpointermove={handlePointerMove}
@@ -385,6 +392,10 @@
     background: var(--canvas-bg);
     display: block;
     touch-action: none;
+  }
+
+  .canvas.allow-page-scroll {
+    touch-action: pan-y;
   }
 
   .canvas.pan-tool {
