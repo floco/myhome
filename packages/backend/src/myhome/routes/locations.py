@@ -15,7 +15,7 @@ from ..models_locations import (
     ReorderRequest,
 )
 from ..persistence_activity import log_activity
-from ..persistence_locations import load_locations, save_locations
+from ..persistence_locations import delete_all_attachments, load_locations, save_locations
 
 router = APIRouter()
 
@@ -124,6 +124,7 @@ def delete_location(
     doc.locations = [l for l in doc.locations if l.id != id]
     doc.ratings = [r for r in doc.ratings if r.locationId != id]
     save_locations(home_id, doc)
+    delete_all_attachments(home_id, id)
     log_activity(home_id, current_user_id, "locations", "delete", item.name, id)
 
 

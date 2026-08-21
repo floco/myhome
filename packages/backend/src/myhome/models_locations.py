@@ -17,6 +17,8 @@ class Location(BaseModel):
     id: str
     name: str
     emoji: str = "📍"
+    notes: str = ""
+    attachments: list[str] = []
 
 
 class LocationRating(BaseModel):
@@ -48,11 +50,13 @@ class LocationCriterionUpdate(BaseModel):
 class LocationCreate(BaseModel):
     name: str
     emoji: str = "📍"
+    notes: str = ""
 
 
 class LocationUpdate(BaseModel):
     name: str | None = None
     emoji: str | None = None
+    notes: str | None = None
 
 
 class ReorderRequest(BaseModel):

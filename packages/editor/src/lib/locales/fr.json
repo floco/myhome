@@ -792,7 +792,8 @@
       "addLocation": "Ajouter un emplacement",
       "editLocation": "Modifier l'emplacement",
       "flag": "Drapeau",
-      "namePlaceholder": "ex. Nantes, France"
+      "namePlaceholder": "ex. Nantes, France",
+      "notesPlaceholder": "Notes sur cet emplacement…"
     },
     "criterionModal": {
       "addCriterion": "Ajouter un critère",

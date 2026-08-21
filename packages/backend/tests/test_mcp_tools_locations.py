@@ -34,6 +34,20 @@ def test_update_location(home_id):
     assert updated["name"] == "Ljubljana Region"
 
 
+def test_create_location_with_notes(home_id):
+    from myhome.mcp_tools_locations import _create_location_impl
+    item = _create_location_impl(home_id, "Ljubljana", notes="Great public transit")
+    assert item["notes"] == "Great public transit"
+    assert item["attachments"] == []
+
+
+def test_update_location_notes(home_id):
+    from myhome.mcp_tools_locations import _create_location_impl, _update_location_impl
+    item = _create_location_impl(home_id, "Ljubljana")
+    updated = _update_location_impl(home_id, item["id"], notes="Updated notes")
+    assert updated["notes"] == "Updated notes"
+
+
 def test_delete_location(home_id):
     from myhome.mcp_tools_locations import _create_location_impl, _delete_location_impl, _list_locations_impl
     item = _create_location_impl(home_id, "Old Place")

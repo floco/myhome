@@ -100,6 +100,24 @@ def test_create_location_default_emoji(client, home_id):
     resp = client.post(f"/api/homes/{home_id}/locations/locations", json={"name": "Nice"})
     assert resp.status_code == 201
     assert resp.json()["emoji"] == "📍"
+    assert resp.json()["notes"] == ""
+    assert resp.json()["attachments"] == []
+
+
+def test_create_location_with_notes(client, home_id):
+    resp = client.post(
+        f"/api/homes/{home_id}/locations/locations", json={"name": "Zagreb", "notes": "## Pros\n\nGreat food"},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["notes"].startswith("## Pros")
+
+
+def test_update_location_notes(client, home_id):
+    save_locations(home_id, make_doc())
+    resp = client.put(f"/api/homes/{home_id}/locations/locations/loc1", json={"notes": "Updated notes"})
+    assert resp.status_code == 204
+    data = client.get(f"/api/homes/{home_id}/locations").json()
+    assert data["locations"][0]["notes"] == "Updated notes"
 
 
 def test_update_location(client, home_id):
@@ -182,6 +200,49 @@ def test_clear_rating(client, home_id):
 def test_clear_rating_not_found(client, home_id):
     resp = client.delete(f"/api/homes/{home_id}/locations/ratings/loc1/crit1")
     assert resp.status_code == 404
+
+
+# --- attachments (generic routes, module="locations") ---
+
+def test_upload_and_delete_location_attachment(client, home_id):
+    save_locations(home_id, make_doc())
+    resp = client.post(
+        f"/api/homes/{home_id}/attachments/locations/loc1",
+        files={"file": ("photo.jpg", b"fake-jpg-bytes", "image/jpeg")},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["filename"] == "photo.jpg"
+
+    data = client.get(f"/api/homes/{home_id}/locations").json()
+    assert "photo.jpg" in data["locations"][0]["attachments"]
+
+    get_resp = client.get(f"/api/homes/{home_id}/attachments/locations/loc1/photo.jpg")
+    assert get_resp.status_code == 200
+
+    del_resp = client.delete(f"/api/homes/{home_id}/attachments/locations/loc1/photo.jpg")
+    assert del_resp.status_code == 204
+    data = client.get(f"/api/homes/{home_id}/locations").json()
+    assert "photo.jpg" not in data["locations"][0]["attachments"]
+
+
+def test_upload_attachment_location_not_found(client, home_id):
+    resp = client.post(
+        f"/api/homes/{home_id}/attachments/locations/nope",
+        files={"file": ("photo.jpg", b"fake-jpg-bytes", "image/jpeg")},
+    )
+    assert resp.status_code == 404
+
+
+def test_delete_location_removes_attachments(client, home_id):
+    save_locations(home_id, make_doc())
+    client.post(
+        f"/api/homes/{home_id}/attachments/locations/loc1",
+        files={"file": ("photo.jpg", b"fake-jpg-bytes", "image/jpeg")},
+    )
+    resp = client.delete(f"/api/homes/{home_id}/locations/locations/loc1")
+    assert resp.status_code == 204
+    get_resp = client.get(f"/api/homes/{home_id}/attachments/locations/loc1/photo.jpg")
+    assert get_resp.status_code == 404
 
 
 def test_reset_locations_preserves_criteria(client, home_id):

@@ -109,6 +109,12 @@ def _create_legacy_category_tables(conn) -> None:
         "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, room_id VARCHAR, "
         "position_x FLOAT, position_y FLOAT, next_due_date VARCHAR NOT NULL)"
     ))
+    # locations pre-dates migration 10 (which adds notes/attachments), so
+    # every migration test's snapshot needs it in this old shape too.
+    conn.execute(text(
+        "CREATE TABLE locations (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+        "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL)"
+    ))
 
 
 def test_run_migrations_scopes_cost_categories_by_home(tmp_path):
@@ -282,6 +288,13 @@ def test_run_migrations_adds_insurance_support(tmp_path):
             "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, room_id VARCHAR, "
             "position_x FLOAT, position_y FLOAT, next_due_date VARCHAR NOT NULL)"
         ))
+        # locations is needed too since this snapshot now also runs
+        # migration 10 (_add_locations_notes_and_attachments) on its way to
+        # CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE locations (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL)"
+        ))
         conn.execute(text(
             "INSERT INTO cost_categories (id, home_id, order_index, name, emoji, color) "
             "VALUES ('cat-fuel', 'h1', 0, 'Fuel', '🛢', '#4466cc')"
@@ -358,6 +371,13 @@ def test_run_migrations_backfills_inventory_category_id(tmp_path):
             "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, room_id VARCHAR, "
             "position_x FLOAT, position_y FLOAT, next_due_date VARCHAR NOT NULL)"
         ))
+        # locations is needed too since this snapshot now also runs
+        # migration 10 (_add_locations_notes_and_attachments) on its way to
+        # CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE locations (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL)"
+        ))
         conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
         conn.execute(text("INSERT INTO schema_version (version) VALUES (6)"))
 
@@ -410,6 +430,13 @@ def test_run_migrations_adds_label_to_pre_existing_chore_assignments_table(tmp_p
             "notes VARCHAR NOT NULL, attachments TEXT NOT NULL, placement_floor_id VARCHAR, "
             "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
         ))
+        # locations is needed too since this snapshot now also runs
+        # migration 10 (_add_locations_notes_and_attachments) on its way to
+        # CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE locations (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL)"
+        ))
         conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
         conn.execute(text("INSERT INTO schema_version (version) VALUES (7)"))
 
@@ -447,6 +474,13 @@ def test_run_migrations_drops_inventory_legacy_category_column(tmp_path):
             "(id, home_id, order_index, name, emoji, category, category_id, notes, attachments) "
             "VALUES ('i1', 'h1', 0, 'TV', '📺', 'Electronics', 'inv-electronics', '', '[]')"
         ))
+        # locations is needed too since this snapshot now also runs
+        # migration 10 (_add_locations_notes_and_attachments) on its way to
+        # CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE locations (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL)"
+        ))
         conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
         conn.execute(text("INSERT INTO schema_version (version) VALUES (8)"))
 
@@ -471,3 +505,29 @@ def test_run_migrations_drops_inventory_legacy_category_column(tmp_path):
     assert row["id"] == "i1"
     assert row["category_id"] == "inv-electronics"
     assert "category" not in columns
+
+
+def test_run_migrations_adds_notes_and_attachments_to_pre_existing_locations_table(tmp_path):
+    db_path = tmp_path / "legacy.db"
+    engine = create_engine(f"sqlite:///{db_path}")
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE locations (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL)"
+        ))
+        conn.execute(text(
+            "INSERT INTO locations (id, home_id, order_index, name, emoji) "
+            "VALUES ('loc1', 'h1', 0, 'Ljubljana', '🇸🇮')"
+        ))
+        conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
+        conn.execute(text("INSERT INTO schema_version (version) VALUES (9)"))
+
+    run_migrations(engine)
+
+    with engine.connect() as conn:
+        version = conn.execute(text("SELECT version FROM schema_version")).scalar()
+        row = conn.execute(text("SELECT notes, attachments FROM locations WHERE id = 'loc1'")).mappings().first()
+
+    assert version == CURRENT_VERSION
+    assert row["notes"] == ""
+    assert row["attachments"] == "[]"

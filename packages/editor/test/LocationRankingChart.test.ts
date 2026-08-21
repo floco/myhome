@@ -17,8 +17,8 @@ describe("LocationRankingChart", () => {
       target: el,
       props: {
         locations: [
-          { id: "l1", name: "Nantes", emoji: "🇫🇷" },
-          { id: "l2", name: "Ljubljana", emoji: "🇸🇮" },
+          { id: "l1", name: "Nantes", emoji: "🇫🇷", notes: "", attachments: [] },
+          { id: "l2", name: "Ljubljana", emoji: "🇸🇮", notes: "", attachments: [] },
         ],
         criteria,
         ratings: [
@@ -42,8 +42,8 @@ describe("LocationRankingChart", () => {
       target: el,
       props: {
         locations: [
-          { id: "l1", name: "Rated", emoji: "📍" },
-          { id: "l2", name: "Unrated", emoji: "📍" },
+          { id: "l1", name: "Rated", emoji: "📍", notes: "", attachments: [] },
+          { id: "l2", name: "Unrated", emoji: "📍", notes: "", attachments: [] },
         ],
         criteria,
         ratings: [{ locationId: "l1", criterionId: "c1", score: 3, note: "" }],

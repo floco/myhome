@@ -50,10 +50,10 @@ def _delete_location_criterion_impl(home_id: str | None, criterion_id: str) -> d
     return {"deleted": criterion_id}
 
 
-def _create_location_impl(home_id: str | None, name: str, emoji: str = "📍") -> dict:
+def _create_location_impl(home_id: str | None, name: str, emoji: str = "📍", notes: str = "") -> dict:
     resolved = _resolve_home_id(home_id)
     doc = load_locations(resolved)
-    item = Location(id=str(uuid.uuid4()), name=name, emoji=emoji)
+    item = Location(id=str(uuid.uuid4()), name=name, emoji=emoji, notes=notes)
     doc.locations.append(item)
     save_locations(resolved, doc)
     return item.model_dump()
@@ -136,19 +136,22 @@ async def delete_location_criterion(ctx: Context, criterion_id: str, home_id: st
 
 
 @mcp.tool()
-async def create_location(ctx: Context, name: str, home_id: str | None = None, emoji: str = "📍") -> dict:
+async def create_location(
+    ctx: Context, name: str, home_id: str | None = None, emoji: str = "📍", notes: str = "",
+) -> dict:
     """Add a candidate location (country, city, region) to compare."""
     await _require_role(ctx.request_context.request, "normal")
-    return _create_location_impl(home_id, name, emoji)
+    return _create_location_impl(home_id, name, emoji, notes)
 
 
 @mcp.tool()
 async def update_location(
-    ctx: Context, location_id: str, home_id: str | None = None, name: str | None = None, emoji: str | None = None,
+    ctx: Context, location_id: str, home_id: str | None = None,
+    name: str | None = None, emoji: str | None = None, notes: str | None = None,
 ) -> dict:
-    """Update a candidate location's name or emoji."""
+    """Update a candidate location's name, emoji, or notes."""
     await _require_role(ctx.request_context.request, "normal")
-    return _update_location_impl(home_id, location_id, name=name, emoji=emoji)
+    return _update_location_impl(home_id, location_id, name=name, emoji=emoji, notes=notes)
 
 
 @mcp.tool()
