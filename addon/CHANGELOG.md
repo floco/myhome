@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.26.2 - 2026-08-21
+
+- Fixed the home dashboard's floor-picker icon rendering smaller and misaligned vs. the layers icon on mobile
+- Fixed swiping over the home dashboard's floor-plan preview blocking page scroll on mobile
+
 ## 0.26.1 - 2026-08-20
 
 - Fixed the home dashboard's layer picker overflowing its card on mobile
