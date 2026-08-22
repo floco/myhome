@@ -315,7 +315,7 @@
     window: "🪟",
   };
   let allFloorsMode = $state(false);
-  let viewMode = $state(false);
+  let viewMode = $state(true);
   let openGroup = $state<"view" | "draw" | "actions" | null>(null);
   let viewTriggerEl = $state<HTMLButtonElement | null>(null);
   let drawTriggerEl = $state<HTMLButtonElement | null>(null);
