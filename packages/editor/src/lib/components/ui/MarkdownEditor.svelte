@@ -71,6 +71,23 @@
     return () => document.removeEventListener("click", handleClick);
   });
 
+  // Any link that isn't an internal #/kb/... page reference must open in a
+  // new tab. Without this, clicking an external link inside the HA add-on
+  // navigates the ingress iframe itself, which the target site's framing
+  // protections (X-Frame-Options/CSP) then render as a blank page.
+  function externalizeLinksInHtml(html: string): string {
+    const template = document.createElement("template");
+    template.innerHTML = html;
+    template.content.querySelectorAll("a[href]").forEach((node) => {
+      const a = node as HTMLAnchorElement;
+      const href = a.getAttribute("href") ?? "";
+      if (href.startsWith("#")) return;
+      a.setAttribute("target", "_blank");
+      a.setAttribute("rel", "noopener noreferrer");
+    });
+    return template.innerHTML;
+  }
+
   function resolveKbLinksInHtml(html: string): string {
     if (!resolveKbLink) return html;
     const template = document.createElement("template");
@@ -97,7 +114,9 @@
   // cards (and any other link) open in a new tab instead of navigating the SPA away.
   const renderedHtml = $derived(
     value.trim()
-      ? resolveKbLinksInHtml(DOMPurify.sanitize(marked(value) as string, { ADD_ATTR: ["target"] }))
+      ? resolveKbLinksInHtml(
+          externalizeLinksInHtml(DOMPurify.sanitize(marked(value) as string, { ADD_ATTR: ["target"] })),
+        )
       : "",
   );
 
