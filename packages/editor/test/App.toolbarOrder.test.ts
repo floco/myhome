@@ -16,6 +16,11 @@ async function mountAndLoad(target: HTMLElement, route = "#/plan"): Promise<Retu
   const app = mount(App, { target });
   await tick(); await tick();
   flushSync();
+  // The floor plan loads in view mode by default; enter edit mode so the
+  // full button set (Picker/Furniture, etc.) is present for these checks.
+  const editToggle = target.querySelector('button[title="Switch to edit mode"]') as HTMLButtonElement | null;
+  editToggle?.click();
+  flushSync();
   return app;
 }
 
@@ -26,7 +31,7 @@ describe("App — floating toolbar button order", () => {
     document.body.appendChild(target);
     const app = await mountAndLoad(target);
 
-    // Edit mode is the default on load, so Picker/Furniture are both present.
+    // mountAndLoad enters edit mode, so Picker/Furniture are both present.
     const toolbar = target.querySelector(".floating-toolbar") as HTMLElement;
     const buttons = Array.from(toolbar.querySelectorAll(":scope > button.ft-btn"));
     const toggleIndex = buttons.findIndex((b) => b.querySelector(".mode-icon") !== null);

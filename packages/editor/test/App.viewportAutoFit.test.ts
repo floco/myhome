@@ -88,6 +88,11 @@ async function mountApp(target: HTMLElement): Promise<ReturnType<typeof mount>> 
   for (let i = 0; i < 10; i++) await tick();
   flushSync();
   await flushAutoFit();
+  // The floor plan loads in view mode by default; these tests exercise
+  // floor-switching/editing behavior, so enter edit mode right after mounting.
+  const editToggle = target.querySelector('button[title="Switch to edit mode"]') as HTMLButtonElement | null;
+  editToggle?.click();
+  flushSync();
   return app;
 }
 

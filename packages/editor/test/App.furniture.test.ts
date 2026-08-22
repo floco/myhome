@@ -16,6 +16,11 @@ async function mountAndLoad(target: HTMLElement, route = "#/plan"): Promise<Retu
   const app = mount(App, { target });
   await tick(); await tick(); await tick();
   flushSync();
+  // The floor plan loads in view mode by default; these tests exercise
+  // furniture editing behavior, so enter edit mode right after mounting.
+  const editToggle = target.querySelector('button[title="Switch to edit mode"]') as HTMLButtonElement | null;
+  editToggle?.click();
+  flushSync();
   return app;
 }
 

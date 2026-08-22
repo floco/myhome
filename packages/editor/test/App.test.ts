@@ -90,6 +90,11 @@ async function mountAndLoad(target: HTMLElement, route = "#/plan"): Promise<Retu
   await tick();
   await tick();  // extra tick for authStore init
   flushSync();
+  // The floor plan loads in view mode by default; most tests in this file
+  // exercise editing behavior, so enter edit mode right after mounting.
+  const editToggle = target.querySelector('button[title="Switch to edit mode"]') as HTMLButtonElement | null;
+  editToggle?.click();
+  flushSync();
   return app;
 }
 
@@ -108,6 +113,21 @@ describe("App", () => {
     }
     target?.remove();
     window.matchMedia = desktopMatchMedia;
+  });
+
+  it("loads the floor plan in view mode by default", async () => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+    window.location.hash = "#/plan";
+    app = mount(App, { target });
+    await tick();
+    await tick();
+    await tick();
+    flushSync();
+
+    expect(toolbarBtn(target, "Switch to edit mode")).toBeTruthy();
+    expect(target.querySelector('button[title="Toggle item picker"]')).toBeNull();
+    expect(target.querySelector('button[title="Wall"]')).toBeNull();
   });
 
   it("renders the title and toolbar with the select tool active", async () => {
