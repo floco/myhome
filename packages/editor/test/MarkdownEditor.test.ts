@@ -666,6 +666,38 @@ describe("MarkdownEditor — resolveKbLink", () => {
   });
 });
 
+describe("MarkdownEditor — external link target", () => {
+  it("opens a plain external link in a new tab with rel=noopener noreferrer", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "[External](https://example.com)", editing: false },
+    });
+    flushSync();
+    const link = target.querySelector("a[href='https://example.com']");
+    expect(link?.getAttribute("target")).toBe("_blank");
+    expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
+    unmount(app);
+    target.remove();
+  });
+
+  it("does not add target/rel to an internal #/kb/ link", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "[Some text](#/kb/p1)", editing: false },
+    });
+    flushSync();
+    const link = target.querySelector("a[href='#/kb/p1']");
+    expect(link?.hasAttribute("target")).toBe(false);
+    expect(link?.hasAttribute("rel")).toBe(false);
+    unmount(app);
+    target.remove();
+  });
+});
+
 describe("MarkdownEditor — /page slash command", () => {
   it("replaces /page with a link to the created child page", async () => {
     const target = document.createElement("div");
