@@ -185,10 +185,11 @@
   .ep-wrap { position: relative; display: inline-flex; }
 
   .ep-trigger {
-    display: inline-flex; align-items: center; gap: 3px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 3px;
     background: var(--surface-alt); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 3px 6px 3px 8px; cursor: pointer;
+    border-radius: var(--radius-md); padding: 0 8px; cursor: pointer;
     font-size: 18px; line-height: 1;
+    height: 36px; box-sizing: border-box;
   }
   .ep-trigger:hover { border-color: var(--accent); }
   .ep-caret { font-size: 9px; color: var(--text-faint); }

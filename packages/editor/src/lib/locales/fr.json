@@ -482,6 +482,7 @@
       "uploadFailed": "Échec de l'envoi",
       "assignments": "Affectations",
       "assignmentsCount": "Affectations ({n})",
+      "goToAssignments": "Aller aux affectations",
       "labelPlaceholder": "Étiquette (optionnel)",
       "selectRoom": "Choisir une zone…",
       "addAssignment": "Ajouter"

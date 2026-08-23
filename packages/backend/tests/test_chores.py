@@ -154,6 +154,19 @@ def test_preview_next_due_from_completion_anchors_on_now(client, home_id):
     assert abs((next_due - expected).total_seconds()) < 5
 
 
+def test_preview_next_due_from_completion_when_overdue_shows_real_due_date_unchanged(client, home_id):
+    # "Schedule from completion date" (scheduleFromDue=False) with a due date
+    # already in the past, not yet completed -- the calculated preview must
+    # show the real (overdue) due date as-is, not project forward from today
+    # and hide how overdue it is. It only recalculates once actually completed.
+    resp = client.post(f"/api/homes/{home_id}/chores/preview-next-due", json={
+        "frequencyType": "interval", "frequency": 7, "frequencyMetadata": {"unit": "days"},
+        "scheduleFromDue": False, "nextDueDate": "2020-01-01T00:00:00Z",
+    })
+    assert resp.status_code == 200
+    assert resp.json()["nextDueDate"] == "2020-01-01T00:00:00Z"
+
+
 def test_complete_chore_with_past_completedOn_is_latest_advances_next_due(client, home_id, tmp_path):
     """No prior completions exist, so a single backdated completion is
     trivially the most recent one -- next-due must be computed from the
