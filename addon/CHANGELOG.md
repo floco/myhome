@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.26.3 - 2026-08-23
+
+- Added buttons to the chore edit modal to complete all of a chore's assignments at once, or jump to its Assignments tab, instead of requiring the Assignments tab for every completion
+- Fixed the chore edit modal's "next due (calculated)" preview showing a date projected from today instead of the real due date for overdue chores that haven't been completed yet
+- Fixed the chore edit modal's emoji picker rendering a different height than the name field next to it
+- Fixed external links in markdown content (e.g. Knowledge Base pages) opening in the same tab, which showed a blank page under Home Assistant's ingress iframe
+- Fixed the floor plan editor defaulting to edit mode instead of view mode when opened
+
 ## 0.26.2 - 2026-08-21
 
 - Fixed the home dashboard's floor-picker icon rendering smaller and misaligned vs. the layers icon on mobile
