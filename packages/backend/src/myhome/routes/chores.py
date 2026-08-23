@@ -260,13 +260,21 @@ def preview_next_due(
     the given (unsaved) schedule settings -- lets the edit modal show a live
     preview without requiring an actual completion first."""
     now = datetime.now(timezone.utc)
-    if body.scheduleFromDue and body.nextDueDate:
+    from_dt = now
+    if body.nextDueDate:
         try:
-            from_dt = datetime.fromisoformat(body.nextDueDate.replace("Z", "+00:00"))
+            parsed_due = datetime.fromisoformat(body.nextDueDate.replace("Z", "+00:00"))
         except ValueError:
-            from_dt = now
-    else:
-        from_dt = now
+            parsed_due = None
+        if parsed_due is not None:
+            if body.scheduleFromDue:
+                from_dt = parsed_due
+            elif parsed_due <= now:
+                # Overdue and not yet completed -- the real next due date is
+                # the due date itself. Projecting forward from "now" here
+                # would hide how overdue the chore actually is; it only
+                # advances once the chore is actually completed.
+                return ChoreSchedulePreviewResponse(nextDueDate=parsed_due.strftime("%Y-%m-%dT%H:%M:%SZ"))
     dummy_chore = Chore(
         id="preview", name="", emoji="", periodDays=body.periodDays,
         frequencyType=body.frequencyType, frequency=body.frequency,

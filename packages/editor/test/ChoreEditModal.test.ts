@@ -35,6 +35,7 @@ function makeStore(overrides = {}) {
     deleteAssignment: vi.fn().mockResolvedValue(undefined),
     delayAssignment: vi.fn().mockResolvedValue(undefined),
     completeAssignment: vi.fn().mockResolvedValue(undefined),
+    completeChore: vi.fn().mockResolvedValue(undefined),
     previewNextDue: vi.fn().mockResolvedValue("2027-02-01T00:00:00Z"),
     ...overrides,
   };
@@ -191,7 +192,7 @@ describe("ChoreEditModal — tabs", () => {
     target.remove();
   });
 
-  it("orders the footer buttons Delete, Cancel, Save on every tab", () => {
+  it("orders the footer buttons complete-all, go-to-assignments, Delete, Cancel, Save on every tab (go-to-assignments hidden on the Assignments tab itself)", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const store = makeStore();
@@ -200,6 +201,12 @@ describe("ChoreEditModal — tabs", () => {
       props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn() },
     });
     flushSync();
+    const expectedByTab: Record<string, string[]> = {
+      Info: ["✓", "→", "🗑 Delete", "Cancel", "Save"],
+      Assignments: ["✓", "🗑 Delete", "Cancel", "Save"],
+      Media: ["✓", "→", "🗑 Delete", "Cancel", "Save"],
+      History: ["✓", "→", "🗑 Delete", "Cancel", "Save"],
+    };
     for (const tabText of ["Info", "Assignments", "Media", "History"]) {
       const tab = Array.from(target.querySelectorAll(".tab")).find(
         (t) => t.textContent?.includes(tabText),
@@ -209,7 +216,7 @@ describe("ChoreEditModal — tabs", () => {
       const footerLabels = Array.from(target.querySelectorAll(".ui-modal-footer button")).map(
         (b) => b.textContent?.trim(),
       );
-      expect(footerLabels, `footer order wrong on ${tabText} tab`).toEqual(["🗑 Delete", "Cancel", "Save"]);
+      expect(footerLabels, `footer order wrong on ${tabText} tab`).toEqual(expectedByTab[tabText]);
     }
     unmount(app);
     target.remove();
@@ -557,6 +564,74 @@ describe("ChoreEditModal — History tab", () => {
     expect(target.querySelector(".hist-room")?.textContent).toContain("Kitchen");
     expect(target.querySelector(".hist-label")?.textContent).toBe("(Balcony plants)");
     expect(target.querySelector(".hist-date")?.textContent).toBe("08/01/2026");
+
+    unmount(app);
+    target.remove();
+  });
+});
+
+describe("ChoreEditModal — footer completion actions", () => {
+  it("clicking Complete All then confirming calls store.completeChore for the whole chore", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore({ completeChore: vi.fn().mockResolvedValue(undefined) });
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn() },
+    });
+    flushSync();
+
+    const completeAllBtn = target.querySelector(".footer-complete-all") as HTMLButtonElement;
+    expect(completeAllBtn).not.toBeNull();
+    completeAllBtn.click();
+    flushSync();
+    expect(target.querySelector(".complete-form")).not.toBeNull();
+
+    const confirmBtn = Array.from(target.querySelectorAll("button")).find(
+      b => b.textContent?.trim() === "Mark done",
+    ) as HTMLButtonElement;
+    confirmBtn.click();
+    await tick();
+
+    expect(store.completeChore).toHaveBeenCalledWith("c1", "");
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking Go to assignments switches to the Assignments tab", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn() },
+    });
+    flushSync();
+
+    const goToAssignmentsBtn = target.querySelector(".footer-go-to-assignments") as HTMLButtonElement;
+    expect(goToAssignmentsBtn).not.toBeNull();
+    goToAssignmentsBtn.click();
+    flushSync();
+
+    const activeTab = target.querySelector(".tab.active");
+    expect(activeTab?.textContent).toContain("Assignments");
+
+    unmount(app);
+    target.remove();
+  });
+
+  it("hides Go to assignments once already on the Assignments tab", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store: makeStore(), rooms: NO_ROOMS, onclose: vi.fn() },
+    });
+    flushSync();
+    (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
+    flushSync();
+
+    expect(target.querySelector(".footer-go-to-assignments")).toBeNull();
 
     unmount(app);
     target.remove();

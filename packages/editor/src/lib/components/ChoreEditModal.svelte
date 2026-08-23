@@ -19,7 +19,7 @@
   import type { Point } from "@myhome/geometry";
   import { formatDate } from "../dateFormat";
 
-  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion" | "createAssignment" | "updateAssignmentLabel" | "deleteAssignment" | "delayAssignment" | "completeAssignment" | "previewNextDue">;
+  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion" | "createAssignment" | "updateAssignmentLabel" | "deleteAssignment" | "delayAssignment" | "completeAssignment" | "completeChore" | "previewNextDue">;
 
   interface Props {
     chore: Chore | null;
@@ -53,7 +53,7 @@
   let lightboxIndex = $state(0);
   let newAssignmentRoomId = $state("");
   let newAssignmentLabel = $state("");
-  let completing = $state<{ id: string; title: string } | null>(null);
+  let completing = $state<{ kind: "chore" | "assignment"; id: string; title: string } | null>(null);
 
   const history = $derived(
     chore
@@ -100,10 +100,15 @@
 
   async function confirmCompleteAssignment(notes: string, completedOn?: string): Promise<void> {
     if (!completing) return;
-    const id = completing.id;
+    const { kind, id } = completing;
     completing = null;
-    if (completedOn) await store.completeAssignment(id, notes, completedOn);
-    else await store.completeAssignment(id, notes);
+    if (kind === "chore") {
+      if (completedOn) await store.completeChore(id, notes, completedOn);
+      else await store.completeChore(id, notes);
+    } else {
+      if (completedOn) await store.completeAssignment(id, notes, completedOn);
+      else await store.completeAssignment(id, notes);
+    }
   }
 
   async function handleDeleteCompletion(id: string): Promise<void> {
@@ -276,7 +281,7 @@
               />
               <span class="assign-due">{$_('chores.badgePopup.due')}: {formatDate(a.nextDueDate)}</span>
               <div class="assignment-actions">
-                <button class="icon-btn" title={$_('chores.row.markDone')} onclick={() => { completing = { id: a.id, title: `${chore.emoji} ${chore.name}` }; }}>✓</button>
+                <button class="icon-btn" title={$_('chores.row.markDone')} onclick={() => { completing = { kind: "assignment", id: a.id, title: `${chore.emoji} ${chore.name}` }; }}>✓</button>
                 <button class="icon-btn" title={$_('chores.page.delayByWeek')} onclick={() => store.delayAssignment(a.id, 7)}>⏭</button>
                 <button class="icon-btn danger" onclick={() => store.deleteAssignment(a.id)}>✕</button>
               </div>
@@ -326,6 +331,12 @@
     {/if}
 
     {#snippet footer()}
+      {#if !confirmDelete}
+        <button class="icon-btn footer-complete-all" title={$_('chores.page.markAllDone')} onclick={() => { completing = { kind: "chore", id: chore!.id, title: `${chore!.emoji} ${chore!.name}` }; }}>✓</button>
+        {#if activeTab !== "assignments"}
+          <button class="icon-btn footer-go-to-assignments" title={$_('chores.editModal.goToAssignments')} onclick={() => { activeTab = "assignments"; }}>→</button>
+        {/if}
+      {/if}
       <span class="spacer"></span>
       {#if confirmDelete}
         <span class="confirm-text">{$_('chores.editModal.deleteThisChore')}</span>

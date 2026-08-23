@@ -482,6 +482,7 @@
       "uploadFailed": "Upload failed",
       "assignments": "Assignments",
       "assignmentsCount": "Assignments ({n})",
+      "goToAssignments": "Go to assignments",
       "labelPlaceholder": "Label (optional)",
       "selectRoom": "Select a zone…",
       "addAssignment": "Add"

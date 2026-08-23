@@ -156,7 +156,7 @@
   .native-input {
     background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
     padding: 8px 12px; border-radius: var(--radius-md);
-    font-size: 13px; font-family: var(--font-sans); width: 100%; box-sizing: border-box;
+    font-size: 13px; font-family: var(--font-sans); width: 100%; height: 36px; box-sizing: border-box;
   }
   .native-input:focus { outline: none; border-color: var(--accent); }
   .name-emoji-row { display: flex; gap: 8px; align-items: flex-end; }
