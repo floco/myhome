@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.26.4 - 2026-08-24
+
+- Fixed the chore edit modal's "next due (calculated)" preview not accounting for the chore's last completion date when "schedule from completion date" is selected, so it disagreed with the correct due date shown in the list
+- Fixed the date picker's calendar popup being clipped by a modal's scrollable body, requiring scrolling to see the full calendar
+- Renamed the chore edit modal's "Default due" field to "Current due date" to better describe what it is
+
 ## 0.26.3 - 2026-08-23
 
 - Added buttons to the chore edit modal to complete all of a chore's assignments at once, or jump to its Assignments tab, instead of requiring the Assignments tab for every completion
