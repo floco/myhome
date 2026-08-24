@@ -461,7 +461,7 @@
       "choreName": "Nom de la corvée",
       "emoji": "Emoji",
       "periodDays": "Période (jours)",
-      "defaultDue": "Échéance par défaut",
+      "defaultDue": "Échéance actuelle",
       "anchorGroupLabel": "Planifier la prochaine échéance depuis",
       "anchorDueTitle": "Planifier depuis la date d'échéance",
       "anchorDueDesc": "La prochaine échéance est calculée à partir de la date d'échéance prévue, même si celle-ci est réalisée en avance ou en retard.",

@@ -228,6 +228,7 @@ export function createChoreStore(getHomeId: () => string | null = () => null) {
     scheduleFromDue: boolean;
     nextDueDate: string;
     periodDays: number;
+    choreId?: string;
   }): Promise<string> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");

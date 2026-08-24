@@ -145,6 +145,7 @@
       scheduleFromDue: draftScheduleFromDue,
       nextDueDate: draftNextDue ? new Date(draftNextDue).toISOString() : "",
       periodDays: draftPeriodDays,
+      choreId: chore.id,
     };
     let cancelled = false;
     const timer = setTimeout(async () => {

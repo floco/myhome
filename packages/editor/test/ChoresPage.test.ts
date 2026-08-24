@@ -319,7 +319,7 @@ describe("ChoresPage — mark-all-done backdating", () => {
 
     (target.querySelector(".dp-icon-btn") as HTMLElement).click();
     flushSync();
-    const cells = [...target.querySelectorAll(".dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
+    const cells = [...document.querySelectorAll(".dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
     const firstOfMonth = cells.find((c) => c.textContent === "1")!;
     firstOfMonth.click();
     flushSync();

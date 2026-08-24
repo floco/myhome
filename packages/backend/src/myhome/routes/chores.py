@@ -260,7 +260,15 @@ def preview_next_due(
     the given (unsaved) schedule settings -- lets the edit modal show a live
     preview without requiring an actual completion first."""
     now = datetime.now(timezone.utc)
+    completions_for_chore: list[CompletionRecord] = []
+    if body.choreId:
+        doc = load_chores(home_id)
+        completions_for_chore = [c for c in doc.completions if c.choreId == body.choreId]
     from_dt = now
+    if completions_for_chore:
+        from_dt = max(
+            datetime.fromisoformat(c.completedAt.replace("Z", "+00:00")) for c in completions_for_chore
+        )
     if body.nextDueDate:
         try:
             parsed_due = datetime.fromisoformat(body.nextDueDate.replace("Z", "+00:00"))
@@ -281,7 +289,7 @@ def preview_next_due(
         frequencyMetadata=body.frequencyMetadata, scheduleFromDue=body.scheduleFromDue,
         nextDueDate=body.nextDueDate or now.strftime("%Y-%m-%dT%H:%M:%SZ"),
     )
-    next_due = next_due_from_schedule(dummy_chore, from_dt, [])
+    next_due = next_due_from_schedule(dummy_chore, from_dt, completions_for_chore)
     return ChoreSchedulePreviewResponse(nextDueDate=next_due.strftime("%Y-%m-%dT%H:%M:%SZ"))
 
 

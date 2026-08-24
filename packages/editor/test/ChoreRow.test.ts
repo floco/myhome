@@ -232,7 +232,7 @@ describe("ChoreRow", () => {
 
     (document.querySelector(".ui-modal .dp-icon-btn") as HTMLElement).click();
     flushSync();
-    const cells = [...document.querySelectorAll(".ui-modal .dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
+    const cells = [...document.querySelectorAll(".dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
     const firstOfMonth = cells.find((c) => c.textContent === "1")!;
     firstOfMonth.click();
     flushSync();

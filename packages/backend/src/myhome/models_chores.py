@@ -98,6 +98,7 @@ class ChoreSchedulePreviewRequest(BaseModel):
     scheduleFromDue: bool = False
     nextDueDate: str = ""
     periodDays: float = 30
+    choreId: str | None = None
 
 
 class ChoreSchedulePreviewResponse(BaseModel):

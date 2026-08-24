@@ -19,9 +19,9 @@ describe("DatePicker week start", () => {
   it("defaults to a Sunday-first grid", () => {
     const app = mount(DatePicker, { target, props: {} });
     flushSync();
-    (target.querySelector(".dp-icon-btn") as HTMLElement).click();
+    (document.querySelector(".dp-icon-btn") as HTMLElement).click();
     flushSync();
-    const headers = [...target.querySelectorAll(".dp-dh")].map((h) => h.textContent);
+    const headers = [...document.querySelectorAll(".dp-dh")].map((h) => h.textContent);
     expect(headers[0]).toBe("Sun");
     unmount(app);
   });
@@ -30,9 +30,9 @@ describe("DatePicker week start", () => {
     localStorage.setItem("myhome-localization", JSON.stringify({ dateFormat: null, timeFormat: null, weekStart: 1 }));
     const app = mount(DatePicker, { target, props: {} });
     flushSync();
-    (target.querySelector(".dp-icon-btn") as HTMLElement).click();
+    (document.querySelector(".dp-icon-btn") as HTMLElement).click();
     flushSync();
-    const headers = [...target.querySelectorAll(".dp-dh")].map((h) => h.textContent);
+    const headers = [...document.querySelectorAll(".dp-dh")].map((h) => h.textContent);
     expect(headers[0]).toBe("Mon");
     unmount(app);
   });
@@ -43,9 +43,9 @@ describe("DatePicker week start", () => {
     localStorage.setItem("myhome-localization", JSON.stringify({ dateFormat: null, timeFormat: null, weekStart: 1 }));
     const app = mount(DatePicker, { target, props: { value: "2024-01-15" } });
     flushSync();
-    (target.querySelector(".dp-icon-btn") as HTMLElement).click();
+    (document.querySelector(".dp-icon-btn") as HTMLElement).click();
     flushSync();
-    const cells = [...target.querySelectorAll(".dp-cell")];
+    const cells = [...document.querySelectorAll(".dp-cell")];
     expect(cells[0].classList.contains("dp-empty")).toBe(false);
     expect(cells[0].textContent).toBe("1");
     unmount(app);
@@ -69,34 +69,34 @@ describe("DatePicker max", () => {
   it("disables and ignores clicks on days after max", () => {
     const app = mount(DatePicker, { target, props: { value: "2024-01-10", max: "2024-01-15" } });
     flushSync();
-    (target.querySelector(".dp-icon-btn") as HTMLElement).click();
+    (document.querySelector(".dp-icon-btn") as HTMLElement).click();
     flushSync();
 
-    const cells = [...target.querySelectorAll(".dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
+    const cells = [...document.querySelectorAll(".dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
     const day20 = cells.find((c) => c.textContent === "20")!;
     expect(day20.disabled).toBe(true);
 
     day20.click();
     flushSync();
 
-    expect((target.querySelector(".dp-input") as HTMLInputElement).value).toContain("10");
+    expect((document.querySelector(".dp-input") as HTMLInputElement).value).toContain("10");
     unmount(app);
   });
 
   it("still allows selecting a day at or before max", () => {
     const app = mount(DatePicker, { target, props: { value: "2024-01-10", max: "2024-01-15" } });
     flushSync();
-    (target.querySelector(".dp-icon-btn") as HTMLElement).click();
+    (document.querySelector(".dp-icon-btn") as HTMLElement).click();
     flushSync();
 
-    const cells = [...target.querySelectorAll(".dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
+    const cells = [...document.querySelectorAll(".dp-cell:not(.dp-empty)")] as HTMLButtonElement[];
     const day15 = cells.find((c) => c.textContent === "15")!;
     expect(day15.disabled).toBe(false);
 
     day15.click();
     flushSync();
 
-    expect((target.querySelector(".dp-input") as HTMLInputElement).value).toContain("15");
+    expect((document.querySelector(".dp-input") as HTMLInputElement).value).toContain("15");
     unmount(app);
   });
 });
@@ -119,7 +119,7 @@ describe("DatePicker date format", () => {
     localStorage.setItem("myhome-localization", JSON.stringify({ dateFormat: "DMY", timeFormat: null, weekStart: null }));
     const app = mount(DatePicker, { target, props: { value: "2026-07-05" } });
     flushSync();
-    expect((target.querySelector(".dp-input") as HTMLInputElement).value).toBe("05/07/2026");
+    expect((document.querySelector(".dp-input") as HTMLInputElement).value).toBe("05/07/2026");
     unmount(app);
   });
 
@@ -127,7 +127,7 @@ describe("DatePicker date format", () => {
     localStorage.setItem("myhome-localization", JSON.stringify({ dateFormat: "MDY", timeFormat: null, weekStart: null }));
     const app = mount(DatePicker, { target, props: { value: "2026-07-05" } });
     flushSync();
-    expect((target.querySelector(".dp-input") as HTMLInputElement).value).toBe("07/05/2026");
+    expect((document.querySelector(".dp-input") as HTMLInputElement).value).toBe("07/05/2026");
     unmount(app);
   });
 
@@ -135,14 +135,14 @@ describe("DatePicker date format", () => {
     localStorage.setItem("myhome-localization", JSON.stringify({ dateFormat: "ISO", timeFormat: null, weekStart: null }));
     const app = mount(DatePicker, { target, props: { value: "2026-07-05" } });
     flushSync();
-    expect((target.querySelector(".dp-input") as HTMLInputElement).value).toBe("2026-07-05");
+    expect((document.querySelector(".dp-input") as HTMLInputElement).value).toBe("2026-07-05");
     unmount(app);
   });
 
   it("falls back to the en-locale default (MDY) when no override is set", () => {
     const app = mount(DatePicker, { target, props: { value: "2026-07-05" } });
     flushSync();
-    expect((target.querySelector(".dp-input") as HTMLInputElement).value).toBe("07/05/2026");
+    expect((document.querySelector(".dp-input") as HTMLInputElement).value).toBe("07/05/2026");
     unmount(app);
   });
 
@@ -150,7 +150,7 @@ describe("DatePicker date format", () => {
     localStorage.setItem("myhome-localization", JSON.stringify({ dateFormat: "LONG", timeFormat: null, weekStart: null }));
     const app = mount(DatePicker, { target, props: { value: "2026-07-05" } });
     flushSync();
-    expect((target.querySelector(".dp-input") as HTMLInputElement).value).toBe("05 July 2026");
+    expect((document.querySelector(".dp-input") as HTMLInputElement).value).toBe("05 July 2026");
     unmount(app);
   });
 });
@@ -172,14 +172,14 @@ describe("DatePicker compact", () => {
   it("applies the compact class when the compact prop is set", () => {
     const app = mount(DatePicker, { target, props: { compact: true } });
     flushSync();
-    expect(target.querySelector(".dp-field")!.classList.contains("compact")).toBe(true);
+    expect(document.querySelector(".dp-field")!.classList.contains("compact")).toBe(true);
     unmount(app);
   });
 
   it("does not apply the compact class by default", () => {
     const app = mount(DatePicker, { target, props: {} });
     flushSync();
-    expect(target.querySelector(".dp-field")!.classList.contains("compact")).toBe(false);
+    expect(document.querySelector(".dp-field")!.classList.contains("compact")).toBe(false);
     unmount(app);
   });
 });
@@ -202,7 +202,7 @@ describe("DatePicker manual entry", () => {
     const app = mount(DatePicker, { target, props: { value: "2024-01-10" } });
     flushSync();
 
-    const input = target.querySelector(".dp-input") as HTMLInputElement;
+    const input = document.querySelector(".dp-input") as HTMLInputElement;
     input.focus();
     input.value = "03/05/2024";
     input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -217,7 +217,7 @@ describe("DatePicker manual entry", () => {
     const app = mount(DatePicker, { target, props: { value: "2024-01-10" } });
     flushSync();
 
-    const input = target.querySelector(".dp-input") as HTMLInputElement;
+    const input = document.querySelector(".dp-input") as HTMLInputElement;
     input.focus();
     input.value = "12/25/2024";
     input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -232,7 +232,7 @@ describe("DatePicker manual entry", () => {
     const app = mount(DatePicker, { target, props: { value: "2024-01-10" } });
     flushSync();
 
-    const input = target.querySelector(".dp-input") as HTMLInputElement;
+    const input = document.querySelector(".dp-input") as HTMLInputElement;
     input.focus();
     input.value = "not a date";
     input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -247,7 +247,7 @@ describe("DatePicker manual entry", () => {
     const app = mount(DatePicker, { target, props: { value: "2024-01-10" } });
     flushSync();
 
-    const input = target.querySelector(".dp-input") as HTMLInputElement;
+    const input = document.querySelector(".dp-input") as HTMLInputElement;
     input.focus();
     input.value = "12/25/2024";
     input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -262,7 +262,7 @@ describe("DatePicker manual entry", () => {
     const app = mount(DatePicker, { target, props: { value: "2024-01-10", max: "2024-01-15" } });
     flushSync();
 
-    const input = target.querySelector(".dp-input") as HTMLInputElement;
+    const input = document.querySelector(".dp-input") as HTMLInputElement;
     input.focus();
     input.value = "01/20/2024";
     input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -278,7 +278,7 @@ describe("DatePicker manual entry", () => {
     const app = mount(DatePicker, { target, props: { value: "2024-01-10" } });
     flushSync();
 
-    const input = target.querySelector(".dp-input") as HTMLInputElement;
+    const input = document.querySelector(".dp-input") as HTMLInputElement;
     input.focus();
     input.value = "25/12/2024";
     input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -293,7 +293,7 @@ describe("DatePicker manual entry", () => {
     const app = mount(DatePicker, { target, props: { value: "2024-01-10" } });
     flushSync();
 
-    const input = target.querySelector(".dp-input") as HTMLInputElement;
+    const input = document.querySelector(".dp-input") as HTMLInputElement;
     input.focus();
     const event = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
     const stopSpy = vi.spyOn(event, "stopPropagation");
@@ -308,7 +308,7 @@ describe("DatePicker manual entry", () => {
     const app = mount(DatePicker, { target, props: { value: "2024-01-10" } });
     flushSync();
 
-    const input = target.querySelector(".dp-input") as HTMLInputElement;
+    const input = document.querySelector(".dp-input") as HTMLInputElement;
     input.focus();
     const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
     const stopSpy = vi.spyOn(event, "stopPropagation");
@@ -335,7 +335,7 @@ describe("DatePicker year grid", () => {
   });
 
   function openCalendar(): void {
-    (target.querySelector(".dp-icon-btn") as HTMLElement).click();
+    (document.querySelector(".dp-icon-btn") as HTMLElement).click();
     flushSync();
   }
 
@@ -344,12 +344,12 @@ describe("DatePicker year grid", () => {
     flushSync();
     openCalendar();
 
-    (target.querySelector(".dp-month-label") as HTMLElement).click();
+    (document.querySelector(".dp-month-label") as HTMLElement).click();
     flushSync();
 
-    const years = [...target.querySelectorAll(".dp-year-cell")].map((c) => c.textContent);
+    const years = [...document.querySelectorAll(".dp-year-cell")].map((c) => c.textContent);
     expect(years).toEqual(["2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026", "2027"]);
-    const selected = target.querySelector(".dp-year-cell.dp-selected");
+    const selected = document.querySelector(".dp-year-cell.dp-selected");
     expect(selected?.textContent).toBe("2024");
     unmount(app);
   });
@@ -358,18 +358,18 @@ describe("DatePicker year grid", () => {
     const app = mount(DatePicker, { target, props: { value: "2024-06-15" } });
     flushSync();
     openCalendar();
-    (target.querySelector(".dp-month-label") as HTMLElement).click();
+    (document.querySelector(".dp-month-label") as HTMLElement).click();
     flushSync();
 
-    const [prevBtn, nextBtn] = [...target.querySelectorAll(".dp-nav")] as HTMLButtonElement[];
+    const [prevBtn, nextBtn] = [...document.querySelectorAll(".dp-nav")] as HTMLButtonElement[];
     nextBtn.click();
     flushSync();
-    let years = [...target.querySelectorAll(".dp-year-cell")].map((c) => c.textContent);
+    let years = [...document.querySelectorAll(".dp-year-cell")].map((c) => c.textContent);
     expect(years[0]).toBe("2028");
 
     prevBtn.click();
     flushSync();
-    years = [...target.querySelectorAll(".dp-year-cell")].map((c) => c.textContent);
+    years = [...document.querySelectorAll(".dp-year-cell")].map((c) => c.textContent);
     expect(years[0]).toBe("2016");
     unmount(app);
   });
@@ -378,16 +378,16 @@ describe("DatePicker year grid", () => {
     const app = mount(DatePicker, { target, props: { value: "2024-06-15" } });
     flushSync();
     openCalendar();
-    (target.querySelector(".dp-month-label") as HTMLElement).click();
+    (document.querySelector(".dp-month-label") as HTMLElement).click();
     flushSync();
 
-    const yearCell = [...target.querySelectorAll(".dp-year-cell")].find((c) => c.textContent === "2018") as HTMLButtonElement;
+    const yearCell = [...document.querySelectorAll(".dp-year-cell")].find((c) => c.textContent === "2018") as HTMLButtonElement;
     yearCell.click();
     flushSync();
 
-    expect(target.querySelector(".dp-grid")).not.toBeNull();
-    expect(target.querySelector(".dp-year-grid")).toBeNull();
-    expect(target.querySelector(".dp-month-label")!.textContent).toBe("June 2018");
+    expect(document.querySelector(".dp-grid")).not.toBeNull();
+    expect(document.querySelector(".dp-year-grid")).toBeNull();
+    expect(document.querySelector(".dp-month-label")!.textContent).toBe("June 2018");
     unmount(app);
   });
 
@@ -395,17 +395,17 @@ describe("DatePicker year grid", () => {
     const app = mount(DatePicker, { target, props: { value: "2024-06-15" } });
     flushSync();
     openCalendar();
-    (target.querySelector(".dp-month-label") as HTMLElement).click();
+    (document.querySelector(".dp-month-label") as HTMLElement).click();
     flushSync();
-    expect(target.querySelector(".dp-year-grid")).not.toBeNull();
+    expect(document.querySelector(".dp-year-grid")).not.toBeNull();
 
     // close (click icon again) and reopen
-    (target.querySelector(".dp-icon-btn") as HTMLElement).click();
+    (document.querySelector(".dp-icon-btn") as HTMLElement).click();
     flushSync();
     openCalendar();
 
-    expect(target.querySelector(".dp-grid")).not.toBeNull();
-    expect(target.querySelector(".dp-year-grid")).toBeNull();
+    expect(document.querySelector(".dp-grid")).not.toBeNull();
+    expect(document.querySelector(".dp-year-grid")).toBeNull();
     unmount(app);
   });
 });

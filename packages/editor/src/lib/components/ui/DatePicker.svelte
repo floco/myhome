@@ -18,6 +18,30 @@
   let yearGridStart = $state(Math.floor(new Date().getFullYear() / 12) * 12);
   let editing = $state(false);
   let editText = $state("");
+  let wrapEl = $state<HTMLElement | null>(null);
+  let calendarEl = $state<HTMLElement | null>(null);
+  let calendarLeft = $state(0);
+  let calendarTop = $state(0);
+
+  // Teleport the calendar to <body> so it isn't clipped by an ancestor's
+  // overflow (e.g. a Modal's scrollable body) and isn't affected by ancestor
+  // CSS transforms (e.g. Modal uses translate(-50%,-50%)).
+  function portal(node: HTMLElement): { destroy(): void } {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        if (document.body.contains(node)) document.body.removeChild(node);
+      },
+    };
+  }
+
+  function positionCalendar(): void {
+    if (!wrapEl) return;
+    const rect = wrapEl.getBoundingClientRect();
+    const CALENDAR_WIDTH = 220;
+    calendarLeft = Math.max(4, Math.min(rect.left, window.innerWidth - CALENDAR_WIDTH - 4));
+    calendarTop = rect.bottom + 4;
+  }
 
   function monthNames(loc: string): string[] {
     return Array.from({ length: 12 }, (_unused, i) =>
@@ -149,7 +173,10 @@
   function nextDecade(): void { yearGridStart += 12; }
 
   function toggleOpen(): void {
-    if (!open) view = "days";
+    if (!open) {
+      view = "days";
+      positionCalendar();
+    }
     open = !open;
   }
 
@@ -176,7 +203,10 @@
   }
 
   function handleWindowClick(e: MouseEvent): void {
-    if (!(e.target as HTMLElement).closest?.(".dp-wrap")) open = false;
+    const target = e.target as Node;
+    // Calendar is portal'd to body so check both the wrap and the calendar.
+    if (wrapEl?.contains(target) || calendarEl?.contains(target)) return;
+    open = false;
   }
 
   $effect(() => {
@@ -196,7 +226,7 @@
 
 <svelte:window onclick={handleWindowClick} />
 
-<div class="dp-wrap">
+<div class="dp-wrap" bind:this={wrapEl}>
   <div class="dp-field" class:compact>
     <input
       class="dp-input"
@@ -214,7 +244,13 @@
 
   {#if open}
     <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-    <div class="dp-calendar" onclick={(e) => e.stopPropagation()}>
+    <div
+      class="dp-calendar"
+      style="left:{calendarLeft}px;top:{calendarTop}px"
+      bind:this={calendarEl}
+      use:portal
+      onclick={(e) => e.stopPropagation()}
+    >
       {#if view === "days"}
         <div class="dp-header">
           <button type="button" class="dp-nav" onclick={prevMonth}>‹</button>
@@ -290,9 +326,9 @@
   .dp-icon { font-size: 13px; }
 
   .dp-calendar {
-    position: absolute; top: calc(100% + 4px); left: 0;
+    position: fixed;
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
-    padding: 10px; z-index: 300; box-shadow: var(--shadow-md);
+    padding: 10px; z-index: 9999; box-shadow: var(--shadow-md);
     min-width: 220px;
   }
 

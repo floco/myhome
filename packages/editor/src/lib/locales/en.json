@@ -461,7 +461,7 @@
       "choreName": "Chore name",
       "emoji": "Emoji",
       "periodDays": "Period (days)",
-      "defaultDue": "Default due",
+      "defaultDue": "Current due date",
       "anchorGroupLabel": "Reschedule the next occurrence from",
       "anchorDueTitle": "Schedule from due date",
       "anchorDueDesc": "The next occurrence is scheduled from the original due date, even if this one is completed early or late.",
