@@ -372,6 +372,39 @@ describe("ChoreEditModal — schedule anchor + next-due preview", () => {
     unmount(app);
     target.remove();
   });
+
+  it("uses the assignment's next-due date, not the chore's stale one, when the chore has assignments", async () => {
+    // Completing a single room assignment only advances that assignment's
+    // nextDueDate -- the chore's own nextDueDate field is left stale. The
+    // "current due" field and its preview must follow the assignment (same
+    // source the chores list uses), not the stale chore-level field.
+    vi.useFakeTimers();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore({
+      assignments: [
+        { id: "a1", choreId: "c1", roomId: "r1", position: null, nextDueDate: "2026-09-14T00:00:00Z", label: null },
+      ],
+      previewNextDue: vi.fn().mockResolvedValue("2026-10-12T00:00:00Z"),
+    });
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore({ nextDueDate: "2026-08-07T00:00:00Z" }), store, rooms: [SQUARE_ROOM], onclose: vi.fn() },
+    });
+    flushSync();
+
+    expect((target.querySelector(".dp-input") as HTMLInputElement).value).toBe("09/14/2026");
+
+    await vi.advanceTimersByTimeAsync(300);
+    flushSync();
+
+    expect(store.previewNextDue).toHaveBeenCalledWith(expect.objectContaining({
+      nextDueDate: "2026-09-14T00:00:00.000Z",
+    }));
+
+    unmount(app);
+    target.remove();
+  });
 });
 
 describe("ChoreEditModal — Assignments tab", () => {

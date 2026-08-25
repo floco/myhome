@@ -18,6 +18,7 @@
   import { polygonCentroid } from "@myhome/geometry";
   import type { Point } from "@myhome/geometry";
   import { formatDate } from "../dateFormat";
+  import { earliestDue } from "../choreFormat";
 
   type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion" | "createAssignment" | "updateAssignmentLabel" | "deleteAssignment" | "delayAssignment" | "completeAssignment" | "completeChore" | "previewNextDue">;
 
@@ -126,7 +127,7 @@
       draftFrequencyType = chore.frequencyType;
       draftFrequency = chore.frequency;
       draftFrequencyMetadata = chore.frequencyMetadata;
-      draftNextDue = chore.nextDueDate.slice(0, 10);
+      draftNextDue = earliestDue(chore, assignmentsForChore).slice(0, 10);
       draftScheduleFromDue = chore.scheduleFromDue;
       draftDescription = chore.description ?? "";
       activeTab = "info";

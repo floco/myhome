@@ -1,12 +1,23 @@
 import { _ } from "svelte-i18n";
 import { get } from "svelte/store";
-import type { Chore } from "./choreStore.svelte";
+import type { Chore, Assignment } from "./choreStore.svelte";
 import { formatDate } from "./dateFormat";
 
 export function displayName(chore: Chore): string {
   let name = chore.name.trim();
   if (chore.emoji && name.startsWith(chore.emoji)) name = name.slice(chore.emoji.length).trim();
   return name;
+}
+
+// A chore's own `nextDueDate` only tracks the chore-level "complete all"
+// action; completing a single room assignment only advances that
+// assignment's `nextDueDate`. The earliest assignment due date is what the
+// chores list actually displays, so anywhere that needs to show/preview a
+// chore's real next-due must use this instead of `chore.nextDueDate` once
+// the chore has assignments.
+export function earliestDue(chore: Chore, assignments: Assignment[]): string {
+  const dates = assignments.map((a) => a.nextDueDate).filter(Boolean).sort();
+  return dates[0] ?? chore.nextDueDate;
 }
 
 export function formatDue(iso: string): string {
