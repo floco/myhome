@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.5 - 2026-08-25
+
+- Fixed the chore edit modal's "current due date" field and its calculated preview still showing a stale date after completing a single room assignment, instead of the correct date already shown in the chores list
+
 ## 0.26.4 - 2026-08-24
 
 - Fixed the chore edit modal's "next due (calculated)" preview not accounting for the chore's last completion date when "schedule from completion date" is selected, so it disagreed with the correct due date shown in the list
