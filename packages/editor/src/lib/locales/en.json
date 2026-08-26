@@ -467,7 +467,6 @@
       "anchorDueDesc": "The next occurrence is scheduled from the original due date, even if this one is completed early or late.",
       "anchorCompletionTitle": "Schedule from completion date",
       "anchorCompletionDesc": "The next occurrence is scheduled from the date you actually complete this one.",
-      "nextDueComputed": "Next due (calculated)",
       "notes": "Notes",
       "notesPlaceholder": "Instructions, tips, or reminders…",
       "noCompletions": "No completions yet",

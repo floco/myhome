@@ -20,7 +20,7 @@
   import { formatDate } from "../dateFormat";
   import { earliestDue } from "../choreFormat";
 
-  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion" | "createAssignment" | "updateAssignmentLabel" | "deleteAssignment" | "delayAssignment" | "completeAssignment" | "completeChore" | "previewNextDue">;
+  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion" | "createAssignment" | "updateAssignmentLabel" | "deleteAssignment" | "delayAssignment" | "completeAssignment" | "completeChore">;
 
   interface Props {
     chore: Chore | null;
@@ -43,7 +43,6 @@
   let draftNextDue = $state("");
   let draftScheduleFromDue = $state(false);
   let draftDescription = $state("");
-  let nextDuePreview = $state("");
   let saving = $state(false);
   let deleting = $state(false);
   let confirmDelete = $state(false);
@@ -135,29 +134,6 @@
       newAssignmentLabel = "";
       error = null;
     }
-  });
-
-  $effect(() => {
-    if (!chore || !draftScheduleValid) { nextDuePreview = ""; return; }
-    const params = {
-      frequencyType: draftFrequencyType,
-      frequency: draftFrequency,
-      frequencyMetadata: draftFrequencyMetadata,
-      scheduleFromDue: draftScheduleFromDue,
-      nextDueDate: draftNextDue ? new Date(draftNextDue).toISOString() : "",
-      periodDays: draftPeriodDays,
-      choreId: chore.id,
-    };
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      try {
-        const result = await store.previewNextDue(params);
-        if (!cancelled) nextDuePreview = result;
-      } catch {
-        if (!cancelled) nextDuePreview = "";
-      }
-    }, 300);
-    return () => { cancelled = true; clearTimeout(timer); };
   });
 
   const mediaItems = $derived<MediaItem[]>(
@@ -253,12 +229,6 @@
           <DatePicker bind:value={draftNextDue} />
         </label>
         <ScheduleAnchorPicker bind:scheduleFromDue={draftScheduleFromDue} idPrefix="edit-sfd" />
-        {#if nextDuePreview}
-          <div class="next-due-preview">
-            <span class="next-due-preview-label">{$_('chores.editModal.nextDueComputed')}</span>
-            <span class="next-due-preview-value">{formatDate(nextDuePreview)}</span>
-          </div>
-        {/if}
         <label>{$_('chores.editModal.notes')}
           <textarea class="native-input notes-field" bind:value={draftDescription} placeholder={$_('chores.editModal.notesPlaceholder')} rows="4"></textarea>
         </label>
@@ -376,12 +346,6 @@
   .name-emoji-row { display: flex; gap: 8px; align-items: flex-end; }
   .name-emoji-row .emoji-field { width: 70px; flex-shrink: 0; }
   .name-emoji-row .name-row-field { flex: 1; min-width: 0; }
-  .next-due-preview {
-    display: flex; align-items: center; gap: 6px; font-size: 12px;
-    padding: 6px 8px; border-radius: var(--radius-sm); background: var(--surface-alt);
-  }
-  .next-due-preview-label { color: var(--text-faint); }
-  .next-due-preview-value { color: var(--text); font-weight: 500; }
   .notes-field { resize: vertical; min-height: 72px; font-family: inherit; line-height: 1.4; }
 
   .media-pane { min-height: 200px; }

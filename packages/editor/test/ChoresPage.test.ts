@@ -41,7 +41,6 @@ function makeStore(chores: Chore[]) {
     deleteCompletion: vi.fn(),
     uploadAttachment: vi.fn(),
     deleteAttachment: vi.fn(),
-    previewNextDue: vi.fn().mockResolvedValue("2027-01-01T00:00:00Z"),
     getProgress: vi.fn((assignment: { nextDueDate: string }, chore: Chore) => {
       const now = Date.now();
       const due = new Date(assignment.nextDueDate).getTime();

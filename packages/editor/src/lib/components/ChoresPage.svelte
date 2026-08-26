@@ -27,7 +27,7 @@
     | "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment"
     | "getCompletionsForChore" | "deleteCompletion" | "createAssignment"
     | "updateAssignmentLabel" | "deleteAssignment" | "delayAssignment"
-    | "completeAssignment" | "previewNextDue"
+    | "completeAssignment"
   >;
 
   interface Props {

@@ -36,7 +36,6 @@ function makeStore(overrides = {}) {
     delayAssignment: vi.fn().mockResolvedValue(undefined),
     completeAssignment: vi.fn().mockResolvedValue(undefined),
     completeChore: vi.fn().mockResolvedValue(undefined),
-    previewNextDue: vi.fn().mockResolvedValue("2027-02-01T00:00:00Z"),
     ...overrides,
   };
 }
@@ -350,42 +349,17 @@ describe("ChoreEditModal — schedule anchor + next-due preview", () => {
     target.remove();
   });
 
-  it("shows a live computed next-due preview from previewNextDue", async () => {
-    vi.useFakeTimers();
-    const target = document.createElement("div");
-    document.body.appendChild(target);
-    const store = makeStore({ previewNextDue: vi.fn().mockResolvedValue("2027-02-01T00:00:00Z") });
-    const app = mount(ChoreEditModal, {
-      target,
-      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn() },
-    });
-    flushSync();
-
-    await vi.advanceTimersByTimeAsync(300);
-    flushSync();
-
-    expect(store.previewNextDue).toHaveBeenCalledWith(expect.objectContaining({
-      frequencyType: "interval", frequency: 14, scheduleFromDue: false,
-    }));
-    expect(target.querySelector(".next-due-preview-value")?.textContent).toBe("02/01/2027");
-
-    unmount(app);
-    target.remove();
-  });
-
-  it("uses the assignment's next-due date, not the chore's stale one, when the chore has assignments", async () => {
+  it("uses the assignment's next-due date, not the chore's stale one, when the chore has assignments", () => {
     // Completing a single room assignment only advances that assignment's
     // nextDueDate -- the chore's own nextDueDate field is left stale. The
-    // "current due" field and its preview must follow the assignment (same
-    // source the chores list uses), not the stale chore-level field.
-    vi.useFakeTimers();
+    // "current due" field must follow the assignment (same source the
+    // chores list uses), not the stale chore-level field.
     const target = document.createElement("div");
     document.body.appendChild(target);
     const store = makeStore({
       assignments: [
         { id: "a1", choreId: "c1", roomId: "r1", position: null, nextDueDate: "2026-09-14T00:00:00Z", label: null },
       ],
-      previewNextDue: vi.fn().mockResolvedValue("2026-10-12T00:00:00Z"),
     });
     const app = mount(ChoreEditModal, {
       target,
@@ -394,13 +368,6 @@ describe("ChoreEditModal — schedule anchor + next-due preview", () => {
     flushSync();
 
     expect((target.querySelector(".dp-input") as HTMLInputElement).value).toBe("09/14/2026");
-
-    await vi.advanceTimersByTimeAsync(300);
-    flushSync();
-
-    expect(store.previewNextDue).toHaveBeenCalledWith(expect.objectContaining({
-      nextDueDate: "2026-09-14T00:00:00.000Z",
-    }));
 
     unmount(app);
     target.remove();

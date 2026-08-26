@@ -14,8 +14,6 @@ from ..models_chores import (
     Chore,
     ChoreCreate,
     ChoreDocument,
-    ChoreSchedulePreviewRequest,
-    ChoreSchedulePreviewResponse,
     ChoreUpdate,
     CompleteRequest,
     CompletionRecord,
@@ -249,48 +247,6 @@ def create_chore(
     save_chores(home_id, doc)
     log_activity(home_id, current_user_id, "chores", "create", chore.name, chore.id)
     return chore
-
-
-@router.post("/api/homes/{home_id}/chores/preview-next-due", response_model=ChoreSchedulePreviewResponse)
-def preview_next_due(
-    home_id: str, body: ChoreSchedulePreviewRequest,
-    current_user_id: str = Depends(get_current_user_id),
-) -> ChoreSchedulePreviewResponse:
-    """Read-only calculation of what `next_due_from_schedule` would produce for
-    the given (unsaved) schedule settings -- lets the edit modal show a live
-    preview without requiring an actual completion first."""
-    now = datetime.now(timezone.utc)
-    completions_for_chore: list[CompletionRecord] = []
-    if body.choreId:
-        doc = load_chores(home_id)
-        completions_for_chore = [c for c in doc.completions if c.choreId == body.choreId]
-    from_dt = now
-    if completions_for_chore:
-        from_dt = max(
-            datetime.fromisoformat(c.completedAt.replace("Z", "+00:00")) for c in completions_for_chore
-        )
-    if body.nextDueDate:
-        try:
-            parsed_due = datetime.fromisoformat(body.nextDueDate.replace("Z", "+00:00"))
-        except ValueError:
-            parsed_due = None
-        if parsed_due is not None:
-            if body.scheduleFromDue:
-                from_dt = parsed_due
-            elif parsed_due <= now:
-                # Overdue and not yet completed -- the real next due date is
-                # the due date itself. Projecting forward from "now" here
-                # would hide how overdue the chore actually is; it only
-                # advances once the chore is actually completed.
-                return ChoreSchedulePreviewResponse(nextDueDate=parsed_due.strftime("%Y-%m-%dT%H:%M:%SZ"))
-    dummy_chore = Chore(
-        id="preview", name="", emoji="", periodDays=body.periodDays,
-        frequencyType=body.frequencyType, frequency=body.frequency,
-        frequencyMetadata=body.frequencyMetadata, scheduleFromDue=body.scheduleFromDue,
-        nextDueDate=body.nextDueDate or now.strftime("%Y-%m-%dT%H:%M:%SZ"),
-    )
-    next_due = next_due_from_schedule(dummy_chore, from_dt, completions_for_chore)
-    return ChoreSchedulePreviewResponse(nextDueDate=next_due.strftime("%Y-%m-%dT%H:%M:%SZ"))
 
 
 @router.put("/api/homes/{home_id}/chores/{chore_id}", status_code=204)

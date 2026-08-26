@@ -467,7 +467,6 @@
       "anchorDueDesc": "La prochaine échéance est calculée à partir de la date d'échéance prévue, même si celle-ci est réalisée en avance ou en retard.",
       "anchorCompletionTitle": "Planifier depuis la date de réalisation",
       "anchorCompletionDesc": "La prochaine échéance est calculée à partir de la date à laquelle vous réalisez effectivement cette corvée.",
-      "nextDueComputed": "Prochaine échéance (calculée)",
       "notes": "Notes",
       "notesPlaceholder": "Instructions, astuces ou rappels…",
       "noCompletions": "Aucune réalisation pour l'instant",
