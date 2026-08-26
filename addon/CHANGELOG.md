@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.27.0 - 2026-08-26
+
+- Removed the chore edit modal's "next due (calculated)" preview field — it became redundant once "current due date" was fixed to track the same source as the chores list
+- Made the emoji picker's emoji grid larger (2x emoji size), constrained it to vertical-only scrolling, and added a search box to filter emojis by keyword
+
 ## 0.26.5 - 2026-08-25
 
 - Fixed the chore edit modal's "current due date" field and its calculated preview still showing a stale date after completing a single room assignment, instead of the correct date already shown in the chores list
