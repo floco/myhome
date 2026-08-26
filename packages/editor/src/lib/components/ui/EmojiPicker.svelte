@@ -12,12 +12,63 @@
 
   let activeTab = $state<"objects" | "flags">("objects");
   let flagFilter = $state("");
+  let objectFilter = $state("");
 
   const filteredFlags = $derived(
     flagFilter.trim()
       ? COUNTRY_FLAGS.filter((c) => c.name.toLowerCase().includes(flagFilter.trim().toLowerCase()))
       : COUNTRY_FLAGS,
   );
+
+  // Keywords per emoji so the search box can filter the grid -- the emoji
+  // itself carries no searchable text.
+  const EMOJI_NAMES: Record<string, string> = {
+    "🏠": "house home", "🏡": "house garden home", "🛋": "sofa couch",
+    "🛏": "bed", "🚪": "door", "🪟": "window", "🪑": "chair",
+    "🛁": "bathtub bath", "🚿": "shower", "🪠": "plunger", "🔑": "key",
+    "🪪": "id card license",
+    "🧹": "broom clean sweep", "🧺": "basket laundry",
+    "🧻": "toilet paper roll", "🪣": "bucket", "🧴": "lotion bottle",
+    "🧼": "soap clean", "🧽": "sponge clean", "🪥": "toothbrush",
+    "🫧": "bubbles clean", "🧷": "safety pin",
+    "🔧": "wrench tool", "🔨": "hammer tool", "⚙️": "gear settings",
+    "🪛": "screwdriver tool", "🪚": "saw tool", "🔩": "bolt nut",
+    "🪜": "ladder", "🧰": "toolbox", "🛠": "hammer wrench tools",
+    "🪤": "mouse trap",
+    "🔌": "plug electric", "💡": "bulb light idea", "🔋": "battery",
+    "📱": "phone mobile", "💻": "laptop computer", "🖥": "desktop monitor computer",
+    "📺": "tv television", "🎮": "game controller", "📷": "camera photo",
+    "📸": "camera flash photo",
+    "🍽": "plate dinner food", "🫙": "jar", "🍳": "pan cooking egg fry",
+    "🥄": "spoon", "🔪": "knife", "🫖": "teapot tea",
+    "☕": "coffee cup", "🥤": "drink cup soda", "🥛": "milk glass",
+    "🧃": "juice box drink", "🧊": "ice",
+    "💊": "pill medicine", "🩺": "stethoscope doctor health",
+    "🩹": "bandage", "🧬": "dna", "💉": "syringe injection",
+    "🧪": "test tube science", "🔐": "locked security", "🔒": "lock",
+    "🛡": "shield security",
+    "🌱": "seedling plant", "🪴": "potted plant", "🌿": "herb leaf plant",
+    "🍀": "clover luck", "🌸": "flower blossom", "🌻": "sunflower",
+    "🪵": "wood log", "🌲": "tree",
+    "📦": "box package", "📋": "clipboard list", "🛒": "cart shopping",
+    "💰": "money bag", "💶": "euro money", "💵": "dollar money",
+    "💳": "credit card", "🎁": "gift", "🛍": "shopping bags",
+    "🗑": "trash bin garbage",
+    "✅": "check done", "⚠️": "warning", "❌": "cross error",
+    "⭐": "star", "📌": "pin", "📅": "calendar date",
+    "⏰": "alarm clock", "🔔": "bell notification", "🚨": "alert siren",
+    "🏷": "tag label",
+    "🚗": "car", "🚲": "bike bicycle", "🛵": "scooter moped",
+    "✈️": "plane airplane", "⛽": "fuel gas",
+    "🍞": "bread", "🧈": "butter", "🥚": "egg", "🧀": "cheese",
+    "🥫": "can food", "🧂": "salt", "🍫": "chocolate", "🌶": "pepper spice",
+    "🥜": "peanut nuts",
+    "🪷": "lotus flower", "💈": "barber", "🎒": "backpack bag",
+    "🧢": "cap hat", "🧣": "scarf", "🧤": "gloves",
+    "🧲": "magnet", "🔦": "flashlight torch", "💎": "gem diamond",
+    "🎀": "ribbon bow", "🎉": "party celebration", "🏆": "trophy",
+    "🎯": "target dart", "🧩": "puzzle", "📚": "books", "🖊": "pen",
+  };
 
   const EMOJIS = [
     // Home & Rooms
@@ -48,6 +99,12 @@
     "🧲","🔦","💎","🎀","🎉","🏆","🎯","🧩","📚","🖊",
   ];
 
+  const filteredEmojis = $derived(
+    objectFilter.trim()
+      ? EMOJIS.filter((e) => (EMOJI_NAMES[e] ?? "").includes(objectFilter.trim().toLowerCase()))
+      : EMOJIS,
+  );
+
   let open = $state(false);
   let customValue = $state("");
   let wrapper = $state<HTMLElement | null>(null);
@@ -67,10 +124,12 @@
     };
   }
 
+  const PANEL_WIDTH = 340;
+
   function openPicker(): void {
     if (!open && triggerEl) {
       const rect = triggerEl.getBoundingClientRect();
-      panelLeft = Math.max(4, Math.min(rect.left, window.innerWidth - 248));
+      panelLeft = Math.max(4, Math.min(rect.left, window.innerWidth - PANEL_WIDTH - 8));
       panelTop = rect.bottom + 4;
     }
     open = !open;
@@ -79,6 +138,7 @@
     } else {
       activeTab = "objects";
       flagFilter = "";
+      objectFilter = "";
     }
   }
 
@@ -134,19 +194,25 @@
         />
       {/if}
       {#if !flags || activeTab === "objects"}
+        <input
+          class="ep-filter"
+          bind:value={objectFilter}
+          placeholder={$_('emojiPicker.filterEmojis')}
+        />
         <div class="ep-grid">
-          {#each EMOJIS as e (e)}
+          {#each filteredEmojis as e (e)}
             <button
               class="ep-emoji"
               class:ep-selected={value === e}
               type="button"
+              title={EMOJI_NAMES[e]}
               onclick={() => select(e)}
             >{e}</button>
           {/each}
         </div>
       {:else}
         <input
-          class="ep-flag-filter"
+          class="ep-filter"
           bind:value={flagFilter}
           placeholder={$_('emojiPicker.filterCountries')}
         />
@@ -199,18 +265,18 @@
     position: fixed; z-index: 9999;
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius-md); box-shadow: var(--shadow-md);
-    padding: 8px; width: 240px;
+    padding: 10px; width: 340px;
   }
 
   .ep-grid {
-    display: grid; grid-template-columns: repeat(9, 1fr);
-    gap: 1px; max-height: 216px; overflow-y: auto;
+    display: grid; grid-template-columns: repeat(6, 1fr);
+    gap: 2px; max-height: 400px; overflow-y: auto; overflow-x: hidden;
     margin-bottom: 6px;
   }
 
   .ep-emoji {
-    background: none; border: none; border-radius: 3px;
-    cursor: pointer; font-size: 17px; padding: 3px 2px;
+    background: none; border: none; border-radius: 4px;
+    cursor: pointer; font-size: 34px; padding: 6px 4px;
     line-height: 1; text-align: center;
   }
   .ep-emoji:hover { background: var(--surface-hover); }
@@ -219,13 +285,12 @@
     outline: 1px solid var(--accent);
   }
 
-  .ep-flag-filter {
+  .ep-filter {
     width: 100%; box-sizing: border-box; background: var(--surface-alt); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); color: var(--text); padding: 4px 8px; font-size: 12px;
+    border-radius: var(--radius-sm); color: var(--text); padding: 6px 8px; font-size: 13px;
     font-family: var(--font-sans); margin-bottom: 6px;
   }
-  .ep-flag-filter:focus { outline: none; border-color: var(--accent); }
-  .ep-flag-grid { grid-template-columns: repeat(6, 1fr); }
+  .ep-filter:focus { outline: none; border-color: var(--accent); }
 
   .ep-custom { display: flex; gap: 4px; }
   .ep-custom-input {

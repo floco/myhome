@@ -1213,6 +1213,7 @@
     "pickEmoji": "Choisir un emoji",
     "objects": "Objets",
     "flags": "Drapeaux",
+    "filterEmojis": "Rechercher un emoji…",
     "filterCountries": "Filtrer les pays…",
     "custom": "Personnalisé…"
   },

@@ -107,6 +107,34 @@ describe("EmojiPicker", () => {
     target.remove();
   });
 
+  it("filters the objects grid by search text and selecting a filtered result works", () => {
+    const onchange = vi.fn();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(EmojiPicker, { target, props: { value: "🔋", onchange } });
+    flushSync();
+    (target.querySelector(".ep-trigger") as HTMLElement).click();
+    flushSync();
+
+    const totalButtons = document.querySelectorAll(".ep-grid .ep-emoji").length;
+    expect(totalButtons).toBeGreaterThan(50);
+
+    const filterInput = document.querySelector(".ep-filter") as HTMLInputElement;
+    filterInput.value = "broom";
+    filterInput.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+
+    const filtered = document.querySelectorAll(".ep-grid .ep-emoji");
+    expect(filtered.length).toBe(1);
+    expect(filtered[0].textContent).toBe("🧹");
+
+    (filtered[0] as HTMLElement).click();
+    flushSync();
+    expect(onchange).toHaveBeenCalledWith("🧹");
+    unmount(comp);
+    target.remove();
+  });
+
   it("does not render tabs when flags is false (default)", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
@@ -149,7 +177,7 @@ describe("EmojiPicker", () => {
     const allFlagButtons = flagGrid!.querySelectorAll(".ep-emoji").length;
     expect(allFlagButtons).toBeGreaterThan(50);
 
-    const filterInput = document.querySelector(".ep-flag-filter") as HTMLInputElement;
+    const filterInput = document.querySelector(".ep-filter") as HTMLInputElement;
     filterInput.value = "france";
     filterInput.dispatchEvent(new Event("input", { bubbles: true }));
     flushSync();
@@ -171,7 +199,7 @@ describe("EmojiPicker", () => {
     const tabs = Array.from(document.querySelectorAll(".tab-bar .tab")) as HTMLButtonElement[];
     tabs[1].click();
     flushSync();
-    const filterInput = document.querySelector(".ep-flag-filter") as HTMLInputElement;
+    const filterInput = document.querySelector(".ep-filter") as HTMLInputElement;
     filterInput.value = "france";
     filterInput.dispatchEvent(new Event("input", { bubbles: true }));
     flushSync();
