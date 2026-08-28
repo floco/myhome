@@ -275,6 +275,7 @@ def delete_chore(
         raise HTTPException(status_code=404, detail="Chore not found")
     doc.chores = [c for c in doc.chores if c.id != chore_id]
     doc.assignments = [a for a in doc.assignments if a.choreId != chore_id]
+    doc.completions = [c for c in doc.completions if c.choreId != chore_id]
     save_chores(home_id, doc)
     delete_all_attachments(home_id, chore_id)
     log_activity(home_id, current_user_id, "chores", "delete", chore.name, chore_id)

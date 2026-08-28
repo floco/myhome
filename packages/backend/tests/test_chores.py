@@ -295,6 +295,14 @@ def test_delete_chore_cascades_assignments(client, home_id, tmp_path):
     assert client.get(f"/api/homes/{home_id}/chores").json()["assignments"] == []
 
 
+def test_delete_chore_cascades_completions(client, home_id, tmp_path):
+    save_chores(home_id, make_chore_doc())
+    client.post(f"/api/homes/{home_id}/chores/c1/complete")
+    del_resp = client.delete(f"/api/homes/{home_id}/chores/c1")
+    assert del_resp.status_code == 204
+    assert client.get(f"/api/homes/{home_id}/chores").json()["completions"] == []
+
+
 # --- POST /api/homes/{home_id}/assignments/{id}/complete ---
 
 def test_complete_assignment(client, home_id, tmp_path):
