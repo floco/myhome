@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.27.1 - 2026-08-28
+
+- Fixed deleting a chore with completion history failing silently (the delete request 500'd because leftover completion records still referenced the deleted chore)
+
 ## 0.27.0 - 2026-08-26
 
 - Removed the chore edit modal's "next due (calculated)" preview field — it became redundant once "current due date" was fixed to track the same source as the chores list
