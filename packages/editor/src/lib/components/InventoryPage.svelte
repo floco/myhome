@@ -253,6 +253,9 @@
       {#snippet categoryCell(item: InventoryItem)}
         {categoryName(item.categoryId) || "—"}
       {/snippet}
+      {#snippet brandCell(item: InventoryItem)}
+        {item.brand || "—"}
+      {/snippet}
       {#snippet ownerCell(item: InventoryItem)}
         {ownerName(item.ownerId) || "—"}
       {/snippet}
@@ -286,6 +289,7 @@
           { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
           { key: "name", label: $_('chores.editModal.name'), sortValue: (i) => i.name, cellClass: "name-cell", cell: nameCell },
           { key: "category", label: $_('costs.page.category'), sortValue: (i) => categoryName(i.categoryId) || null, cell: categoryCell, hideBelow: "tablet" },
+          { key: "brand", label: $_('inventory.modal.brand'), sortValue: (i) => i.brand || null, cell: brandCell, hideBelow: "tablet" },
           { key: "owner", label: $_('inventory.modal.owner'), sortValue: (i) => ownerName(i.ownerId) || null, cell: ownerCell, hideBelow: "tablet" },
           { key: "store", label: $_('inventory.modal.store'), sortValue: (i) => storeName(i.storeId) || null, cell: storeCell, hideBelow: "tablet" },
           { key: "room", label: $_('costs.page.room'), sortValue: (i) => roomName(i.placement?.roomId), cell: roomCell, hideBelow: "tablet" },

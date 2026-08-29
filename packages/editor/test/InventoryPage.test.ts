@@ -136,11 +136,11 @@ describe("InventoryPage — responsive columns", () => {
     flushSync();
 
     const headers = target.querySelectorAll("thead th");
-    // emoji, name, category, owner, store, room, purchased, cost, warranty
-    for (const i of [2, 3, 4, 5]) {
+    // emoji, name, category, brand, owner, store, room, purchased, cost, warranty
+    for (const i of [2, 3, 4, 5, 6]) {
       expect(headers[i].classList.contains("col-hide-tablet")).toBe(true);
     }
-    for (const i of [6, 7, 8]) {
+    for (const i of [7, 8, 9]) {
       expect(headers[i].classList.contains("col-hide-mobile")).toBe(true);
     }
     expect(headers[1].classList.contains("col-hide-tablet")).toBe(false); // name always visible
