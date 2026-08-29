@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.29.0 - 2026-08-29
+
+- Fixed the markdown editor's task-list items showing a bullet point before the checkbox
+- Task-list checkboxes can now be clicked directly in view mode to check/uncheck them, without entering edit mode
+- The table editor's grid can now select and reorder rows/columns (move up/down/left/right) and insert new rows/columns directly above/below or left/right of the current selection
+
 ## 0.28.0 - 2026-08-29
 
 - Added a table editor to the markdown editor toolbar (KB and other modules): insert or edit a table in a grid view with add/remove row/column and per-column alignment, instead of hand-writing markdown pipe syntax
