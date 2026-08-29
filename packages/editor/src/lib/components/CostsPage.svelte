@@ -16,6 +16,7 @@
   import type { Column } from "./ui/SortableTable.types";
   import Modal from "./ui/Modal.svelte";
   import FilterButton from "./ui/FilterButton.svelte";
+  import AttachmentIcon from "./ui/AttachmentIcon.svelte";
 
   type CostsStore = ReturnType<typeof createCostsStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -296,6 +297,14 @@
     {#snippet roomCell(entry: CostEntry)}
       {roomName(entry.roomId)}
     {/snippet}
+    {#snippet attachmentsHeader()}
+      <AttachmentIcon title={$_('common.attachments')} />
+    {/snippet}
+    {#snippet attachmentsCell(entry: CostEntry)}
+      {#if entry.attachments?.length}
+        <AttachmentIcon title={$_('common.attachments')} />
+      {/if}
+    {/snippet}
 
     <SortableTable
       columns={[
@@ -307,6 +316,7 @@
         { key: "unitPrice", label: $_('costs.page.unitPrice'), headerClass: "num-col", cellClass: "num-col", sortValue: (e) => e.unitPrice, cell: unitPriceCell, hideBelow: "tablet" },
         { key: "total", label: $_('costs.page.total'), headerClass: "num-col", cellClass: "num-col amount-cell", sortValue: (e) => e.totalAmount, cell: totalCell },
         { key: "room", label: $_('costs.page.room'), sortValue: (e) => roomName(e.roomId), cell: roomCell, hideBelow: "tablet" },
+        { key: "attachments", label: attachmentsHeader, sortValue: (e) => (e.attachments?.length ? 1 : 0), cellClass: "attachments-cell", cell: attachmentsCell, hideBelow: "mobile" },
       ] as Column<CostEntry>[]}
       rows={filtered}
       rowKey={(entry) => entry.id}
@@ -434,6 +444,7 @@
   :global(.emoji-cell) { font-size: 15px; width: 28px; text-align: center; }
   :global(.name-cell) { color: var(--text); }
   :global(.amount-cell) { color: var(--text); }
+  :global(.attachments-cell) { width: 32px; text-align: center; color: var(--text-faint); }
 
   .footer {
     padding: 6px 12px; font-size: 11px; color: var(--text-faint);

@@ -10,6 +10,7 @@
   import Button from "./ui/Button.svelte";
   import EmojiPicker from "./ui/EmojiPicker.svelte";
   import Tabs from "./ui/Tabs.svelte";
+  import MarkdownEditor from "./ui/MarkdownEditor.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
 
@@ -46,6 +47,7 @@
   let newPro = $state("");
   let newCon = $state("");
   let notes = $state(property?.notes ?? "");
+  let editingNotes = $state(isCreate);
 
   let saving = $state(false);
   let deleting = $state(false);
@@ -299,7 +301,15 @@
       </div>
     </div>
   {:else if activeTab === "notes"}
-    <textarea class="native-input notes-area" bind:value={notes} placeholder={$_('inventory.modal.notesPlaceholder')} rows="10"></textarea>
+    <MarkdownEditor
+      bind:value={notes}
+      bind:editing={editingNotes}
+      placeholder={$_('inventory.modal.notesPlaceholder')}
+      minHeight="260px"
+    />
+    {#if editingNotes && !isCreate}
+      <Button variant="secondary" onclick={() => { editingNotes = false; }}>{$_('works.modal.doneEditing')}</Button>
+    {/if}
   {:else}
     <MediaGallery
       items={mediaItems}
@@ -346,7 +356,6 @@
   }
   .native-input:focus { outline: none; border-color: var(--accent); }
   select.native-input { cursor: pointer; }
-  .notes-area { resize: vertical; min-height: 160px; }
 
   .pros-cons-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .pc-col { display: flex; flex-direction: column; gap: 8px; }

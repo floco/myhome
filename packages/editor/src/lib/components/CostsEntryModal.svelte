@@ -11,6 +11,7 @@
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
   import Tabs from "./ui/Tabs.svelte";
+  import MarkdownEditor from "./ui/MarkdownEditor.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
 
@@ -40,6 +41,7 @@
   let unitPrice = $state("");
   let contactId = $state("");
   let notes = $state("");
+  let editingNotes = $state(false);
   let roomId = $state("");
 
   $effect(() => {
@@ -50,6 +52,7 @@
     unitPrice = entry?.unitPrice != null ? String(entry.unitPrice) : "";
     contactId = entry?.contactId ?? "";
     notes = entry?.notes ?? "";
+    editingNotes = entry === null;
     roomId = entry?.roomId ?? "";
     activeTab = "info";
     confirmDelete = false;
@@ -207,7 +210,15 @@
 
     <div class="row col">
       <label>{$_('chores.editModal.notes')}</label>
-      <textarea class="native-input" bind:value={notes} rows="2" placeholder={$_('costs.entryModal.notesPlaceholder')}></textarea>
+      <MarkdownEditor
+        bind:value={notes}
+        bind:editing={editingNotes}
+        placeholder={$_('costs.entryModal.notesPlaceholder')}
+        minHeight="100px"
+      />
+      {#if editingNotes && !isCreate}
+        <Button variant="secondary" onclick={() => { editingNotes = false; }}>{$_('works.modal.doneEditing')}</Button>
+      {/if}
     </div>
 
     {#if error}<div class="error">{error}</div>{/if}
@@ -260,7 +271,6 @@
   .native-input::placeholder { color: var(--text-faint); }
   select.native-input { cursor: pointer; }
   .num-input { width: 120px; }
-  textarea.native-input { width: 100%; resize: vertical; }
   .error { color: var(--danger); font-size: 11px; margin-top: 4px; font-family: var(--font-sans); }
 
   .spacer { flex: 1; }

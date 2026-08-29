@@ -14,6 +14,7 @@
   import StatTile from "./ui/StatTile.svelte";
   import Modal from "./ui/Modal.svelte";
   import FilterButton from "./ui/FilterButton.svelte";
+  import AttachmentIcon from "./ui/AttachmentIcon.svelte";
   import { formatDate } from "../dateFormat";
   import ChoreCompleteModal from "./ChoreCompleteModal.svelte";
   import type { Point } from "@myhome/geometry";
@@ -287,6 +288,14 @@
         <button class="icon-btn" title={$_('chores.page.markAllDone')} onclick={() => { completing = { kind: "chore", id: chore.id, title: `${chore.emoji} ${displayName(chore)}` }; }}>✓</button>
         <button class="icon-btn" title={$_('chores.page.delayAllByWeek')} onclick={() => store.delayChore(chore.id, 7)}>⏭</button>
       {/snippet}
+      {#snippet attachmentsHeader()}
+        <AttachmentIcon title={$_('common.attachments')} />
+      {/snippet}
+      {#snippet attachmentsCell(chore: Chore)}
+        {#if chore.attachments?.length}
+          <AttachmentIcon title={$_('common.attachments')} />
+        {/if}
+      {/snippet}
       <SortableTable
         columns={[
           { key: "emoji", label: "", sortable: false, cellClass: "emoji-cell", cell: emojiCell },
@@ -294,6 +303,7 @@
           { key: "schedule", label: $_('chores.page.schedule'), sortValue: (c) => scheduleLabel(c), cell: scheduleCell, hideBelow: "mobile" },
           { key: "rooms", label: $_('chores.page.rooms'), sortValue: (c) => roomsSummary(assignmentsForChore(c.id)), cell: roomsCell, hideBelow: "tablet" },
           { key: "nextDue", label: $_('chores.page.nextDue'), sortValue: (c) => { const d = earliestDue(assignmentsForChore(c.id)); return d ? new Date(d) : null; }, cell: nextDueCell },
+          { key: "attachments", label: attachmentsHeader, sortValue: (c) => (c.attachments?.length ? 1 : 0), cellClass: "attachments-cell", cell: attachmentsCell, hideBelow: "mobile" },
           { key: "actions", label: "", sortable: false, cellClass: "actions-cell", stopRowClick: true, cell: actionsCell },
         ] as Column<Chore>[]}
         rows={filteredChores}
@@ -367,6 +377,7 @@
   .table-wrapper { flex: 1; overflow-y: auto; }
   :global(.emoji-cell) { font-size: 16px; width: 32px; text-align: center; }
   :global(.name-cell) { color: var(--text); font-weight: 600; }
+  :global(.attachments-cell) { width: 32px; text-align: center; color: var(--text-faint); }
   .sfd-badge { font-size: 11px; cursor: help; }
   :global(.actions-cell) { white-space: nowrap; text-align: right; }
 

@@ -6,6 +6,7 @@
   import Modal from "./ui/Modal.svelte";
   import Input from "./ui/Input.svelte";
   import Button from "./ui/Button.svelte";
+  import MarkdownEditor from "./ui/MarkdownEditor.svelte";
 
   type ContactsStore = ReturnType<typeof createContactsStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -28,6 +29,7 @@
   let address = $state(contact?.address ?? "");
   let website = $state(contact?.website ?? "");
   let notes = $state(contact?.notes ?? "");
+  let editingNotes = $state(isCreate);
 
   let saving = $state(false);
   let deleting = $state(false);
@@ -119,7 +121,15 @@
   </div>
   <div class="row">
     <label>{$_('contacts.modal.notes')}</label>
-    <textarea class="native-input notes-area" bind:value={notes} rows="3" placeholder={$_('contacts.modal.notesPlaceholder')}></textarea>
+    <MarkdownEditor
+      bind:value={notes}
+      bind:editing={editingNotes}
+      placeholder={$_('contacts.modal.notesPlaceholder')}
+      minHeight="120px"
+    />
+    {#if editingNotes && !isCreate}
+      <Button variant="secondary" onclick={() => { editingNotes = false; }}>{$_('works.modal.doneEditing')}</Button>
+    {/if}
   </div>
 
   {#if !isCreate}
@@ -175,7 +185,6 @@
   }
   .native-input:focus { outline: none; border-color: var(--accent); }
   select.native-input { cursor: pointer; }
-  .notes-area { resize: vertical; }
   .usage-list { margin: 0; padding-left: 18px; font-size: 12px; color: var(--text-muted); }
   .usage-module { color: var(--text-faint); }
   .usage-empty, .usage-loading { font-size: 12px; color: var(--text-faint); }

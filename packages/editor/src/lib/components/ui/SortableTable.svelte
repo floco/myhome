@@ -67,16 +67,24 @@
   }
 </script>
 
+{#snippet columnLabel(column: Column<T>)}
+  {#if typeof column.label === "string"}
+    {column.label}
+  {:else}
+    {@render column.label()}
+  {/if}
+{/snippet}
+
 <table class="ui-sortable-table {className ?? ''}">
   <thead>
     <tr>
       {#each columns as column (column.key)}
         {#if column.sortable === false}
-          <th class="{column.headerClass ?? ''} {hideClassFor(column)}">{column.label}</th>
+          <th class="{column.headerClass ?? ''} {hideClassFor(column)}">{@render columnLabel(column)}</th>
         {:else}
           <th class="{column.headerClass ?? ''} {hideClassFor(column)}" aria-sort={ariaSortFor(column.key)}>
             <button type="button" class="ui-sortable-table-sort-btn" onclick={() => sortState.toggle(column.key)}>
-              {column.label}
+              {@render columnLabel(column)}
               <span class="ui-sortable-table-arrow">{arrowFor(column.key)}</span>
             </button>
           </th>

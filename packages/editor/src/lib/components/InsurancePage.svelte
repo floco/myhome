@@ -16,6 +16,7 @@
   import { assignCategoryColors } from "../colorAssignment";
   import Modal from "./ui/Modal.svelte";
   import FilterButton from "./ui/FilterButton.svelte";
+  import AttachmentIcon from "./ui/AttachmentIcon.svelte";
 
   type InsuranceStore = ReturnType<typeof createInsuranceStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -169,6 +170,14 @@
           <span class="chip" style="color:{chip!.color}">{chip!.label}</span>
         {/if}
       {/snippet}
+      {#snippet attachmentsHeader()}
+        <AttachmentIcon title={$_('common.attachments')} />
+      {/snippet}
+      {#snippet attachmentsCell(p: InsurancePolicy)}
+        {#if p.attachments?.length}
+          <AttachmentIcon title={$_('common.attachments')} />
+        {/if}
+      {/snippet}
 
       <SortableTable
         columns={[
@@ -178,6 +187,7 @@
           { key: "provider", label: $_('costs.entryModal.supplier'), sortValue: (p) => contactMap.get(p.contactId ?? "")?.name ?? null, cell: providerCell, hideBelow: "tablet" },
           { key: "premium", label: $_('insurance.page.premium'), sortValue: (p) => annualized(p), cell: premiumCell },
           { key: "endDate", label: $_('insurance.page.endDate'), sortValue: (p) => (p.endDate ? new Date(p.endDate) : null), cell: endDateCell, hideBelow: "mobile" },
+          { key: "attachments", label: attachmentsHeader, sortValue: (p) => (p.attachments?.length ? 1 : 0), cellClass: "attachments-cell", cell: attachmentsCell, hideBelow: "mobile" },
         ] as Column<InsurancePolicy>[]}
         rows={filteredPolicies}
         rowKey={(p) => p.id}
@@ -249,6 +259,7 @@
   :global(.emoji-cell) { font-size: 16px; width: 32px; text-align: center; }
   :global(.name-cell) { color: var(--text); font-weight: 600; }
   .chip { font-size: 10px; font-weight: 500; margin-left: 6px; }
+  :global(.attachments-cell) { width: 32px; text-align: center; color: var(--text-faint); }
 
   .footer { padding: var(--space-2) var(--space-4); border-top: 1px solid var(--border); font-size: 11px; color: var(--text-faint); flex-shrink: 0; }
 </style>

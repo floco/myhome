@@ -10,6 +10,7 @@
   import Tabs from "./ui/Tabs.svelte";
   import ScheduleAnchorPicker from "./ui/ScheduleAnchorPicker.svelte";
   import DatePicker from "./ui/DatePicker.svelte";
+  import MarkdownEditor from "./ui/MarkdownEditor.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
   import EmojiPicker from "./ui/EmojiPicker.svelte";
@@ -43,6 +44,7 @@
   let draftNextDue = $state("");
   let draftScheduleFromDue = $state(false);
   let draftDescription = $state("");
+  let editingNotes = $state(false);
   let saving = $state(false);
   let deleting = $state(false);
   let confirmDelete = $state(false);
@@ -129,6 +131,7 @@
       draftNextDue = earliestDue(chore, assignmentsForChore).slice(0, 10);
       draftScheduleFromDue = chore.scheduleFromDue;
       draftDescription = chore.description ?? "";
+      editingNotes = false;
       activeTab = "info";
       newAssignmentRoomId = "";
       newAssignmentLabel = "";
@@ -229,9 +232,16 @@
           <DatePicker bind:value={draftNextDue} />
         </label>
         <ScheduleAnchorPicker bind:scheduleFromDue={draftScheduleFromDue} idPrefix="edit-sfd" />
-        <label>{$_('chores.editModal.notes')}
-          <textarea class="native-input notes-field" bind:value={draftDescription} placeholder={$_('chores.editModal.notesPlaceholder')} rows="4"></textarea>
-        </label>
+        <label>{$_('chores.editModal.notes')}</label>
+        <MarkdownEditor
+          bind:value={draftDescription}
+          bind:editing={editingNotes}
+          placeholder={$_('chores.editModal.notesPlaceholder')}
+          minHeight="120px"
+        />
+        {#if editingNotes}
+          <Button variant="secondary" onclick={() => { editingNotes = false; }}>{$_('works.modal.doneEditing')}</Button>
+        {/if}
         {#if error}<div class="form-error">{error}</div>{/if}
       </div>
     {:else if activeTab === "assignments"}
@@ -366,7 +376,6 @@
   .name-emoji-row { display: flex; gap: 8px; align-items: flex-end; }
   .name-emoji-row .emoji-field { width: 70px; flex-shrink: 0; }
   .name-emoji-row .name-row-field { flex: 1; min-width: 0; }
-  .notes-field { resize: vertical; min-height: 72px; font-family: inherit; line-height: 1.4; }
 
   .media-pane { min-height: 200px; }
   .form-error { font-size: 11px; color: var(--danger); margin-top: 4px; }

@@ -361,11 +361,11 @@ describe("ChoresPage — responsive columns", () => {
     flushSync();
 
     const headers = target.querySelectorAll("thead th");
-    // emoji, name, schedule, rooms, nextDue, actions
+    // emoji, name, schedule, rooms, nextDue, attachments, actions
     expect(headers[3].classList.contains("col-hide-tablet")).toBe(true); // rooms
     expect(headers[2].classList.contains("col-hide-mobile")).toBe(true); // schedule
-    expect(headers[5].classList.contains("col-hide-tablet")).toBe(false); // actions
-    expect(headers[5].classList.contains("col-hide-mobile")).toBe(false); // actions
+    expect(headers[6].classList.contains("col-hide-tablet")).toBe(false); // actions
+    expect(headers[6].classList.contains("col-hide-mobile")).toBe(false); // actions
 
     unmount(comp);
   });

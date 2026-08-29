@@ -32,6 +32,24 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe("ContactModal — notes links", () => {
+  it("renders a URL in notes as a clickable link when not editing", async () => {
+    const contact = makeContact({ notes: "Website: https://example.com" });
+    const store = { ...makeStore(), contacts: [contact] };
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ContactModal, {
+      target,
+      props: { contact, store, settingsStore: makeSettingsStore(), onclose: vi.fn() },
+    });
+    await tick();
+    await tick();
+    const link = target.querySelector(".md-preview a") as HTMLAnchorElement | null;
+    expect(link?.getAttribute("href")).toBe("https://example.com");
+    unmount(comp);
+  });
+});
+
 describe("ContactModal — usage / delete protection", () => {
   it("disables delete when the contact is in use, and shows the reference", async () => {
     const store = makeStore([{ module: "works", id: "w1", label: "Fix sink" }]);

@@ -136,15 +136,48 @@ describe("InventoryPage — responsive columns", () => {
     flushSync();
 
     const headers = target.querySelectorAll("thead th");
-    // emoji, name, category, owner, store, room, purchased, cost, warranty
-    for (const i of [2, 3, 4, 5]) {
+    // emoji, name, category, brand, owner, store, room, purchased, cost, warranty
+    for (const i of [2, 3, 4, 5, 6]) {
       expect(headers[i].classList.contains("col-hide-tablet")).toBe(true);
     }
-    for (const i of [6, 7, 8]) {
+    for (const i of [7, 8, 9]) {
       expect(headers[i].classList.contains("col-hide-mobile")).toBe(true);
     }
     expect(headers[1].classList.contains("col-hide-tablet")).toBe(false); // name always visible
     expect(headers[1].classList.contains("col-hide-mobile")).toBe(false);
+
+    unmount(comp);
+  });
+});
+
+describe("InventoryPage — attachments column", () => {
+  it("shows the paperclip icon only for rows with attachments, and sorts by it", () => {
+    const store = makeStore([
+      makeItem({ id: "i1", name: "No attachments", attachments: [] }),
+      makeItem({ id: "i2", name: "Has attachments", attachments: ["photo.jpg"] }),
+    ]);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(InventoryPage, { target, props: { store, floorStore: { floors: [] }, ...BASE_PROPS } });
+    flushSync();
+
+    const rows = target.querySelectorAll("tbody tr");
+    expect(rows[0].querySelector(".attachments-cell svg")).toBeNull();
+    expect(rows[1].querySelector(".attachments-cell svg")).not.toBeNull();
+
+    const headers = target.querySelectorAll("thead th");
+    const attachmentsHeader = headers[headers.length - 1];
+    expect(attachmentsHeader.querySelector("svg")).not.toBeNull();
+
+    (attachmentsHeader.querySelector("button") as HTMLButtonElement).click();
+    flushSync();
+    const namesAfterAsc = [...target.querySelectorAll("tbody tr td.name-cell")].map((td) => td.textContent);
+    expect(namesAfterAsc).toEqual(["No attachments", "Has attachments"]);
+
+    (attachmentsHeader.querySelector("button") as HTMLButtonElement).click();
+    flushSync();
+    const namesAfterDesc = [...target.querySelectorAll("tbody tr td.name-cell")].map((td) => td.textContent);
+    expect(namesAfterDesc).toEqual(["Has attachments", "No attachments"]);
 
     unmount(comp);
   });

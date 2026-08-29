@@ -40,6 +40,26 @@ function setup() {
 }
 
 describe("TaskModal", () => {
+  it("renders a URL in notes as a clickable link when not editing", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true, status: 200,
+      json: async () => ({ ...doc, tasks: [{ ...doc.tasks[0], notes: "See https://example.com/spec" }] }),
+    }));
+    const store = createBuildStore(getHomeId);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    await waitTick();
+    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: makeContactsStore(), onclose: vi.fn() } });
+    await tick();
+    flushSync();
+
+    const link = target.querySelector(".md-preview a") as HTMLAnchorElement | null;
+    expect(link?.getAttribute("href")).toBe("https://example.com/spec");
+
+    unmount(comp);
+    target.remove();
+  });
+
   it("shows the resolved i18n title for a seeded task with no override", async () => {
     const { store, target } = setup();
     await waitTick();

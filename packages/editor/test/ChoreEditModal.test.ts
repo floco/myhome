@@ -50,6 +50,23 @@ function buttonLabel(b: Element): string | undefined {
   return (b.querySelector(".btn-full")?.textContent ?? b.textContent)?.trim();
 }
 
+describe("ChoreEditModal — notes links", () => {
+  it("renders a URL in notes as a clickable link when not editing", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const chore = makeChore({ description: "Manual: https://example.com/manual.pdf" });
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore, store, rooms: NO_ROOMS, onclose: vi.fn() },
+    });
+    flushSync();
+    const link = target.querySelector(".md-preview a") as HTMLAnchorElement | null;
+    expect(link?.getAttribute("href")).toBe("https://example.com/manual.pdf");
+    unmount(app);
+  });
+});
+
 describe("ChoreEditModal — tabs", () => {
   it("shows Info and Media tab buttons when chore is provided", () => {
     const target = document.createElement("div");

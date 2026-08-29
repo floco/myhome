@@ -45,6 +45,23 @@ function makeCostsStore(entries: CostEntry[] = []) {
   };
 }
 
+describe("CostsEntryModal — notes links", () => {
+  it("renders a URL in notes as a clickable link when not editing", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const entry = makeEntry({ notes: "Invoice: https://example.com/invoice.pdf" });
+    const costsStore = makeCostsStore([entry]);
+    const app = mount(CostsEntryModal, {
+      target,
+      props: { entry, costsStore, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore(), floorStore: makeFloorStore(), onclose: vi.fn() },
+    });
+    flushSync();
+    const link = target.querySelector(".md-preview a") as HTMLAnchorElement | null;
+    expect(link?.getAttribute("href")).toBe("https://example.com/invoice.pdf");
+    unmount(app);
+  });
+});
+
 describe("CostsEntryModal — Media tab", () => {
   it("shows Info and Media tabs when editing", () => {
     const target = document.createElement("div");

@@ -40,6 +40,24 @@ describe("PropertyModal", () => {
     target.remove();
   });
 
+  it("renders a URL in notes as a clickable link when not editing", () => {
+    const property = makeProperty({ notes: "Listing: https://example.com/listing" });
+    const store = makeStore([property]);
+    const comp = mount(PropertyModal, {
+      target,
+      props: { property, store, locationsStore: makeLocationsStore(), onclose: vi.fn() },
+    });
+    flushSync();
+
+    const tabs = Array.from(target.querySelectorAll(".tab")) as HTMLButtonElement[];
+    const notesTab = tabs.find((t) => t.textContent === "Notes")!;
+    notesTab.click();
+    flushSync();
+
+    const link = target.querySelector(".md-preview a") as HTMLAnchorElement | null;
+    expect(link?.getAttribute("href")).toBe("https://example.com/listing");
+  });
+
   it("adds and removes pros/cons entries", () => {
     const store = makeStore([]);
     const comp = mount(PropertyModal, {
