@@ -125,6 +125,153 @@ describe("TableEditorModal — new table", () => {
   });
 });
 
+describe("TableEditorModal — reordering and relative insert", () => {
+  const initial: ParsedTable = {
+    startIndex: 0,
+    endIndex: 0,
+    headerCells: ["A", "B", "C"],
+    alignments: ["left", "left", "left"],
+    rows: [
+      ["r1a", "r1b", "r1c"],
+      ["r2a", "r2b", "r2c"],
+    ],
+  };
+
+  function rowCellValues(target: HTMLElement, ri: number): string[] {
+    return [...dataRows(target)[ri].querySelectorAll(".te-cell")].map((el) => (el as HTMLInputElement).value);
+  }
+
+  it("selecting a row marks it selected, and selecting it again clears the selection", () => {
+    const { target, app } = setup(initial);
+    const handle = dataRows(target)[0].querySelector(".te-row-handle") as HTMLButtonElement;
+    handle.click();
+    flushSync();
+    expect(dataRows(target)[0].classList.contains("te-row-selected")).toBe(true);
+    handle.click();
+    flushSync();
+    expect(dataRows(target)[0].classList.contains("te-row-selected")).toBe(false);
+    unmount(app);
+    target.remove();
+  });
+
+  it("selecting a column marks its header cell selected", () => {
+    const { target, app } = setup(initial);
+    const handle = target.querySelectorAll(".te-col-handle")[1] as HTMLButtonElement;
+    handle.click();
+    flushSync();
+    const toolbarCell = handle.closest("th") as HTMLElement;
+    expect(toolbarCell.classList.contains("te-col-selected")).toBe(true);
+    unmount(app);
+    target.remove();
+  });
+
+  it("moving a row down swaps it with the row below", () => {
+    const { target, app } = setup(initial);
+    (dataRows(target)[0].querySelector(".te-row-move-down") as HTMLButtonElement).click();
+    flushSync();
+    expect(rowCellValues(target, 0)).toEqual(["r2a", "r2b", "r2c"]);
+    expect(rowCellValues(target, 1)).toEqual(["r1a", "r1b", "r1c"]);
+    unmount(app);
+    target.remove();
+  });
+
+  it("disables moving the first row up and the last row down", () => {
+    const { target, app } = setup(initial);
+    expect((dataRows(target)[0].querySelector(".te-row-move-up") as HTMLButtonElement).disabled).toBe(true);
+    expect((dataRows(target)[1].querySelector(".te-row-move-down") as HTMLButtonElement).disabled).toBe(true);
+    unmount(app);
+    target.remove();
+  });
+
+  it("moving a column right swaps header, alignment and every row's cell", () => {
+    const { target, app, onConfirm } = setup(initial);
+    // give columns 0 and 1 distinct alignments so the swap is observable
+    (target.querySelectorAll(".te-align-group")[1].querySelector('[title="Align center"]') as HTMLButtonElement).click();
+    flushSync();
+    (target.querySelectorAll(".te-col-move-right")[0] as HTMLButtonElement).click();
+    flushSync();
+    expect(headerInputs(target).map((i) => i.value)).toEqual(["B", "A", "C"]);
+    expect(rowCellValues(target, 0)).toEqual(["r1b", "r1a", "r1c"]);
+    target.querySelector(".ui-modal-footer .ui-button-primary")!.dispatchEvent(new Event("click", { bubbles: true }));
+    const [, alignments] = onConfirm.mock.calls[0];
+    expect(alignments).toEqual(["center", "left", "left"]);
+    unmount(app);
+    target.remove();
+  });
+
+  it("Insert row above/below are disabled until a row is selected", () => {
+    const { target, app } = setup(initial);
+    expect((target.querySelector(".te-insert-row-above") as HTMLButtonElement).disabled).toBe(true);
+    expect((target.querySelector(".te-insert-row-below") as HTMLButtonElement).disabled).toBe(true);
+    (dataRows(target)[0].querySelector(".te-row-handle") as HTMLButtonElement).click();
+    flushSync();
+    expect((target.querySelector(".te-insert-row-above") as HTMLButtonElement).disabled).toBe(false);
+    expect((target.querySelector(".te-insert-row-below") as HTMLButtonElement).disabled).toBe(false);
+    unmount(app);
+    target.remove();
+  });
+
+  it("Insert row above adds a blank row above the selected one", () => {
+    const { target, app } = setup(initial);
+    (dataRows(target)[1].querySelector(".te-row-handle") as HTMLButtonElement).click();
+    flushSync();
+    (target.querySelector(".te-insert-row-above") as HTMLButtonElement).click();
+    flushSync();
+    expect(dataRows(target)).toHaveLength(3);
+    expect(rowCellValues(target, 1)).toEqual(["", "", ""]);
+    expect(rowCellValues(target, 2)).toEqual(["r2a", "r2b", "r2c"]);
+    unmount(app);
+    target.remove();
+  });
+
+  it("Insert row below adds a blank row below the selected one", () => {
+    const { target, app } = setup(initial);
+    (dataRows(target)[0].querySelector(".te-row-handle") as HTMLButtonElement).click();
+    flushSync();
+    (target.querySelector(".te-insert-row-below") as HTMLButtonElement).click();
+    flushSync();
+    expect(dataRows(target)).toHaveLength(3);
+    expect(rowCellValues(target, 0)).toEqual(["r1a", "r1b", "r1c"]);
+    expect(rowCellValues(target, 1)).toEqual(["", "", ""]);
+    unmount(app);
+    target.remove();
+  });
+
+  it("Insert column left/right are disabled until a column is selected", () => {
+    const { target, app } = setup(initial);
+    expect((target.querySelector(".te-insert-column-left") as HTMLButtonElement).disabled).toBe(true);
+    (target.querySelectorAll(".te-col-handle")[0] as HTMLButtonElement).click();
+    flushSync();
+    expect((target.querySelector(".te-insert-column-left") as HTMLButtonElement).disabled).toBe(false);
+    expect((target.querySelector(".te-insert-column-right") as HTMLButtonElement).disabled).toBe(false);
+    unmount(app);
+    target.remove();
+  });
+
+  it("Insert column right adds a blank column to the right of the selected one", () => {
+    const { target, app } = setup(initial);
+    (target.querySelectorAll(".te-col-handle")[0] as HTMLButtonElement).click();
+    flushSync();
+    (target.querySelector(".te-insert-column-right") as HTMLButtonElement).click();
+    flushSync();
+    expect(headerInputs(target).map((i) => i.value)).toEqual(["A", "", "B", "C"]);
+    expect(rowCellValues(target, 0)).toEqual(["r1a", "", "r1b", "r1c"]);
+    unmount(app);
+    target.remove();
+  });
+
+  it("removing the selected row clears the selection", () => {
+    const { target, app } = setup(initial);
+    (dataRows(target)[0].querySelector(".te-row-handle") as HTMLButtonElement).click();
+    flushSync();
+    (dataRows(target)[0].querySelector(".te-row-remove") as HTMLButtonElement).click();
+    flushSync();
+    expect((target.querySelector(".te-insert-row-above") as HTMLButtonElement).disabled).toBe(true);
+    unmount(app);
+    target.remove();
+  });
+});
+
 describe("TableEditorModal — editing an existing table", () => {
   const initial: ParsedTable = {
     startIndex: 0,

@@ -933,6 +933,75 @@ describe("MarkdownEditor — table editor", () => {
   });
 });
 
+describe("MarkdownEditor — task list checkboxes", () => {
+  it("renders task-list checkboxes without disabled in preview mode", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "- [ ] one", editing: false } });
+    flushSync();
+    const checkbox = target.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    expect(checkbox).not.toBeNull();
+    expect(checkbox.disabled).toBe(false);
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking an unchecked checkbox checks it and does not enter edit mode", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "- [ ] one", editing: false, clickToEdit: true } });
+    flushSync();
+    (target.querySelector('input[type="checkbox"]') as HTMLInputElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+    expect(target.querySelector("textarea.md-editor")).toBeNull();
+    expect((target.querySelector('input[type="checkbox"]') as HTMLInputElement).checked).toBe(true);
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking a checked checkbox unchecks it", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "- [x] one", editing: false } });
+    flushSync();
+    (target.querySelector('input[type="checkbox"]') as HTMLInputElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+    expect((target.querySelector('input[type="checkbox"]') as HTMLInputElement).checked).toBe(false);
+    unmount(app);
+    target.remove();
+  });
+
+  it("toggling one checkbox does not affect the others", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "- [ ] one\n- [ ] two", editing: false } });
+    flushSync();
+    const checkboxes = () => [...target.querySelectorAll('input[type="checkbox"]')] as HTMLInputElement[];
+    checkboxes()[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+    expect(checkboxes()[0].checked).toBe(false);
+    expect(checkboxes()[1].checked).toBe(true);
+    unmount(app);
+    target.remove();
+  });
+
+  it("does not miscount a task-list-looking line inside a fenced code block", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const value = "```\n- [ ] not real\n```\n\n- [ ] real one";
+    const app = mount(MarkdownEditor, { target, props: { value, editing: false } });
+    flushSync();
+    const checkboxes = [...target.querySelectorAll('input[type="checkbox"]')] as HTMLInputElement[];
+    expect(checkboxes).toHaveLength(1);
+    checkboxes[0].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+    expect((target.querySelector('input[type="checkbox"]') as HTMLInputElement).checked).toBe(true);
+    expect(target.querySelector(".md-preview")!.textContent).toContain("- [ ] not real");
+    unmount(app);
+    target.remove();
+  });
+});
+
 describe("MarkdownEditor — DOMPurify target attribute", () => {
   it('preserves target="_blank" on rendered links (needed for bookmark cards to open in a new tab)', () => {
     const target = document.createElement("div");

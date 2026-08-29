@@ -28,6 +28,12 @@
         out += ">";
         return out;
       },
+      // Not disabled: task-list checkboxes are clickable in preview mode
+      // (toggled via handlePreviewClick, which maps them back to their
+      // source line by position among all rendered checkboxes).
+      checkbox({ checked }) {
+        return `<input ${checked ? 'checked="" ' : ""}type="checkbox"> `;
+      },
     },
   });
 
@@ -208,6 +214,55 @@
   function handleTableCancel(): void {
     tableModalOpen = false;
   }
+
+  /** Flips the nth GFM task-list checkbox found in `source` (skipping fenced code blocks, which marked renders as literal text rather than real checkboxes). */
+  function toggleNthTaskListLine(source: string, n: number): string {
+    const lines = source.split("\n");
+    let inFence = false;
+    let count = 0;
+    for (let i = 0; i < lines.length; i++) {
+      if (/^\s*(```|~~~)/.test(lines[i])) {
+        inFence = !inFence;
+        continue;
+      }
+      if (inFence) continue;
+      const match = lines[i].match(/^(\s*[-*+]\s+)\[([ xX])\](\s.*|)$/);
+      if (!match) continue;
+      if (count === n) {
+        const checked = match[2].toLowerCase() === "x";
+        lines[i] = match[1] + (checked ? "[ ]" : "[x]") + match[3];
+        break;
+      }
+      count++;
+    }
+    return lines.join("\n");
+  }
+
+  function toggleTaskCheckbox(checkboxEl: HTMLInputElement): void {
+    const container = checkboxEl.closest(".md-preview");
+    if (!container) return;
+    const index = [...container.querySelectorAll('input[type="checkbox"]')].indexOf(checkboxEl);
+    if (index === -1) return;
+    value = toggleNthTaskListLine(value, index);
+  }
+
+  function isTaskCheckbox(target: EventTarget | null): target is HTMLInputElement {
+    return target instanceof HTMLInputElement && target.type === "checkbox";
+  }
+
+  function handlePreviewClick(e: MouseEvent): void {
+    if (isTaskCheckbox(e.target)) {
+      e.preventDefault();
+      toggleTaskCheckbox(e.target);
+      return;
+    }
+    if (clickToEdit && editTrigger === "click") editing = true;
+  }
+
+  function handlePreviewDblclick(e: MouseEvent): void {
+    if (isTaskCheckbox(e.target)) return;
+    if (clickToEdit && editTrigger === "dblclick") editing = true;
+  }
 </script>
 
 {#if editing}
@@ -291,8 +346,8 @@
     class:md-clickable={clickToEdit}
     class:md-empty={!renderedHtml}
     style:min-height={minHeight}
-    onclick={clickToEdit && editTrigger === "click" ? () => { editing = true; } : undefined}
-    ondblclick={clickToEdit && editTrigger === "dblclick" ? () => { editing = true; } : undefined}
+    onclick={handlePreviewClick}
+    ondblclick={handlePreviewDblclick}
     onkeydown={clickToEdit ? (e) => { if (e.key === "Enter" || e.key === " ") editing = true; } : undefined}
     title={clickToEdit ? $_('markdownEditor.clickToEdit') : undefined}
   >
@@ -382,6 +437,7 @@
   .md-preview :global(p) { margin: 0.4em 0; }
   .md-preview :global(ul), .md-preview :global(ol) { margin: 0.4em 0; padding-left: 1.4em; }
   .md-preview :global(li) { margin: 0.2em 0; }
+  .md-preview :global(li:has(> input[type="checkbox"])) { list-style: none; cursor: pointer; }
   .md-preview :global(code) {
     background: var(--surface-hover); border: 1px solid var(--border);
     border-radius: 3px; padding: 0 4px; font-size: 11px; font-family: monospace; color: var(--text);
