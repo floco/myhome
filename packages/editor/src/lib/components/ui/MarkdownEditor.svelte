@@ -222,6 +222,7 @@
     <span class="tb-sep" aria-hidden="true"></span>
     <button class="tb-btn" type="button" title={$_('markdownEditor.bulletList')} onclick={() => linePrefix("- ")}>• List</button>
     <button class="tb-btn" type="button" title={$_('markdownEditor.numberedList')} onclick={() => linePrefix("1. ")}>1. List</button>
+    <button class="tb-btn" type="button" title={$_('markdownEditor.taskList')} onclick={() => linePrefix("- [ ] ")}>☐ List</button>
     <button class="tb-btn" type="button" title={$_('markdownEditor.blockquote')} onclick={() => linePrefix("> ")}>❝</button>
     <span class="tb-sep" aria-hidden="true"></span>
     <button class="tb-btn" type="button" title={$_('markdownEditor.inlineCode')} onclick={() => insert("`", "`", "code")}>`code`</button>

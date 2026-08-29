@@ -1285,6 +1285,7 @@
     "strikethrough": "Strikethrough",
     "bulletList": "Bullet list",
     "numberedList": "Numbered list",
+    "taskList": "Task list",
     "blockquote": "Blockquote",
     "inlineCode": "Inline code",
     "codeBlock": "Code block",

@@ -160,8 +160,28 @@ describe("MarkdownEditor — toolbar", () => {
     expect(titles).toContain("Bold");
     expect(titles).toContain("Italic");
     expect(titles).toContain("Bullet list");
+    expect(titles).toContain("Task list");
     expect(titles).toContain("Inline code");
     expect(titles).toContain("Link");
+    unmount(app);
+    target.remove();
+  });
+
+  it("Task list button prefixes the current line with '- [ ] '", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "", editing: true },
+    });
+    flushSync();
+    const taskListBtn = [...target.querySelectorAll(".tb-btn")].find(
+      b => b.getAttribute("title") === "Task list",
+    ) as HTMLButtonElement;
+    taskListBtn.click();
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("- [ ] ");
     unmount(app);
     target.remove();
   });
