@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.30.0 - 2026-08-29
+
+- Added a sortable "has attachment" paperclip column to the Inventory, Costs, Chores, Works, Properties, and Insurance list tables
+- Notes fields (Contacts, Costs, Inventory, Chores, Properties, Build tasks) now support Markdown and automatically turn pasted URLs into clickable links, matching Locations/Works/Insurance
+- Added a Brand column to the Inventory list
+
 ## 0.29.1 - 2026-08-29
 
 - Redesigned the table editor's row/column controls as a single "⋮" menu (Notion-style: align, move, insert, delete) instead of a row of always-visible icon buttons per row/column
