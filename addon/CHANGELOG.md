@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.29.1 - 2026-08-29
+
+- Redesigned the table editor's row/column controls as a single "⋮" menu (Notion-style: align, move, insert, delete) instead of a row of always-visible icon buttons per row/column
+
 ## 0.29.0 - 2026-08-29
 
 - Fixed the markdown editor's task-list items showing a bullet point before the checkbox
