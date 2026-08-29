@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.28.0 - 2026-08-29
+
+- Added a table editor to the markdown editor toolbar (KB and other modules): insert or edit a table in a grid view with add/remove row/column and per-column alignment, instead of hand-writing markdown pipe syntax
+- Added a task list button to the markdown editor toolbar
+
 ## 0.27.1 - 2026-08-28
 
 - Fixed deleting a chore with completion history failing silently (the delete request 500'd because leftover completion records still referenced the deleted chore)
