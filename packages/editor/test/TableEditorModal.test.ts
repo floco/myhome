@@ -21,6 +21,24 @@ function dataRows(target: HTMLElement): HTMLElement[] {
   return [...target.querySelectorAll(".te-data-row")] as HTMLElement[];
 }
 
+function rowCellValues(target: HTMLElement, ri: number): string[] {
+  return [...dataRows(target)[ri].querySelectorAll(".te-cell")].map((el) => (el as HTMLInputElement).value);
+}
+
+function openRowMenu(target: HTMLElement, ri: number): void {
+  (dataRows(target)[ri].querySelector(".te-row-menu-btn") as HTMLButtonElement).click();
+  flushSync();
+}
+
+function openColumnMenu(target: HTMLElement, ci: number): void {
+  (target.querySelectorAll(".te-col-menu-btn")[ci] as HTMLButtonElement).click();
+  flushSync();
+}
+
+function menuItem(selector: string): HTMLButtonElement {
+  return document.querySelector(selector) as HTMLButtonElement;
+}
+
 describe("TableEditorModal — new table", () => {
   it("shows the insert-table title and a blank 3x3 starter grid", () => {
     const { target, app } = setup(null);
@@ -53,39 +71,6 @@ describe("TableEditorModal — new table", () => {
     target.remove();
   });
 
-  it("removes a row when its remove button is clicked", () => {
-    const { target, app } = setup(null);
-    (dataRows(target)[0].querySelector(".te-row-remove") as HTMLButtonElement).click();
-    flushSync();
-    expect(dataRows(target)).toHaveLength(1);
-    unmount(app);
-    target.remove();
-  });
-
-  it("removes a column from header and all rows", () => {
-    const { target, app } = setup(null);
-    const removeButtons = [...target.querySelectorAll(".te-col-remove")] as HTMLButtonElement[];
-    removeButtons[0].click();
-    flushSync();
-    expect(headerInputs(target)).toHaveLength(2);
-    expect(dataRows(target)[0].querySelectorAll(".te-cell")).toHaveLength(2);
-    unmount(app);
-    target.remove();
-  });
-
-  it("disables column removal when only one column remains", () => {
-    const { target, app } = setup(null);
-    const removeButtons = () => [...target.querySelectorAll(".te-col-remove")] as HTMLButtonElement[];
-    removeButtons()[0].click();
-    flushSync();
-    removeButtons()[0].click();
-    flushSync();
-    expect(headerInputs(target)).toHaveLength(1);
-    expect(removeButtons()[0].disabled).toBe(true);
-    unmount(app);
-    target.remove();
-  });
-
   it("calls onConfirm with typed header text, default left alignment and typed cell text", () => {
     const { target, app, onConfirm } = setup(null);
     headerInputs(target)[0].value = "Name";
@@ -104,18 +89,6 @@ describe("TableEditorModal — new table", () => {
     target.remove();
   });
 
-  it("cycles a column's alignment through left, center and right", () => {
-    const { target, app, onConfirm } = setup(null);
-    const alignGroup = target.querySelectorAll(".te-align-group")[0];
-    (alignGroup.querySelector('[title="Align center"]') as HTMLButtonElement).click();
-    flushSync();
-    target.querySelector(".ui-modal-footer .ui-button-primary")!.dispatchEvent(new Event("click", { bubbles: true }));
-    const [, alignments] = onConfirm.mock.calls[0];
-    expect(alignments[0]).toBe("center");
-    unmount(app);
-    target.remove();
-  });
-
   it("calls onCancel when Cancel is clicked", () => {
     const { target, app, onCancel } = setup(null);
     target.querySelector(".ui-modal-footer .ui-button-secondary")!.dispatchEvent(new Event("click", { bubbles: true }));
@@ -125,7 +98,7 @@ describe("TableEditorModal — new table", () => {
   });
 });
 
-describe("TableEditorModal — reordering and relative insert", () => {
+describe("TableEditorModal — row menu", () => {
   const initial: ParsedTable = {
     startIndex: 0,
     endIndex: 0,
@@ -137,58 +110,139 @@ describe("TableEditorModal — reordering and relative insert", () => {
     ],
   };
 
-  function rowCellValues(target: HTMLElement, ri: number): string[] {
-    return [...dataRows(target)[ri].querySelectorAll(".te-cell")].map((el) => (el as HTMLInputElement).value);
-  }
-
-  it("selecting a row marks it selected, and selecting it again clears the selection", () => {
+  it("opens a menu with move, insert and delete actions", () => {
     const { target, app } = setup(initial);
-    const handle = dataRows(target)[0].querySelector(".te-row-handle") as HTMLButtonElement;
-    handle.click();
-    flushSync();
-    expect(dataRows(target)[0].classList.contains("te-row-selected")).toBe(true);
-    handle.click();
-    flushSync();
-    expect(dataRows(target)[0].classList.contains("te-row-selected")).toBe(false);
+    openRowMenu(target, 0);
+    expect(menuItem(".te-menu-move-up")).not.toBeNull();
+    expect(menuItem(".te-menu-move-down")).not.toBeNull();
+    expect(menuItem(".te-menu-insert-above")).not.toBeNull();
+    expect(menuItem(".te-menu-insert-below")).not.toBeNull();
+    expect(menuItem(".te-menu-delete-row")).not.toBeNull();
     unmount(app);
     target.remove();
   });
 
-  it("selecting a column marks its header cell selected", () => {
+  it("disables move-up on the first row and move-down on the last row", () => {
     const { target, app } = setup(initial);
-    const handle = target.querySelectorAll(".te-col-handle")[1] as HTMLButtonElement;
-    handle.click();
-    flushSync();
-    const toolbarCell = handle.closest("th") as HTMLElement;
-    expect(toolbarCell.classList.contains("te-col-selected")).toBe(true);
+    openRowMenu(target, 0);
+    expect(menuItem(".te-menu-move-up").disabled).toBe(true);
+    expect(menuItem(".te-menu-move-down").disabled).toBe(false);
+    openRowMenu(target, 1);
+    expect(menuItem(".te-menu-move-down").disabled).toBe(true);
     unmount(app);
     target.remove();
   });
 
-  it("moving a row down swaps it with the row below", () => {
+  it("Move down swaps the row with the one below and closes the menu", () => {
     const { target, app } = setup(initial);
-    (dataRows(target)[0].querySelector(".te-row-move-down") as HTMLButtonElement).click();
+    openRowMenu(target, 0);
+    menuItem(".te-menu-move-down").click();
     flushSync();
     expect(rowCellValues(target, 0)).toEqual(["r2a", "r2b", "r2c"]);
     expect(rowCellValues(target, 1)).toEqual(["r1a", "r1b", "r1c"]);
+    expect(document.querySelector(".te-menu-move-down")).toBeNull();
     unmount(app);
     target.remove();
   });
 
-  it("disables moving the first row up and the last row down", () => {
+  it("Insert above adds a blank row above that row", () => {
     const { target, app } = setup(initial);
-    expect((dataRows(target)[0].querySelector(".te-row-move-up") as HTMLButtonElement).disabled).toBe(true);
-    expect((dataRows(target)[1].querySelector(".te-row-move-down") as HTMLButtonElement).disabled).toBe(true);
+    openRowMenu(target, 1);
+    menuItem(".te-menu-insert-above").click();
+    flushSync();
+    expect(dataRows(target)).toHaveLength(3);
+    expect(rowCellValues(target, 1)).toEqual(["", "", ""]);
+    expect(rowCellValues(target, 2)).toEqual(["r2a", "r2b", "r2c"]);
     unmount(app);
     target.remove();
   });
 
-  it("moving a column right swaps header, alignment and every row's cell", () => {
-    const { target, app, onConfirm } = setup(initial);
-    // give columns 0 and 1 distinct alignments so the swap is observable
-    (target.querySelectorAll(".te-align-group")[1].querySelector('[title="Align center"]') as HTMLButtonElement).click();
+  it("Insert below adds a blank row below that row", () => {
+    const { target, app } = setup(initial);
+    openRowMenu(target, 0);
+    menuItem(".te-menu-insert-below").click();
     flushSync();
-    (target.querySelectorAll(".te-col-move-right")[0] as HTMLButtonElement).click();
+    expect(dataRows(target)).toHaveLength(3);
+    expect(rowCellValues(target, 0)).toEqual(["r1a", "r1b", "r1c"]);
+    expect(rowCellValues(target, 1)).toEqual(["", "", ""]);
+    unmount(app);
+    target.remove();
+  });
+
+  it("Delete row removes that row", () => {
+    const { target, app } = setup(initial);
+    openRowMenu(target, 0);
+    menuItem(".te-menu-delete-row").click();
+    flushSync();
+    expect(dataRows(target)).toHaveLength(1);
+    expect(rowCellValues(target, 0)).toEqual(["r2a", "r2b", "r2c"]);
+    unmount(app);
+    target.remove();
+  });
+});
+
+describe("TableEditorModal — column menu", () => {
+  const initial: ParsedTable = {
+    startIndex: 0,
+    endIndex: 0,
+    headerCells: ["A", "B", "C"],
+    alignments: ["left", "left", "left"],
+    rows: [["r1a", "r1b", "r1c"]],
+  };
+
+  it("opens a menu with align, move, insert and delete actions", () => {
+    const { target, app } = setup(initial);
+    openColumnMenu(target, 0);
+    expect(menuItem(".te-menu-align-left")).not.toBeNull();
+    expect(menuItem(".te-menu-align-center")).not.toBeNull();
+    expect(menuItem(".te-menu-align-right")).not.toBeNull();
+    expect(menuItem(".te-menu-move-left")).not.toBeNull();
+    expect(menuItem(".te-menu-move-right")).not.toBeNull();
+    expect(menuItem(".te-menu-insert-left")).not.toBeNull();
+    expect(menuItem(".te-menu-insert-right")).not.toBeNull();
+    expect(menuItem(".te-menu-delete-column")).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("disables move-left on the first column and move-right on the last column", () => {
+    const { target, app } = setup(initial);
+    openColumnMenu(target, 0);
+    expect(menuItem(".te-menu-move-left").disabled).toBe(true);
+    openColumnMenu(target, 2);
+    expect(menuItem(".te-menu-move-right").disabled).toBe(true);
+    unmount(app);
+    target.remove();
+  });
+
+  it("disables delete when only one column remains", () => {
+    const { target, app } = setup({ ...initial, headerCells: ["Only"], alignments: ["left"], rows: [["x"]] });
+    openColumnMenu(target, 0);
+    expect(menuItem(".te-menu-delete-column").disabled).toBe(true);
+    unmount(app);
+    target.remove();
+  });
+
+  it("selecting an alignment updates it and closes the menu", () => {
+    const { target, app, onConfirm } = setup(initial);
+    openColumnMenu(target, 0);
+    menuItem(".te-menu-align-center").click();
+    flushSync();
+    expect(document.querySelector(".te-menu-align-center")).toBeNull();
+    target.querySelector(".ui-modal-footer .ui-button-primary")!.dispatchEvent(new Event("click", { bubbles: true }));
+    const [, alignments] = onConfirm.mock.calls[0];
+    expect(alignments[0]).toBe("center");
+    unmount(app);
+    target.remove();
+  });
+
+  it("Move right swaps header, alignment and every row's cell with the next column", () => {
+    const { target, app, onConfirm } = setup(initial);
+    openColumnMenu(target, 1);
+    menuItem(".te-menu-align-center").click();
+    flushSync();
+    openColumnMenu(target, 0);
+    menuItem(".te-menu-move-right").click();
     flushSync();
     expect(headerInputs(target).map((i) => i.value)).toEqual(["B", "A", "C"]);
     expect(rowCellValues(target, 0)).toEqual(["r1b", "r1a", "r1c"]);
@@ -199,60 +253,10 @@ describe("TableEditorModal — reordering and relative insert", () => {
     target.remove();
   });
 
-  it("Insert row above/below are disabled until a row is selected", () => {
+  it("Insert left adds a blank column to the left of that column", () => {
     const { target, app } = setup(initial);
-    expect((target.querySelector(".te-insert-row-above") as HTMLButtonElement).disabled).toBe(true);
-    expect((target.querySelector(".te-insert-row-below") as HTMLButtonElement).disabled).toBe(true);
-    (dataRows(target)[0].querySelector(".te-row-handle") as HTMLButtonElement).click();
-    flushSync();
-    expect((target.querySelector(".te-insert-row-above") as HTMLButtonElement).disabled).toBe(false);
-    expect((target.querySelector(".te-insert-row-below") as HTMLButtonElement).disabled).toBe(false);
-    unmount(app);
-    target.remove();
-  });
-
-  it("Insert row above adds a blank row above the selected one", () => {
-    const { target, app } = setup(initial);
-    (dataRows(target)[1].querySelector(".te-row-handle") as HTMLButtonElement).click();
-    flushSync();
-    (target.querySelector(".te-insert-row-above") as HTMLButtonElement).click();
-    flushSync();
-    expect(dataRows(target)).toHaveLength(3);
-    expect(rowCellValues(target, 1)).toEqual(["", "", ""]);
-    expect(rowCellValues(target, 2)).toEqual(["r2a", "r2b", "r2c"]);
-    unmount(app);
-    target.remove();
-  });
-
-  it("Insert row below adds a blank row below the selected one", () => {
-    const { target, app } = setup(initial);
-    (dataRows(target)[0].querySelector(".te-row-handle") as HTMLButtonElement).click();
-    flushSync();
-    (target.querySelector(".te-insert-row-below") as HTMLButtonElement).click();
-    flushSync();
-    expect(dataRows(target)).toHaveLength(3);
-    expect(rowCellValues(target, 0)).toEqual(["r1a", "r1b", "r1c"]);
-    expect(rowCellValues(target, 1)).toEqual(["", "", ""]);
-    unmount(app);
-    target.remove();
-  });
-
-  it("Insert column left/right are disabled until a column is selected", () => {
-    const { target, app } = setup(initial);
-    expect((target.querySelector(".te-insert-column-left") as HTMLButtonElement).disabled).toBe(true);
-    (target.querySelectorAll(".te-col-handle")[0] as HTMLButtonElement).click();
-    flushSync();
-    expect((target.querySelector(".te-insert-column-left") as HTMLButtonElement).disabled).toBe(false);
-    expect((target.querySelector(".te-insert-column-right") as HTMLButtonElement).disabled).toBe(false);
-    unmount(app);
-    target.remove();
-  });
-
-  it("Insert column right adds a blank column to the right of the selected one", () => {
-    const { target, app } = setup(initial);
-    (target.querySelectorAll(".te-col-handle")[0] as HTMLButtonElement).click();
-    flushSync();
-    (target.querySelector(".te-insert-column-right") as HTMLButtonElement).click();
+    openColumnMenu(target, 1);
+    menuItem(".te-menu-insert-left").click();
     flushSync();
     expect(headerInputs(target).map((i) => i.value)).toEqual(["A", "", "B", "C"]);
     expect(rowCellValues(target, 0)).toEqual(["r1a", "", "r1b", "r1c"]);
@@ -260,13 +264,24 @@ describe("TableEditorModal — reordering and relative insert", () => {
     target.remove();
   });
 
-  it("removing the selected row clears the selection", () => {
+  it("Insert right adds a blank column to the right of that column", () => {
     const { target, app } = setup(initial);
-    (dataRows(target)[0].querySelector(".te-row-handle") as HTMLButtonElement).click();
+    openColumnMenu(target, 0);
+    menuItem(".te-menu-insert-right").click();
     flushSync();
-    (dataRows(target)[0].querySelector(".te-row-remove") as HTMLButtonElement).click();
+    expect(headerInputs(target).map((i) => i.value)).toEqual(["A", "", "B", "C"]);
+    expect(rowCellValues(target, 0)).toEqual(["r1a", "", "r1b", "r1c"]);
+    unmount(app);
+    target.remove();
+  });
+
+  it("Delete column removes that column from header and all rows", () => {
+    const { target, app } = setup(initial);
+    openColumnMenu(target, 0);
+    menuItem(".te-menu-delete-column").click();
     flushSync();
-    expect((target.querySelector(".te-insert-row-above") as HTMLButtonElement).disabled).toBe(true);
+    expect(headerInputs(target).map((i) => i.value)).toEqual(["B", "C"]);
+    expect(rowCellValues(target, 0)).toEqual(["r1b", "r1c"]);
     unmount(app);
     target.remove();
   });
