@@ -10,6 +10,7 @@
   import Button from "./ui/Button.svelte";
   import EmojiPicker from "./ui/EmojiPicker.svelte";
   import Tabs from "./ui/Tabs.svelte";
+  import MarkdownEditor from "./ui/MarkdownEditor.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
   import CreatableSelect from "./ui/CreatableSelect.svelte";
@@ -57,6 +58,7 @@
   );
   let warrantyExpiryDate = $state(item?.warrantyExpiryDate ?? "");
   let notes = $state(item?.notes ?? "");
+  let editingNotes = $state(isCreate);
 
   let saving = $state(false);
   let deleting = $state(false);
@@ -213,7 +215,15 @@
     </div>
     <div class="row col">
       <label>{$_('chores.editModal.notes')}</label>
-      <textarea class="native-input" bind:value={notes} rows="3" placeholder={$_('inventory.modal.notesPlaceholder')}></textarea>
+      <MarkdownEditor
+        bind:value={notes}
+        bind:editing={editingNotes}
+        placeholder={$_('inventory.modal.notesPlaceholder')}
+        minHeight="120px"
+      />
+      {#if editingNotes && !isCreate}
+        <Button variant="secondary" onclick={() => { editingNotes = false; }}>{$_('works.modal.doneEditing')}</Button>
+      {/if}
     </div>
     {#if error}<div class="error">{error}</div>{/if}
   {:else}
@@ -273,7 +283,6 @@
   .native-input::placeholder { color: var(--text-faint); }
   .emoji-input { width: 56px; text-align: center; font-size: 18px; }
   .price-input { width: 100px; }
-  textarea.native-input { width: 100%; resize: vertical; }
   .error { color: var(--danger); font-size: 11px; margin-top: 4px; font-family: var(--font-sans); }
 
   .spacer { flex: 1; }

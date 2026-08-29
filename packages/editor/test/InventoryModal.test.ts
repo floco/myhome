@@ -32,6 +32,27 @@ function makeStore(item: InventoryItem | null = null) {
   };
 }
 
+describe("InventoryModal — notes links", () => {
+  it("renders a URL in notes as a clickable link when not editing", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const item = makeItem({ notes: "Manual: https://example.com/manual.pdf" });
+    const store = makeStore(item);
+    const app = mount(InventoryModal, {
+      target,
+      props: {
+        item, store, onclose: vi.fn(),
+        inventoryCategories: [], owners: [], stores: [],
+        oncreatecategory: vi.fn(), oncreateowner: vi.fn(), oncreatestore: vi.fn(),
+      },
+    });
+    flushSync();
+    const link = target.querySelector(".md-preview a") as HTMLAnchorElement | null;
+    expect(link?.getAttribute("href")).toBe("https://example.com/manual.pdf");
+    unmount(app);
+  });
+});
+
 describe("InventoryModal — Media tab", () => {
   it("shows Media tab (not Attachments)", () => {
     const target = document.createElement("div");

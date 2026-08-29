@@ -9,6 +9,7 @@
   import DatePicker from "./ui/DatePicker.svelte";
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
+  import MarkdownEditor from "./ui/MarkdownEditor.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
 
@@ -44,6 +45,7 @@
   let validationRequired = $state(task?.validationRequired ?? false);
   let validationStatus = $state<ValidationStatus>(task?.validationStatus ?? "not_required");
   let notes = $state(task?.notes ?? "");
+  let editingNotes = $state(false);
 
   let saving = $state(false);
   let deleting = $state(false);
@@ -222,7 +224,14 @@
     {/if}
     <div class="row">
       <label>{$_('build.modal.notes')}</label>
-      <textarea class="native-input desc-area" bind:value={notes} rows="3"></textarea>
+      <MarkdownEditor
+        bind:value={notes}
+        bind:editing={editingNotes}
+        minHeight="120px"
+      />
+      {#if editingNotes}
+        <Button variant="secondary" onclick={() => { editingNotes = false; }}>{$_('works.modal.doneEditing')}</Button>
+      {/if}
     </div>
 
     <MediaGallery items={mediaItems} {uploading} {uploadError} onUpload={handleUpload} onDelete={handleDeleteAttachment} onItemClick={(i) => { lightboxIndex = i; lightboxOpen = true; }} />
