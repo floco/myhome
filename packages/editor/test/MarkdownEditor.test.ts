@@ -815,6 +815,104 @@ describe("MarkdownEditor — bookmark insert", () => {
   });
 });
 
+describe("MarkdownEditor — table editor", () => {
+  it("shows the Table toolbar button", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true } });
+    flushSync();
+    expect(target.querySelector('[title="Table"]')).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("opens the modal in insert mode with a blank grid when the cursor is outside any table", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "some text", editing: true } });
+    flushSync();
+    (target.querySelector('[title="Table"]') as HTMLButtonElement).click();
+    flushSync();
+    expect(target.querySelector(".ui-modal-title")?.textContent).toBe("Insert table");
+    unmount(app);
+    target.remove();
+  });
+
+  it("opens the modal in edit mode pre-filled when the cursor sits inside an existing table", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const value = "before\n\n| A | B |\n| :--- | :--- |\n| 1 | 2 |\n\nafter";
+    const app = mount(MarkdownEditor, { target, props: { value, editing: true } });
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    const cursor = value.indexOf("| 1 | 2 |");
+    textarea.selectionStart = cursor;
+    textarea.selectionEnd = cursor;
+    (target.querySelector('[title="Table"]') as HTMLButtonElement).click();
+    flushSync();
+    expect(target.querySelector(".ui-modal-title")?.textContent).toBe("Edit table");
+    const headerInputs = [...target.querySelectorAll(".te-header-input")] as HTMLInputElement[];
+    expect(headerInputs.map((i) => i.value)).toEqual(["A", "B"]);
+    unmount(app);
+    target.remove();
+  });
+
+  it("inserting a new table writes its markdown into the textarea", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true } });
+    flushSync();
+    (target.querySelector('[title="Table"]') as HTMLButtonElement).click();
+    flushSync();
+    const headerInputs = [...target.querySelectorAll(".te-header-input")] as HTMLInputElement[];
+    headerInputs[0].value = "Name";
+    headerInputs[0].dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    target.querySelector(".ui-modal-footer .ui-button-primary")!.dispatchEvent(new Event("click", { bubbles: true }));
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toContain("| Name |");
+    expect(target.querySelector(".ui-modal-title")).toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("editing an existing table replaces exactly that block, leaving surrounding text untouched", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const value = "before\n\n| A | B |\n| :--- | :--- |\n| 1 | 2 |\n\nafter";
+    const app = mount(MarkdownEditor, { target, props: { value, editing: true } });
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    const cursor = value.indexOf("| 1 | 2 |");
+    textarea.selectionStart = cursor;
+    textarea.selectionEnd = cursor;
+    (target.querySelector('[title="Table"]') as HTMLButtonElement).click();
+    flushSync();
+    target.querySelector(".ui-modal-footer .ui-button-primary")!.dispatchEvent(new Event("click", { bubbles: true }));
+    flushSync();
+    expect(textarea.value).toBe(value);
+    unmount(app);
+    target.remove();
+  });
+
+  it("Cancel closes the modal without changing the textarea value", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "some text", editing: true } });
+    flushSync();
+    (target.querySelector('[title="Table"]') as HTMLButtonElement).click();
+    flushSync();
+    target.querySelector(".ui-modal-footer .ui-button-secondary")!.dispatchEvent(new Event("click", { bubbles: true }));
+    flushSync();
+    expect(target.querySelector(".ui-modal-title")).toBeNull();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("some text");
+    unmount(app);
+    target.remove();
+  });
+});
+
 describe("MarkdownEditor — DOMPurify target attribute", () => {
   it('preserves target="_blank" on rendered links (needed for bookmark cards to open in a new tab)', () => {
     const target = document.createElement("div");

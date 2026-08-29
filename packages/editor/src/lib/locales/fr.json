@@ -1294,7 +1294,17 @@
     "insertMediaAttachment": "Insérer une pièce jointe média",
     "insertBookmark": "Insérer un favori",
     "writeInMarkdown": "Écrire en Markdown…",
-    "clickToEdit": "Cliquer pour modifier"
+    "clickToEdit": "Cliquer pour modifier",
+    "table": "Tableau",
+    "insertTable": "Insérer un tableau",
+    "editTable": "Modifier le tableau",
+    "addRow": "Ajouter une ligne",
+    "addColumn": "Ajouter une colonne",
+    "removeRow": "Supprimer la ligne",
+    "removeColumn": "Supprimer la colonne",
+    "alignLeft": "Aligner à gauche",
+    "alignCenter": "Centrer",
+    "alignRight": "Aligner à droite"
   },
   "app": {
     "topbar": {

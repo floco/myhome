@@ -3,6 +3,8 @@
   import DOMPurify from "dompurify";
   import { _ } from "svelte-i18n";
   import type { MediaItem } from "./mediaTypes";
+  import TableEditorModal from "./TableEditorModal.svelte";
+  import { findTableAtCursor, serializeTable, type Alignment, type ParsedTable } from "./markdownTable";
 
   function escapeHtml(s: string): string {
     return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -60,6 +62,8 @@
   let textareaEl: HTMLTextAreaElement | null = $state(null);
   let pickerOpen = $state(false);
   let wrapEl: HTMLElement | null = $state(null);
+  let tableModalOpen = $state(false);
+  let tableEditTarget: ParsedTable | null = $state(null);
 
   // Close picker when user clicks anywhere outside .tb-media-wrap.
   $effect(() => {
@@ -185,6 +189,25 @@
     const bookmarkHtml = await onInsertBookmark();
     if (bookmarkHtml) insert(bookmarkHtml);
   }
+
+  function openTableEditor(): void {
+    tableEditTarget = textareaEl ? findTableAtCursor(value, textareaEl.selectionStart) : null;
+    tableModalOpen = true;
+  }
+
+  function handleTableConfirm(headerCells: string[], alignments: Alignment[], rows: string[][]): void {
+    const markdown = serializeTable(headerCells, alignments, rows);
+    if (tableEditTarget) {
+      value = value.slice(0, tableEditTarget.startIndex) + markdown + value.slice(tableEditTarget.endIndex);
+    } else {
+      insert(`\n${markdown}\n`, "", "");
+    }
+    tableModalOpen = false;
+  }
+
+  function handleTableCancel(): void {
+    tableModalOpen = false;
+  }
 </script>
 
 {#if editing}
@@ -206,6 +229,7 @@
     <span class="tb-sep" aria-hidden="true"></span>
     <button class="tb-btn" type="button" title={$_('markdownEditor.link')} onclick={() => insert("[", "](url)", "link text")}>🔗</button>
     <button class="tb-btn" type="button" title={$_('markdownEditor.horizontalRule')} onclick={() => insert("\n---\n", "", "")}>—</button>
+    <button class="tb-btn" type="button" title={$_('markdownEditor.table')} onclick={openTableEditor}>⊞</button>
     {#if mediaItems.length > 0}
       <span class="tb-sep" aria-hidden="true"></span>
       <div
@@ -255,6 +279,9 @@
     oninput={handleTextareaInput}
     placeholder={$_('markdownEditor.writeInMarkdown')}
   ></textarea>
+  {#if tableModalOpen}
+    <TableEditorModal initial={tableEditTarget} onCancel={handleTableCancel} onConfirm={handleTableConfirm} />
+  {/if}
 {:else}
   <div
     role={clickToEdit ? "button" : undefined}
