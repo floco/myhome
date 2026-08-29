@@ -312,13 +312,26 @@
       <span class="spacer"></span>
       {#if confirmDelete}
         <span class="confirm-text">{$_('chores.editModal.deleteThisChore')}</span>
-        <Button variant="danger" disabled={deleting} onclick={handleDelete}>{deleting ? "…" : $_('chores.editModal.confirmDelete')}</Button>
-        <Button variant="ghost" onclick={() => { confirmDelete = false; }}>{$_('common.cancel')}</Button>
+        <Button variant="danger" disabled={deleting} title={$_('chores.editModal.confirmDelete')} onclick={handleDelete}>
+          <span class="btn-full">{deleting ? "…" : $_('chores.editModal.confirmDelete')}</span>
+          <span class="btn-icon" aria-hidden="true">🗑</span>
+        </Button>
+        <Button variant="ghost" title={$_('common.cancel')} onclick={() => { confirmDelete = false; }}>
+          <span class="btn-full">{$_('common.cancel')}</span>
+          <span class="btn-icon" aria-hidden="true">✕</span>
+        </Button>
       {:else}
-        <Button variant="danger" onclick={() => { confirmDelete = true; }}>🗑 {$_('common.delete')}</Button>
-        <Button variant="secondary" onclick={onclose}>{$_('common.cancel')}</Button>
-        <Button variant="primary" disabled={saving || !draftScheduleValid} onclick={handleSave}>
-          {saving ? $_('settings.security.saving') : $_('common.save')}
+        <Button variant="danger" title={$_('common.delete')} onclick={() => { confirmDelete = true; }}>
+          <span class="btn-full">🗑 {$_('common.delete')}</span>
+          <span class="btn-icon" aria-hidden="true">🗑</span>
+        </Button>
+        <Button variant="secondary" title={$_('common.cancel')} onclick={onclose}>
+          <span class="btn-full">{$_('common.cancel')}</span>
+          <span class="btn-icon" aria-hidden="true">✕</span>
+        </Button>
+        <Button variant="primary" disabled={saving || !draftScheduleValid} title={saving ? $_('settings.security.saving') : $_('common.save')} onclick={handleSave}>
+          <span class="btn-full">{saving ? $_('settings.security.saving') : $_('common.save')}</span>
+          <span class="btn-icon" aria-hidden="true">💾</span>
         </Button>
       {/if}
     {/snippet}
@@ -337,6 +350,13 @@
   .edit-form { display: flex; flex-direction: column; gap: 10px; }
   .spacer { flex: 1; }
   .confirm-text { font-size: 11px; color: var(--danger); }
+  .btn-icon { display: none; }
+
+  @media (max-width: 480px) { /* --bp-mobile */
+    .confirm-text { display: none; }
+    .btn-full { display: none; }
+    .btn-icon { display: inline; }
+  }
   label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-faint); }
   .native-input {
     padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm);

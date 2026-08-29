@@ -57,7 +57,7 @@
   let scheduleFilter = $state("");
   let filterModalOpen = $state(false);
   let healthFilter = $state<HealthBucket | null>(null);
-  const filtersActive = $derived(roomFilter !== "" || scheduleFilter !== "");
+  const filtersActive = $derived(roomFilter !== "" || scheduleFilter !== "" || choreFilterState.dueFilter === "attention");
 
   function needsAttention(assignments: Assignment[]): boolean {
     if (assignments.length === 0) return true; // unplaced chore -- needs a room before it can be tracked
@@ -235,15 +235,19 @@
     <div class="toolbar">
       <Input placeholder={$_('chores.page.search')} bind:value={searchQuery} />
       <FilterButton active={filtersActive} title={$_('common.filters')} onclick={() => { filterModalOpen = true; }} />
-      <div class="filter-toggle">
-        <button class="toggle-btn" class:active={choreFilterState.dueFilter === "all"} title={$_('chores.page.allChores')} onclick={() => { choreFilterState.dueFilter = "all"; }}>☰</button>
-        <button class="toggle-btn" class:active={choreFilterState.dueFilter === "attention"} title={$_('chores.page.needsAttentionTitle')} onclick={() => { choreFilterState.dueFilter = "attention"; }}>⚠</button>
-      </div>
       <Button iconOnly title={$_('chores.page.addChore')} onclick={() => onnewchore?.()}>＋</Button>
     </div>
 
     <Modal open={filterModalOpen} title={$_('common.filters')} onclose={() => { filterModalOpen = false; }} width="360px">
       <div class="filter-modal-body">
+        <label class="checkbox-row">
+          <input
+            type="checkbox"
+            checked={choreFilterState.dueFilter === "attention"}
+            onchange={(e) => { choreFilterState.dueFilter = (e.currentTarget as HTMLInputElement).checked ? "attention" : "all"; }}
+          />
+          {$_('chores.page.needsAttentionTitle')}
+        </label>
         <select class="native-input" bind:value={roomFilter}>
           <option value="">{$_('chores.page.allRooms')}</option>
           {#each allRooms as room}
@@ -358,11 +362,7 @@
     font-family: var(--font-sans); box-sizing: border-box; cursor: pointer;
   }
   .native-input:focus { outline: none; border-color: var(--accent); }
-  .filter-toggle { display: flex; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; flex-shrink: 0; }
-  .toggle-btn { padding: 6px 12px; border: none; background: var(--surface-alt); color: var(--text-muted); cursor: pointer; font-size: 12px; white-space: nowrap; }
-  .toggle-btn:not(:last-child) { border-right: 1px solid var(--border); }
-  .toggle-btn.active { background: var(--accent); color: var(--accent-contrast); }
-  .toggle-btn:not(.active):hover { background: var(--surface-hover); color: var(--text); }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); cursor: pointer; }
 
   .table-wrapper { flex: 1; overflow-y: auto; }
   :global(.emoji-cell) { font-size: 16px; width: 32px; text-align: center; }

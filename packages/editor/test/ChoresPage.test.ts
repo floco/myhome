@@ -6,7 +6,7 @@ import { choreFilterState } from "../src/lib/choreFilterState.svelte";
 
 afterEach(() => {
   document.body.innerHTML = "";
-  choreFilterState.dueFilter = "attention"; // module-level state -- reset so it doesn't leak between tests
+  choreFilterState.dueFilter = "all"; // module-level state -- reset so it doesn't leak between tests
 });
 
 function makeChore(overrides: Partial<Chore> = {}): Chore {
@@ -238,14 +238,21 @@ describe("ChoresPage — schedule filter", () => {
   });
 });
 
-describe("ChoresPage — unassigned chores stay visible by default", () => {
-  it("shows a freshly imported chore with no room assignment under the default attention filter", () => {
+describe("ChoresPage — unassigned chores stay visible under the attention filter", () => {
+  it("shows a freshly imported chore with no room assignment even with the needs-attention checkbox on", () => {
     const chore = makeChore({ id: "c1", name: "Imported chore" });
     const store = makeStore([chore]);
     // No assignments -- mirrors a Donetick import, which creates Chore rows only.
     const target = document.createElement("div");
     document.body.appendChild(target);
     const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    (target.querySelector('button[aria-label="Filters"]') as HTMLButtonElement).click();
+    flushSync();
+    const checkbox = target.querySelector('.checkbox-row input[type="checkbox"]') as HTMLInputElement;
+    checkbox.checked = true;
+    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
     flushSync();
 
     expect(target.querySelector(".name-cell")?.textContent).toContain("Imported chore");
@@ -255,8 +262,8 @@ describe("ChoresPage — unassigned chores stay visible by default", () => {
   });
 });
 
-describe("ChoresPage — due-filter toggle persists across remounts", () => {
-  it("keeps the 'all chores' selection after the page is unmounted and remounted", () => {
+describe("ChoresPage — due-filter checkbox persists across remounts", () => {
+  it("keeps the needs-attention selection after the page is unmounted and remounted", () => {
     const chore = makeChore();
     const store = makeStore([chore]);
     const target = document.createElement("div");
@@ -264,19 +271,26 @@ describe("ChoresPage — due-filter toggle persists across remounts", () => {
 
     let comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
     flushSync();
-    expect(target.querySelector('button[title="Needs attention"]')?.className).toContain("active");
 
-    (target.querySelector('button[title="All chores"]') as HTMLButtonElement).click();
+    (target.querySelector('button[aria-label="Filters"]') as HTMLButtonElement).click();
     flushSync();
-    expect(target.querySelector('button[title="All chores"]')?.className).toContain("active");
+    let checkbox = target.querySelector('.checkbox-row input[type="checkbox"]') as HTMLInputElement;
+    expect(checkbox.checked).toBe(false);
+
+    checkbox.checked = true;
+    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+    expect(choreFilterState.dueFilter).toBe("attention");
 
     unmount(comp);
     target.innerHTML = "";
     comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
     flushSync();
 
-    expect(target.querySelector('button[title="All chores"]')?.className).toContain("active");
-    expect(target.querySelector('button[title="Needs attention"]')?.className).not.toContain("active");
+    (target.querySelector('button[aria-label="Filters"]') as HTMLButtonElement).click();
+    flushSync();
+    checkbox = target.querySelector('.checkbox-row input[type="checkbox"]') as HTMLInputElement;
+    expect(checkbox.checked).toBe(true);
 
     unmount(comp);
   });

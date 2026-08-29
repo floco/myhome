@@ -43,6 +43,13 @@ function makeStore(overrides = {}) {
 const NO_ROOMS: Array<{ id: string; label: string; polygon: { x: number; y: number }[] | null }> = [];
 const SQUARE_ROOM = { id: "r1", label: "Kitchen", polygon: [{ x: 0, y: 0 }, { x: 2, y: 0 }, { x: 2, y: 2 }, { x: 0, y: 2 }] };
 
+// Footer Buttons render both a full-text label and a mobile icon label (CSS
+// swaps between them); jsdom doesn't apply the hiding CSS, so textContent
+// concatenates both -- read the full-text span specifically.
+function buttonLabel(b: Element): string | undefined {
+  return (b.querySelector(".btn-full")?.textContent ?? b.textContent)?.trim();
+}
+
 describe("ChoreEditModal — tabs", () => {
   it("shows Info and Media tab buttons when chore is provided", () => {
     const target = document.createElement("div");
@@ -88,7 +95,7 @@ describe("ChoreEditModal — tabs", () => {
     });
     flushSync();
     const saveBtn = Array.from(target.querySelectorAll("button")).find(
-      b => b.textContent?.trim() === "Save",
+      b => buttonLabel(b) === "Save",
     ) as HTMLButtonElement;
     saveBtn.click();
     await tick();
@@ -109,7 +116,7 @@ describe("ChoreEditModal — tabs", () => {
     del.click(); flushSync();
     expect(target.textContent).toContain("Delete this chore?");
     // Confirm
-    const confirm = Array.from(target.querySelectorAll("button")).find(b => b.textContent?.trim() === "Confirm delete") as HTMLButtonElement;
+    const confirm = Array.from(target.querySelectorAll("button")).find(b => buttonLabel(b) === "Confirm delete") as HTMLButtonElement;
     confirm.click(); await tick();
     expect(store.deleteChore).toHaveBeenCalledWith("c1");
     target.remove();
@@ -133,7 +140,7 @@ describe("ChoreEditModal — tabs", () => {
     flushSync();
 
     const saveBtn = Array.from(target.querySelectorAll("button")).find(
-      b => b.textContent?.trim() === "Save",
+      b => buttonLabel(b) === "Save",
     ) as HTMLButtonElement;
     saveBtn.click();
     await tick();
@@ -160,7 +167,7 @@ describe("ChoreEditModal — tabs", () => {
     flushSync();
 
     const saveBtn = Array.from(target.querySelectorAll("button")).find(
-      b => b.textContent?.trim() === "Save",
+      b => buttonLabel(b) === "Save",
     ) as HTMLButtonElement;
     expect(saveBtn.disabled).toBe(true);
     unmount(app);
@@ -183,7 +190,7 @@ describe("ChoreEditModal — tabs", () => {
       tab.click();
       flushSync();
       const saveBtn = Array.from(target.querySelectorAll("button")).find(
-        (b) => b.textContent?.trim() === "Save",
+        (b) => buttonLabel(b) === "Save",
       );
       expect(saveBtn, `Save button missing on ${tabText} tab`).toBeDefined();
     }
@@ -212,9 +219,7 @@ describe("ChoreEditModal — tabs", () => {
       ) as HTMLButtonElement;
       tab.click();
       flushSync();
-      const footerLabels = Array.from(target.querySelectorAll(".ui-modal-footer button")).map(
-        (b) => b.textContent?.trim(),
-      );
+      const footerLabels = Array.from(target.querySelectorAll(".ui-modal-footer button")).map(buttonLabel);
       expect(footerLabels, `footer order wrong on ${tabText} tab`).toEqual(expectedByTab[tabText]);
     }
     unmount(app);
@@ -339,7 +344,7 @@ describe("ChoreEditModal — schedule anchor + next-due preview", () => {
     flushSync();
 
     const saveBtn = Array.from(target.querySelectorAll("button")).find(
-      b => b.textContent?.trim() === "Save",
+      b => buttonLabel(b) === "Save",
     ) as HTMLButtonElement;
     saveBtn.click();
     await tick();
