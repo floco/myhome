@@ -13,6 +13,7 @@
   import WorksTimeline from "./WorksTimeline.svelte";
   import Modal from "./ui/Modal.svelte";
   import FilterButton from "./ui/FilterButton.svelte";
+  import AttachmentIcon from "./ui/AttachmentIcon.svelte";
 
   type WorksStore = ReturnType<typeof createWorksStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -183,6 +184,14 @@
         >{statusLabel(work.status)}</span>
         {#if work.placement}<span class="pin-indicator" title={$_('works.page.pinned')}>📍</span>{/if}
       {/snippet}
+      {#snippet attachmentsHeader()}
+        <AttachmentIcon title={$_('common.attachments')} />
+      {/snippet}
+      {#snippet attachmentsCell(work: Work)}
+        {#if work.attachments?.length}
+          <AttachmentIcon title={$_('common.attachments')} />
+        {/if}
+      {/snippet}
 
       <SortableTable
         columns={[
@@ -193,6 +202,7 @@
           { key: "supplier", label: $_('costs.page.supplier'), sortValue: (w) => supplierMap.get(w.contactId ?? "")?.name ?? null, cell: supplierCell, hideBelow: "tablet" },
           { key: "cost", label: $_('inventory.page.cost'), sortValue: (w) => w.totalCost, cell: costCell, hideBelow: "mobile" },
           { key: "status", label: $_('works.page.status'), sortValue: (w) => w.status, cell: statusCell },
+          { key: "attachments", label: attachmentsHeader, sortValue: (w) => (w.attachments?.length ? 1 : 0), cellClass: "attachments-cell", cell: attachmentsCell, hideBelow: "mobile" },
         ] as Column<Work>[]}
         rows={filteredWorks}
         rowKey={(work) => work.id}
@@ -276,6 +286,7 @@
   .desc { font-size: 11px; color: var(--text-faint); font-weight: 400; margin-left: 6px; }
   .status-chip { padding: 2px 7px; border-radius: var(--radius-sm); font-size: 10px; font-weight: 500; }
   .pin-indicator { font-size: 11px; margin-left: 4px; }
+  :global(.attachments-cell) { width: 32px; text-align: center; color: var(--text-faint); }
 
   .footer { padding: var(--space-2) var(--space-4); border-top: 1px solid var(--border); font-size: 11px; color: var(--text-faint); flex-shrink: 0; }
 </style>

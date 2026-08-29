@@ -169,6 +169,7 @@
     "close": "Close",
     "add": "Add",
     "filters": "Filters",
+    "attachments": "Attachments",
     "createOption": "+ Create \"{name}\"",
     "loading": "Loading…",
     "confirm": "Confirm",

@@ -2,7 +2,7 @@ import type { Snippet } from "svelte";
 
 export interface Column<T> {
   key: string;
-  label: string;
+  label: string | Snippet;
   sortable?: boolean;
   sortValue?: (row: T) => string | number | Date | null | undefined;
   cell?: Snippet<[T]>;

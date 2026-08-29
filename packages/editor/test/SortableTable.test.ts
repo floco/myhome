@@ -130,6 +130,28 @@ describe("ui/SortableTable", () => {
     unmount(comp);
   });
 
+  it("renders a Snippet as the column header, still sortable", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const headerSnippet = createRawSnippet(() => ({ render: () => `<span>📎</span>` }));
+    const columns: Column<Row>[] = [
+      { key: "qty", label: headerSnippet, sortValue: (r) => r.qty },
+    ];
+    const comp = mount(SortableTable, {
+      target,
+      props: { columns, rows: baseRows(), rowKey: (r: Row) => r.id },
+    });
+    flushSync();
+
+    const th = target.querySelector("thead th")!;
+    expect(th.querySelector("span")?.textContent).toBe("📎");
+    (th.querySelector("button") as HTMLButtonElement).click();
+    flushSync();
+    expect(th.getAttribute("aria-sort")).toBe("ascending");
+
+    unmount(comp);
+  });
+
   it("fires rowClick when a row is clicked", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);

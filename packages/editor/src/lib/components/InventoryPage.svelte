@@ -15,6 +15,7 @@
   import { assignCategoryColors } from "../colorAssignment";
   import Modal from "./ui/Modal.svelte";
   import FilterButton from "./ui/FilterButton.svelte";
+  import AttachmentIcon from "./ui/AttachmentIcon.svelte";
 
   type InvStore = ReturnType<typeof createInventoryStore>;
   type HouseStore = ReturnType<typeof createHouseStore>;
@@ -271,6 +272,14 @@
         {@const chip = warrantyChip(item)}
         <span class="chip" style="color:{chip.color}">{chip.label}</span>
       {/snippet}
+      {#snippet attachmentsHeader()}
+        <AttachmentIcon title={$_('common.attachments')} />
+      {/snippet}
+      {#snippet attachmentsCell(item: InventoryItem)}
+        {#if item.attachments?.length}
+          <AttachmentIcon title={$_('common.attachments')} />
+        {/if}
+      {/snippet}
 
       <SortableTable
         columns={[
@@ -283,6 +292,7 @@
           { key: "purchased", label: $_('inventory.page.purchased'), sortValue: (i) => (i.purchaseDate ? new Date(i.purchaseDate) : null), cell: purchasedCell, hideBelow: "mobile" },
           { key: "cost", label: $_('inventory.page.cost'), sortValue: (i) => i.purchasePrice, cell: costCell, hideBelow: "mobile" },
           { key: "warranty", label: $_('inventory.pinPopup.warranty'), sortable: false, cell: warrantyCell, hideBelow: "mobile" },
+          { key: "attachments", label: attachmentsHeader, sortValue: (i) => (i.attachments?.length ? 1 : 0), cellClass: "attachments-cell", cell: attachmentsCell, hideBelow: "mobile" },
         ] as Column<InventoryItem>[]}
         rows={filtered}
         rowKey={(item) => item.id}
@@ -368,6 +378,7 @@
 
   .table-wrapper { flex: 1; overflow-y: auto; }
   :global(.emoji-cell) { font-size: 16px; width: 32px; text-align: center; }
+  :global(.attachments-cell) { width: 32px; text-align: center; color: var(--text-faint); }
   :global(.name-cell) { color: var(--text); }
   .chip { font-size: 10px; font-weight: 500; }
 
