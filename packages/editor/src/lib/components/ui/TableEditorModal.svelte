@@ -123,11 +123,12 @@
     <table class="te-table">
       <thead>
         <tr class="te-header-row">
+          <th class="te-corner-cell"></th>
           {#each headerCells as _cell, i (i)}
             <th>
               <div class="te-header-cell">
-                <input class="te-cell te-header-input" bind:value={headerCells[i]} />
                 <button type="button" class="te-col-menu-btn" title={$_('markdownEditor.columnActions')} onclick={(e) => showColumnMenu(e, i)}>⋮</button>
+                <input class="te-cell te-header-input" bind:value={headerCells[i]} />
               </div>
             </th>
           {/each}
@@ -136,12 +137,12 @@
       <tbody>
         {#each rows as row, ri (ri)}
           <tr class="te-data-row">
-            {#each row as _cell, ci (ci)}
-              <td><input class="te-cell" bind:value={rows[ri][ci]} /></td>
-            {/each}
             <td class="te-actions-col">
               <button type="button" class="te-row-menu-btn" title={$_('markdownEditor.rowActions')} onclick={(e) => showRowMenu(e, ri)}>⋮</button>
             </td>
+            {#each row as _cell, ci (ci)}
+              <td><input class="te-cell" bind:value={rows[ri][ci]} /></td>
+            {/each}
           </tr>
         {/each}
       </tbody>
@@ -199,7 +200,8 @@
   .te-cell:focus { outline: none; border-color: var(--accent); }
   .te-header-input { font-weight: 600; }
   th, td { padding: 3px; }
-  .te-actions-col { width: 24px; padding: 3px 0 3px 4px; }
+  .te-actions-col { width: 24px; padding: 3px 4px 3px 0; }
+  .te-corner-cell { width: 24px; }
 
   .te-header-cell { display: flex; align-items: center; gap: 2px; }
   .te-header-cell .te-cell { flex: 1; min-width: 0; }
