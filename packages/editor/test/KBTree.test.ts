@@ -25,6 +25,7 @@ function baseProps(overrides: Record<string, unknown> = {}) {
     onstartrename: vi.fn(),
     oncommitrename: vi.fn(),
     oncancelrename: vi.fn(),
+    onmoveto: vi.fn(),
     ondelete: vi.fn(),
     onstartdrag: vi.fn(),
     onenddrag: vi.fn(),

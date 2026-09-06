@@ -1227,6 +1227,7 @@
       "pageActions": "Actions de la page",
       "addChildPage": "Ajouter une sous-page",
       "rename": "Renommer",
+      "moveTo": "Déplacer vers…",
       "noMatchingPages": "Aucune page correspondante.",
       "noPagesYet": "Aucune page pour l'instant."
     },
@@ -1271,7 +1272,11 @@
       "bookmarkUrlRequired": "Une URL est requise",
       "bookmarkFetchFailed": "Échec de la récupération de l'aperçu",
       "bookmarkFetching": "Récupération…",
-      "bookmarkInsert": "Insérer"
+      "bookmarkInsert": "Insérer",
+      "moveModalTitle": "Déplacer la page",
+      "moveSearchPlaceholder": "Rechercher des pages…",
+      "moveTopLevel": "Niveau supérieur (sans parent)",
+      "moveNoCandidates": "Aucune autre page vers laquelle déplacer."
     }
   },
   "markdownEditor": {

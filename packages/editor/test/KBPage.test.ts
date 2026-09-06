@@ -350,6 +350,82 @@ describe("KBPage — moving an existing page under another", () => {
   });
 });
 
+describe("KBPage — move via the page-actions menu", () => {
+  it("moving a page via the menu updates parentId and appends a link into the new parent", async () => {
+    const entries = [
+      makeEntry({ id: "a", title: "Page A", content: "Existing content." }),
+      makeEntry({ id: "b", title: "Page B", order: 1 }),
+    ];
+    const { target, comp, store } = await setup(entries);
+    const rows = target.querySelectorAll(".tree-row");
+    (rows[1].querySelector(".menu-trigger") as HTMLElement).click(); // Page B's menu
+    flushSync();
+    const moveItem = Array.from(target.querySelectorAll(".page-menu button"))
+      .find((b) => b.textContent === "Move to…") as HTMLElement;
+    moveItem.click();
+    flushSync();
+
+    const candidate = Array.from(target.querySelectorAll(".move-item"))
+      .find((b) => b.textContent?.includes("Page A")) as HTMLElement;
+    candidate.click();
+    await tick(); flushSync(); await tick(); flushSync();
+
+    const parentA = store.entries.find((e) => e.id === "a");
+    const movedB = store.entries.find((e) => e.id === "b");
+    expect(movedB?.parentId).toBe("a");
+    expect(parentA?.content).toContain("[Page B](#/kb/b)");
+    unmount(comp); target.remove();
+  });
+
+  it("excludes the page itself and its descendants from the move target list", async () => {
+    const entries = [
+      makeEntry({ id: "a", title: "Page A" }),
+      makeEntry({ id: "b", title: "Page B", parentId: "a", order: 0 }),
+    ];
+    const { target, comp } = await setup(entries);
+    (target.querySelector(".disclosure") as HTMLElement).click(); // expand A
+    flushSync();
+    const rows = target.querySelectorAll(".tree-row");
+    (rows[0].querySelector(".menu-trigger") as HTMLElement).click(); // Page A's menu
+    flushSync();
+    const moveItem = Array.from(target.querySelectorAll(".page-menu button"))
+      .find((b) => b.textContent === "Move to…") as HTMLElement;
+    moveItem.click();
+    flushSync();
+
+    const candidateTexts = Array.from(target.querySelectorAll(".move-item")).map((b) => b.textContent);
+    expect(candidateTexts.some((t) => t?.includes("Page A"))).toBe(false);
+    expect(candidateTexts.some((t) => t?.includes("Page B"))).toBe(false);
+    unmount(comp); target.remove();
+  });
+
+  it("offers a top-level option that clears parentId for a nested page", async () => {
+    const entries = [
+      makeEntry({ id: "a", title: "Page A" }),
+      makeEntry({ id: "b", title: "Page B", parentId: "a", order: 0 }),
+    ];
+    const { target, comp, store } = await setup(entries);
+    (target.querySelector(".disclosure") as HTMLElement).click(); // expand A
+    flushSync();
+    const rows = target.querySelectorAll(".tree-row");
+    (rows[1].querySelector(".menu-trigger") as HTMLElement).click(); // Page B's menu
+    flushSync();
+    const moveItem = Array.from(target.querySelectorAll(".page-menu button"))
+      .find((b) => b.textContent === "Move to…") as HTMLElement;
+    moveItem.click();
+    flushSync();
+
+    const topLevel = Array.from(target.querySelectorAll(".move-item"))
+      .find((b) => b.textContent?.includes("Top level (no parent)")) as HTMLElement;
+    topLevel.click();
+    await tick(); flushSync(); await tick(); flushSync();
+
+    const movedB = store.entries.find((e) => e.id === "b");
+    expect(movedB?.parentId).toBeNull();
+    unmount(comp); target.remove();
+  });
+});
+
 describe("KBPage — delete with cascade confirmation modal", () => {
   it("shows the sub-page count and page title in the delete confirmation modal", async () => {
     const entries = [makeEntry(), makeEntry({ id: "e2", title: "Child", parentId: "e1", order: 0 })];
