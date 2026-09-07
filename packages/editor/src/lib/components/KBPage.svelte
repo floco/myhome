@@ -202,6 +202,22 @@
     await store.updateEntry(parentId, { content: `${parent.content}\n\n${link}\n` });
   }
 
+  // Matches by href only (not link text) since a child's displayed title can
+  // have been renamed since the link was inserted -- the raw markdown still
+  // carries the original title as anchor text, but the #/kb/<id> href is stable.
+  function escapeRegExp(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  async function removeChildLink(parentId: string, childId: string): Promise<void> {
+    const parent = store.entries.find((e) => e.id === parentId);
+    if (!parent) return;
+    const linkPattern = new RegExp(`\\[[^\\]]*\\]\\(#/kb/${escapeRegExp(childId)}\\)`, "g");
+    if (!linkPattern.test(parent.content)) return;
+    const content = parent.content.replace(linkPattern, "").replace(/\n{3,}/g, "\n\n");
+    await store.updateEntry(parentId, { content });
+  }
+
   async function handleCreateChild(parentId: string): Promise<void> {
     const ok = await flushSave();
     if (!ok) return;
@@ -425,27 +441,34 @@
     dragging = null;
   }
 
+  // If a page we're about to rewrite the content of is open in the editor
+  // with unsaved changes, resyncing draftContent afterward keeps the
+  // dirty-check from re-arming the autosave timer and clobbering the change.
+  function resyncDraftIfSelected(pageId: string): void {
+    if (pageId !== selectedId) return;
+    const updated = store.entries.find((e) => e.id === pageId);
+    if (updated) draftContent = updated.content;
+  }
+
   async function reparentPage(draggedId: string, targetParentId: string | null): Promise<void> {
-    // If the destination page is open in the editor with unsaved changes,
-    // flush them first so appendChildLink below starts from up-to-date
-    // content -- otherwise the pending autosave timer would later overwrite
-    // the just-appended link with the stale draft.
-    if (targetParentId !== null && targetParentId === selectedId) {
-      await flushSave();
-    }
     const dragged = store.entries.find((e) => e.id === draggedId);
-    if (dragged && dragged.parentId !== targetParentId) {
-      await store.updateEntry(draggedId, { parentId: targetParentId });
-      if (targetParentId) {
-        await appendChildLink(targetParentId, dragged);
-        // appendChildLink just moved the destination's persisted content
-        // ahead of the local draft again; resync so the dirty-check doesn't
-        // re-arm the autosave timer and clobber the link right back out.
-        if (targetParentId === selectedId) {
-          const updated = store.entries.find((e) => e.id === targetParentId);
-          if (updated) draftContent = updated.content;
-        }
-      }
+    if (!dragged || dragged.parentId === targetParentId) return;
+    const oldParentId = dragged.parentId;
+
+    // Flush any pending edit on either endpoint first so the link add/remove
+    // below starts from up-to-date content instead of a stale draft.
+    if (oldParentId !== null && oldParentId === selectedId) await flushSave();
+    if (targetParentId !== null && targetParentId === selectedId) await flushSave();
+
+    await store.updateEntry(draggedId, { parentId: targetParentId });
+
+    if (oldParentId !== null) {
+      await removeChildLink(oldParentId, draggedId);
+      resyncDraftIfSelected(oldParentId);
+    }
+    if (targetParentId !== null) {
+      await appendChildLink(targetParentId, dragged);
+      resyncDraftIfSelected(targetParentId);
     }
   }
 
