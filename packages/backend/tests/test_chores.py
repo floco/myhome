@@ -1016,13 +1016,20 @@ def test_day_of_month_respects_allowed_months(client, home_id, tmp_path):
 def test_day_of_month_respects_allowed_months_as_donetick_month_names(client, home_id, tmp_path):
     """Donetick stores `months` as full English month-name strings (e.g. "March"),
     not ints -- a chore imported from Donetick must respect that restriction
-    the same way a manually-created chore with int months does."""
+    the same way a manually-created chore with int months does.
+
+    scheduleFromDue=True anchors the computation to the fixed nextDueDate
+    below instead of the real wall-clock "now" (as its sibling test just
+    below does for the same reason) -- otherwise this test's hardcoded
+    "expected September" assertion would only hold when run in July or
+    August, and starts failing once the calendar reaches September itself."""
     doc = ChoreDocument(
         chores=[
             Chore(
                 id="c1", name="Quarterly service", emoji="🔧", periodDays=30,
                 frequencyType="day_of_the_month", frequency=15,
                 frequencyMetadata={"months": ["March", "June", "September", "December"]},
+                scheduleFromDue=True,
                 nextDueDate="2026-07-01T00:00:00Z",
             )
         ],
