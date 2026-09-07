@@ -426,11 +426,25 @@
   }
 
   async function reparentPage(draggedId: string, targetParentId: string | null): Promise<void> {
+    // If the destination page is open in the editor with unsaved changes,
+    // flush them first so appendChildLink below starts from up-to-date
+    // content -- otherwise the pending autosave timer would later overwrite
+    // the just-appended link with the stale draft.
+    if (targetParentId !== null && targetParentId === selectedId) {
+      await flushSave();
+    }
     const dragged = store.entries.find((e) => e.id === draggedId);
     if (dragged && dragged.parentId !== targetParentId) {
       await store.updateEntry(draggedId, { parentId: targetParentId });
       if (targetParentId) {
         await appendChildLink(targetParentId, dragged);
+        // appendChildLink just moved the destination's persisted content
+        // ahead of the local draft again; resync so the dirty-check doesn't
+        // re-arm the autosave timer and clobber the link right back out.
+        if (targetParentId === selectedId) {
+          const updated = store.entries.find((e) => e.id === targetParentId);
+          if (updated) draftContent = updated.content;
+        }
       }
     }
   }

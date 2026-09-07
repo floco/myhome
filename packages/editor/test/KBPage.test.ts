@@ -424,6 +424,52 @@ describe("KBPage — move via the page-actions menu", () => {
     expect(movedB?.parentId).toBeNull();
     unmount(comp); target.remove();
   });
+
+  it("preserves an in-progress edit on the destination page instead of letting the pending autosave clobber the appended link", async () => {
+    const entries = [
+      makeEntry({ id: "a", title: "Page A", content: "Existing content." }),
+      makeEntry({ id: "b", title: "Page B", order: 1 }),
+    ];
+    const { target, comp, store } = await setup(entries, { selectedItemId: "a" });
+
+    // Start editing Page A (the eventual move target) and leave the autosave
+    // debounce (1.2s) in flight -- do not wait for it.
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    textarea.value = "Existing content.\nMy in-progress edit.";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+
+    // Move Page B onto Page A via the menu while that edit is still pending.
+    const rows = target.querySelectorAll(".tree-row");
+    (rows[1].querySelector(".menu-trigger") as HTMLElement).click(); // Page B's menu
+    flushSync();
+    const moveItem = Array.from(target.querySelectorAll(".page-menu button"))
+      .find((b) => b.textContent === "Move to…") as HTMLElement;
+    moveItem.click();
+    flushSync();
+    const candidate = Array.from(target.querySelectorAll(".move-item"))
+      .find((b) => b.textContent?.includes("Page A")) as HTMLElement;
+    candidate.click();
+    await tick(); flushSync(); await tick(); flushSync();
+
+    const parentA = store.entries.find((e) => e.id === "a");
+    expect(parentA?.content).toContain("My in-progress edit.");
+    expect(parentA?.content).toContain("[Page B](#/kb/b)");
+
+    // Let the original autosave debounce window (and any newly scheduled
+    // one) fully elapse -- the edit and link must both still be there.
+    await new Promise((r) => setTimeout(r, 1300));
+    await tick(); flushSync();
+    const parentAAfterDelay = store.entries.find((e) => e.id === "a");
+    expect(parentAAfterDelay?.content).toContain("My in-progress edit.");
+    expect(parentAAfterDelay?.content).toContain("[Page B](#/kb/b)");
+
+    unmount(comp); target.remove();
+  });
 });
 
 describe("KBPage — delete with cascade confirmation modal", () => {
