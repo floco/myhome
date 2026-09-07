@@ -19,7 +19,7 @@
   import { polygonCentroid } from "@myhome/geometry";
   import type { Point } from "@myhome/geometry";
   import { formatDate } from "../dateFormat";
-  import { earliestDue } from "../choreFormat";
+  import { earliestDue, isOverdue } from "../choreFormat";
 
   type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion" | "createAssignment" | "updateAssignmentLabel" | "deleteAssignment" | "delayAssignment" | "completeAssignment" | "completeChore">;
 
@@ -261,7 +261,7 @@
                 value={a.label ?? ""}
                 onblur={(e) => handleLabelBlur(a.id, (e.target as HTMLInputElement).value)}
               />
-              <span class="assign-due">{$_('chores.badgePopup.due')}: {formatDate(a.nextDueDate)}</span>
+              <span class="assign-due" class:overdue={isOverdue(a.nextDueDate)}>{$_('chores.badgePopup.due')}: {formatDate(a.nextDueDate)}</span>
               <div class="assignment-actions">
                 <button class="icon-btn" title={$_('chores.row.markDone')} onclick={() => { completing = { kind: "assignment", id: a.id, title: `${chore.emoji} ${chore.name}` }; }}>✓</button>
                 <button class="icon-btn" title={$_('chores.page.delayByWeek')} onclick={() => store.delayAssignment(a.id, 7)}>⏭</button>
@@ -397,6 +397,7 @@
   .assign-where { flex: 1; min-width: 80px; color: var(--text-muted); }
   .assign-label-input { flex: 1; min-width: 100px; }
   .assign-due { color: var(--text-faint); font-size: 11px; white-space: nowrap; }
+  .assign-due.overdue { color: var(--danger); font-weight: 600; }
   .assignment-actions { display: flex; gap: 4px; flex-shrink: 0; }
   .add-assignment-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 4px; }
   .add-assignment-row select { flex: 1; min-width: 120px; }

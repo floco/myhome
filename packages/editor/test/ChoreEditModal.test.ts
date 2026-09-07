@@ -432,6 +432,32 @@ describe("ChoreEditModal — Assignments tab", () => {
     target.remove();
   });
 
+  it("marks a past-due assignment's due date overdue but not an upcoming one", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const now = Date.now();
+    const store = makeStore({
+      assignments: [
+        { id: "a1", choreId: "c1", roomId: "r1", position: null, nextDueDate: new Date(now - 2 * 86400000).toISOString(), label: "Overdue one" },
+        { id: "a2", choreId: "c1", roomId: "r1", position: null, nextDueDate: new Date(now + 2 * 86400000).toISOString(), label: "Upcoming one" },
+      ],
+    });
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: [SQUARE_ROOM], onclose: vi.fn() },
+    });
+    flushSync();
+    (Array.from(target.querySelectorAll(".tab")).find((t) => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
+    flushSync();
+
+    const dueSpans = Array.from(target.querySelectorAll(".assign-due"));
+    expect(dueSpans[0].classList.contains("overdue")).toBe(true);
+    expect(dueSpans[1].classList.contains("overdue")).toBe(false);
+
+    unmount(app);
+    target.remove();
+  });
+
   it("groups the assignment row's action buttons together so they wrap as a unit", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);

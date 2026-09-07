@@ -20,6 +20,12 @@ export function earliestDue(chore: Chore, assignments: Assignment[]): string {
   return dates[0] ?? chore.nextDueDate;
 }
 
+export function isOverdue(iso: string): boolean {
+  if (!iso) return false;
+  const diffDays = Math.round((new Date(iso).getTime() - Date.now()) / 86400000);
+  return diffDays < 0;
+}
+
 export function formatDue(iso: string): string {
   if (!iso) return "—";
   const d = new Date(iso);
