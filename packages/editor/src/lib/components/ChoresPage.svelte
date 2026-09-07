@@ -16,6 +16,7 @@
   import FilterButton from "./ui/FilterButton.svelte";
   import AttachmentIcon from "./ui/AttachmentIcon.svelte";
   import { formatDate } from "../dateFormat";
+  import { isOverdue } from "../choreFormat";
   import ChoreCompleteModal from "./ChoreCompleteModal.svelte";
   import type { Point } from "@myhome/geometry";
 
@@ -282,7 +283,11 @@
       {/snippet}
       {#snippet nextDueCell(chore: Chore)}
         {@const nextDue = earliestDue(assignmentsForChore(chore.id))}
-        {nextDue ? formatDate(nextDue) : "—"}
+        {#if nextDue}
+          <span class:overdue-due={isOverdue(nextDue)}>{formatDate(nextDue)}</span>
+        {:else}
+          —
+        {/if}
       {/snippet}
       {#snippet actionsCell(chore: Chore)}
         <button class="icon-btn" title={$_('chores.page.markAllDone')} onclick={() => { completing = { kind: "chore", id: chore.id, title: `${chore.emoji} ${displayName(chore)}` }; }}>✓</button>
@@ -333,6 +338,8 @@
 
 <style>
   .page { display: flex; flex-direction: column; height: 100%; background: var(--bg); font-family: var(--font-sans); }
+
+  .overdue-due { color: var(--danger); font-weight: 600; }
 
   .empty-charts {
     display: flex; flex-direction: column; align-items: center; justify-content: center;

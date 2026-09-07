@@ -205,6 +205,30 @@ describe("ChoresPage — health click-to-filter", () => {
   });
 });
 
+describe("ChoresPage — overdue due-date styling", () => {
+  it("marks the Next due cell overdue for a past-due chore but not for an upcoming one", () => {
+    const now = Date.now();
+    const overdueChore = makeChore({ id: "c1", name: "Overdue chore" });
+    const upcomingChore = makeChore({ id: "c2", name: "Upcoming chore" });
+    const store = makeStore([overdueChore, upcomingChore]);
+    store.assignments = [
+      { id: "a1", choreId: "c1", roomId: null, nextDueDate: new Date(now - 2 * 86400000).toISOString() },
+      { id: "a2", choreId: "c2", roomId: null, nextDueDate: new Date(now + 2 * 86400000).toISOString() },
+    ] as typeof store.assignments;
+
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    const rows = target.querySelectorAll("tbody tr");
+    expect(rows[0].querySelector(".overdue-due")).not.toBeNull();
+    expect(rows[1].querySelector(".overdue-due")).toBeNull();
+
+    unmount(comp);
+  });
+});
+
 describe("ChoresPage — schedule filter", () => {
   it("matches a literal daily chore under the Daily filter and an adaptive chore under Adaptive", () => {
     const dailyChore = makeChore({ id: "c1", name: "Water plants", frequencyType: "daily", frequency: 1, frequencyMetadata: {} });

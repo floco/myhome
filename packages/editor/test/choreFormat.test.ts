@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { displayName, formatDue, earliestDue } from "../src/lib/choreFormat";
+import { displayName, formatDue, earliestDue, isOverdue } from "../src/lib/choreFormat";
 import type { Chore, Assignment } from "../src/lib/choreStore.svelte";
 
 function makeChore(name: string, emoji: string): Chore {
@@ -42,6 +42,26 @@ describe("choreFormat — formatDue", () => {
 
     const twoDaysAgo = new Date(today.getTime() - 2 * 86400000);
     expect(formatDue(twoDaysAgo.toISOString())).toBe("2d overdue");
+  });
+});
+
+describe("choreFormat — isOverdue", () => {
+  it("returns false for an empty string", () => {
+    expect(isOverdue("")).toBe(false);
+  });
+
+  it("returns false for today and future dates", () => {
+    const today = new Date();
+    expect(isOverdue(today.toISOString())).toBe(false);
+    const tomorrow = new Date(today.getTime() + 86400000);
+    expect(isOverdue(tomorrow.toISOString())).toBe(false);
+  });
+
+  it("returns true for any date in the past", () => {
+    const yesterday = new Date(Date.now() - 86400000);
+    expect(isOverdue(yesterday.toISOString())).toBe(true);
+    const twoDaysAgo = new Date(Date.now() - 2 * 86400000);
+    expect(isOverdue(twoDaysAgo.toISOString())).toBe(true);
   });
 });
 
