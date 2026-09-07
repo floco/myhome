@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.31.0 - 2026-09-07
+
+- Added a "Move to..." option to the wiki page-actions menu, letting you move a page under a different parent (or to the top level) via a searchable picker, alongside the existing drag-and-drop
+- Overdue chore due dates now show in red on the chores list and in the assignments tab, so they're easier to spot
+- Moved the table editor's row/column "⋮" menu button to before the row/column instead of after
+
 ## 0.30.0 - 2026-08-29
 
 - Added a sortable "has attachment" paperclip column to the Inventory, Costs, Chores, Works, Properties, and Insurance list tables
