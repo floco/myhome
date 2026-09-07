@@ -1227,6 +1227,7 @@
       "pageActions": "Page actions",
       "addChildPage": "Add child page",
       "rename": "Rename",
+      "moveTo": "Move to…",
       "noMatchingPages": "No matching pages.",
       "noPagesYet": "No pages yet."
     },
@@ -1271,7 +1272,11 @@
       "bookmarkUrlRequired": "A URL is required",
       "bookmarkFetchFailed": "Failed to fetch preview",
       "bookmarkFetching": "Fetching…",
-      "bookmarkInsert": "Insert"
+      "bookmarkInsert": "Insert",
+      "moveModalTitle": "Move page",
+      "moveSearchPlaceholder": "Search pages…",
+      "moveTopLevel": "Top level (no parent)",
+      "moveNoCandidates": "No other pages to move to."
     }
   },
   "markdownEditor": {

@@ -24,6 +24,7 @@
     onstartrename: (id: string) => void;
     oncommitrename: (id: string, title: string) => void;
     oncancelrename: () => void;
+    onmoveto: (id: string) => void;
     ondelete: (id: string) => void;
     onstartdrag: (id: string) => void;
     onenddrag: () => void;
@@ -33,7 +34,7 @@
   let {
     entries, parentId = null, depth = 0, selectedId, searchQuery, collapsedIds,
     renamingId, dragging,
-    onselect, ontoggle, oncreatechild, onstartrename, oncommitrename, oncancelrename, ondelete,
+    onselect, ontoggle, oncreatechild, onstartrename, oncommitrename, oncancelrename, onmoveto, ondelete,
     onstartdrag, onenddrag, ondrop,
   }: Props = $props();
 
@@ -206,6 +207,7 @@
           <div class="page-menu" role="menu" onclick={(e) => e.stopPropagation()}>
             <button role="menuitem" onclick={(e) => { e.stopPropagation(); oncreatechild(entry.id); menuOpenFor = null; }}>{$_('kb.tree.addChildPage')}</button>
             <button role="menuitem" onclick={(e) => { e.stopPropagation(); startRename(entry); }}>{$_('kb.tree.rename')}</button>
+            <button role="menuitem" onclick={(e) => { e.stopPropagation(); onmoveto(entry.id); menuOpenFor = null; }}>{$_('kb.tree.moveTo')}</button>
             <button role="menuitem" class="danger" onclick={(e) => { e.stopPropagation(); ondelete(entry.id); menuOpenFor = null; }}>{$_('common.delete')}</button>
           </div>
         {/if}
@@ -214,7 +216,7 @@
         <Self
           {entries} parentId={entry.id} depth={depth + 1}
           {selectedId} {searchQuery} {collapsedIds} {renamingId} {dragging}
-          {onselect} {ontoggle} {oncreatechild} {onstartrename} {oncommitrename} {oncancelrename} {ondelete}
+          {onselect} {ontoggle} {oncreatechild} {onstartrename} {oncommitrename} {oncancelrename} {onmoveto} {ondelete}
           {onstartdrag} {onenddrag} {ondrop}
         />
       {/if}

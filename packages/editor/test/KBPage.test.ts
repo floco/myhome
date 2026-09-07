@@ -323,6 +323,86 @@ describe("KBPage — moving an existing page under another", () => {
     unmount(comp); target.remove();
   });
 
+  it("removes the link from the old parent's content when dragging a page to a new parent", async () => {
+    const entries = [
+      makeEntry({ id: "a", title: "Page A", content: "Some notes.\n\n[Page B](#/kb/b)\n" }),
+      makeEntry({ id: "b", title: "Page B", parentId: "a", order: 0 }),
+      makeEntry({ id: "c", title: "Page C", order: 1 }),
+    ];
+    const { target, comp, store } = await setup(entries);
+    (target.querySelector(".disclosure") as HTMLElement).click(); // expand A to reveal B
+    flushSync();
+    const rows = target.querySelectorAll(".tree-row"); // [A, B, C]
+    const sourceRow = rows[1] as HTMLElement; // Page B
+    const targetRow = rows[2] as HTMLElement; // Page C
+
+    sourceRow.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1 }));
+    vi.spyOn(targetRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
+    targetRow.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientY: 10 }));
+    targetRow.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, clientY: 10 }));
+    await tick(); flushSync(); await tick(); flushSync();
+
+    const parentA = store.entries.find((e) => e.id === "a");
+    const parentC = store.entries.find((e) => e.id === "c");
+    const movedB = store.entries.find((e) => e.id === "b");
+    expect(movedB?.parentId).toBe("c");
+    expect(parentA?.content).not.toContain("#/kb/b");
+    expect(parentA?.content).toContain("Some notes.");
+    expect(parentC?.content).toContain("[Page B](#/kb/b)");
+    unmount(comp); target.remove();
+  });
+
+  it("removes the old parent's link even when the moved page's title has since changed", async () => {
+    const entries = [
+      makeEntry({ id: "a", title: "Page A", content: "[Old Title](#/kb/b)\n" }),
+      makeEntry({ id: "b", title: "New Title", parentId: "a", order: 0 }),
+      makeEntry({ id: "c", title: "Page C", order: 1 }),
+    ];
+    const { target, comp, store } = await setup(entries);
+    (target.querySelector(".disclosure") as HTMLElement).click();
+    flushSync();
+    const rows = target.querySelectorAll(".tree-row");
+    const sourceRow = rows[1] as HTMLElement; // Page B (now "New Title")
+    const targetRow = rows[2] as HTMLElement; // Page C
+
+    sourceRow.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, pointerId: 1 }));
+    vi.spyOn(targetRow, "getBoundingClientRect").mockReturnValue({ top: 0, height: 20 } as DOMRect);
+    targetRow.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, pointerId: 1, clientY: 10 }));
+    targetRow.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1, clientY: 10 }));
+    await tick(); flushSync(); await tick(); flushSync();
+
+    const parentA = store.entries.find((e) => e.id === "a");
+    expect(parentA?.content).not.toContain("#/kb/b");
+    unmount(comp); target.remove();
+  });
+
+  it("removes the old parent's link when moving a page to top level (no new parent to add it to)", async () => {
+    const entries = [
+      makeEntry({ id: "a", title: "Page A", content: "[Page B](#/kb/b)\n" }),
+      makeEntry({ id: "b", title: "Page B", parentId: "a", order: 0 }),
+    ];
+    const { target, comp, store } = await setup(entries);
+    (target.querySelector(".disclosure") as HTMLElement).click();
+    flushSync();
+    const rows = target.querySelectorAll(".tree-row");
+    (rows[1].querySelector(".menu-trigger") as HTMLElement).click(); // Page B's menu
+    flushSync();
+    const moveItem = Array.from(target.querySelectorAll(".page-menu button"))
+      .find((b) => b.textContent === "Move to…") as HTMLElement;
+    moveItem.click();
+    flushSync();
+    const topLevel = Array.from(target.querySelectorAll(".move-item"))
+      .find((b) => b.textContent?.includes("Top level (no parent)")) as HTMLElement;
+    topLevel.click();
+    await tick(); flushSync(); await tick(); flushSync();
+
+    const parentA = store.entries.find((e) => e.id === "a");
+    const movedB = store.entries.find((e) => e.id === "b");
+    expect(movedB?.parentId).toBeNull();
+    expect(parentA?.content).not.toContain("#/kb/b");
+    unmount(comp); target.remove();
+  });
+
   it("does not duplicate the link when only reordering within the same parent", async () => {
     const entries = [
       makeEntry({ id: "a", title: "Page A", content: "" }),
@@ -346,6 +426,176 @@ describe("KBPage — moving an existing page under another", () => {
 
     const parentA = store.entries.find((e) => e.id === "a");
     expect(parentA?.content).toBe("");
+    unmount(comp); target.remove();
+  });
+});
+
+describe("KBPage — move via the page-actions menu", () => {
+  it("moving a page via the menu updates parentId and appends a link into the new parent", async () => {
+    const entries = [
+      makeEntry({ id: "a", title: "Page A", content: "Existing content." }),
+      makeEntry({ id: "b", title: "Page B", order: 1 }),
+    ];
+    const { target, comp, store } = await setup(entries);
+    const rows = target.querySelectorAll(".tree-row");
+    (rows[1].querySelector(".menu-trigger") as HTMLElement).click(); // Page B's menu
+    flushSync();
+    const moveItem = Array.from(target.querySelectorAll(".page-menu button"))
+      .find((b) => b.textContent === "Move to…") as HTMLElement;
+    moveItem.click();
+    flushSync();
+
+    const candidate = Array.from(target.querySelectorAll(".move-item"))
+      .find((b) => b.textContent?.includes("Page A")) as HTMLElement;
+    candidate.click();
+    await tick(); flushSync(); await tick(); flushSync();
+
+    const parentA = store.entries.find((e) => e.id === "a");
+    const movedB = store.entries.find((e) => e.id === "b");
+    expect(movedB?.parentId).toBe("a");
+    expect(parentA?.content).toContain("[Page B](#/kb/b)");
+    unmount(comp); target.remove();
+  });
+
+  it("excludes the page itself and its descendants from the move target list", async () => {
+    const entries = [
+      makeEntry({ id: "a", title: "Page A" }),
+      makeEntry({ id: "b", title: "Page B", parentId: "a", order: 0 }),
+    ];
+    const { target, comp } = await setup(entries);
+    (target.querySelector(".disclosure") as HTMLElement).click(); // expand A
+    flushSync();
+    const rows = target.querySelectorAll(".tree-row");
+    (rows[0].querySelector(".menu-trigger") as HTMLElement).click(); // Page A's menu
+    flushSync();
+    const moveItem = Array.from(target.querySelectorAll(".page-menu button"))
+      .find((b) => b.textContent === "Move to…") as HTMLElement;
+    moveItem.click();
+    flushSync();
+
+    const candidateTexts = Array.from(target.querySelectorAll(".move-item")).map((b) => b.textContent);
+    expect(candidateTexts.some((t) => t?.includes("Page A"))).toBe(false);
+    expect(candidateTexts.some((t) => t?.includes("Page B"))).toBe(false);
+    unmount(comp); target.remove();
+  });
+
+  it("offers a top-level option that clears parentId for a nested page", async () => {
+    const entries = [
+      makeEntry({ id: "a", title: "Page A" }),
+      makeEntry({ id: "b", title: "Page B", parentId: "a", order: 0 }),
+    ];
+    const { target, comp, store } = await setup(entries);
+    (target.querySelector(".disclosure") as HTMLElement).click(); // expand A
+    flushSync();
+    const rows = target.querySelectorAll(".tree-row");
+    (rows[1].querySelector(".menu-trigger") as HTMLElement).click(); // Page B's menu
+    flushSync();
+    const moveItem = Array.from(target.querySelectorAll(".page-menu button"))
+      .find((b) => b.textContent === "Move to…") as HTMLElement;
+    moveItem.click();
+    flushSync();
+
+    const topLevel = Array.from(target.querySelectorAll(".move-item"))
+      .find((b) => b.textContent?.includes("Top level (no parent)")) as HTMLElement;
+    topLevel.click();
+    await tick(); flushSync(); await tick(); flushSync();
+
+    const movedB = store.entries.find((e) => e.id === "b");
+    expect(movedB?.parentId).toBeNull();
+    unmount(comp); target.remove();
+  });
+
+  it("preserves an in-progress edit on the destination page instead of letting the pending autosave clobber the appended link", async () => {
+    const entries = [
+      makeEntry({ id: "a", title: "Page A", content: "Existing content." }),
+      makeEntry({ id: "b", title: "Page B", order: 1 }),
+    ];
+    const { target, comp, store } = await setup(entries, { selectedItemId: "a" });
+
+    // Start editing Page A (the eventual move target) and leave the autosave
+    // debounce (1.2s) in flight -- do not wait for it.
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    textarea.value = "Existing content.\nMy in-progress edit.";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+
+    // Move Page B onto Page A via the menu while that edit is still pending.
+    const rows = target.querySelectorAll(".tree-row");
+    (rows[1].querySelector(".menu-trigger") as HTMLElement).click(); // Page B's menu
+    flushSync();
+    const moveItem = Array.from(target.querySelectorAll(".page-menu button"))
+      .find((b) => b.textContent === "Move to…") as HTMLElement;
+    moveItem.click();
+    flushSync();
+    const candidate = Array.from(target.querySelectorAll(".move-item"))
+      .find((b) => b.textContent?.includes("Page A")) as HTMLElement;
+    candidate.click();
+    await tick(); flushSync(); await tick(); flushSync();
+
+    const parentA = store.entries.find((e) => e.id === "a");
+    expect(parentA?.content).toContain("My in-progress edit.");
+    expect(parentA?.content).toContain("[Page B](#/kb/b)");
+
+    // Let the original autosave debounce window (and any newly scheduled
+    // one) fully elapse -- the edit and link must both still be there.
+    await new Promise((r) => setTimeout(r, 1300));
+    await tick(); flushSync();
+    const parentAAfterDelay = store.entries.find((e) => e.id === "a");
+    expect(parentAAfterDelay?.content).toContain("My in-progress edit.");
+    expect(parentAAfterDelay?.content).toContain("[Page B](#/kb/b)");
+
+    unmount(comp); target.remove();
+  });
+
+  it("preserves an in-progress edit on the old parent instead of letting the pending autosave clobber the removed link", async () => {
+    const entries = [
+      makeEntry({ id: "a", title: "Page A", content: "Existing content.\n\n[Page B](#/kb/b)\n" }),
+      makeEntry({ id: "b", title: "Page B", parentId: "a", order: 0 }),
+      makeEntry({ id: "c", title: "Page C", order: 1 }),
+    ];
+    const { target, comp, store } = await setup(entries, { selectedItemId: "a" });
+
+    // Start editing Page A (the old parent B is about to move away from) and
+    // leave the autosave debounce in flight -- do not wait for it.
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    textarea.value = "Existing content.\n\n[Page B](#/kb/b)\nMy in-progress edit.";
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+
+    // Move Page B out from under Page A via the menu while that edit is pending.
+    // Page A starts collapsed by default; expand it so B's row renders.
+    (target.querySelector(".disclosure") as HTMLElement).click();
+    flushSync();
+    const rows = target.querySelectorAll(".tree-row"); // [A, B, C]
+    (rows[1].querySelector(".menu-trigger") as HTMLElement).click(); // Page B's menu
+    flushSync();
+    const moveItem = Array.from(target.querySelectorAll(".page-menu button"))
+      .find((b) => b.textContent === "Move to…") as HTMLElement;
+    moveItem.click();
+    flushSync();
+    const candidate = Array.from(target.querySelectorAll(".move-item"))
+      .find((b) => b.textContent?.includes("Page C")) as HTMLElement;
+    candidate.click();
+    await tick(); flushSync(); await tick(); flushSync();
+
+    const parentA = store.entries.find((e) => e.id === "a");
+    expect(parentA?.content).toContain("My in-progress edit.");
+    expect(parentA?.content).not.toContain("#/kb/b");
+
+    await new Promise((r) => setTimeout(r, 1300));
+    await tick(); flushSync();
+    const parentAAfterDelay = store.entries.find((e) => e.id === "a");
+    expect(parentAAfterDelay?.content).toContain("My in-progress edit.");
+    expect(parentAAfterDelay?.content).not.toContain("#/kb/b");
+
     unmount(comp); target.remove();
   });
 });

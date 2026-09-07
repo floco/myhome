@@ -11,6 +11,7 @@
   import Input from "./ui/Input.svelte";
   import Card from "./ui/Card.svelte";
   import KBTree from "./ui/KBTree.svelte";
+  import KBMovePageModal from "./ui/KBMovePageModal.svelte";
   import KBTrash from "./ui/KBTrash.svelte";
   import EmojiPicker from "./ui/EmojiPicker.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
@@ -42,6 +43,7 @@
   let lightboxIndex = $state(0);
   let collapsedIds = $state<Set<string>>(new Set());
   let renamingId = $state<string | null>(null);
+  let movingPageId = $state<string | null>(null);
   let dragging = $state<string | null>(null);
   let trashDragOver = $state(false);
   let bookmarkModalOpen = $state(false);
@@ -198,6 +200,22 @@
     if (!parent) return;
     const link = `[${child.title}](#/kb/${child.id})`;
     await store.updateEntry(parentId, { content: `${parent.content}\n\n${link}\n` });
+  }
+
+  // Matches by href only (not link text) since a child's displayed title can
+  // have been renamed since the link was inserted -- the raw markdown still
+  // carries the original title as anchor text, but the #/kb/<id> href is stable.
+  function escapeRegExp(s: string): string {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  async function removeChildLink(parentId: string, childId: string): Promise<void> {
+    const parent = store.entries.find((e) => e.id === parentId);
+    if (!parent) return;
+    const linkPattern = new RegExp(`\\[[^\\]]*\\]\\(#/kb/${escapeRegExp(childId)}\\)`, "g");
+    if (!linkPattern.test(parent.content)) return;
+    const content = parent.content.replace(linkPattern, "").replace(/\n{3,}/g, "\n\n");
+    await store.updateEntry(parentId, { content });
   }
 
   async function handleCreateChild(parentId: string): Promise<void> {
@@ -423,20 +441,60 @@
     dragging = null;
   }
 
+  // If a page we're about to rewrite the content of is open in the editor
+  // with unsaved changes, resyncing draftContent afterward keeps the
+  // dirty-check from re-arming the autosave timer and clobbering the change.
+  function resyncDraftIfSelected(pageId: string): void {
+    if (pageId !== selectedId) return;
+    const updated = store.entries.find((e) => e.id === pageId);
+    if (updated) draftContent = updated.content;
+  }
+
+  async function reparentPage(draggedId: string, targetParentId: string | null): Promise<void> {
+    const dragged = store.entries.find((e) => e.id === draggedId);
+    if (!dragged || dragged.parentId === targetParentId) return;
+    const oldParentId = dragged.parentId;
+
+    // Flush any pending edit on either endpoint first so the link add/remove
+    // below starts from up-to-date content instead of a stale draft.
+    if (oldParentId !== null && oldParentId === selectedId) await flushSave();
+    if (targetParentId !== null && targetParentId === selectedId) await flushSave();
+
+    await store.updateEntry(draggedId, { parentId: targetParentId });
+
+    if (oldParentId !== null) {
+      await removeChildLink(oldParentId, draggedId);
+      resyncDraftIfSelected(oldParentId);
+    }
+    if (targetParentId !== null) {
+      await appendChildLink(targetParentId, dragged);
+      resyncDraftIfSelected(targetParentId);
+    }
+  }
+
   async function handleTreeDrop(
     draggedId: string, targetParentId: string | null, orderedIds: string[] | null,
   ): Promise<void> {
     try {
-      const dragged = store.entries.find((e) => e.id === draggedId);
-      if (dragged && dragged.parentId !== targetParentId) {
-        await store.updateEntry(draggedId, { parentId: targetParentId });
-        if (targetParentId) {
-          await appendChildLink(targetParentId, dragged);
-        }
-      }
+      await reparentPage(draggedId, targetParentId);
       if (orderedIds) {
         await store.reorderSiblings(targetParentId, orderedIds);
       }
+    } catch (e) {
+      error = e instanceof Error ? e.message : $_('kb.page.moveFailed');
+    }
+  }
+
+  function handleAskMove(id: string): void {
+    movingPageId = id;
+  }
+
+  async function handleConfirmMove(targetParentId: string | null): Promise<void> {
+    if (!movingPageId) return;
+    const id = movingPageId;
+    movingPageId = null;
+    try {
+      await reparentPage(id, targetParentId);
     } catch (e) {
       error = e instanceof Error ? e.message : $_('kb.page.moveFailed');
     }
@@ -513,6 +571,7 @@
         onstartrename={(id) => { renamingId = id; }}
         oncommitrename={handleRenamePage}
         oncancelrename={handleCancelRename}
+        onmoveto={handleAskMove}
         ondelete={handleAskDelete}
         onstartdrag={handleStartDrag}
         onenddrag={handleEndDrag}
@@ -637,6 +696,14 @@
     <Button variant="danger" onclick={handleConfirmDelete}>{$_('common.delete')}</Button>
   {/snippet}
 </Modal>
+
+<KBMovePageModal
+  open={movingPageId !== null}
+  entries={store.entries}
+  pageId={movingPageId ?? ""}
+  onmove={handleConfirmMove}
+  onclose={() => { movingPageId = null; }}
+/>
 
 <Modal open={bookmarkModalOpen} title={$_('kb.page.bookmarkModalTitle')} onclose={() => closeBookmarkModal(null)} width="420px">
   <Input placeholder={$_('kb.page.bookmarkUrlPlaceholder')} bind:value={bookmarkUrl} />
