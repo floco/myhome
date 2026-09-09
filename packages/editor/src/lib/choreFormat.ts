@@ -20,10 +20,13 @@ export function earliestDue(chore: Chore, assignments: Assignment[]): string {
   return dates[0] ?? chore.nextDueDate;
 }
 
+// A direct instant comparison, not the day-bucketed diffDays formatDue below
+// uses for its "today"/"2d overdue" labels -- rounding to whole days would
+// read anything overdue by less than 12 hours as not-overdue yet. Matches
+// BadgePopup.svelte's existing overdue check.
 export function isOverdue(iso: string): boolean {
   if (!iso) return false;
-  const diffDays = Math.round((new Date(iso).getTime() - Date.now()) / 86400000);
-  return diffDays < 0;
+  return new Date(iso).getTime() < Date.now();
 }
 
 export function formatDue(iso: string): string {

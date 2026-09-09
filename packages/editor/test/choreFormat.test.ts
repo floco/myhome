@@ -50,14 +50,16 @@ describe("choreFormat — isOverdue", () => {
     expect(isOverdue("")).toBe(false);
   });
 
-  it("returns false for today and future dates", () => {
-    const today = new Date();
-    expect(isOverdue(today.toISOString())).toBe(false);
-    const tomorrow = new Date(today.getTime() + 86400000);
+  it("returns false for future dates, including later today", () => {
+    const inOneHour = new Date(Date.now() + 3600000);
+    expect(isOverdue(inOneHour.toISOString())).toBe(false);
+    const tomorrow = new Date(Date.now() + 86400000);
     expect(isOverdue(tomorrow.toISOString())).toBe(false);
   });
 
-  it("returns true for any date in the past", () => {
+  it("returns true for any date in the past, even less than a day ago", () => {
+    const oneHourAgo = new Date(Date.now() - 3600000);
+    expect(isOverdue(oneHourAgo.toISOString())).toBe(true);
     const yesterday = new Date(Date.now() - 86400000);
     expect(isOverdue(yesterday.toISOString())).toBe(true);
     const twoDaysAgo = new Date(Date.now() - 2 * 86400000);
