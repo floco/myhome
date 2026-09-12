@@ -69,9 +69,9 @@
   let deletingCompletion = $state<string | null>(null);
 
   function getRoomName(assignmentId: string | null): string {
-    if (!assignmentId) return `🏠 ${$_('chores.list.wholeHouse')}`;
+    if (!assignmentId) return $_('chores.list.wholeHouse');
     const assignment = store.assignments.find((a) => a.id === assignmentId);
-    if (!assignment?.roomId) return `🏠 ${$_('chores.list.wholeHouse')}`;
+    if (!assignment?.roomId) return $_('chores.list.wholeHouse');
     return rooms.find((r) => r.id === assignment.roomId)?.label ?? $_('chores.list.unknownRoom');
   }
 
