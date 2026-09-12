@@ -524,7 +524,12 @@
         "onTrack": "On track",
         "dueSoon": "Due soon",
         "overdue": "Overdue"
-      }
+      },
+      "viewList": "List",
+      "viewCalendar": "Calendar",
+      "today": "Today",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month"
     },
     "newModal": {
       "title": "New Chore",

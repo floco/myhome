@@ -437,3 +437,55 @@ describe("ChoresPage — responsive columns", () => {
     unmount(comp);
   });
 });
+
+describe("ChoresPage — calendar view toggle", () => {
+  it("shows the table by default and switches to the calendar grid when the Calendar tab is clicked", () => {
+    const store = makeStore([makeChore()]);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    expect(target.querySelector(".table-wrapper")).not.toBeNull();
+    expect(target.querySelector(".cal-grid")).toBeNull();
+
+    const calendarTab = Array.from(target.querySelectorAll(".tab")).find((b) => b.textContent === "Calendar") as HTMLButtonElement;
+    calendarTab.click();
+    flushSync();
+
+    expect(target.querySelector(".table-wrapper")).toBeNull();
+    expect(target.querySelector(".cal-grid")).not.toBeNull();
+
+    unmount(comp);
+  });
+
+  it("opens the edit modal when a calendar chip is clicked", () => {
+    const chore = makeChore({ id: "c1" });
+    const store = makeStore([chore]);
+    store.assignments = [
+      { id: "a1", choreId: "c1", roomId: null, nextDueDate: "2026-08-15T12:00:00.000Z" },
+    ] as typeof store.assignments;
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    (Array.from(target.querySelectorAll(".tab")).find((b) => b.textContent === "Calendar") as HTMLButtonElement).click();
+    flushSync();
+    // The calendar opens on the current month, which won't show the August chip -- jump to it via the month select.
+    const monthSelect = target.querySelectorAll(".cal-select")[0] as HTMLSelectElement;
+    const yearSelect = target.querySelectorAll(".cal-select")[1] as HTMLSelectElement;
+    monthSelect.value = "7";
+    monthSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    yearSelect.value = "2026";
+    yearSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+
+    (target.querySelector(".cal-chip") as HTMLButtonElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+
+    expect(target.querySelector(".ui-modal-title")?.textContent).toBe("🧹 Sweep kitchen");
+
+    unmount(comp);
+  });
+});
