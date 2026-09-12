@@ -19,6 +19,8 @@
   import { isOverdue } from "../choreFormat";
   import ChoreCompleteModal from "./ChoreCompleteModal.svelte";
   import DelaySkipMenu from "./ui/DelaySkipMenu.svelte";
+  import ChoreCalendarView from "./ChoreCalendarView.svelte";
+  import Tabs from "./ui/Tabs.svelte";
   import type { Point } from "@myhome/geometry";
   import type { DelayUnit } from "../choreStore.svelte";
 
@@ -215,6 +217,16 @@
     if (completedOn) await store.completeChore(c.id, notes, completedOn);
     else await store.completeChore(c.id, notes);
   }
+
+  let activeView = $state<"list" | "calendar">("list");
+  const now = new Date();
+  let calYear = $state(now.getFullYear());
+  let calMonth = $state(now.getMonth());
+
+  function handleMonthChange(y: number, m: number): void {
+    calYear = y;
+    calMonth = m;
+  }
 </script>
 
 <div class="page">
@@ -240,6 +252,17 @@
 
   <div class="table-card-wrap">
     <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
+    <div class="view-tabs">
+      <Tabs
+        tabs={[
+          { id: "list", label: $_('chores.page.viewList') },
+          { id: "calendar", label: $_('chores.page.viewCalendar') },
+        ]}
+        active={activeView}
+        onchange={(id) => { activeView = id as "list" | "calendar"; }}
+      />
+    </div>
+
     <div class="toolbar">
       <Input placeholder={$_('chores.page.search')} bind:value={searchQuery} />
       <FilterButton active={filtersActive} title={$_('common.filters')} onclick={() => { filterModalOpen = true; }} />
@@ -274,6 +297,17 @@
       </div>
     </Modal>
 
+    {#if activeView === "calendar"}
+      <ChoreCalendarView
+        chores={filteredChores}
+        assignments={store.assignments}
+        month={calMonth}
+        year={calYear}
+        roomFilter={roomFilter}
+        onmonthchange={handleMonthChange}
+        onchoreclick={(id) => { editChoreId = id; }}
+      />
+    {:else}
     <div class="table-wrapper">
       {#snippet emojiCell(chore: Chore)}
         {chore.emoji}
@@ -332,6 +366,7 @@
             : $_('chores.page.emptyNoMatch')}
       />
     </div>
+    {/if}
 
     <div class="footer">{$_('chores.page.choreCount', { values: { n: filteredChores.length } })}</div>
     </Card>
@@ -377,6 +412,9 @@
     .table-card-wrap :global(.ui-card) { flex: none !important; width: 100%; overflow: visible !important; min-height: auto !important; }
     .table-wrapper { flex: none !important; overflow-y: visible !important; }
   }
+
+  .view-tabs { padding: var(--space-2) var(--space-3) 0; flex-shrink: 0; }
+  .view-tabs :global(.tab-bar) { margin-bottom: 0; }
 
   .toolbar {
     display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);

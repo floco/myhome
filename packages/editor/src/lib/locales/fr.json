@@ -524,7 +524,12 @@
         "onTrack": "En bonne voie",
         "dueSoon": "Bientôt dû",
         "overdue": "En retard"
-      }
+      },
+      "viewList": "Liste",
+      "viewCalendar": "Calendrier",
+      "today": "Aujourd'hui",
+      "prevMonth": "Mois précédent",
+      "nextMonth": "Mois suivant"
     },
     "newModal": {
       "title": "Nouvelle corvée",
