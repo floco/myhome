@@ -472,6 +472,8 @@
       "notesPlaceholder": "Instructions, astuces ou rappels…",
       "noCompletions": "Aucune réalisation pour l'instant",
       "dueOn": "échéance {date}",
+      "skipped": "Ignoré",
+      "completed": "Terminé",
       "deleteRecord": "Supprimer l'entrée",
       "deleteThisChore": "Supprimer cette corvée ?",
       "confirmDelete": "Confirmer la suppression",
@@ -485,7 +487,8 @@
       "goToAssignments": "Aller aux affectations",
       "labelPlaceholder": "Étiquette (optionnel)",
       "selectRoom": "Choisir une zone…",
-      "addAssignment": "Ajouter"
+      "addAssignment": "Ajouter",
+      "addAssignmentToggle": "Ajouter une affectation"
     },
     "page": {
       "emptyCharts": "Aucune corvée assignée pour l'instant — cliquez sur ＋ Ajouter une corvée pour commencer.",
@@ -502,8 +505,12 @@
       "addChore": "Ajouter une corvée",
       "schedulesFromDueDate": "Planifié depuis la date d'échéance",
       "markAllDone": "Tout marquer comme fait",
-      "delayAllByWeek": "Reporter toutes les affectations d'une semaine",
+      "delayOrSkip": "Reporter ou ignorer",
+      "delayOrSkipAll": "Reporter ou ignorer toutes les affectations",
       "delayByWeek": "Reporter d'une semaine",
+      "delayByMonth": "Reporter d'un mois",
+      "delayByYear": "Reporter d'un an",
+      "skipToNext": "Ignorer jusqu'à la prochaine échéance",
       "notAssigned": "Non assignée à une zone",
       "schedule": "Planning",
       "rooms": "Zones",

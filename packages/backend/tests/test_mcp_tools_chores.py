@@ -53,6 +53,19 @@ def test_complete_chore_advances_due_date(home_id):
     assert doc["completions"][0]["notes"] == "done early"
 
 
+def test_complete_chore_skipped_advances_due_date_and_marks_history(home_id):
+    from myhome.mcp_tools_chores import _complete_chore_impl, _create_chore_impl, _list_chores_impl
+    chore = _create_chore_impl(
+        home_id, "Vacuum", "🧹", 7.0, "2026-07-04T00:00:00Z",
+        frequency_type="interval", frequency=7, frequency_metadata={"unit": "days"},
+    )
+    result = _complete_chore_impl(home_id, chore["id"], skipped=True)
+    assert result["nextDueDate"] != "2026-07-04T00:00:00Z"
+    doc = _list_chores_impl(home_id)
+    assert len(doc["completions"]) == 1
+    assert doc["completions"][0]["skipped"] is True
+
+
 def test_undo_chore_completion(home_id):
     from myhome.mcp_tools_chores import _complete_chore_impl, _create_chore_impl, _list_chores_impl, _undo_chore_completion_impl
     chore = _create_chore_impl(home_id, "Dust", "🪶", 7.0, "2026-07-04T00:00:00Z")

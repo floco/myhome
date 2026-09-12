@@ -11,7 +11,7 @@ RETENTION_DAYS = 90
 
 ACTION_VERBS = {
     "create": "added", "update": "updated", "delete": "deleted", "complete": "completed",
-    "restore": "restored", "delete_forever": "permanently deleted", "empty_trash": "emptied trash of",
+    "skip": "skipped", "restore": "restored", "delete_forever": "permanently deleted", "empty_trash": "emptied trash of",
 }
 MODULE_NOUNS = {
     "chores": "chore", "works": "work", "costs": "cost entry",

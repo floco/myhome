@@ -52,6 +52,7 @@ def load_chores(home_id: str) -> ChoreDocument:
         CompletionRecord(
             id=r["id"], choreId=r["chore_id"], assignmentId=r["assignment_id"],
             completedAt=r["completed_at"], scheduledDue=r["scheduled_due"], notes=r["notes"],
+            skipped=bool(r["skipped"]),
         )
         for r in completion_rows
     ]
@@ -105,7 +106,7 @@ def save_chores(home_id: str, doc: ChoreDocument) -> None:
                 {
                     "id": c.id, "home_id": home_id, "order_index": i, "chore_id": c.choreId,
                     "assignment_id": c.assignmentId, "completed_at": c.completedAt,
-                    "scheduled_due": c.scheduledDue, "notes": c.notes,
+                    "scheduled_due": c.scheduledDue, "notes": c.notes, "skipped": c.skipped,
                 }
                 for i, c in enumerate(doc.completions)
             ])

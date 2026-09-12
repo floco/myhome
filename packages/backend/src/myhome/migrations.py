@@ -25,7 +25,7 @@ from .schema import (
     work_categories,
 )
 
-CURRENT_VERSION = 10
+CURRENT_VERSION = 11
 
 
 def _drop_kb_folders_table(conn: Connection) -> None:
@@ -208,6 +208,10 @@ def _add_locations_notes_and_attachments(conn: Connection) -> None:
     conn.execute(text("ALTER TABLE locations ADD COLUMN attachments TEXT NOT NULL DEFAULT '[]'"))
 
 
+def _add_chore_completion_skipped_column(conn: Connection) -> None:
+    conn.execute(text("ALTER TABLE chore_completions ADD COLUMN skipped BOOLEAN NOT NULL DEFAULT 0"))
+
+
 MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (2, _drop_kb_folders_table),
     (3, _add_ha_user_id_column),
@@ -218,6 +222,7 @@ MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (8, _add_assignment_label_column),
     (9, _drop_inventory_legacy_category_column),
     (10, _add_locations_notes_and_attachments),
+    (11, _add_chore_completion_skipped_column),
 ]
 
 

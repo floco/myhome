@@ -328,6 +328,143 @@ describe("choreStore — completedOn", () => {
   });
 });
 
+describe("choreStore — skipChore / skipAssignment", () => {
+  it("skipChore posts skipped:true to the chore complete endpoint", async () => {
+    const fetchMock = makeFetch(200, emptyDoc);
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createChoreStore(getHomeId);
+    await tick();
+
+    await store.skipChore("c1");
+
+    const call = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/chores/c1/complete"));
+    expect(call).toBeDefined();
+    const sentBody = JSON.parse(call![1].body as string);
+    expect(sentBody).toEqual({ notes: "", skipped: true });
+  });
+
+  it("skipAssignment posts skipped:true to the assignment complete endpoint", async () => {
+    const fetchMock = makeFetch(200, emptyDoc);
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createChoreStore(getHomeId);
+    await tick();
+
+    await store.skipAssignment("a1");
+
+    const call = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/assignments/a1/complete"));
+    expect(call).toBeDefined();
+    const sentBody = JSON.parse(call![1].body as string);
+    expect(sentBody).toEqual({ notes: "", skipped: true });
+  });
+
+  it("a plain completeChore call never sends a skipped field", async () => {
+    const fetchMock = makeFetch(200, emptyDoc);
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createChoreStore(getHomeId);
+    await tick();
+
+    await store.completeChore("c1", "done");
+
+    const call = fetchMock.mock.calls.find(([url]) => String(url).includes("/complete"));
+    const sentBody = JSON.parse(call![1].body as string);
+    expect(sentBody).not.toHaveProperty("skipped");
+  });
+});
+
+describe("choreStore — delayChore / delayAssignment", () => {
+  it("delayAssignment advances the assignment's nextDueDate by the given calendar unit", async () => {
+    const fetchMock = makeFetch(200, emptyDoc);
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createChoreStore(getHomeId);
+    await tick();
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
+    await store.delayAssignment("a1", "month");
+
+    const putCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/assignments/a1"));
+    expect(putCall).toBeDefined();
+    const sentBody = JSON.parse(putCall![1].body as string);
+    // No prior assignment data loaded (emptyDoc), so it's based on "now" --
+    // just check a full ISO date landed roughly a month out.
+    const sent = new Date(sentBody.nextDueDate).getTime();
+    const now = Date.now();
+    expect(sent).toBeGreaterThan(now + 25 * 86400000);
+    expect(sent).toBeLessThan(now + 35 * 86400000);
+  });
+
+  it("delayChore falls back to PUTing the chore's own nextDueDate when it has no assignments", async () => {
+    const fetchMock = makeFetch(200, {
+      version: 1,
+      chores: [{ id: "c1", donetickId: null, name: "Sweep", emoji: "🧹", periodDays: 7, nextDueDate: "2026-05-15T00:00:00Z", description: "" }],
+      assignments: [],
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createChoreStore(getHomeId);
+    await tick();
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 204, json: async () => ({}) });
+
+    await store.delayChore("c1", "year");
+
+    const putCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/chores/c1"));
+    expect(putCall).toBeDefined();
+    const sentBody = JSON.parse(putCall![1].body as string);
+    expect(sentBody.nextDueDate).toBe("2027-05-15T00:00:00.000Z");
+  });
+
+  it("delaying by 1 month from Jan 31 lands on Feb 28, not overflowing into March", async () => {
+    const fetchMock = makeFetch(200, {
+      version: 1,
+      chores: [{ id: "c1", donetickId: null, name: "Sweep", emoji: "🧹", periodDays: 7, nextDueDate: "2026-01-31T00:00:00Z", description: "" }],
+      assignments: [{ id: "a1", choreId: "c1", roomId: "r1", position: null, nextDueDate: "2026-01-31T00:00:00Z", label: null }],
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createChoreStore(getHomeId);
+    await tick();
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
+
+    await store.delayAssignment("a1", "month");
+
+    const putCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/assignments/a1"));
+    const sentBody = JSON.parse(putCall![1].body as string);
+    expect(sentBody.nextDueDate).toBe("2026-02-28T00:00:00.000Z");
+  });
+
+  it("delaying by 1 month from Mar 31 lands on Apr 30, not overflowing into May", async () => {
+    const fetchMock = makeFetch(200, {
+      version: 1,
+      chores: [],
+      assignments: [{ id: "a1", choreId: "c1", roomId: "r1", position: null, nextDueDate: "2026-03-31T00:00:00Z", label: null }],
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createChoreStore(getHomeId);
+    await tick();
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
+
+    await store.delayAssignment("a1", "month");
+
+    const putCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/assignments/a1"));
+    const sentBody = JSON.parse(putCall![1].body as string);
+    expect(sentBody.nextDueDate).toBe("2026-04-30T00:00:00.000Z");
+  });
+
+  it("delaying by 1 year from a leap-year Feb 29 lands on Feb 28 the following year", async () => {
+    const fetchMock = makeFetch(200, {
+      version: 1,
+      chores: [],
+      assignments: [{ id: "a1", choreId: "c1", roomId: "r1", position: null, nextDueDate: "2028-02-29T00:00:00Z", label: null }],
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createChoreStore(getHomeId);
+    await tick();
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
+
+    await store.delayAssignment("a1", "year");
+
+    const putCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/assignments/a1"));
+    const sentBody = JSON.parse(putCall![1].body as string);
+    expect(sentBody.nextDueDate).toBe("2029-02-28T00:00:00.000Z");
+  });
+});
+
 describe("choreStore — updateAssignmentLabel", () => {
   it("PUTs the label to the assignment endpoint", async () => {
     const fetchMock = makeFetch(200, emptyDoc);

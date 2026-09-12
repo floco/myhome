@@ -90,15 +90,18 @@ def is_last_weekday_in_quarter(date: datetime) -> bool:
 
 
 def adaptive_period_days(chore: Chore, completions_for_chore: list[CompletionRecord]) -> float:
-    """Average of the gaps (in days) between the chore's last 5 completions.
+    """Average of the gaps (in days) between the chore's last 5 real completions.
 
-    Falls back to the chore's current `periodDays` (its seed value at
-    creation, or whatever this function last computed it to be) when there
-    are fewer than 2 completions to derive a gap from.
+    Skipped occurrences are excluded -- they aren't real usage data, so
+    counting them would skew the learned period toward whatever gap the
+    skip happened to leave. Falls back to the chore's current `periodDays`
+    (its seed value at creation, or whatever this function last computed it
+    to be) when there are fewer than 2 real completions to derive a gap from.
     """
-    if len(completions_for_chore) < 2:
+    real_completions = [c for c in completions_for_chore if not c.skipped]
+    if len(real_completions) < 2:
         return chore.periodDays
-    ordered = sorted(completions_for_chore, key=lambda c: c.completedAt)
+    ordered = sorted(real_completions, key=lambda c: c.completedAt)
     timestamps = [datetime.fromisoformat(c.completedAt.replace("Z", "+00:00")) for c in ordered]
     gaps = [(timestamps[i] - timestamps[i - 1]).total_seconds() / 86400 for i in range(1, len(timestamps))]
     recent = gaps[-5:]

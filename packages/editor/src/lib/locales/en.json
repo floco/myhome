@@ -472,6 +472,8 @@
       "notesPlaceholder": "Instructions, tips, or reminders…",
       "noCompletions": "No completions yet",
       "dueOn": "due {date}",
+      "skipped": "Skipped",
+      "completed": "Completed",
       "deleteRecord": "Delete record",
       "deleteThisChore": "Delete this chore?",
       "confirmDelete": "Confirm delete",
@@ -485,7 +487,8 @@
       "goToAssignments": "Go to assignments",
       "labelPlaceholder": "Label (optional)",
       "selectRoom": "Select a zone…",
-      "addAssignment": "Add"
+      "addAssignment": "Add",
+      "addAssignmentToggle": "Add assignment"
     },
     "page": {
       "emptyCharts": "No chore assignments yet — click ＋ Add chore to get started.",
@@ -502,8 +505,12 @@
       "addChore": "Add chore",
       "schedulesFromDueDate": "Schedules from due date",
       "markAllDone": "Mark all done",
-      "delayAllByWeek": "Delay all assignments by 1 week",
+      "delayOrSkip": "Delay or skip",
+      "delayOrSkipAll": "Delay or skip all assignments",
       "delayByWeek": "Delay by 1 week",
+      "delayByMonth": "Delay by 1 month",
+      "delayByYear": "Delay by 1 year",
+      "skipToNext": "Skip to next occurrence",
       "notAssigned": "Not assigned to any zone",
       "schedule": "Schedule",
       "rooms": "Zones",

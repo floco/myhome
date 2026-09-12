@@ -36,6 +36,8 @@ function makeStore(overrides = {}) {
     delayAssignment: vi.fn().mockResolvedValue(undefined),
     completeAssignment: vi.fn().mockResolvedValue(undefined),
     completeChore: vi.fn().mockResolvedValue(undefined),
+    skipChore: vi.fn().mockResolvedValue(undefined),
+    skipAssignment: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -215,7 +217,7 @@ describe("ChoreEditModal — tabs", () => {
     target.remove();
   });
 
-  it("orders the footer buttons complete-all, go-to-assignments, Delete, Cancel, Save on every tab (go-to-assignments hidden on the Assignments tab itself)", () => {
+  it("orders the footer buttons complete-all (✓✓), go-to-assignments (✓), Delete, Cancel, Save on every tab (go-to-assignments hidden on the Assignments tab itself)", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const store = makeStore();
@@ -225,10 +227,10 @@ describe("ChoreEditModal — tabs", () => {
     });
     flushSync();
     const expectedByTab: Record<string, string[]> = {
-      Info: ["✓", "→", "🗑 Delete", "Cancel", "Save"],
-      Assignments: ["✓", "🗑 Delete", "Cancel", "Save"],
-      Media: ["✓", "→", "🗑 Delete", "Cancel", "Save"],
-      History: ["✓", "→", "🗑 Delete", "Cancel", "Save"],
+      Info: ["✓✓", "✓", "🗑 Delete", "Cancel", "Save"],
+      Assignments: ["✓✓", "🗑 Delete", "Cancel", "Save"],
+      Media: ["✓✓", "✓", "🗑 Delete", "Cancel", "Save"],
+      History: ["✓✓", "✓", "🗑 Delete", "Cancel", "Save"],
     };
     for (const tabText of ["Info", "Assignments", "Media", "History"]) {
       const tab = Array.from(target.querySelectorAll(".tab")).find(
@@ -243,22 +245,21 @@ describe("ChoreEditModal — tabs", () => {
     target.remove();
   });
 
-  it("does not show a Place on map button in the footer, even on the Info tab", () => {
+  it("does not show a Place on map button in the footer when onplaceonmap isn't provided", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const store = makeStore();
     const app = mount(ChoreEditModal, {
       target,
-      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn(), onplaceonmap: vi.fn() },
+      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn() },
     });
     flushSync();
-    const footerText = target.querySelector(".ui-modal-footer")?.textContent ?? "";
-    expect(footerText).not.toContain("Place on map");
+    expect(target.querySelector(".footer-place-on-map")).toBeNull();
     unmount(app);
     target.remove();
   });
 
-  it("shows Place on map in the Assignments tab body and calls onplaceonmap with the chore id", () => {
+  it("shows an icon-only Place on map button in the footer on every tab, and calls onplaceonmap with the chore id", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const store = makeStore();
@@ -268,12 +269,16 @@ describe("ChoreEditModal — tabs", () => {
       props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn(), onplaceonmap },
     });
     flushSync();
+    // Info tab (default) -- present here too, not just on Assignments.
+    let placeBtn = target.querySelector(".footer-place-on-map") as HTMLButtonElement;
+    expect(placeBtn).not.toBeNull();
+    expect(placeBtn.title).toBe("Place on map");
+    expect(placeBtn.textContent?.trim()).toBe("📍");
+
     (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
     flushSync();
-    const placeBtn = Array.from(target.querySelectorAll(".assignments-pane button")).find(
-      (b) => b.textContent?.includes("Place on map"),
-    ) as HTMLButtonElement;
-    expect(placeBtn).toBeDefined();
+    placeBtn = target.querySelector(".footer-place-on-map") as HTMLButtonElement;
+    expect(placeBtn).not.toBeNull();
     placeBtn.click();
     expect(onplaceonmap).toHaveBeenCalledWith("c1");
     unmount(app);
@@ -313,6 +318,8 @@ describe("ChoreEditModal — tabs", () => {
     });
     flushSync();
     (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
+    flushSync();
+    (Array.from(target.querySelectorAll(".assignments-pane button")).find(b => b.textContent?.includes("Add assignment")) as HTMLButtonElement).click();
     flushSync();
     const options = Array.from(target.querySelectorAll(".add-assignment-row select option")).map(o => o.textContent);
     expect(options.slice(1)).toEqual(["Attic", "Master bedroom", "Zebra room"]);
@@ -397,6 +404,64 @@ describe("ChoreEditModal — schedule anchor + next-due preview", () => {
 });
 
 describe("ChoreEditModal — Assignments tab", () => {
+  it("hides the add-assignment fields until the toggle is clicked, and re-hides them after adding", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: [SQUARE_ROOM], onclose: vi.fn() },
+    });
+    flushSync();
+    (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
+    flushSync();
+
+    expect(target.querySelector(".add-assignment-row")).toBeNull();
+    const toggle = Array.from(target.querySelectorAll(".assignments-pane button")).find(b => b.textContent?.includes("Add assignment")) as HTMLButtonElement;
+    expect(toggle).toBeDefined();
+
+    toggle.click();
+    flushSync();
+    expect(target.querySelector(".add-assignment-row")).not.toBeNull();
+
+    const roomSelect = target.querySelector(".add-assignment-row select") as HTMLSelectElement;
+    roomSelect.value = "r1";
+    roomSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+    const addBtn = Array.from(target.querySelectorAll(".add-assignment-row button")).find(b => b.textContent?.trim() === "Add") as HTMLButtonElement;
+    addBtn.click();
+    await tick();
+    flushSync();
+
+    expect(target.querySelector(".add-assignment-row")).toBeNull();
+
+    unmount(app);
+    target.remove();
+  });
+
+  it("collapses the add-assignment fields again when cancelled", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: [SQUARE_ROOM], onclose: vi.fn() },
+    });
+    flushSync();
+    (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
+    flushSync();
+    (Array.from(target.querySelectorAll(".assignments-pane button")).find(b => b.textContent?.includes("Add assignment")) as HTMLButtonElement).click();
+    flushSync();
+    expect(target.querySelector(".add-assignment-row")).not.toBeNull();
+
+    (target.querySelector(".add-assignment-row .icon-btn") as HTMLButtonElement).click();
+    flushSync();
+    expect(target.querySelector(".add-assignment-row")).toBeNull();
+
+    unmount(app);
+    target.remove();
+  });
+
   it("lists existing assignments with their label and room, and completes/delays/deletes them", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
@@ -420,7 +485,17 @@ describe("ChoreEditModal — Assignments tab", () => {
 
     const [completeBtn, delayBtn, deleteBtn] = Array.from(target.querySelectorAll(".assignment-row .icon-btn")) as HTMLButtonElement[];
     delayBtn.click();
-    expect(store.delayAssignment).toHaveBeenCalledWith("a1", 7);
+    flushSync();
+    const weekItem = Array.from(document.querySelectorAll(".dsm-item")).find((b) => b.textContent === "Delay by 1 week") as HTMLButtonElement;
+    weekItem.click();
+    expect(store.delayAssignment).toHaveBeenCalledWith("a1", "week");
+
+    delayBtn.click();
+    flushSync();
+    const skipItem = Array.from(document.querySelectorAll(".dsm-item")).find((b) => b.textContent === "Skip to next occurrence") as HTMLButtonElement;
+    skipItem.click();
+    expect(store.skipAssignment).toHaveBeenCalledWith("a1");
+
     deleteBtn.click();
     expect(store.deleteAssignment).toHaveBeenCalledWith("a1");
 
@@ -523,6 +598,8 @@ describe("ChoreEditModal — Assignments tab", () => {
     flushSync();
     (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
     flushSync();
+    (Array.from(target.querySelectorAll(".assignments-pane button")).find(b => b.textContent?.includes("Add assignment")) as HTMLButtonElement).click();
+    flushSync();
 
     const roomSelect = target.querySelector(".add-assignment-row select") as HTMLSelectElement;
     roomSelect.value = "r1";
@@ -612,6 +689,33 @@ describe("ChoreEditModal — History tab", () => {
     expect(target.querySelector(".hist-room")?.textContent).toContain("Kitchen");
     expect(target.querySelector(".hist-label")?.textContent).toBe("(Balcony plants)");
     expect(target.querySelector(".hist-date")?.textContent).toBe("08/01/2026");
+
+    unmount(app);
+    target.remove();
+  });
+
+  it("badges a skipped completion as Skipped and a real one as Completed", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore({
+      getCompletionsForChore: vi.fn().mockReturnValue([
+        { id: "r1", choreId: "c1", assignmentId: null, completedAt: "2026-08-01T12:00:00Z", scheduledDue: "", notes: "", skipped: true },
+        { id: "r2", choreId: "c1", assignmentId: null, completedAt: "2026-07-01T12:00:00Z", scheduledDue: "", notes: "", skipped: false },
+      ]),
+    });
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: [], onclose: vi.fn() },
+    });
+    flushSync();
+    (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("History")) as HTMLButtonElement).click();
+    flushSync();
+
+    const rows = Array.from(target.querySelectorAll(".history-row"));
+    expect(rows[0].classList.contains("skipped")).toBe(true);
+    expect(rows[0].querySelector(".hist-status-badge")?.textContent).toContain("Skipped");
+    expect(rows[1].classList.contains("skipped")).toBe(false);
+    expect(rows[1].querySelector(".hist-status-badge")?.textContent).toContain("Completed");
 
     unmount(app);
     target.remove();

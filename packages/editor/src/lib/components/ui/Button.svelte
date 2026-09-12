@@ -3,19 +3,20 @@
   import type { Snippet } from "svelte";
 
   interface Props {
-    variant?: "primary" | "secondary" | "ghost" | "danger";
+    variant?: "primary" | "secondary" | "ghost" | "danger" | "success";
     onclick?: () => void;
     disabled?: boolean;
     title?: string;
     iconOnly?: boolean;
+    class?: string;
     children?: Snippet;
   }
-  let { variant = "primary", onclick, disabled = false, title, iconOnly = false, children }: Props = $props();
+  let { variant = "primary", onclick, disabled = false, title, iconOnly = false, class: extraClass = "", children }: Props = $props();
 </script>
 
 <button
   type="button"
-  class="ui-button ui-button-{variant}"
+  class="ui-button ui-button-{variant} {extraClass}"
   class:ui-button-icon={iconOnly}
   {disabled}
   {title}
@@ -55,4 +56,7 @@
 
   .ui-button-danger { background: var(--danger); color: var(--accent-contrast); }
   .ui-button-danger:hover:not(:disabled) { opacity: 0.85; }
+
+  .ui-button-success { background: var(--success); color: var(--accent-contrast); }
+  .ui-button-success:hover:not(:disabled) { opacity: 0.85; }
 </style>

@@ -29,6 +29,7 @@ function makeStore(chores: Chore[]) {
     updateChore: vi.fn(),
     deleteChore: vi.fn(),
     completeChore: vi.fn(),
+    skipChore: vi.fn(),
     delayChore: vi.fn(),
     createAssignment: vi.fn(),
     updateAssignmentPosition: vi.fn(),
@@ -37,6 +38,7 @@ function makeStore(chores: Chore[]) {
     deleteAssignment: vi.fn(),
     delayAssignment: vi.fn(),
     completeAssignment: vi.fn(),
+    skipAssignment: vi.fn(),
     getCompletionsForChore: vi.fn().mockReturnValue([]),
     deleteCompletion: vi.fn(),
     uploadAttachment: vi.fn(),
@@ -374,6 +376,47 @@ describe("ChoresPage — mark-all-done backdating", () => {
     unmount(comp);
   });
 
+});
+
+describe("ChoresPage — delay/skip menu", () => {
+  it("opens a menu offering week/month/year delay and skip-to-next, wired to the store", () => {
+    const chore = makeChore();
+    const store = makeStore([chore]);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    (target.querySelector('button[title="Delay or skip all assignments"]') as HTMLButtonElement).click();
+    flushSync();
+
+    const items = Array.from(document.querySelectorAll(".dsm-item")) as HTMLButtonElement[];
+    const labels = items.map((b) => b.textContent);
+    expect(labels).toEqual(["Delay by 1 week", "Delay by 1 month", "Delay by 1 year", "Skip to next occurrence"]);
+
+    items.find((b) => b.textContent === "Delay by 1 month")!.click();
+    expect(store.delayChore).toHaveBeenCalledWith("c1", "month");
+
+    unmount(comp);
+  });
+
+  it("calls skipChore, not completeChore, from the skip menu item", () => {
+    const chore = makeChore();
+    const store = makeStore([chore]);
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ChoresPage, { target, props: { store, floorStore: { floors: [] } } });
+    flushSync();
+
+    (target.querySelector('button[title="Delay or skip all assignments"]') as HTMLButtonElement).click();
+    flushSync();
+    (Array.from(document.querySelectorAll(".dsm-item")).find((b) => b.textContent === "Skip to next occurrence") as HTMLButtonElement).click();
+
+    expect(store.skipChore).toHaveBeenCalledWith("c1");
+    expect(store.completeChore).not.toHaveBeenCalled();
+
+    unmount(comp);
+  });
 });
 
 describe("ChoresPage — responsive columns", () => {

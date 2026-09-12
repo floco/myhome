@@ -1327,3 +1327,80 @@ def test_complete_assignment_adaptive_recomputes_period_days(client, home_id, tm
     chores = client.get(f"/api/homes/{home_id}/chores").json()["chores"]
     chore = next(c for c in chores if c["id"] == "c1")
     assert chore["periodDays"] != 30.0
+
+
+# --- Skipping a chore/assignment (occurrence not done, still advances) ---
+
+def test_complete_chore_skipped_advances_next_due_and_marks_history(client, home_id, tmp_path):
+    save_chores(home_id, make_chore_doc())
+    resp = client.post(f"/api/homes/{home_id}/chores/c1/complete", json={"skipped": True})
+    assert resp.status_code == 200
+    data = resp.json()
+    from datetime import datetime, timezone, timedelta
+    new_due = datetime.fromisoformat(data["nextDueDate"].replace("Z", "+00:00"))
+    now = datetime.now(timezone.utc)
+    expected = now + timedelta(days=14)
+    assert abs((new_due - expected).total_seconds()) < 5
+
+    doc = client.get(f"/api/homes/{home_id}/chores").json()
+    rec = next(c for c in doc["completions"] if c["choreId"] == "c1")
+    assert rec["skipped"] is True
+
+
+def test_complete_chore_without_skipped_flag_defaults_to_not_skipped(client, home_id, tmp_path):
+    save_chores(home_id, make_chore_doc())
+    resp = client.post(f"/api/homes/{home_id}/chores/c1/complete")
+    assert resp.status_code == 200
+    doc = client.get(f"/api/homes/{home_id}/chores").json()
+    rec = next(c for c in doc["completions"] if c["choreId"] == "c1")
+    assert rec["skipped"] is False
+
+
+def test_complete_assignment_skipped_marks_history(client, home_id, tmp_path):
+    save_chores(home_id, make_chore_doc())
+    aid = client.post(f"/api/homes/{home_id}/assignments", json={"choreId": "c1", "roomId": "r1"}).json()["id"]
+    resp = client.post(f"/api/homes/{home_id}/assignments/{aid}/complete", json={"skipped": True})
+    assert resp.status_code == 200
+    doc = client.get(f"/api/homes/{home_id}/chores").json()
+    rec = next(c for c in doc["completions"] if c["assignmentId"] == aid)
+    assert rec["skipped"] is True
+
+
+def test_skip_activity_log_uses_skip_action(client, home_id, tmp_path):
+    save_chores(home_id, make_chore_doc())
+    client.post(f"/api/homes/{home_id}/chores/c1/complete", json={"skipped": True})
+    resp = client.get(f"/api/homes/{home_id}/activity")
+    assert resp.status_code == 200
+    entries = resp.json()["entries"]
+    entry = next(e for e in entries if e["module"] == "chores")
+    assert entry["action"] == "skip"
+    assert "skipped" in entry["description"]
+
+
+def test_skipped_completions_excluded_from_adaptive_period_calculation(client, home_id, tmp_path):
+    """r1->r2 is a real 10-day gap. A skip 5 days after r2 would, if counted,
+    pull the averaged gap down toward ~6.7 days; excluding it, the new
+    completion 10 days after r2 keeps the average a clean 10 days."""
+    doc = ChoreDocument(
+        chores=[
+            Chore(
+                id="c1", name="Change filter", emoji="🔧", periodDays=30.0,
+                frequencyType="adaptive", frequency=1, frequencyMetadata={},
+                nextDueDate="2026-08-01T00:00:00Z",
+            )
+        ],
+        assignments=[],
+        completions=[
+            CompletionRecord(id="r1", choreId="c1", completedAt="2026-07-01T00:00:00Z", scheduledDue=""),
+            CompletionRecord(id="r2", choreId="c1", completedAt="2026-07-11T00:00:00Z", scheduledDue=""),
+            CompletionRecord(id="r3", choreId="c1", completedAt="2026-07-16T00:00:00Z", scheduledDue="", skipped=True),
+        ],
+    )
+    save_chores(home_id, doc)
+    resp = client.post(f"/api/homes/{home_id}/chores/c1/complete", json={"completedOn": "2026-07-21"})
+    assert resp.status_code == 200
+    # Only r1/r2 (10-day gap) plus this new real completion (also a ~10-day
+    # gap from r2, modulo today's time-of-day) should count -- periodDays
+    # must land near 10, not be skewed by the shorter r2->skip->new gaps the
+    # skip record would otherwise introduce (which would average to ~6.7).
+    assert abs(resp.json()["periodDays"] - 10.0) < 1.0

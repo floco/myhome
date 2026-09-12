@@ -16,12 +16,14 @@
   import EmojiPicker from "./ui/EmojiPicker.svelte";
   import ScheduleEditor from "./ScheduleEditor.svelte";
   import ChoreCompleteModal from "./ChoreCompleteModal.svelte";
+  import DelaySkipMenu from "./ui/DelaySkipMenu.svelte";
   import { polygonCentroid } from "@myhome/geometry";
   import type { Point } from "@myhome/geometry";
+  import type { DelayUnit } from "../choreStore.svelte";
   import { formatDate } from "../dateFormat";
   import { earliestDue, isOverdue } from "../choreFormat";
 
-  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion" | "createAssignment" | "updateAssignmentLabel" | "deleteAssignment" | "delayAssignment" | "completeAssignment" | "completeChore">;
+  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion" | "createAssignment" | "updateAssignmentLabel" | "deleteAssignment" | "delayAssignment" | "completeAssignment" | "completeChore" | "skipChore" | "skipAssignment">;
 
   interface Props {
     chore: Chore | null;
@@ -55,6 +57,7 @@
   let lightboxIndex = $state(0);
   let newAssignmentRoomId = $state("");
   let newAssignmentLabel = $state("");
+  let addingAssignment = $state(false);
   let completing = $state<{ kind: "chore" | "assignment"; id: string; title: string } | null>(null);
 
   const history = $derived(
@@ -67,9 +70,9 @@
   let deletingCompletion = $state<string | null>(null);
 
   function getRoomName(assignmentId: string | null): string {
-    if (!assignmentId) return `🏠 ${$_('chores.list.wholeHouse')}`;
+    if (!assignmentId) return $_('chores.list.wholeHouse');
     const assignment = store.assignments.find((a) => a.id === assignmentId);
-    if (!assignment?.roomId) return `🏠 ${$_('chores.list.wholeHouse')}`;
+    if (!assignment?.roomId) return $_('chores.list.wholeHouse');
     return rooms.find((r) => r.id === assignment.roomId)?.label ?? $_('chores.list.unknownRoom');
   }
 
@@ -98,6 +101,7 @@
     });
     newAssignmentRoomId = "";
     newAssignmentLabel = "";
+    addingAssignment = false;
   }
 
   async function confirmCompleteAssignment(notes: string, completedOn?: string): Promise<void> {
@@ -120,23 +124,34 @@
     finally { deletingCompletion = null; }
   }
 
+  // Two different refresh rates: name/schedule/etc. and the active tab are
+  // "session" state that should only reset when the modal switches to a
+  // genuinely different chore (not on every store refresh) so an in-progress
+  // edit or the current tab survives a completion made from within the same
+  // modal session. The due-date field must instead always track the live
+  // value -- completing the chore (or one of its assignments) advances it on
+  // the server every time, and this field exists precisely to show that.
+  let loadedChoreId = $state<string | null>(null);
   $effect.pre(() => {
-    if (chore) {
+    if (!chore) return;
+    if (chore.id !== loadedChoreId) {
+      loadedChoreId = chore.id;
       draftName = chore.name;
       draftEmoji = chore.emoji;
       draftPeriodDays = chore.periodDays;
       draftFrequencyType = chore.frequencyType;
       draftFrequency = chore.frequency;
       draftFrequencyMetadata = chore.frequencyMetadata;
-      draftNextDue = earliestDue(chore, assignmentsForChore).slice(0, 10);
       draftScheduleFromDue = chore.scheduleFromDue;
       draftDescription = chore.description ?? "";
       editingNotes = false;
       activeTab = "info";
       newAssignmentRoomId = "";
       newAssignmentLabel = "";
+      addingAssignment = false;
       error = null;
     }
+    draftNextDue = earliestDue(chore, assignmentsForChore).slice(0, 10);
   });
 
   const mediaItems = $derived<MediaItem[]>(
@@ -246,9 +261,6 @@
       </div>
     {:else if activeTab === "assignments"}
       <div class="assignments-pane">
-        {#if onplaceonmap}
-          <Button variant="secondary" onclick={() => { onplaceonmap!(chore!.id); }}>📍 {$_('chores.editModal.placeOnMap')}</Button>
-        {/if}
         {#if assignmentsForChore.length === 0}
           <div class="no-assignments">{$_('chores.page.notAssigned')}</div>
         {:else}
@@ -264,22 +276,30 @@
               <span class="assign-due" class:overdue={isOverdue(a.nextDueDate)}>{$_('chores.badgePopup.due')}: {formatDate(a.nextDueDate)}</span>
               <div class="assignment-actions">
                 <button class="icon-btn" title={$_('chores.row.markDone')} onclick={() => { completing = { kind: "assignment", id: a.id, title: `${chore.emoji} ${chore.name}` }; }}>✓</button>
-                <button class="icon-btn" title={$_('chores.page.delayByWeek')} onclick={() => store.delayAssignment(a.id, 7)}>⏭</button>
+                <DelaySkipMenu
+                  onDelay={(unit: DelayUnit) => store.delayAssignment(a.id, unit)}
+                  onSkip={() => store.skipAssignment(a.id)}
+                />
                 <button class="icon-btn danger" onclick={() => store.deleteAssignment(a.id)}>✕</button>
               </div>
             </div>
           {/each}
         {/if}
-        <div class="add-assignment-row">
-          <select class="native-input" bind:value={newAssignmentRoomId}>
-            <option value="">{$_('chores.editModal.selectRoom')}</option>
-            {#each sortedRooms as room}
-              <option value={room.id}>{room.label}</option>
-            {/each}
-          </select>
-          <input class="native-input assign-label-input" placeholder={$_('chores.editModal.labelPlaceholder')} bind:value={newAssignmentLabel} />
-          <Button variant="secondary" disabled={!newAssignmentRoomId} onclick={handleAddAssignment}>{$_('chores.editModal.addAssignment')}</Button>
-        </div>
+        {#if addingAssignment}
+          <div class="add-assignment-row">
+            <select class="native-input" bind:value={newAssignmentRoomId}>
+              <option value="">{$_('chores.editModal.selectRoom')}</option>
+              {#each sortedRooms as room}
+                <option value={room.id}>{room.label}</option>
+              {/each}
+            </select>
+            <input class="native-input assign-label-input" placeholder={$_('chores.editModal.labelPlaceholder')} bind:value={newAssignmentLabel} />
+            <Button variant="secondary" disabled={!newAssignmentRoomId} onclick={handleAddAssignment}>{$_('chores.editModal.addAssignment')}</Button>
+            <button type="button" class="icon-btn" title={$_('common.cancel')} onclick={() => { addingAssignment = false; newAssignmentRoomId = ""; newAssignmentLabel = ""; }}>✕</button>
+          </div>
+        {:else}
+          <Button variant="secondary" onclick={() => { addingAssignment = true; }}>➕ {$_('chores.editModal.addAssignmentToggle')}</Button>
+        {/if}
       </div>
     {:else if activeTab === "media"}
       <div class="media-pane">
@@ -300,8 +320,13 @@
         {:else}
           {#each history as rec (rec.id)}
             {@const label = getAssignmentLabel(rec.assignmentId)}
-            <div class="history-row">
+            <div class="history-row" class:skipped={rec.skipped}>
               <span class="hist-room">{getRoomName(rec.assignmentId)}{#if label} <span class="hist-label">({label})</span>{/if}</span>
+              {#if rec.skipped}
+                <span class="hist-status-badge skipped">⏭ {$_('chores.editModal.skipped')}</span>
+              {:else}
+                <span class="hist-status-badge completed">✓ {$_('chores.editModal.completed')}</span>
+              {/if}
               <span class="hist-date">{formatDate(rec.completedAt)}</span>
               {#if rec.scheduledDue}<span class="hist-due">{$_('chores.editModal.dueOn', { values: { date: formatDate(rec.scheduledDue) } })}</span>{/if}
               {#if rec.notes}<span class="hist-notes">{rec.notes}</span>{/if}
@@ -314,9 +339,12 @@
 
     {#snippet footer()}
       {#if !confirmDelete}
-        <button class="icon-btn footer-complete-all" title={$_('chores.page.markAllDone')} onclick={() => { completing = { kind: "chore", id: chore!.id, title: `${chore!.emoji} ${chore!.name}` }; }}>✓</button>
+        <Button class="footer-complete-all" variant="success" iconOnly title={$_('chores.page.markAllDone')} onclick={() => { completing = { kind: "chore", id: chore!.id, title: `${chore!.emoji} ${chore!.name}` }; }}>✓✓</Button>
         {#if activeTab !== "assignments"}
-          <button class="icon-btn footer-go-to-assignments" title={$_('chores.editModal.goToAssignments')} onclick={() => { activeTab = "assignments"; }}>→</button>
+          <Button class="footer-go-to-assignments" variant="secondary" iconOnly title={$_('chores.editModal.goToAssignments')} onclick={() => { activeTab = "assignments"; }}>✓</Button>
+        {/if}
+        {#if onplaceonmap}
+          <Button class="footer-place-on-map" variant="secondary" iconOnly title={$_('chores.editModal.placeOnMap')} onclick={() => { onplaceonmap!(chore!.id); }}>📍</Button>
         {/if}
       {/if}
       <span class="spacer"></span>
@@ -390,6 +418,13 @@
   .hist-del { margin-left: auto; background: none; border: none; cursor: pointer; color: var(--text-faint); font-size: 11px; padding: 0 2px; line-height: 1; opacity: 0.5; }
   .hist-del:hover { opacity: 1; color: var(--danger); }
   .hist-label { color: var(--text-faint); font-weight: 400; margin-left: 4px; }
+  .history-row.skipped .hist-room { color: var(--text-muted); }
+  .hist-status-badge {
+    display: inline-block; min-width: 11ch; text-align: center;
+    border-radius: var(--radius-sm); padding: 1px 6px; font-size: 11px; white-space: nowrap;
+  }
+  .hist-status-badge.skipped { color: var(--text-muted); background: var(--surface-alt); }
+  .hist-status-badge.completed { color: var(--success); background: color-mix(in srgb, var(--success) 15%, transparent); }
 
   .assignments-pane { min-height: 160px; display: flex; flex-direction: column; gap: 8px; }
   .no-assignments { font-size: 11px; color: var(--text-faint); font-style: italic; padding: 12px 0; }
