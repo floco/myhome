@@ -317,7 +317,11 @@
             {@const label = getAssignmentLabel(rec.assignmentId)}
             <div class="history-row" class:skipped={rec.skipped}>
               <span class="hist-room">{getRoomName(rec.assignmentId)}{#if label} <span class="hist-label">({label})</span>{/if}</span>
-              {#if rec.skipped}<span class="hist-skipped-badge">⏭ {$_('chores.editModal.skipped')}</span>{/if}
+              {#if rec.skipped}
+                <span class="hist-status-badge skipped">⏭ {$_('chores.editModal.skipped')}</span>
+              {:else}
+                <span class="hist-status-badge completed">✓ {$_('chores.editModal.completed')}</span>
+              {/if}
               <span class="hist-date">{formatDate(rec.completedAt)}</span>
               {#if rec.scheduledDue}<span class="hist-due">{$_('chores.editModal.dueOn', { values: { date: formatDate(rec.scheduledDue) } })}</span>{/if}
               {#if rec.notes}<span class="hist-notes">{rec.notes}</span>{/if}
@@ -407,10 +411,11 @@
   .hist-del:hover { opacity: 1; color: var(--danger); }
   .hist-label { color: var(--text-faint); font-weight: 400; margin-left: 4px; }
   .history-row.skipped .hist-room { color: var(--text-muted); }
-  .hist-skipped-badge {
-    color: var(--text-muted); background: var(--surface-alt); border-radius: var(--radius-sm);
-    padding: 1px 6px; font-size: 11px; white-space: nowrap;
+  .hist-status-badge {
+    border-radius: var(--radius-sm); padding: 1px 6px; font-size: 11px; white-space: nowrap;
   }
+  .hist-status-badge.skipped { color: var(--text-muted); background: var(--surface-alt); }
+  .hist-status-badge.completed { color: var(--success); background: color-mix(in srgb, var(--success) 15%, transparent); }
 
   .assignments-pane { min-height: 160px; display: flex; flex-direction: column; gap: 8px; }
   .no-assignments { font-size: 11px; color: var(--text-faint); font-style: italic; padding: 12px 0; }

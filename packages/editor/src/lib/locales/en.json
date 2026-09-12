@@ -473,6 +473,7 @@
       "noCompletions": "No completions yet",
       "dueOn": "due {date}",
       "skipped": "Skipped",
+      "completed": "Completed",
       "deleteRecord": "Delete record",
       "deleteThisChore": "Delete this chore?",
       "confirmDelete": "Confirm delete",

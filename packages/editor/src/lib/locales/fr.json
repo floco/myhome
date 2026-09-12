@@ -473,6 +473,7 @@
       "noCompletions": "Aucune réalisation pour l'instant",
       "dueOn": "échéance {date}",
       "skipped": "Ignoré",
+      "completed": "Terminé",
       "deleteRecord": "Supprimer l'entrée",
       "deleteThisChore": "Supprimer cette corvée ?",
       "confirmDelete": "Confirmer la suppression",

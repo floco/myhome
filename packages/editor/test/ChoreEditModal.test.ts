@@ -629,7 +629,7 @@ describe("ChoreEditModal — History tab", () => {
     target.remove();
   });
 
-  it("badges a skipped completion as Skipped, and leaves a real completion unbadged", () => {
+  it("badges a skipped completion as Skipped and a real one as Completed", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const store = makeStore({
@@ -648,9 +648,9 @@ describe("ChoreEditModal — History tab", () => {
 
     const rows = Array.from(target.querySelectorAll(".history-row"));
     expect(rows[0].classList.contains("skipped")).toBe(true);
-    expect(rows[0].querySelector(".hist-skipped-badge")?.textContent).toContain("Skipped");
+    expect(rows[0].querySelector(".hist-status-badge")?.textContent).toContain("Skipped");
     expect(rows[1].classList.contains("skipped")).toBe(false);
-    expect(rows[1].querySelector(".hist-skipped-badge")).toBeNull();
+    expect(rows[1].querySelector(".hist-status-badge")?.textContent).toContain("Completed");
 
     unmount(app);
     target.remove();
