@@ -412,6 +412,7 @@
   .hist-label { color: var(--text-faint); font-weight: 400; margin-left: 4px; }
   .history-row.skipped .hist-room { color: var(--text-muted); }
   .hist-status-badge {
+    display: inline-block; min-width: 11ch; text-align: center;
     border-radius: var(--radius-sm); padding: 1px 6px; font-size: 11px; white-space: nowrap;
   }
   .hist-status-badge.skipped { color: var(--text-muted); background: var(--surface-alt); }
