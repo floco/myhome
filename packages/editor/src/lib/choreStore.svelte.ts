@@ -307,9 +307,20 @@ export function createChoreStore(getHomeId: () => string | null = () => null) {
 
   function addDelayUnit(date: Date, unit: DelayUnit): Date {
     const d = new Date(date);
-    if (unit === "week") d.setDate(d.getDate() + 7);
-    else if (unit === "month") d.setMonth(d.getMonth() + 1);
-    else d.setFullYear(d.getFullYear() + 1);
+    if (unit === "week") {
+      d.setDate(d.getDate() + 7);
+      return d;
+    }
+    // Plain setMonth/setFullYear overflow into the next month when the
+    // source day doesn't exist in the target month (e.g. Jan 31 + 1 month
+    // -> Mar 3, skipping February entirely) -- clamp to the target month's
+    // last valid day instead, same as the backend scheduler's add_months.
+    const monthsToAdd = unit === "month" ? 1 : 12;
+    const totalMonths = date.getMonth() + monthsToAdd;
+    const year = date.getFullYear() + Math.floor(totalMonths / 12);
+    const month = ((totalMonths % 12) + 12) % 12;
+    const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+    d.setFullYear(year, month, Math.min(date.getDate(), lastDayOfMonth));
     return d;
   }
 

@@ -409,6 +409,60 @@ describe("choreStore — delayChore / delayAssignment", () => {
     const sentBody = JSON.parse(putCall![1].body as string);
     expect(sentBody.nextDueDate).toBe("2027-05-15T00:00:00.000Z");
   });
+
+  it("delaying by 1 month from Jan 31 lands on Feb 28, not overflowing into March", async () => {
+    const fetchMock = makeFetch(200, {
+      version: 1,
+      chores: [{ id: "c1", donetickId: null, name: "Sweep", emoji: "🧹", periodDays: 7, nextDueDate: "2026-01-31T00:00:00Z", description: "" }],
+      assignments: [{ id: "a1", choreId: "c1", roomId: "r1", position: null, nextDueDate: "2026-01-31T00:00:00Z", label: null }],
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createChoreStore(getHomeId);
+    await tick();
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
+
+    await store.delayAssignment("a1", "month");
+
+    const putCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/assignments/a1"));
+    const sentBody = JSON.parse(putCall![1].body as string);
+    expect(sentBody.nextDueDate).toBe("2026-02-28T00:00:00.000Z");
+  });
+
+  it("delaying by 1 month from Mar 31 lands on Apr 30, not overflowing into May", async () => {
+    const fetchMock = makeFetch(200, {
+      version: 1,
+      chores: [],
+      assignments: [{ id: "a1", choreId: "c1", roomId: "r1", position: null, nextDueDate: "2026-03-31T00:00:00Z", label: null }],
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createChoreStore(getHomeId);
+    await tick();
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
+
+    await store.delayAssignment("a1", "month");
+
+    const putCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/assignments/a1"));
+    const sentBody = JSON.parse(putCall![1].body as string);
+    expect(sentBody.nextDueDate).toBe("2026-04-30T00:00:00.000Z");
+  });
+
+  it("delaying by 1 year from a leap-year Feb 29 lands on Feb 28 the following year", async () => {
+    const fetchMock = makeFetch(200, {
+      version: 1,
+      chores: [],
+      assignments: [{ id: "a1", choreId: "c1", roomId: "r1", position: null, nextDueDate: "2028-02-29T00:00:00Z", label: null }],
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const store = createChoreStore(getHomeId);
+    await tick();
+    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
+
+    await store.delayAssignment("a1", "year");
+
+    const putCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/assignments/a1"));
+    const sentBody = JSON.parse(putCall![1].body as string);
+    expect(sentBody.nextDueDate).toBe("2029-02-28T00:00:00.000Z");
+  });
 });
 
 describe("choreStore — updateAssignmentLabel", () => {
