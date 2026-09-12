@@ -487,7 +487,8 @@
       "goToAssignments": "Aller aux affectations",
       "labelPlaceholder": "Étiquette (optionnel)",
       "selectRoom": "Choisir une zone…",
-      "addAssignment": "Ajouter"
+      "addAssignment": "Ajouter",
+      "addAssignmentToggle": "Ajouter une affectation"
     },
     "page": {
       "emptyCharts": "Aucune corvée assignée pour l'instant — cliquez sur ＋ Ajouter une corvée pour commencer.",

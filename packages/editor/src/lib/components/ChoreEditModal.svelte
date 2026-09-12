@@ -57,6 +57,7 @@
   let lightboxIndex = $state(0);
   let newAssignmentRoomId = $state("");
   let newAssignmentLabel = $state("");
+  let addingAssignment = $state(false);
   let completing = $state<{ kind: "chore" | "assignment"; id: string; title: string } | null>(null);
 
   const history = $derived(
@@ -100,6 +101,7 @@
     });
     newAssignmentRoomId = "";
     newAssignmentLabel = "";
+    addingAssignment = false;
   }
 
   async function confirmCompleteAssignment(notes: string, completedOn?: string): Promise<void> {
@@ -146,6 +148,7 @@
       activeTab = "info";
       newAssignmentRoomId = "";
       newAssignmentLabel = "";
+      addingAssignment = false;
       error = null;
     }
     draftNextDue = earliestDue(chore, assignmentsForChore).slice(0, 10);
@@ -258,9 +261,6 @@
       </div>
     {:else if activeTab === "assignments"}
       <div class="assignments-pane">
-        {#if onplaceonmap}
-          <Button variant="secondary" onclick={() => { onplaceonmap!(chore!.id); }}>📍 {$_('chores.editModal.placeOnMap')}</Button>
-        {/if}
         {#if assignmentsForChore.length === 0}
           <div class="no-assignments">{$_('chores.page.notAssigned')}</div>
         {:else}
@@ -285,16 +285,21 @@
             </div>
           {/each}
         {/if}
-        <div class="add-assignment-row">
-          <select class="native-input" bind:value={newAssignmentRoomId}>
-            <option value="">{$_('chores.editModal.selectRoom')}</option>
-            {#each sortedRooms as room}
-              <option value={room.id}>{room.label}</option>
-            {/each}
-          </select>
-          <input class="native-input assign-label-input" placeholder={$_('chores.editModal.labelPlaceholder')} bind:value={newAssignmentLabel} />
-          <Button variant="secondary" disabled={!newAssignmentRoomId} onclick={handleAddAssignment}>{$_('chores.editModal.addAssignment')}</Button>
-        </div>
+        {#if addingAssignment}
+          <div class="add-assignment-row">
+            <select class="native-input" bind:value={newAssignmentRoomId}>
+              <option value="">{$_('chores.editModal.selectRoom')}</option>
+              {#each sortedRooms as room}
+                <option value={room.id}>{room.label}</option>
+              {/each}
+            </select>
+            <input class="native-input assign-label-input" placeholder={$_('chores.editModal.labelPlaceholder')} bind:value={newAssignmentLabel} />
+            <Button variant="secondary" disabled={!newAssignmentRoomId} onclick={handleAddAssignment}>{$_('chores.editModal.addAssignment')}</Button>
+            <button type="button" class="icon-btn" title={$_('common.cancel')} onclick={() => { addingAssignment = false; newAssignmentRoomId = ""; newAssignmentLabel = ""; }}>✕</button>
+          </div>
+        {:else}
+          <Button variant="secondary" onclick={() => { addingAssignment = true; }}>➕ {$_('chores.editModal.addAssignmentToggle')}</Button>
+        {/if}
       </div>
     {:else if activeTab === "media"}
       <div class="media-pane">
@@ -337,6 +342,8 @@
         <button class="icon-btn footer-complete-all" title={$_('chores.page.markAllDone')} onclick={() => { completing = { kind: "chore", id: chore!.id, title: `${chore!.emoji} ${chore!.name}` }; }}>✓</button>
         {#if activeTab !== "assignments"}
           <button class="icon-btn footer-go-to-assignments" title={$_('chores.editModal.goToAssignments')} onclick={() => { activeTab = "assignments"; }}>→</button>
+        {:else if onplaceonmap}
+          <button class="icon-btn footer-place-on-map" title={$_('chores.editModal.placeOnMap')} onclick={() => { onplaceonmap!(chore!.id); }}>📍</button>
         {/if}
       {/if}
       <span class="spacer"></span>

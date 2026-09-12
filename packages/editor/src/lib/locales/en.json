@@ -487,7 +487,8 @@
       "goToAssignments": "Go to assignments",
       "labelPlaceholder": "Label (optional)",
       "selectRoom": "Select a zone…",
-      "addAssignment": "Add"
+      "addAssignment": "Add",
+      "addAssignmentToggle": "Add assignment"
     },
     "page": {
       "emptyCharts": "No chore assignments yet — click ＋ Add chore to get started.",

@@ -245,7 +245,7 @@ describe("ChoreEditModal — tabs", () => {
     target.remove();
   });
 
-  it("does not show a Place on map button in the footer, even on the Info tab", () => {
+  it("does not show a Place on map button in the footer on the Info tab", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const store = makeStore();
@@ -254,13 +254,12 @@ describe("ChoreEditModal — tabs", () => {
       props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn(), onplaceonmap: vi.fn() },
     });
     flushSync();
-    const footerText = target.querySelector(".ui-modal-footer")?.textContent ?? "";
-    expect(footerText).not.toContain("Place on map");
+    expect(target.querySelector(".footer-place-on-map")).toBeNull();
     unmount(app);
     target.remove();
   });
 
-  it("shows Place on map in the Assignments tab body and calls onplaceonmap with the chore id", () => {
+  it("shows an icon-only Place on map button in the footer on the Assignments tab, and calls onplaceonmap with the chore id", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const store = makeStore();
@@ -272,10 +271,10 @@ describe("ChoreEditModal — tabs", () => {
     flushSync();
     (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
     flushSync();
-    const placeBtn = Array.from(target.querySelectorAll(".assignments-pane button")).find(
-      (b) => b.textContent?.includes("Place on map"),
-    ) as HTMLButtonElement;
-    expect(placeBtn).toBeDefined();
+    const placeBtn = target.querySelector(".footer-place-on-map") as HTMLButtonElement;
+    expect(placeBtn).not.toBeNull();
+    expect(placeBtn.title).toBe("Place on map");
+    expect(placeBtn.textContent?.trim()).toBe("📍");
     placeBtn.click();
     expect(onplaceonmap).toHaveBeenCalledWith("c1");
     unmount(app);
@@ -315,6 +314,8 @@ describe("ChoreEditModal — tabs", () => {
     });
     flushSync();
     (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
+    flushSync();
+    (Array.from(target.querySelectorAll(".assignments-pane button")).find(b => b.textContent?.includes("Add assignment")) as HTMLButtonElement).click();
     flushSync();
     const options = Array.from(target.querySelectorAll(".add-assignment-row select option")).map(o => o.textContent);
     expect(options.slice(1)).toEqual(["Attic", "Master bedroom", "Zebra room"]);
@@ -399,6 +400,64 @@ describe("ChoreEditModal — schedule anchor + next-due preview", () => {
 });
 
 describe("ChoreEditModal — Assignments tab", () => {
+  it("hides the add-assignment fields until the toggle is clicked, and re-hides them after adding", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: [SQUARE_ROOM], onclose: vi.fn() },
+    });
+    flushSync();
+    (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
+    flushSync();
+
+    expect(target.querySelector(".add-assignment-row")).toBeNull();
+    const toggle = Array.from(target.querySelectorAll(".assignments-pane button")).find(b => b.textContent?.includes("Add assignment")) as HTMLButtonElement;
+    expect(toggle).toBeDefined();
+
+    toggle.click();
+    flushSync();
+    expect(target.querySelector(".add-assignment-row")).not.toBeNull();
+
+    const roomSelect = target.querySelector(".add-assignment-row select") as HTMLSelectElement;
+    roomSelect.value = "r1";
+    roomSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+    const addBtn = Array.from(target.querySelectorAll(".add-assignment-row button")).find(b => b.textContent?.trim() === "Add") as HTMLButtonElement;
+    addBtn.click();
+    await tick();
+    flushSync();
+
+    expect(target.querySelector(".add-assignment-row")).toBeNull();
+
+    unmount(app);
+    target.remove();
+  });
+
+  it("collapses the add-assignment fields again when cancelled", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore();
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: [SQUARE_ROOM], onclose: vi.fn() },
+    });
+    flushSync();
+    (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
+    flushSync();
+    (Array.from(target.querySelectorAll(".assignments-pane button")).find(b => b.textContent?.includes("Add assignment")) as HTMLButtonElement).click();
+    flushSync();
+    expect(target.querySelector(".add-assignment-row")).not.toBeNull();
+
+    (target.querySelector(".add-assignment-row .icon-btn") as HTMLButtonElement).click();
+    flushSync();
+    expect(target.querySelector(".add-assignment-row")).toBeNull();
+
+    unmount(app);
+    target.remove();
+  });
+
   it("lists existing assignments with their label and room, and completes/delays/deletes them", async () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
@@ -534,6 +593,8 @@ describe("ChoreEditModal — Assignments tab", () => {
     });
     flushSync();
     (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
+    flushSync();
+    (Array.from(target.querySelectorAll(".assignments-pane button")).find(b => b.textContent?.includes("Add assignment")) as HTMLButtonElement).click();
     flushSync();
 
     const roomSelect = target.querySelector(".add-assignment-row select") as HTMLSelectElement;
