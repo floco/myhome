@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.32.0 - 2026-09-12
+
+- Added a Calendar view to the Chores module: a monthly grid showing each chore's due date, with month/year navigation and a Today button, alongside the existing list view
+- Replaced the chore modal's flat "delay by 1 week" button with a delay/skip menu: delay by a week, month, or year, or skip straight to the next occurrence (recorded in history, and excluded from adaptive-schedule learning)
+- Fixed the chore edit modal sometimes showing a stale due date after completing a chore from within its own modal
+- "Place on map" is now an icon button in the chore modal's footer, shown on every tab; the "Add assignment" fields are now collapsed behind a toggle
+- Fixed delaying a chore by a month or year overflowing into the next month for due dates near month-end (e.g. Jan 31 + 1 month no longer lands on Mar 3)
+- Fixed overdue chores due less than 12 hours ago not being highlighted in red
+
 ## 0.31.0 - 2026-09-07
 
 - Added a "Move to..." option to the wiki page-actions menu, letting you move a page under a different parent (or to the top level) via a searchable picker, alongside the existing drag-and-drop
