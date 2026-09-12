@@ -29,6 +29,7 @@ class CompletionRecord(BaseModel):
     completedAt: str    # ISO 8601
     scheduledDue: str   # due date at time of completion
     notes: str = ""
+    skipped: bool = False   # True = this occurrence was skipped, not actually done
 
 
 class Assignment(BaseModel):
@@ -89,6 +90,7 @@ class AssignmentUpdate(BaseModel):
 class CompleteRequest(BaseModel):
     notes: str = ""
     completedOn: str | None = None  # ISO date, YYYY-MM-DD; None = use current time
+    skipped: bool = False   # True = record this occurrence as skipped rather than done
 
 
 class ImportRequest(BaseModel):

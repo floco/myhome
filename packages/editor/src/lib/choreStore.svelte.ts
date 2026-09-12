@@ -17,6 +17,8 @@ export interface Chore {
   attachments: string[];
 }
 
+export type DelayUnit = "week" | "month" | "year";
+
 export interface CompletionRecord {
   id: string;
   choreId: string;
@@ -24,6 +26,7 @@ export interface CompletionRecord {
   completedAt: string;
   scheduledDue: string;
   notes: string;
+  skipped: boolean;
 }
 
 export function scheduleLabel(chore: Chore): string {
@@ -209,16 +212,23 @@ export function createChoreStore(getHomeId: () => string | null = () => null) {
     await init();
   }
 
-  async function completeChore(id: string, notes: string = "", completedOn?: string): Promise<void> {
+  async function completeChore(id: string, notes: string = "", completedOn?: string, skipped?: boolean): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
     const resp = await fetch(`/api/homes/${homeId}/chores/${id}/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(completedOn ? { notes, completedOn } : { notes }),
+      body: JSON.stringify({ notes, ...(completedOn ? { completedOn } : {}), ...(skipped ? { skipped } : {}) }),
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
+  }
+
+  // A skip is recorded exactly like a completion (same history + schedule
+  // advance), just tagged so it reads as "skipped" instead of "done" and
+  // doesn't count toward adaptive-schedule learning.
+  async function skipChore(id: string): Promise<void> {
+    await completeChore(id, "", undefined, true);
   }
 
   async function importFromDonetick(token: string, url: string): Promise<number> {
@@ -239,16 +249,20 @@ export function createChoreStore(getHomeId: () => string | null = () => null) {
     return imported as number;
   }
 
-  async function completeAssignment(id: string, notes: string = "", completedOn?: string): Promise<void> {
+  async function completeAssignment(id: string, notes: string = "", completedOn?: string, skipped?: boolean): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
     const resp = await fetch(`/api/homes/${homeId}/assignments/${id}/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(completedOn ? { notes, completedOn } : { notes }),
+      body: JSON.stringify({ notes, ...(completedOn ? { completedOn } : {}), ...(skipped ? { skipped } : {}) }),
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     await init();
+  }
+
+  async function skipAssignment(id: string): Promise<void> {
+    await completeAssignment(id, "", undefined, true);
   }
 
   function getCompletionsForChore(choreId: string): CompletionRecord[] {
@@ -291,28 +305,44 @@ export function createChoreStore(getHomeId: () => string | null = () => null) {
     await init();
   }
 
-  async function _putAssignmentDelay(id: string, days: number): Promise<void> {
+  function addDelayUnit(date: Date, unit: DelayUnit): Date {
+    const d = new Date(date);
+    if (unit === "week") d.setDate(d.getDate() + 7);
+    else if (unit === "month") d.setMonth(d.getMonth() + 1);
+    else d.setFullYear(d.getFullYear() + 1);
+    return d;
+  }
+
+  async function _putAssignmentDelay(id: string, unit: DelayUnit): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
     const assignment = assignments.find((a) => a.id === id);
     const base = assignment?.nextDueDate ? new Date(assignment.nextDueDate) : new Date();
-    base.setDate(base.getDate() + days);
+    const next = addDelayUnit(base, unit);
     const resp = await fetch(`/api/homes/${homeId}/assignments/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nextDueDate: base.toISOString() }),
+      body: JSON.stringify({ nextDueDate: next.toISOString() }),
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   }
 
-  async function delayAssignment(id: string, days: number): Promise<void> {
-    await _putAssignmentDelay(id, days);
+  async function delayAssignment(id: string, unit: DelayUnit): Promise<void> {
+    await _putAssignmentDelay(id, unit);
     await init();
   }
 
-  async function delayChore(choreId: string, days: number): Promise<void> {
+  async function delayChore(choreId: string, unit: DelayUnit): Promise<void> {
     const choreAssignments = assignments.filter((a) => a.choreId === choreId);
-    await Promise.all(choreAssignments.map((a) => _putAssignmentDelay(a.id, days)));
+    if (choreAssignments.length === 0) {
+      // No room assignments to delay -- fall back to the chore's own
+      // nextDueDate, same as completeChore does when there's nothing to
+      // attach a per-assignment record to.
+      const chore = chores.find((c) => c.id === choreId);
+      if (chore) await updateChore(choreId, { nextDueDate: addDelayUnit(new Date(chore.nextDueDate), unit).toISOString() });
+      return;
+    }
+    await Promise.all(choreAssignments.map((a) => _putAssignmentDelay(a.id, unit)));
     await init();
   }
 
@@ -351,9 +381,11 @@ export function createChoreStore(getHomeId: () => string | null = () => null) {
     updateChore,
     deleteChore,
     completeChore,
+    skipChore,
     importFromDonetick,
     createAssignment,
     completeAssignment,
+    skipAssignment,
     updateAssignmentPosition,
     updateAssignmentLabel,
     deleteAssignment,

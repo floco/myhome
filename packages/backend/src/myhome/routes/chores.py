@@ -291,6 +291,7 @@ def complete_chore(
     if chore is None:
         raise HTTPException(status_code=404, detail="Chore not found")
     notes = body.notes if body else ""
+    skipped = body.skipped if body else False
     now = datetime.now(timezone.utc)
     completed_at = _resolve_completed_at(body.completedOn, now) if body and body.completedOn else now
     completed_at_str = completed_at.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -309,6 +310,7 @@ def complete_chore(
             completedAt=completed_at_str,
             scheduledDue=chore.nextDueDate,
             notes=notes,
+            skipped=skipped,
         )
         for aid in target_assignment_ids
     ]
@@ -334,7 +336,7 @@ def complete_chore(
                 a.nextDueDate = next_due_str
         chore.nextDueDate = next_due_str
     save_chores(home_id, doc)
-    log_activity(home_id, current_user_id, "chores", "complete", chore.name, chore_id)
+    log_activity(home_id, current_user_id, "chores", "skip" if skipped else "complete", chore.name, chore_id)
     return chore
 
 
@@ -373,6 +375,7 @@ def complete_assignment(
     if chore is None:
         raise HTTPException(status_code=404, detail="Chore not found")
     notes = body.notes if body else ""
+    skipped = body.skipped if body else False
     now = datetime.now(timezone.utc)
     completed_at = _resolve_completed_at(body.completedOn, now) if body and body.completedOn else now
     new_completion = CompletionRecord(
@@ -382,6 +385,7 @@ def complete_assignment(
         completedAt=completed_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
         scheduledDue=assignment.nextDueDate,
         notes=notes,
+        skipped=skipped,
     )
     doc.completions.append(new_completion)
     completions_for_chore = [c for c in doc.completions if c.choreId == chore.id]
@@ -399,7 +403,7 @@ def complete_assignment(
             chore.periodDays = adaptive_period_days(chore, completions_for_chore)
         assignment.nextDueDate = next_due.strftime("%Y-%m-%dT%H:%M:%SZ")
     save_chores(home_id, doc)
-    log_activity(home_id, current_user_id, "chores", "complete", chore.name, chore.id)
+    log_activity(home_id, current_user_id, "chores", "skip" if skipped else "complete", chore.name, chore.id)
     return assignment
 
 

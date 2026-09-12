@@ -254,6 +254,7 @@ chore_completions = Table(
     Column("completed_at", String, nullable=False),
     Column("scheduled_due", String, nullable=False),
     Column("notes", String, nullable=False),
+    Column("skipped", Boolean, nullable=False, default=False),
 )
 
 # category_id/contact_id are plain columns, no ForeignKey -- see the

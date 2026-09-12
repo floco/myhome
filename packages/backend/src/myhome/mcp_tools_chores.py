@@ -76,7 +76,7 @@ def _delete_chore_impl(home_id: str | None, chore_id: str) -> dict:
     return {"deleted": chore_id}
 
 
-def _complete_chore_impl(home_id: str | None, chore_id: str, notes: str = "") -> dict:
+def _complete_chore_impl(home_id: str | None, chore_id: str, notes: str = "", skipped: bool = False) -> dict:
     resolved = _resolve_home_id(home_id)
     doc = load_chores(resolved)
     chore = next((c for c in doc.chores if c.id == chore_id), None)
@@ -96,6 +96,7 @@ def _complete_chore_impl(home_id: str | None, chore_id: str, notes: str = "") ->
         completedAt=now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         scheduledDue=chore.nextDueDate,
         notes=notes,
+        skipped=skipped,
     ))
     completions_for_chore = [c for c in doc.completions if c.choreId == chore_id]
     next_due = next_due_from_schedule(chore, from_dt, completions_for_chore)
@@ -185,11 +186,14 @@ async def delete_chore(ctx: Context, chore_id: str, home_id: str | None = None) 
 
 
 @mcp.tool()
-async def complete_chore(ctx: Context, chore_id: str, home_id: str | None = None, notes: str = "") -> dict:
-    """Mark a chore as done now, recording a completion and advancing its next due date
-    according to its schedule."""
+async def complete_chore(
+    ctx: Context, chore_id: str, home_id: str | None = None, notes: str = "", skipped: bool = False,
+) -> dict:
+    """Mark a chore as done now (or, with skipped=True, skip this occurrence without
+    doing it), recording a completion/skip and advancing its next due date according
+    to its schedule either way."""
     await _require_role(ctx.request_context.request, "normal")
-    return _complete_chore_impl(home_id, chore_id, notes)
+    return _complete_chore_impl(home_id, chore_id, notes, skipped)
 
 
 @mcp.tool()

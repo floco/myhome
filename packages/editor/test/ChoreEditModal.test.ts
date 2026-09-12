@@ -36,6 +36,8 @@ function makeStore(overrides = {}) {
     delayAssignment: vi.fn().mockResolvedValue(undefined),
     completeAssignment: vi.fn().mockResolvedValue(undefined),
     completeChore: vi.fn().mockResolvedValue(undefined),
+    skipChore: vi.fn().mockResolvedValue(undefined),
+    skipAssignment: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -420,7 +422,17 @@ describe("ChoreEditModal — Assignments tab", () => {
 
     const [completeBtn, delayBtn, deleteBtn] = Array.from(target.querySelectorAll(".assignment-row .icon-btn")) as HTMLButtonElement[];
     delayBtn.click();
-    expect(store.delayAssignment).toHaveBeenCalledWith("a1", 7);
+    flushSync();
+    const weekItem = Array.from(document.querySelectorAll(".dsm-item")).find((b) => b.textContent === "Delay by 1 week") as HTMLButtonElement;
+    weekItem.click();
+    expect(store.delayAssignment).toHaveBeenCalledWith("a1", "week");
+
+    delayBtn.click();
+    flushSync();
+    const skipItem = Array.from(document.querySelectorAll(".dsm-item")).find((b) => b.textContent === "Skip to next occurrence") as HTMLButtonElement;
+    skipItem.click();
+    expect(store.skipAssignment).toHaveBeenCalledWith("a1");
+
     deleteBtn.click();
     expect(store.deleteAssignment).toHaveBeenCalledWith("a1");
 
@@ -612,6 +624,33 @@ describe("ChoreEditModal — History tab", () => {
     expect(target.querySelector(".hist-room")?.textContent).toContain("Kitchen");
     expect(target.querySelector(".hist-label")?.textContent).toBe("(Balcony plants)");
     expect(target.querySelector(".hist-date")?.textContent).toBe("08/01/2026");
+
+    unmount(app);
+    target.remove();
+  });
+
+  it("badges a skipped completion as Skipped, and leaves a real completion unbadged", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const store = makeStore({
+      getCompletionsForChore: vi.fn().mockReturnValue([
+        { id: "r1", choreId: "c1", assignmentId: null, completedAt: "2026-08-01T12:00:00Z", scheduledDue: "", notes: "", skipped: true },
+        { id: "r2", choreId: "c1", assignmentId: null, completedAt: "2026-07-01T12:00:00Z", scheduledDue: "", notes: "", skipped: false },
+      ]),
+    });
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore: makeChore(), store, rooms: [], onclose: vi.fn() },
+    });
+    flushSync();
+    (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("History")) as HTMLButtonElement).click();
+    flushSync();
+
+    const rows = Array.from(target.querySelectorAll(".history-row"));
+    expect(rows[0].classList.contains("skipped")).toBe(true);
+    expect(rows[0].querySelector(".hist-skipped-badge")?.textContent).toContain("Skipped");
+    expect(rows[1].classList.contains("skipped")).toBe(false);
+    expect(rows[1].querySelector(".hist-skipped-badge")).toBeNull();
 
     unmount(app);
     target.remove();

@@ -18,18 +18,20 @@
   import { formatDate } from "../dateFormat";
   import { isOverdue } from "../choreFormat";
   import ChoreCompleteModal from "./ChoreCompleteModal.svelte";
+  import DelaySkipMenu from "./ui/DelaySkipMenu.svelte";
   import type { Point } from "@myhome/geometry";
+  import type { DelayUnit } from "../choreStore.svelte";
 
   type FullChoreStore = ReturnType<typeof createChoreStore>;
   type Assignment = FullChoreStore["assignments"][number];
   // Only what this component uses directly, plus what it forwards through
   // to ChoreEditModal's own (narrower) store prop -- not the whole store.
   type ChoreStore = Pick<FullChoreStore,
-    | "chores" | "assignments" | "completeChore" | "delayChore" | "getProgress"
+    | "chores" | "assignments" | "completeChore" | "skipChore" | "delayChore" | "getProgress"
     | "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment"
     | "getCompletionsForChore" | "deleteCompletion" | "createAssignment"
     | "updateAssignmentLabel" | "deleteAssignment" | "delayAssignment"
-    | "completeAssignment"
+    | "completeAssignment" | "skipAssignment"
   >;
 
   interface Props {
@@ -43,13 +45,17 @@
 
   let { store, floorStore, onnewchore, onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
 
-  let editChore = $state<Chore | null>(null);
+  // Tracked by id, not object reference -- completing a chore replaces
+  // store.chores with fresh objects, so a captured reference would keep
+  // showing the pre-completion nextDueDate for as long as the modal stays open.
+  let editChoreId = $state<string | null>(null);
+  const editChore = $derived<Chore | null>(editChoreId ? (store.chores.find((c) => c.id === editChoreId) ?? null) : null);
 
   $effect(() => {
     if (selectedItemId) {
       const found = store.chores.find((c) => c.id === selectedItemId);
       if (found) {
-        editChore = found;
+        editChoreId = found.id;
         onclearselection?.();
       }
     }
@@ -291,7 +297,11 @@
       {/snippet}
       {#snippet actionsCell(chore: Chore)}
         <button class="icon-btn" title={$_('chores.page.markAllDone')} onclick={() => { completing = { kind: "chore", id: chore.id, title: `${chore.emoji} ${displayName(chore)}` }; }}>✓</button>
-        <button class="icon-btn" title={$_('chores.page.delayAllByWeek')} onclick={() => store.delayChore(chore.id, 7)}>⏭</button>
+        <DelaySkipMenu
+          title={$_('chores.page.delayOrSkipAll')}
+          onDelay={(unit: DelayUnit) => store.delayChore(chore.id, unit)}
+          onSkip={() => store.skipChore(chore.id)}
+        />
       {/snippet}
       {#snippet attachmentsHeader()}
         <AttachmentIcon title={$_('common.attachments')} />
@@ -313,7 +323,7 @@
         ] as Column<Chore>[]}
         rows={filteredChores}
         rowKey={(chore) => chore.id}
-        rowClick={(chore) => { editChore = chore; }}
+        rowClick={(chore) => { editChoreId = chore.id; }}
         defaultSort={{ key: "nextDue", direction: "asc" }}
         emptyMessage={store.chores.length === 0
           ? $_('chores.page.emptyNoChores')
@@ -329,7 +339,7 @@
 </div>
 
 {#if editChore}
-  <ChoreEditModal chore={editChore} {store} rooms={allRooms} onclose={() => { editChore = null; }} onplaceonmap={onplaceonmap ? (id) => { editChore = null; onplaceonmap!(id); } : undefined} />
+  <ChoreEditModal chore={editChore} {store} rooms={allRooms} onclose={() => { editChoreId = null; }} onplaceonmap={onplaceonmap ? (id) => { editChoreId = null; onplaceonmap!(id); } : undefined} />
 {/if}
 
 {#if completing}

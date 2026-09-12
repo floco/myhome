@@ -16,12 +16,14 @@
   import EmojiPicker from "./ui/EmojiPicker.svelte";
   import ScheduleEditor from "./ScheduleEditor.svelte";
   import ChoreCompleteModal from "./ChoreCompleteModal.svelte";
+  import DelaySkipMenu from "./ui/DelaySkipMenu.svelte";
   import { polygonCentroid } from "@myhome/geometry";
   import type { Point } from "@myhome/geometry";
+  import type { DelayUnit } from "../choreStore.svelte";
   import { formatDate } from "../dateFormat";
   import { earliestDue, isOverdue } from "../choreFormat";
 
-  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion" | "createAssignment" | "updateAssignmentLabel" | "deleteAssignment" | "delayAssignment" | "completeAssignment" | "completeChore">;
+  type ChoreStore = Pick<ReturnType<typeof createChoreStore>, "updateChore" | "deleteChore" | "uploadAttachment" | "deleteAttachment" | "getCompletionsForChore" | "assignments" | "deleteCompletion" | "createAssignment" | "updateAssignmentLabel" | "deleteAssignment" | "delayAssignment" | "completeAssignment" | "completeChore" | "skipChore" | "skipAssignment">;
 
   interface Props {
     chore: Chore | null;
@@ -120,15 +122,24 @@
     finally { deletingCompletion = null; }
   }
 
+  // Two different refresh rates: name/schedule/etc. and the active tab are
+  // "session" state that should only reset when the modal switches to a
+  // genuinely different chore (not on every store refresh) so an in-progress
+  // edit or the current tab survives a completion made from within the same
+  // modal session. The due-date field must instead always track the live
+  // value -- completing the chore (or one of its assignments) advances it on
+  // the server every time, and this field exists precisely to show that.
+  let loadedChoreId = $state<string | null>(null);
   $effect.pre(() => {
-    if (chore) {
+    if (!chore) return;
+    if (chore.id !== loadedChoreId) {
+      loadedChoreId = chore.id;
       draftName = chore.name;
       draftEmoji = chore.emoji;
       draftPeriodDays = chore.periodDays;
       draftFrequencyType = chore.frequencyType;
       draftFrequency = chore.frequency;
       draftFrequencyMetadata = chore.frequencyMetadata;
-      draftNextDue = earliestDue(chore, assignmentsForChore).slice(0, 10);
       draftScheduleFromDue = chore.scheduleFromDue;
       draftDescription = chore.description ?? "";
       editingNotes = false;
@@ -137,6 +148,7 @@
       newAssignmentLabel = "";
       error = null;
     }
+    draftNextDue = earliestDue(chore, assignmentsForChore).slice(0, 10);
   });
 
   const mediaItems = $derived<MediaItem[]>(
@@ -264,7 +276,10 @@
               <span class="assign-due" class:overdue={isOverdue(a.nextDueDate)}>{$_('chores.badgePopup.due')}: {formatDate(a.nextDueDate)}</span>
               <div class="assignment-actions">
                 <button class="icon-btn" title={$_('chores.row.markDone')} onclick={() => { completing = { kind: "assignment", id: a.id, title: `${chore.emoji} ${chore.name}` }; }}>✓</button>
-                <button class="icon-btn" title={$_('chores.page.delayByWeek')} onclick={() => store.delayAssignment(a.id, 7)}>⏭</button>
+                <DelaySkipMenu
+                  onDelay={(unit: DelayUnit) => store.delayAssignment(a.id, unit)}
+                  onSkip={() => store.skipAssignment(a.id)}
+                />
                 <button class="icon-btn danger" onclick={() => store.deleteAssignment(a.id)}>✕</button>
               </div>
             </div>
@@ -300,8 +315,9 @@
         {:else}
           {#each history as rec (rec.id)}
             {@const label = getAssignmentLabel(rec.assignmentId)}
-            <div class="history-row">
+            <div class="history-row" class:skipped={rec.skipped}>
               <span class="hist-room">{getRoomName(rec.assignmentId)}{#if label} <span class="hist-label">({label})</span>{/if}</span>
+              {#if rec.skipped}<span class="hist-skipped-badge">⏭ {$_('chores.editModal.skipped')}</span>{/if}
               <span class="hist-date">{formatDate(rec.completedAt)}</span>
               {#if rec.scheduledDue}<span class="hist-due">{$_('chores.editModal.dueOn', { values: { date: formatDate(rec.scheduledDue) } })}</span>{/if}
               {#if rec.notes}<span class="hist-notes">{rec.notes}</span>{/if}
@@ -390,6 +406,11 @@
   .hist-del { margin-left: auto; background: none; border: none; cursor: pointer; color: var(--text-faint); font-size: 11px; padding: 0 2px; line-height: 1; opacity: 0.5; }
   .hist-del:hover { opacity: 1; color: var(--danger); }
   .hist-label { color: var(--text-faint); font-weight: 400; margin-left: 4px; }
+  .history-row.skipped .hist-room { color: var(--text-muted); }
+  .hist-skipped-badge {
+    color: var(--text-muted); background: var(--surface-alt); border-radius: var(--radius-sm);
+    padding: 1px 6px; font-size: 11px; white-space: nowrap;
+  }
 
   .assignments-pane { min-height: 160px; display: flex; flex-direction: column; gap: 8px; }
   .no-assignments { font-size: 11px; color: var(--text-faint); font-style: italic; padding: 12px 0; }

@@ -115,6 +115,13 @@ def _create_legacy_category_tables(conn) -> None:
         "CREATE TABLE locations (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
         "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL)"
     ))
+    # chore_completions pre-dates migration 11 (which adds the skipped
+    # column), so every migration test's snapshot needs it in this old shape too.
+    conn.execute(text(
+        "CREATE TABLE chore_completions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+        "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, assignment_id VARCHAR, "
+        "completed_at VARCHAR NOT NULL, scheduled_due VARCHAR NOT NULL, notes VARCHAR NOT NULL)"
+    ))
 
 
 def test_run_migrations_scopes_cost_categories_by_home(tmp_path):
@@ -295,6 +302,14 @@ def test_run_migrations_adds_insurance_support(tmp_path):
             "CREATE TABLE locations (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
             "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL)"
         ))
+        # chore_completions is needed too since this snapshot now also runs
+        # migration 11 (_add_chore_completion_skipped_column) on its way to
+        # CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE chore_completions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, assignment_id VARCHAR, "
+            "completed_at VARCHAR NOT NULL, scheduled_due VARCHAR NOT NULL, notes VARCHAR NOT NULL)"
+        ))
         conn.execute(text(
             "INSERT INTO cost_categories (id, home_id, order_index, name, emoji, color) "
             "VALUES ('cat-fuel', 'h1', 0, 'Fuel', '🛢', '#4466cc')"
@@ -378,6 +393,14 @@ def test_run_migrations_backfills_inventory_category_id(tmp_path):
             "CREATE TABLE locations (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
             "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL)"
         ))
+        # chore_completions is needed too since this snapshot now also runs
+        # migration 11 (_add_chore_completion_skipped_column) on its way to
+        # CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE chore_completions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, assignment_id VARCHAR, "
+            "completed_at VARCHAR NOT NULL, scheduled_due VARCHAR NOT NULL, notes VARCHAR NOT NULL)"
+        ))
         conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
         conn.execute(text("INSERT INTO schema_version (version) VALUES (6)"))
 
@@ -437,6 +460,14 @@ def test_run_migrations_adds_label_to_pre_existing_chore_assignments_table(tmp_p
             "CREATE TABLE locations (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
             "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL)"
         ))
+        # chore_completions is needed too since this snapshot now also runs
+        # migration 11 (_add_chore_completion_skipped_column) on its way to
+        # CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE chore_completions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, assignment_id VARCHAR, "
+            "completed_at VARCHAR NOT NULL, scheduled_due VARCHAR NOT NULL, notes VARCHAR NOT NULL)"
+        ))
         conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
         conn.execute(text("INSERT INTO schema_version (version) VALUES (7)"))
 
@@ -481,6 +512,14 @@ def test_run_migrations_drops_inventory_legacy_category_column(tmp_path):
             "CREATE TABLE locations (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
             "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL)"
         ))
+        # chore_completions is needed too since this snapshot now also runs
+        # migration 11 (_add_chore_completion_skipped_column) on its way to
+        # CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE chore_completions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, assignment_id VARCHAR, "
+            "completed_at VARCHAR NOT NULL, scheduled_due VARCHAR NOT NULL, notes VARCHAR NOT NULL)"
+        ))
         conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
         conn.execute(text("INSERT INTO schema_version (version) VALUES (8)"))
 
@@ -519,6 +558,14 @@ def test_run_migrations_adds_notes_and_attachments_to_pre_existing_locations_tab
             "INSERT INTO locations (id, home_id, order_index, name, emoji) "
             "VALUES ('loc1', 'h1', 0, 'Ljubljana', '🇸🇮')"
         ))
+        # chore_completions is needed too since this snapshot now also runs
+        # migration 11 (_add_chore_completion_skipped_column) on its way to
+        # CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE chore_completions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, assignment_id VARCHAR, "
+            "completed_at VARCHAR NOT NULL, scheduled_due VARCHAR NOT NULL, notes VARCHAR NOT NULL)"
+        ))
         conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
         conn.execute(text("INSERT INTO schema_version (version) VALUES (9)"))
 
@@ -531,3 +578,30 @@ def test_run_migrations_adds_notes_and_attachments_to_pre_existing_locations_tab
     assert version == CURRENT_VERSION
     assert row["notes"] == ""
     assert row["attachments"] == "[]"
+
+
+def test_run_migrations_adds_skipped_column_to_pre_existing_chore_completions_table(tmp_path):
+    db_path = tmp_path / "legacy.db"
+    engine = create_engine(f"sqlite:///{db_path}")
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE chore_completions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, assignment_id VARCHAR, "
+            "completed_at VARCHAR NOT NULL, scheduled_due VARCHAR NOT NULL, notes VARCHAR NOT NULL)"
+        ))
+        conn.execute(text(
+            "INSERT INTO chore_completions "
+            "(id, home_id, order_index, chore_id, assignment_id, completed_at, scheduled_due, notes) "
+            "VALUES ('c1', 'h1', 0, 'chore1', NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z', '')"
+        ))
+        conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
+        conn.execute(text("INSERT INTO schema_version (version) VALUES (10)"))
+
+    run_migrations(engine)
+
+    with engine.connect() as conn:
+        version = conn.execute(text("SELECT version FROM schema_version")).scalar()
+        row = conn.execute(text("SELECT skipped FROM chore_completions WHERE id = 'c1'")).mappings().first()
+
+    assert version == CURRENT_VERSION
+    assert row["skipped"] == 0
