@@ -339,11 +339,12 @@
 
     {#snippet footer()}
       {#if !confirmDelete}
-        <button class="icon-btn footer-complete-all" title={$_('chores.page.markAllDone')} onclick={() => { completing = { kind: "chore", id: chore!.id, title: `${chore!.emoji} ${chore!.name}` }; }}>✓</button>
+        <Button class="footer-complete-all" variant="success" iconOnly title={$_('chores.page.markAllDone')} onclick={() => { completing = { kind: "chore", id: chore!.id, title: `${chore!.emoji} ${chore!.name}` }; }}>✓✓</Button>
         {#if activeTab !== "assignments"}
-          <button class="icon-btn footer-go-to-assignments" title={$_('chores.editModal.goToAssignments')} onclick={() => { activeTab = "assignments"; }}>→</button>
-        {:else if onplaceonmap}
-          <button class="icon-btn footer-place-on-map" title={$_('chores.editModal.placeOnMap')} onclick={() => { onplaceonmap!(chore!.id); }}>📍</button>
+          <Button class="footer-go-to-assignments" variant="secondary" iconOnly title={$_('chores.editModal.goToAssignments')} onclick={() => { activeTab = "assignments"; }}>✓</Button>
+        {/if}
+        {#if onplaceonmap}
+          <Button class="footer-place-on-map" variant="secondary" iconOnly title={$_('chores.editModal.placeOnMap')} onclick={() => { onplaceonmap!(chore!.id); }}>📍</Button>
         {/if}
       {/if}
       <span class="spacer"></span>

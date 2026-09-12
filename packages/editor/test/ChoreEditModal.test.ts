@@ -217,7 +217,7 @@ describe("ChoreEditModal — tabs", () => {
     target.remove();
   });
 
-  it("orders the footer buttons complete-all, go-to-assignments, Delete, Cancel, Save on every tab (go-to-assignments hidden on the Assignments tab itself)", () => {
+  it("orders the footer buttons complete-all (✓✓), go-to-assignments (✓), Delete, Cancel, Save on every tab (go-to-assignments hidden on the Assignments tab itself)", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const store = makeStore();
@@ -227,10 +227,10 @@ describe("ChoreEditModal — tabs", () => {
     });
     flushSync();
     const expectedByTab: Record<string, string[]> = {
-      Info: ["✓", "→", "🗑 Delete", "Cancel", "Save"],
-      Assignments: ["✓", "🗑 Delete", "Cancel", "Save"],
-      Media: ["✓", "→", "🗑 Delete", "Cancel", "Save"],
-      History: ["✓", "→", "🗑 Delete", "Cancel", "Save"],
+      Info: ["✓✓", "✓", "🗑 Delete", "Cancel", "Save"],
+      Assignments: ["✓✓", "🗑 Delete", "Cancel", "Save"],
+      Media: ["✓✓", "✓", "🗑 Delete", "Cancel", "Save"],
+      History: ["✓✓", "✓", "🗑 Delete", "Cancel", "Save"],
     };
     for (const tabText of ["Info", "Assignments", "Media", "History"]) {
       const tab = Array.from(target.querySelectorAll(".tab")).find(
@@ -245,13 +245,13 @@ describe("ChoreEditModal — tabs", () => {
     target.remove();
   });
 
-  it("does not show a Place on map button in the footer on the Info tab", () => {
+  it("does not show a Place on map button in the footer when onplaceonmap isn't provided", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const store = makeStore();
     const app = mount(ChoreEditModal, {
       target,
-      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn(), onplaceonmap: vi.fn() },
+      props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn() },
     });
     flushSync();
     expect(target.querySelector(".footer-place-on-map")).toBeNull();
@@ -259,7 +259,7 @@ describe("ChoreEditModal — tabs", () => {
     target.remove();
   });
 
-  it("shows an icon-only Place on map button in the footer on the Assignments tab, and calls onplaceonmap with the chore id", () => {
+  it("shows an icon-only Place on map button in the footer on every tab, and calls onplaceonmap with the chore id", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const store = makeStore();
@@ -269,12 +269,16 @@ describe("ChoreEditModal — tabs", () => {
       props: { chore: makeChore(), store, rooms: NO_ROOMS, onclose: vi.fn(), onplaceonmap },
     });
     flushSync();
-    (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
-    flushSync();
-    const placeBtn = target.querySelector(".footer-place-on-map") as HTMLButtonElement;
+    // Info tab (default) -- present here too, not just on Assignments.
+    let placeBtn = target.querySelector(".footer-place-on-map") as HTMLButtonElement;
     expect(placeBtn).not.toBeNull();
     expect(placeBtn.title).toBe("Place on map");
     expect(placeBtn.textContent?.trim()).toBe("📍");
+
+    (Array.from(target.querySelectorAll(".tab")).find(t => t.textContent?.includes("Assignments")) as HTMLButtonElement).click();
+    flushSync();
+    placeBtn = target.querySelector(".footer-place-on-map") as HTMLButtonElement;
+    expect(placeBtn).not.toBeNull();
     placeBtn.click();
     expect(onplaceonmap).toHaveBeenCalledWith("c1");
     unmount(app);
