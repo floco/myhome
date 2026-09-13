@@ -48,6 +48,7 @@
     resolveKbLink?: (id: string) => { title: string; icon: string } | null;
     onSlashPage?: () => Promise<{ id: string; title: string } | null>;
     onInsertBookmark?: () => Promise<string | null>;
+    onInsertPageLink?: () => Promise<{ id: string; title: string } | null>;
   }
 
   let {
@@ -61,6 +62,7 @@
     resolveKbLink,
     onSlashPage,
     onInsertBookmark,
+    onInsertPageLink,
   }: Props = $props();
 
   const effectivePlaceholder = $derived(placeholder ?? $_('markdownEditor.defaultPlaceholder'));
@@ -196,6 +198,59 @@
     if (bookmarkHtml) insert(bookmarkHtml);
   }
 
+  async function handleInsertPageLink(): Promise<void> {
+    if (!onInsertPageLink) return;
+    const page = await onInsertPageLink();
+    if (page) insert(`[${page.title}](#/kb/${page.id})`);
+  }
+
+  interface ListContinuation {
+    prefix: string;
+    contentAfterMarker: string;
+  }
+
+  // Matches the current line against the three list forms this editor's
+  // toolbar can produce (task, bullet, ordered) so Enter can carry the same
+  // marker onto a new line -- checked before the plain bullet regex since a
+  // task item ("- [ ] x") would otherwise also match it.
+  function matchList(line: string): ListContinuation | null {
+    const taskMatch = line.match(/^(\s*)[-*+]\s\[([ xX])\]\s(.*)$/);
+    if (taskMatch) return { prefix: `${taskMatch[1]}- [ ] `, contentAfterMarker: taskMatch[3] };
+    const bulletMatch = line.match(/^(\s*)([-*+])\s(.*)$/);
+    if (bulletMatch) return { prefix: `${bulletMatch[1]}${bulletMatch[2]} `, contentAfterMarker: bulletMatch[3] };
+    const orderedMatch = line.match(/^(\s*)(\d+)([.)])\s(.*)$/);
+    if (orderedMatch) {
+      const next = parseInt(orderedMatch[2], 10) + 1;
+      return { prefix: `${orderedMatch[1]}${next}${orderedMatch[3]} `, contentAfterMarker: orderedMatch[4] };
+    }
+    return null;
+  }
+
+  // Enter on a list line continues the list with the same marker (or the
+  // next number); Enter on a marker with no content after it instead removes
+  // that empty item, ending the list -- the two ways out the user asked for
+  // are deleting the marker by hand, or hitting Enter on it.
+  function handleTextareaKeydown(e: KeyboardEvent): void {
+    if (e.key !== "Enter" || e.shiftKey || !textareaEl) return;
+    const start = textareaEl.selectionStart;
+    const end = textareaEl.selectionEnd;
+    const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+    const lineEndIdx = value.indexOf("\n", start);
+    const lineEnd = lineEndIdx === -1 ? value.length : lineEndIdx;
+    const match = matchList(value.slice(lineStart, lineEnd));
+    if (!match) return;
+    e.preventDefault();
+    if (match.contentAfterMarker.trim() === "") {
+      value = value.slice(0, lineStart) + value.slice(lineEnd);
+      setTimeout(() => { if (textareaEl) { textareaEl.focus(); textareaEl.setSelectionRange(lineStart, lineStart); } }, 0);
+      return;
+    }
+    const insertText = "\n" + match.prefix;
+    value = value.slice(0, start) + insertText + value.slice(end);
+    const ns = start + insertText.length;
+    setTimeout(() => { if (textareaEl) { textareaEl.focus(); textareaEl.setSelectionRange(ns, ns); } }, 0);
+  }
+
   function openTableEditor(): void {
     tableEditTarget = textareaEl ? findTableAtCursor(value, textareaEl.selectionStart) : null;
     tableModalOpen = true;
@@ -317,6 +372,15 @@
         {/if}
       </div>
     {/if}
+    {#if onInsertPageLink}
+      <span class="tb-sep" aria-hidden="true"></span>
+      <button
+        class="tb-btn"
+        type="button"
+        title={$_('markdownEditor.insertPageLink')}
+        onclick={handleInsertPageLink}
+      >📄</button>
+    {/if}
     {#if onInsertBookmark}
       <span class="tb-sep" aria-hidden="true"></span>
       <button
@@ -333,6 +397,7 @@
     bind:this={textareaEl}
     bind:value
     oninput={handleTextareaInput}
+    onkeydown={handleTextareaKeydown}
     placeholder={$_('markdownEditor.writeInMarkdown')}
   ></textarea>
   {#if tableModalOpen}

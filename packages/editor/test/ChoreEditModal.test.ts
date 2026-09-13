@@ -2,6 +2,15 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync, tick } from "svelte";
 import ChoreEditModal from "../src/lib/components/ChoreEditModal.svelte";
 import type { Chore } from "../src/lib/choreStore.svelte";
+import type { KBEntry } from "../src/lib/kbStore.svelte";
+
+function makeKbEntry(overrides: Partial<KBEntry> = {}): KBEntry {
+  return {
+    id: "p1", title: "Fuse box", content: "", createdAt: "2026-06-28T10:00:00Z",
+    updatedAt: "2026-06-28T10:00:00Z", attachments: [], parentId: null, icon: "🔧", order: 0,
+    ...overrides,
+  };
+}
 
 function makeChore(overrides: Partial<Chore> = {}): Chore {
   return {
@@ -65,6 +74,41 @@ describe("ChoreEditModal — notes links", () => {
     flushSync();
     const link = target.querySelector(".md-preview a") as HTMLAnchorElement | null;
     expect(link?.getAttribute("href")).toBe("https://example.com/manual.pdf");
+    unmount(app);
+  });
+
+  it("resolves a #/kb/ link in notes to the live page title and icon", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const chore = makeChore({ description: "See [old title](#/kb/p1)" });
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore, store: makeStore(), rooms: NO_ROOMS, kbEntries: [makeKbEntry()], onclose: vi.fn() },
+    });
+    flushSync();
+    const link = target.querySelector(".md-preview a.kb-link");
+    expect(link?.textContent).toBe("🔧 Fuse box");
+    unmount(app);
+  });
+
+  it("clicking the page-link toolbar button lets the user link to an existing KB page", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const chore = makeChore({ description: "" });
+    const app = mount(ChoreEditModal, {
+      target,
+      props: { chore, store: makeStore(), rooms: NO_ROOMS, kbEntries: [makeKbEntry()], onclose: vi.fn() },
+    });
+    flushSync();
+    (target.querySelector(".md-preview") as HTMLElement).click();
+    flushSync();
+    (target.querySelector('[title="Insert page link"]') as HTMLButtonElement).click();
+    flushSync();
+    (target.querySelector(".picker-item") as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("[Fuse box](#/kb/p1)");
     unmount(app);
   });
 });

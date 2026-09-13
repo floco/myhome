@@ -1288,7 +1288,10 @@
       "moveModalTitle": "Move page",
       "moveSearchPlaceholder": "Search pages…",
       "moveTopLevel": "Top level (no parent)",
-      "moveNoCandidates": "No other pages to move to."
+      "moveNoCandidates": "No other pages to move to.",
+      "pageLinkModalTitle": "Link to page",
+      "pageLinkSearchPlaceholder": "Search pages…",
+      "pageLinkNoPages": "No pages yet."
     }
   },
   "markdownEditor": {
@@ -1312,6 +1315,7 @@
     "insertMedia": "Insert media",
     "insertMediaAttachment": "Insert media attachment",
     "insertBookmark": "Insert bookmark",
+    "insertPageLink": "Insert page link",
     "writeInMarkdown": "Write in Markdown…",
     "clickToEdit": "Click to edit",
     "table": "Table",

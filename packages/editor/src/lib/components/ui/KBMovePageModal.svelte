@@ -4,6 +4,7 @@
   import type { KBEntry } from "../../kbStore.svelte";
   import Modal from "./Modal.svelte";
   import Input from "./Input.svelte";
+  import { kbPagePath } from "./kbPagePath";
 
   interface Props {
     open: boolean;
@@ -40,26 +41,12 @@
     return excluded;
   });
 
-  function pathFor(entry: KBEntry): string {
-    const parts: string[] = [entry.title];
-    let current = entry.parentId;
-    const seen = new Set<string>();
-    while (current && !seen.has(current)) {
-      seen.add(current);
-      const parent = entries.find((e) => e.id === current);
-      if (!parent) break;
-      parts.unshift(parent.title);
-      current = parent.parentId;
-    }
-    return parts.join(" › ");
-  }
-
   const candidates = $derived.by(() => {
     const q = searchQuery.trim().toLowerCase();
     return entries
       .filter((e) => !excludedIds.has(e.id) && e.id !== currentParentId)
       .filter((e) => !q || e.title.toLowerCase().includes(q))
-      .map((e) => ({ entry: e, path: pathFor(e) }))
+      .map((e) => ({ entry: e, path: kbPagePath(entries, e) }))
       .sort((a, b) => a.path.localeCompare(b.path));
   });
 

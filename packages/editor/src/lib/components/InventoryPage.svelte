@@ -2,6 +2,7 @@
   import { _ } from "svelte-i18n";
   import type { createInventoryStore, InventoryItem } from "../inventoryStore.svelte";
   import type { createHouseStore } from "../houseStore.svelte";
+  import type { KBEntry } from "../kbStore.svelte";
   import { formatDate } from "../dateFormat";
   import InventoryModal from "./InventoryModal.svelte";
   import Button from "./ui/Button.svelte";
@@ -31,6 +32,7 @@
     inventoryCategories?: Option[];
     owners?: Option[];
     stores?: Option[];
+    kbEntries?: KBEntry[];
     oncreatecategory: (name: string) => Promise<Option>;
     oncreateowner: (name: string) => Promise<Option>;
     oncreatestore: (name: string) => Promise<Option>;
@@ -45,6 +47,7 @@
     inventoryCategories = [],
     owners = [],
     stores = [],
+    kbEntries = [],
     oncreatecategory,
     oncreateowner,
     oncreatestore,
@@ -327,6 +330,7 @@
     {oncreatecategory}
     {oncreateowner}
     {oncreatestore}
+    {kbEntries}
     onclose={() => { modalItem = null; }}
     onplaceonmap={onplaceonmap
       ? (id) => { modalItem = null; onplaceonmap!(id); }

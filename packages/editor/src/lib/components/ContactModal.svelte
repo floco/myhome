@@ -3,10 +3,12 @@
   import { _ } from "svelte-i18n";
   import type { createContactsStore, Contact, ContactUsageRef } from "../contactsStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
+  import type { KBEntry } from "../kbStore.svelte";
   import Modal from "./ui/Modal.svelte";
   import Input from "./ui/Input.svelte";
   import Button from "./ui/Button.svelte";
   import MarkdownEditor from "./ui/MarkdownEditor.svelte";
+  import KBPagePickerModal from "./ui/KBPagePickerModal.svelte";
 
   type ContactsStore = ReturnType<typeof createContactsStore>;
   type SettingsStore = ReturnType<typeof createSettingsStore>;
@@ -15,9 +17,35 @@
     contact: Contact | null;
     store: ContactsStore;
     settingsStore: SettingsStore;
+    kbEntries?: KBEntry[];
     onclose: () => void;
   }
-  let { contact, store, settingsStore, onclose }: Props = $props();
+  let { contact, store, settingsStore, kbEntries = [], onclose }: Props = $props();
+
+  let pageLinkPickerOpen = $state(false);
+  let pageLinkResolve: ((result: { id: string; title: string } | null) => void) | null = null;
+
+  function resolveKbLink(id: string): { title: string; icon: string } | null {
+    const found = kbEntries.find((e) => e.id === id);
+    return found ? { title: found.title, icon: found.icon } : null;
+  }
+
+  function handleInsertPageLink(): Promise<{ id: string; title: string } | null> {
+    pageLinkPickerOpen = true;
+    return new Promise((resolve) => { pageLinkResolve = resolve; });
+  }
+
+  function handlePageLinkSelect(page: KBEntry): void {
+    pageLinkPickerOpen = false;
+    pageLinkResolve?.({ id: page.id, title: page.title });
+    pageLinkResolve = null;
+  }
+
+  function handlePageLinkCancel(): void {
+    pageLinkPickerOpen = false;
+    pageLinkResolve?.(null);
+    pageLinkResolve = null;
+  }
 
   const isCreate = contact === null;
 
@@ -126,6 +154,8 @@
       bind:editing={editingNotes}
       placeholder={$_('contacts.modal.notesPlaceholder')}
       minHeight="120px"
+      {resolveKbLink}
+      onInsertPageLink={handleInsertPageLink}
     />
     {#if editingNotes && !isCreate}
       <Button variant="secondary" onclick={() => { editingNotes = false; }}>{$_('works.modal.doneEditing')}</Button>
@@ -172,6 +202,13 @@
     </Button>
   {/snippet}
 </Modal>
+
+<KBPagePickerModal
+  open={pageLinkPickerOpen}
+  entries={kbEntries}
+  onselect={handlePageLinkSelect}
+  onclose={handlePageLinkCancel}
+/>
 
 <style>
   .row { display: flex; flex-direction: column; gap: 4px; margin-bottom: var(--space-3); }

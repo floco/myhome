@@ -2,6 +2,7 @@
   import { _ } from "svelte-i18n";
   import type { createLocationsStore, Location } from "../locationsStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
+  import type { KBEntry } from "../kbStore.svelte";
   import { apiUrl } from "../apiUrl";
   import { homesStore } from "../homesStore.svelte";
   import Modal from "./ui/Modal.svelte";
@@ -11,15 +12,42 @@
   import MarkdownEditor from "./ui/MarkdownEditor.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
+  import KBPagePickerModal from "./ui/KBPagePickerModal.svelte";
 
   type LocationsStore = ReturnType<typeof createLocationsStore>;
 
   interface Props {
     location: Location | null;
     store: LocationsStore;
+    kbEntries?: KBEntry[];
     onclose: () => void;
   }
-  let { location, store, onclose }: Props = $props();
+  let { location, store, kbEntries = [], onclose }: Props = $props();
+
+  let pageLinkPickerOpen = $state(false);
+  let pageLinkResolve: ((result: { id: string; title: string } | null) => void) | null = null;
+
+  function resolveKbLink(id: string): { title: string; icon: string } | null {
+    const found = kbEntries.find((e) => e.id === id);
+    return found ? { title: found.title, icon: found.icon } : null;
+  }
+
+  function handleInsertPageLink(): Promise<{ id: string; title: string } | null> {
+    pageLinkPickerOpen = true;
+    return new Promise((resolve) => { pageLinkResolve = resolve; });
+  }
+
+  function handlePageLinkSelect(entry: KBEntry): void {
+    pageLinkPickerOpen = false;
+    pageLinkResolve?.({ id: entry.id, title: entry.title });
+    pageLinkResolve = null;
+  }
+
+  function handlePageLinkCancel(): void {
+    pageLinkPickerOpen = false;
+    pageLinkResolve?.(null);
+    pageLinkResolve = null;
+  }
 
   const isCreate = location === null;
 
@@ -134,6 +162,8 @@
       bind:editing={editingNotes}
       placeholder={$_('locations.modal.notesPlaceholder')}
       minHeight="260px"
+      {resolveKbLink}
+      onInsertPageLink={handleInsertPageLink}
     />
     {#if editingNotes && !isCreate}
       <Button variant="secondary" onclick={() => { editingNotes = false; }}>{$_('works.modal.doneEditing')}</Button>
@@ -162,6 +192,13 @@
 {#if lightboxOpen && mediaItems.length > 0}
   <Lightbox items={mediaItems} initialIndex={lightboxIndex} onclose={() => { lightboxOpen = false; }} />
 {/if}
+
+<KBPagePickerModal
+  open={pageLinkPickerOpen}
+  entries={kbEntries}
+  onselect={handlePageLinkSelect}
+  onclose={handlePageLinkCancel}
+/>
 
 <style>
   .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: var(--space-3); }

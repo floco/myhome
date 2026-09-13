@@ -4,6 +4,7 @@
   import type { createSettingsStore } from "../settingsStore.svelte";
   import { formatDate } from "../dateFormat";
   import type { createContactsStore } from "../contactsStore.svelte";
+  import type { KBEntry } from "../kbStore.svelte";
   import InsuranceModal from "./InsuranceModal.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
@@ -26,9 +27,10 @@
     store: InsuranceStore;
     settingsStore: SettingsStore;
     contactsStore: ContactsStore;
+    kbEntries?: KBEntry[];
   }
 
-  let { store, settingsStore, contactsStore }: Props = $props();
+  let { store, settingsStore, contactsStore, kbEntries = [] }: Props = $props();
 
   let modalPolicy = $state<InsurancePolicy | "create" | null>(null);
   let searchQuery = $state("");
@@ -207,6 +209,7 @@
     {store}
     {settingsStore}
     {contactsStore}
+    {kbEntries}
     onclose={() => { modalPolicy = null; }}
   />
 {/if}

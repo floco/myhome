@@ -1020,3 +1020,173 @@ describe("MarkdownEditor — DOMPurify target attribute", () => {
     target.remove();
   });
 });
+
+describe("MarkdownEditor — insert page link", () => {
+  it("does not show the page-link button when onInsertPageLink is omitted", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true } });
+    flushSync();
+    expect(target.querySelector('[title="Insert page link"]')).toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("shows the page-link button when onInsertPageLink is provided", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const onInsertPageLink = async () => null;
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true, onInsertPageLink } });
+    flushSync();
+    expect(target.querySelector('[title="Insert page link"]')).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking the page-link button inserts a markdown link to the chosen page", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const onInsertPageLink = async () => ({ id: "p1", title: "Fuse box" });
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true, onInsertPageLink } });
+    flushSync();
+    (target.querySelector('[title="Insert page link"]') as HTMLButtonElement).click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("[Fuse box](#/kb/p1)");
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking the page-link button does nothing when the picker resolves to null", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const onInsertPageLink = async () => null;
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true, onInsertPageLink } });
+    flushSync();
+    (target.querySelector('[title="Insert page link"]') as HTMLButtonElement).click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("");
+    unmount(app);
+    target.remove();
+  });
+});
+
+describe("MarkdownEditor — list continuation on Enter", () => {
+  function pressEnter(textarea: HTMLTextAreaElement): boolean {
+    return textarea.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+  }
+
+  function setValueAndCaret(textarea: HTMLTextAreaElement, value: string, caret = value.length): void {
+    textarea.value = value;
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    textarea.selectionStart = caret;
+    textarea.selectionEnd = caret;
+  }
+
+  it("continues a bullet list with the same marker", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true } });
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    setValueAndCaret(textarea, "- item one");
+    pressEnter(textarea);
+    flushSync();
+    expect(textarea.value).toBe("- item one\n- ");
+    unmount(app);
+    target.remove();
+  });
+
+  it("continues a task list with a fresh unchecked item", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true } });
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    setValueAndCaret(textarea, "- [x] first task");
+    pressEnter(textarea);
+    flushSync();
+    expect(textarea.value).toBe("- [x] first task\n- [ ] ");
+    unmount(app);
+    target.remove();
+  });
+
+  it("continues a numbered list, incrementing the number", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true } });
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    setValueAndCaret(textarea, "5. fifth");
+    pressEnter(textarea);
+    flushSync();
+    expect(textarea.value).toBe("5. fifth\n6. ");
+    unmount(app);
+    target.remove();
+  });
+
+  it("exits the list when Enter is pressed on an already-empty bullet item", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true } });
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    setValueAndCaret(textarea, "- ");
+    pressEnter(textarea);
+    flushSync();
+    expect(textarea.value).toBe("");
+    unmount(app);
+    target.remove();
+  });
+
+  it("exits the list when Enter is pressed on an already-empty task item", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true } });
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    setValueAndCaret(textarea, "note\n- [ ] ");
+    pressEnter(textarea);
+    flushSync();
+    expect(textarea.value).toBe("note\n");
+    unmount(app);
+    target.remove();
+  });
+
+  it("does not intercept Enter on a plain, non-list line", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true } });
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    setValueAndCaret(textarea, "plain text");
+    const notCanceled = pressEnter(textarea);
+    flushSync();
+    expect(notCanceled).toBe(true);
+    expect(textarea.value).toBe("plain text");
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking the Task list button then pressing Enter continues the checklist", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true } });
+    flushSync();
+    const taskListBtn = [...target.querySelectorAll(".tb-btn")].find(
+      b => b.getAttribute("title") === "Task list",
+    ) as HTMLButtonElement;
+    taskListBtn.click();
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    setValueAndCaret(textarea, "- [ ] first", textarea.value.length + 5);
+    pressEnter(textarea);
+    flushSync();
+    expect(textarea.value).toBe("- [ ] first\n- [ ] ");
+    unmount(app);
+    target.remove();
+  });
+});

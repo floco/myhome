@@ -5,6 +5,7 @@
   import type { createSettingsStore } from "../settingsStore.svelte";
   import type { createContactsStore } from "../contactsStore.svelte";
   import type { createHouseStore } from "../houseStore.svelte";
+  import type { KBEntry } from "../kbStore.svelte";
   import CostsEntryModal from "./CostsEntryModal.svelte";
   import CostsCategoryModal from "./CostsCategoryModal.svelte";
   import Button from "./ui/Button.svelte";
@@ -28,12 +29,13 @@
     settingsStore: SettingsStore;
     contactsStore: ContactsStore;
     floorStore: HouseStore;
+    kbEntries?: KBEntry[];
     onplaceonmap?: (catId: string) => void;
     selectedItemId?: string | null;
     onclearselection?: () => void;
   }
 
-  let { costsStore, settingsStore, contactsStore, floorStore, onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
+  let { costsStore, settingsStore, contactsStore, floorStore, kbEntries = [], onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
 
   let modalEntry = $state<CostEntry | "create" | null>(null);
 
@@ -344,6 +346,7 @@
     {settingsStore}
     {contactsStore}
     {floorStore}
+    {kbEntries}
     onclose={() => { modalEntry = null; }}
   />
 {/if}

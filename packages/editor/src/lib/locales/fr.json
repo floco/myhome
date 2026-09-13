@@ -1288,7 +1288,10 @@
       "moveModalTitle": "Déplacer la page",
       "moveSearchPlaceholder": "Rechercher des pages…",
       "moveTopLevel": "Niveau supérieur (sans parent)",
-      "moveNoCandidates": "Aucune autre page vers laquelle déplacer."
+      "moveNoCandidates": "Aucune autre page vers laquelle déplacer.",
+      "pageLinkModalTitle": "Lier une page",
+      "pageLinkSearchPlaceholder": "Rechercher des pages…",
+      "pageLinkNoPages": "Aucune page pour le moment."
     }
   },
   "markdownEditor": {
@@ -1312,6 +1315,7 @@
     "insertMedia": "Insérer un média",
     "insertMediaAttachment": "Insérer une pièce jointe média",
     "insertBookmark": "Insérer un favori",
+    "insertPageLink": "Insérer un lien vers une page",
     "writeInMarkdown": "Écrire en Markdown…",
     "clickToEdit": "Cliquer pour modifier",
     "table": "Tableau",

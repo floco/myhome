@@ -4,6 +4,7 @@
   import type { createBuildStore, BuildTask, ValidationStatus } from "../buildStore.svelte";
   import type { createContactsStore } from "../contactsStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
+  import type { KBEntry } from "../kbStore.svelte";
   import { apiUrl } from "../apiUrl";
   import { homesStore } from "../homesStore.svelte";
   import DatePicker from "./ui/DatePicker.svelte";
@@ -12,6 +13,7 @@
   import MarkdownEditor from "./ui/MarkdownEditor.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
+  import KBPagePickerModal from "./ui/KBPagePickerModal.svelte";
 
   type BuildStore = ReturnType<typeof createBuildStore>;
   type ContactsStore = ReturnType<typeof createContactsStore>;
@@ -20,9 +22,35 @@
     task: BuildTask | null;
     store: BuildStore;
     contactsStore: ContactsStore;
+    kbEntries?: KBEntry[];
     onclose: () => void;
   }
-  let { task, store, contactsStore, onclose }: Props = $props();
+  let { task, store, contactsStore, kbEntries = [], onclose }: Props = $props();
+
+  let pageLinkPickerOpen = $state(false);
+  let pageLinkResolve: ((result: { id: string; title: string } | null) => void) | null = null;
+
+  function resolveKbLink(id: string): { title: string; icon: string } | null {
+    const found = kbEntries.find((e) => e.id === id);
+    return found ? { title: found.title, icon: found.icon } : null;
+  }
+
+  function handleInsertPageLink(): Promise<{ id: string; title: string } | null> {
+    pageLinkPickerOpen = true;
+    return new Promise((resolve) => { pageLinkResolve = resolve; });
+  }
+
+  function handlePageLinkSelect(page: KBEntry): void {
+    pageLinkPickerOpen = false;
+    pageLinkResolve?.({ id: page.id, title: page.title });
+    pageLinkResolve = null;
+  }
+
+  function handlePageLinkCancel(): void {
+    pageLinkPickerOpen = false;
+    pageLinkResolve?.(null);
+    pageLinkResolve = null;
+  }
 
   function resolveLabel(key: string | null, override: string | null): string {
     if (override) return override;
@@ -228,6 +256,8 @@
         bind:value={notes}
         bind:editing={editingNotes}
         minHeight="120px"
+        {resolveKbLink}
+        onInsertPageLink={handleInsertPageLink}
       />
       {#if editingNotes}
         <Button variant="secondary" onclick={() => { editingNotes = false; }}>{$_('works.modal.doneEditing')}</Button>
@@ -255,6 +285,13 @@
 {#if lightboxOpen && mediaItems.length > 0}
   <Lightbox items={mediaItems} initialIndex={lightboxIndex} onclose={() => { lightboxOpen = false; }} />
 {/if}
+
+<KBPagePickerModal
+  open={pageLinkPickerOpen}
+  entries={kbEntries}
+  onselect={handlePageLinkSelect}
+  onclose={handlePageLinkCancel}
+/>
 
 <style>
   .row { display: flex; flex-direction: column; gap: 4px; margin-bottom: var(--space-3); }

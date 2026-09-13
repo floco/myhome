@@ -2,6 +2,7 @@
   import { _ } from "svelte-i18n";
   import type { createPropertiesStore, Property } from "../propertiesStore.svelte";
   import type { createLocationsStore } from "../locationsStore.svelte";
+  import type { KBEntry } from "../kbStore.svelte";
   import PropertyModal from "./PropertyModal.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
@@ -20,11 +21,12 @@
   interface Props {
     store: PropertiesStore;
     locationsStore: LocationsStore;
+    kbEntries?: KBEntry[];
     selectedItemId?: string | null;
     onclearselection?: () => void;
   }
 
-  let { store, locationsStore, selectedItemId = null, onclearselection }: Props = $props();
+  let { store, locationsStore, kbEntries = [], selectedItemId = null, onclearselection }: Props = $props();
 
   let modalProperty = $state<Property | "create" | null>(null);
 
@@ -208,6 +210,7 @@
     property={modalProperty === "create" ? null : modalProperty}
     {store}
     {locationsStore}
+    {kbEntries}
     onclose={() => { modalProperty = null; }}
   />
 {/if}

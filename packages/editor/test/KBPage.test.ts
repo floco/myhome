@@ -745,6 +745,77 @@ describe("KBPage — insert bookmark", () => {
   });
 });
 
+describe("KBPage — insert page link", () => {
+  it("opens a page picker, and selecting a page inserts a link at the cursor", async () => {
+    const entries = [
+      makeEntry({ id: "e1", content: "" }),
+      makeEntry({ id: "e2", title: "Fuse box", order: 1 }),
+    ];
+    const { target, comp } = await setup(entries, { selectedItemId: "e1" });
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
+    flushSync();
+    (target.querySelector('[title="Insert page link"]') as HTMLButtonElement).click();
+    flushSync();
+    const modal = target.querySelector(".ui-modal") as HTMLElement;
+    expect(modal).not.toBeNull();
+    (modal.querySelector(".picker-item") as HTMLElement).click();
+    await tick(); flushSync(); await tick(); flushSync();
+    expect(target.querySelector(".ui-modal")).toBeNull();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("[Fuse box](#/kb/e2)");
+    unmount(comp); target.remove();
+  });
+
+  it("closing the picker without a selection inserts nothing", async () => {
+    const entries = [makeEntry({ id: "e1", content: "" }), makeEntry({ id: "e2", title: "Other", order: 1 })];
+    const { target, comp } = await setup(entries, { selectedItemId: "e1" });
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
+    flushSync();
+    (target.querySelector('[title="Insert page link"]') as HTMLButtonElement).click();
+    flushSync();
+    const modal = target.querySelector(".ui-modal") as HTMLElement;
+    (modal.querySelector(".ui-modal-close") as HTMLElement).click();
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("");
+    unmount(comp); target.remove();
+  });
+});
+
+describe("KBPage — tree auto-expand and reveal on selection", () => {
+  it("expands every collapsed ancestor of a page selected via selectedItemId (e.g. an external #/kb/<id> link)", async () => {
+    const entries = [
+      makeEntry({ id: "grandparent", title: "Grandparent" }),
+      makeEntry({ id: "parent", title: "Parent", parentId: "grandparent", order: 0 }),
+      makeEntry({ id: "child", title: "Target child", parentId: "parent", order: 0 }),
+    ];
+    const { target, comp } = await setup(entries);
+    // Both ancestors start collapsed by default.
+    expect(target.querySelectorAll(".tree-row").length).toBe(1);
+    unmount(comp); target.remove();
+
+    const { target: target2, comp: comp2 } = await setup(entries, { selectedItemId: "child" });
+    const rows = Array.from(target2.querySelectorAll(".tree-row")).map((r) => r.getAttribute("data-entry-id"));
+    expect(rows).toEqual(["grandparent", "parent", "child"]);
+    unmount(comp2); target2.remove();
+  });
+
+  it("expands ancestors when navigating to a nested page via the tree itself", async () => {
+    const entries = [
+      makeEntry({ id: "parent", title: "Parent" }),
+      makeEntry({ id: "child", title: "Child", parentId: "parent", order: 0 }),
+      makeEntry({ id: "other", title: "Other top-level page", order: 1 }),
+    ];
+    const { target, comp } = await setup(entries, { selectedItemId: "other" });
+    expect(target.querySelectorAll(".tree-row").length).toBe(2); // parent (collapsed) + other
+    unmount(comp); target.remove();
+  });
+});
+
 describe("KBPage — autosave", () => {
   function enterEditMode(target: HTMLElement): void {
     (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(

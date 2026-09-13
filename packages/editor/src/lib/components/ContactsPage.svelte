@@ -3,6 +3,7 @@
   import { _ } from "svelte-i18n";
   import type { createContactsStore, Contact } from "../contactsStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
+  import type { KBEntry } from "../kbStore.svelte";
   import ContactModal from "./ContactModal.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
@@ -20,8 +21,9 @@
   interface Props {
     store: ContactsStore;
     settingsStore: SettingsStore;
+    kbEntries?: KBEntry[];
   }
-  let { store, settingsStore }: Props = $props();
+  let { store, settingsStore, kbEntries = [] }: Props = $props();
 
   let modalContact = $state<Contact | "create" | null>(null);
   let searchQuery = $state("");
@@ -122,6 +124,7 @@
     contact={modalContact === "create" ? null : modalContact}
     {store}
     {settingsStore}
+    {kbEntries}
     onclose={() => { modalContact = null; }}
   />
 {/if}
