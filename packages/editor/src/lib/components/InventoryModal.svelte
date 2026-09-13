@@ -2,6 +2,7 @@
   import { _ } from "svelte-i18n";
   import type { createInventoryStore, InventoryItem } from "../inventoryStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
+  import type { KBEntry } from "../kbStore.svelte";
   import { apiUrl } from "../apiUrl";
   import { homesStore } from "../homesStore.svelte";
   import DatePicker from "./ui/DatePicker.svelte";
@@ -14,6 +15,7 @@
   import MediaGallery from "./ui/MediaGallery.svelte";
   import Lightbox from "./ui/Lightbox.svelte";
   import CreatableSelect from "./ui/CreatableSelect.svelte";
+  import KBPagePickerModal from "./ui/KBPagePickerModal.svelte";
 
   type InvStore = ReturnType<typeof createInventoryStore>;
 
@@ -28,6 +30,7 @@
     inventoryCategories: Option[];
     owners: Option[];
     stores: Option[];
+    kbEntries?: KBEntry[];
     oncreatecategory: (name: string) => Promise<Option>;
     oncreateowner: (name: string) => Promise<Option>;
     oncreatestore: (name: string) => Promise<Option>;
@@ -36,10 +39,35 @@
   }
 
   let {
-    item, store, inventoryCategories, owners, stores,
+    item, store, inventoryCategories, owners, stores, kbEntries = [],
     oncreatecategory, oncreateowner, oncreatestore,
     onclose, onplaceonmap,
   }: Props = $props();
+
+  let pageLinkPickerOpen = $state(false);
+  let pageLinkResolve: ((result: { id: string; title: string } | null) => void) | null = null;
+
+  function resolveKbLink(id: string): { title: string; icon: string } | null {
+    const found = kbEntries.find((e) => e.id === id);
+    return found ? { title: found.title, icon: found.icon } : null;
+  }
+
+  function handleInsertPageLink(): Promise<{ id: string; title: string } | null> {
+    pageLinkPickerOpen = true;
+    return new Promise((resolve) => { pageLinkResolve = resolve; });
+  }
+
+  function handlePageLinkSelect(entry: KBEntry): void {
+    pageLinkPickerOpen = false;
+    pageLinkResolve?.({ id: entry.id, title: entry.title });
+    pageLinkResolve = null;
+  }
+
+  function handlePageLinkCancel(): void {
+    pageLinkPickerOpen = false;
+    pageLinkResolve?.(null);
+    pageLinkResolve = null;
+  }
 
   const isCreate = item === null;
 
@@ -220,6 +248,8 @@
         bind:editing={editingNotes}
         placeholder={$_('inventory.modal.notesPlaceholder')}
         minHeight="120px"
+        {resolveKbLink}
+        onInsertPageLink={handleInsertPageLink}
       />
       {#if editingNotes && !isCreate}
         <Button variant="secondary" onclick={() => { editingNotes = false; }}>{$_('works.modal.doneEditing')}</Button>
@@ -264,6 +294,13 @@
 {#if lightboxOpen && mediaItems.length > 0}
   <Lightbox items={mediaItems} initialIndex={lightboxIndex} onclose={() => { lightboxOpen = false; }} />
 {/if}
+
+<KBPagePickerModal
+  open={pageLinkPickerOpen}
+  entries={kbEntries}
+  onselect={handlePageLinkSelect}
+  onclose={handlePageLinkCancel}
+/>
 
 <style>
   .row {

@@ -1507,12 +1507,13 @@
         />
 
       {:else if currentRoute === "#/chores" || currentRoute === "#/chores/manage"}
-        <ChoresPage store={choreStore} {floorStore} selectedItemId={selectedChoreId} onclearselection={() => { selectedChoreId = null; }} onnewchore={() => { showNewChoreModal = true; }} onplaceonmap={(choreId) => { const next = new Set(activeLayers); next.add("chores"); activeLayers = next; pickerHighlightId = choreId; pickerOpen = true; window.location.hash = "#/plan"; }} />
+        <ChoresPage store={choreStore} {floorStore} kbEntries={kbStore.entries} selectedItemId={selectedChoreId} onclearselection={() => { selectedChoreId = null; }} onnewchore={() => { showNewChoreModal = true; }} onplaceonmap={(choreId) => { const next = new Set(activeLayers); next.add("chores"); activeLayers = next; pickerHighlightId = choreId; pickerOpen = true; window.location.hash = "#/plan"; }} />
 
       {:else if currentRoute === "#/inventory"}
         <InventoryPage
           store={inventoryStore}
           {floorStore}
+          kbEntries={kbStore.entries}
           inventoryCategories={settingsStore.inventoryCategories}
           owners={settingsStore.owners}
           stores={settingsStore.stores}
@@ -1552,6 +1553,7 @@
           store={worksStore}
           {settingsStore}
           {contactsStore}
+          kbEntries={kbStore.entries}
           selectedItemId={selectedWorkId}
           onclearselection={() => { selectedWorkId = null; }}
           onplaceonmap={(workId) => {
@@ -1573,6 +1575,7 @@
           {settingsStore}
           {contactsStore}
           {floorStore}
+          kbEntries={kbStore.entries}
           selectedItemId={selectedCostEntryId}
           onclearselection={() => { selectedCostEntryId = null; }}
           onplaceonmap={(catId) => {
@@ -1589,15 +1592,15 @@
         <SettingsPage store={settingsStore} {authStore} importFromDonetick={choreStore.importFromDonetick} {reloadAllStores} />
 
       {:else if currentRoute === "#/locations"}
-        <LocationsPage store={locationsStore} />
+        <LocationsPage store={locationsStore} kbEntries={kbStore.entries} />
       {:else if currentRoute === "#/properties"}
-        <PropertiesPage store={propertiesStore} {locationsStore} />
+        <PropertiesPage store={propertiesStore} {locationsStore} kbEntries={kbStore.entries} />
       {:else if currentRoute === "#/build"}
         <BuildPage store={buildStore} onopentask={(taskId) => { openBuildTaskId = taskId; }} />
       {:else if currentRoute === "#/contacts"}
-        <ContactsPage store={contactsStore} {settingsStore} />
+        <ContactsPage store={contactsStore} {settingsStore} kbEntries={kbStore.entries} />
       {:else if currentRoute === "#/insurance"}
-        <InsurancePage store={insuranceStore} {settingsStore} {contactsStore} />
+        <InsurancePage store={insuranceStore} {settingsStore} {contactsStore} kbEntries={kbStore.entries} />
       {/if}
     </div>
   </div>
@@ -1616,6 +1619,7 @@
     task={buildStore.tasks.find((t) => t.id === openBuildTaskId) ?? null}
     store={buildStore}
     {contactsStore}
+    kbEntries={kbStore.entries}
     onclose={() => { openBuildTaskId = null; }}
   />
 {/if}

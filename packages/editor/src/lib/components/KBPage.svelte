@@ -12,6 +12,7 @@
   import Card from "./ui/Card.svelte";
   import KBTree from "./ui/KBTree.svelte";
   import KBMovePageModal from "./ui/KBMovePageModal.svelte";
+  import KBPagePickerModal from "./ui/KBPagePickerModal.svelte";
   import KBTrash from "./ui/KBTrash.svelte";
   import EmojiPicker from "./ui/EmojiPicker.svelte";
   import MediaGallery from "./ui/MediaGallery.svelte";
@@ -51,6 +52,8 @@
   let bookmarkFetching = $state(false);
   let bookmarkError = $state<string | null>(null);
   let bookmarkResolve: ((html: string | null) => void) | null = null;
+  let pageLinkPickerOpen = $state(false);
+  let pageLinkResolve: ((result: { id: string; title: string } | null) => void) | null = null;
   let sidebarExpanded = $state(false);
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   let savedStatusTimer: ReturnType<typeof setTimeout> | null = null;
@@ -78,6 +81,22 @@
     collapseDefaultApplied = true;
   });
 
+  // Ensures every ancestor of the selected page is expanded in the sidebar
+  // tree, so navigating to a page -- from the tree itself, an external
+  // #/kb/<id> link, or global search -- always reveals where it lives
+  // instead of leaving it hidden behind a collapsed parent.
+  function expandAncestorsOf(id: string): void {
+    const next = new Set(collapsedIds);
+    let parentId = store.entries.find((e) => e.id === id)?.parentId ?? null;
+    const seen = new Set<string>();
+    while (parentId !== null && !seen.has(parentId)) {
+      seen.add(parentId);
+      next.delete(parentId);
+      parentId = store.entries.find((e) => e.id === parentId)?.parentId ?? null;
+    }
+    collapsedIds = next;
+  }
+
   function selectEntry(entry: KBEntry): void {
     selectedId = entry.id;
     draftTitle = entry.title;
@@ -88,6 +107,7 @@
     contentTab = "content";
     contentMode = "page";
     error = null;
+    expandAncestorsOf(entry.id);
     const homeId = homesStore.activeHomeId;
     if (homeId) setStoredLastPageId(homeId, entry.id);
   }
@@ -164,6 +184,18 @@
   $effect(() => {
     setNavGuard(flushSave);
     return () => { setNavGuard(null); };
+  });
+
+  // Scrolls the selected page's row into view once the tree has re-rendered
+  // (ancestors expanded by expandAncestorsOf above), so the reveal is visible
+  // even when the row was previously off-screen.
+  $effect(() => {
+    if (!selectedId) return;
+    const id = selectedId;
+    queueMicrotask(() => {
+      const el = document.querySelector(`[data-entry-id="${id}"]`) as HTMLElement | null;
+      el?.scrollIntoView?.({ block: "nearest" });
+    });
   });
 
   $effect(() => {
@@ -247,6 +279,23 @@
       error = e instanceof Error ? e.message : $_('kb.page.createFailed');
       return null;
     }
+  }
+
+  function handleInsertPageLink(): Promise<{ id: string; title: string } | null> {
+    pageLinkPickerOpen = true;
+    return new Promise((resolve) => { pageLinkResolve = resolve; });
+  }
+
+  function handlePageLinkSelect(entry: KBEntry): void {
+    pageLinkPickerOpen = false;
+    pageLinkResolve?.({ id: entry.id, title: entry.title });
+    pageLinkResolve = null;
+  }
+
+  function handlePageLinkCancel(): void {
+    pageLinkPickerOpen = false;
+    pageLinkResolve?.(null);
+    pageLinkResolve = null;
   }
 
   function handleInsertBookmark(): Promise<string | null> {
@@ -661,6 +710,7 @@
             {resolveKbLink}
             onSlashPage={handleSlashPage}
             onInsertBookmark={handleInsertBookmark}
+            onInsertPageLink={handleInsertPageLink}
           />
         {:else}
           <MediaGallery
@@ -703,6 +753,13 @@
   pageId={movingPageId ?? ""}
   onmove={handleConfirmMove}
   onclose={() => { movingPageId = null; }}
+/>
+
+<KBPagePickerModal
+  open={pageLinkPickerOpen}
+  entries={store.entries}
+  onselect={handlePageLinkSelect}
+  onclose={handlePageLinkCancel}
 />
 
 <Modal open={bookmarkModalOpen} title={$_('kb.page.bookmarkModalTitle')} onclose={() => closeBookmarkModal(null)} width="420px">

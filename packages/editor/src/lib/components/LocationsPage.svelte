@@ -2,13 +2,14 @@
   import { _ } from "svelte-i18n";
   import type { createLocationsStore } from "../locationsStore.svelte";
   import { weightedScore } from "../locationsStore.svelte";
+  import type { KBEntry } from "../kbStore.svelte";
   import Card from "./ui/Card.svelte";
   import LocationRankingChart from "./LocationRankingChart.svelte";
   import LocationsMatrix from "./LocationsMatrix.svelte";
 
   type LocationsStore = ReturnType<typeof createLocationsStore>;
-  interface Props { store: LocationsStore; }
-  let { store }: Props = $props();
+  interface Props { store: LocationsStore; kbEntries?: KBEntry[]; }
+  let { store, kbEntries = [] }: Props = $props();
 
   const ranked = $derived(
     store.locations
@@ -61,7 +62,7 @@
 
   <div class="matrix-card-wrap">
     <Card style="padding:0; overflow:hidden;">
-      <LocationsMatrix {store} />
+      <LocationsMatrix {store} {kbEntries} />
     </Card>
   </div>
 </div>

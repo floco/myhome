@@ -3,6 +3,7 @@
   import type { createWorksStore, Work } from "../worksStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
   import type { createContactsStore } from "../contactsStore.svelte";
+  import type { KBEntry } from "../kbStore.svelte";
   import WorkModal from "./WorkModal.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
@@ -23,12 +24,13 @@
     store: WorksStore;
     settingsStore: SettingsStore;
     contactsStore: ContactsStore;
+    kbEntries?: KBEntry[];
     onplaceonmap?: (workId: string) => void;
     selectedItemId?: string | null;
     onclearselection?: () => void;
   }
 
-  let { store, settingsStore, contactsStore, onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
+  let { store, settingsStore, contactsStore, kbEntries = [], onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
 
   let modalWork = $state<Work | "create" | null>(null);
 
@@ -222,6 +224,7 @@
     {store}
     {settingsStore}
     {contactsStore}
+    {kbEntries}
     onclose={() => { modalWork = null; }}
     {onplaceonmap}
   />

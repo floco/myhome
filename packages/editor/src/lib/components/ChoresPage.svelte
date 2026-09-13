@@ -4,6 +4,7 @@
   import type { Chore } from "../choreStore.svelte";
   import { scheduleLabel } from "../choreStore.svelte";
   import { choreFilterState } from "../choreFilterState.svelte";
+  import type { KBEntry } from "../kbStore.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
   import ChoreEditModal from "./ChoreEditModal.svelte";
@@ -39,13 +40,14 @@
   interface Props {
     store: ChoreStore;
     floorStore: { floors: Array<{ id: string; name: string; rooms: Array<{ id: string; label: string; polygon: Point[] | null }> }> };
+    kbEntries?: KBEntry[];
     onnewchore?: () => void;
     onplaceonmap?: (choreId: string) => void;
     selectedItemId?: string | null;
     onclearselection?: () => void;
   }
 
-  let { store, floorStore, onnewchore, onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
+  let { store, floorStore, kbEntries = [], onnewchore, onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
 
   // Tracked by id, not object reference -- completing a chore replaces
   // store.chores with fresh objects, so a captured reference would keep
@@ -374,7 +376,7 @@
 </div>
 
 {#if editChore}
-  <ChoreEditModal chore={editChore} {store} rooms={allRooms} onclose={() => { editChoreId = null; }} onplaceonmap={onplaceonmap ? (id) => { editChoreId = null; onplaceonmap!(id); } : undefined} />
+  <ChoreEditModal chore={editChore} {store} rooms={allRooms} {kbEntries} onclose={() => { editChoreId = null; }} onplaceonmap={onplaceonmap ? (id) => { editChoreId = null; onplaceonmap!(id); } : undefined} />
 {/if}
 
 {#if completing}

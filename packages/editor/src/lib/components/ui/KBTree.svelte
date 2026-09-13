@@ -161,6 +161,7 @@
         role="button"
         tabindex="0"
         class="tree-row"
+        data-entry-id={entry.id}
         class:active={entry.id === selectedId}
         class:drop-before={dropIndicator?.id === entry.id && dropIndicator.position === "before"}
         class:drop-after={dropIndicator?.id === entry.id && dropIndicator.position === "after"}

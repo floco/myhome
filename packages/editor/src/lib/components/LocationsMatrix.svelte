@@ -2,14 +2,15 @@
   import { _ } from "svelte-i18n";
   import type { createLocationsStore, Location, LocationCriterion, Weight } from "../locationsStore.svelte";
   import { ratingFor, bestScoreForCriterion } from "../locationsStore.svelte";
+  import type { KBEntry } from "../kbStore.svelte";
   import LocationRatingPopup from "./LocationRatingPopup.svelte";
   import LocationModal from "./LocationModal.svelte";
   import LocationCriterionModal from "./LocationCriterionModal.svelte";
   import StarRating from "./ui/StarRating.svelte";
 
   type LocationsStore = ReturnType<typeof createLocationsStore>;
-  interface Props { store: LocationsStore; }
-  let { store }: Props = $props();
+  interface Props { store: LocationsStore; kbEntries?: KBEntry[]; }
+  let { store, kbEntries = [] }: Props = $props();
 
   function weightLabel(w: Weight): string {
     if (w === "low") return $_('locations.criterionModal.low');
@@ -192,6 +193,7 @@
   <LocationModal
     location={showLocationModal === "new" ? null : showLocationModal}
     {store}
+    {kbEntries}
     onclose={() => { showLocationModal = null; }}
   />
 {/if}
