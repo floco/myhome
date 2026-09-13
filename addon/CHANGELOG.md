@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.33.0 - 2026-09-13
+
+- Any markdown field (chore instructions, works, inventory, insurance, locations, properties, costs, contacts, house-build tasks, and wiki pages) can now insert a live link to an existing wiki page via a searchable picker
+- Clicking a wiki page link, using global search, or navigating the wiki tree now expands every collapsed parent and scrolls to the page, so its location is never hidden
+- The markdown editor now continues bullet/numbered/task lists on Enter (numbers increment, checkboxes reset unchecked); Enter on an already-empty item exits the list
+- Widened the chore edit modal and fixed the footer buttons wrapping onto two lines and the history tab's columns misaligning with a long assignment label
+
 ## 0.32.0 - 2026-09-12
 
 - Added a Calendar view to the Chores module: a monthly grid showing each chore's due date, with month/year navigation and a Today button, alongside the existing list view
