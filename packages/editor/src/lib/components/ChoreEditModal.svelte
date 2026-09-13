@@ -212,7 +212,7 @@
 </script>
 
 {#if chore}
-  <Modal open={true} title={chore.emoji + " " + chore.name} onclose={onclose}>
+  <Modal open={true} title={chore.emoji + " " + chore.name} onclose={onclose} width="640px">
     <Tabs
       tabs={[
         { id: "info", label: $_('chores.editModal.info') },
@@ -409,17 +409,24 @@
   .form-error { font-size: 11px; color: var(--danger); margin-top: 4px; }
   .history-pane { min-height: 160px; }
   .no-history { font-size: 12px; color: var(--text-faint); font-style: italic; padding: 12px 0; }
-  .history-row { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; flex-wrap: wrap; }
+  .history-row {
+    display: grid;
+    grid-template-columns: minmax(90px, 1fr) auto auto auto auto;
+    align-items: baseline;
+    column-gap: 10px; row-gap: 2px;
+    padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px;
+  }
   .history-row:last-child { border-bottom: none; }
-  .hist-room { color: var(--text); white-space: nowrap; font-weight: 500; min-width: 90px; }
-  .hist-date { color: var(--text-muted); white-space: nowrap; }
-  .hist-due { color: var(--text-faint); white-space: nowrap; font-size: 11px; }
-  .hist-notes { color: var(--text-muted); font-style: italic; font-size: 11px; flex: 1; }
-  .hist-del { margin-left: auto; background: none; border: none; cursor: pointer; color: var(--text-faint); font-size: 11px; padding: 0 2px; line-height: 1; opacity: 0.5; }
+  .hist-room { grid-column: 1; color: var(--text); font-weight: 500; min-width: 0; }
+  .hist-date { grid-column: 3; color: var(--text-muted); white-space: nowrap; }
+  .hist-due { grid-column: 4; color: var(--text-faint); white-space: nowrap; font-size: 11px; }
+  .hist-notes { grid-column: 1 / -1; color: var(--text-muted); font-style: italic; font-size: 11px; }
+  .hist-del { grid-column: 5; justify-self: end; background: none; border: none; cursor: pointer; color: var(--text-faint); font-size: 11px; padding: 0 2px; line-height: 1; opacity: 0.5; }
   .hist-del:hover { opacity: 1; color: var(--danger); }
   .hist-label { color: var(--text-faint); font-weight: 400; margin-left: 4px; }
   .history-row.skipped .hist-room { color: var(--text-muted); }
   .hist-status-badge {
+    grid-column: 2;
     display: inline-block; min-width: 11ch; text-align: center;
     border-radius: var(--radius-sm); padding: 1px 6px; font-size: 11px; white-space: nowrap;
   }
