@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.34.1 - 2026-09-14
+
+- Fixed a linked cost entry's stock transaction using today's date instead of the cost entry's own date
+- Fixed the Consumables stock history columns misaligning when some transactions have a linked cost entry and others don't
+
 ## 0.34.0 - 2026-09-14
 
 - Cost entries can now optionally link to a consumable stock item with a quantity, so recording an order (e.g. 1000L of heating oil) automatically applies it as a stock increase; the stock item's history shows a link back to the cost entry that caused it
