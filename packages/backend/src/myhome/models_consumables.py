@@ -32,6 +32,7 @@ class ConsumableTransaction(BaseModel):
     quantityAfter: float
     note: str = ""
     timestamp: str
+    costEntryId: str | None = None
 
 
 class ConsumableDocument(BaseModel):

@@ -1507,7 +1507,7 @@
         />
 
       {:else if currentRoute === "#/chores" || currentRoute === "#/chores/manage"}
-        <ChoresPage store={choreStore} {floorStore} kbEntries={kbStore.entries} selectedItemId={selectedChoreId} onclearselection={() => { selectedChoreId = null; }} onnewchore={() => { showNewChoreModal = true; }} onplaceonmap={(choreId) => { const next = new Set(activeLayers); next.add("chores"); activeLayers = next; pickerHighlightId = choreId; pickerOpen = true; window.location.hash = "#/plan"; }} />
+        <ChoresPage store={choreStore} {floorStore} kbEntries={kbStore.entries} selectedItemId={selectedChoreId} onclearselection={() => { selectedChoreId = null; }} onnewchore={() => { showNewChoreModal = true; }} onplaceonmap={(choreId) => { const next = new Set(activeLayers); next.add("chores"); activeLayers = next; pickerHighlightId = choreId; pickerOpen = true; viewMode = false; window.location.hash = "#/plan"; }} />
 
       {:else if currentRoute === "#/inventory"}
         <InventoryPage
@@ -1528,6 +1528,7 @@
             activeLayers = next;
             pickerHighlightId = id;
             pickerOpen = true;
+            viewMode = false;
             window.location.hash = "#/plan";
           }}
         />
@@ -1544,7 +1545,12 @@
             activeLayers = next;
             pickerHighlightId = id;
             pickerOpen = true;
+            viewMode = false;
             window.location.hash = "#/plan";
+          }}
+          onviewcostentry={(id) => {
+            selectedCostEntryId = id;
+            window.location.hash = "#/costs";
           }}
         />
 
@@ -1562,6 +1568,7 @@
             activeLayers = next;
             pickerHighlightId = workId;
             pickerOpen = true;
+            viewMode = false;
             window.location.hash = "#/plan";
           }}
         />
@@ -1575,6 +1582,7 @@
           {settingsStore}
           {contactsStore}
           {floorStore}
+          {consumableStore}
           kbEntries={kbStore.entries}
           selectedItemId={selectedCostEntryId}
           onclearselection={() => { selectedCostEntryId = null; }}
@@ -1584,6 +1592,7 @@
             activeLayers = next;
             pickerHighlightId = catId;
             pickerOpen = true;
+            viewMode = false;
             window.location.hash = "#/plan";
           }}
         />

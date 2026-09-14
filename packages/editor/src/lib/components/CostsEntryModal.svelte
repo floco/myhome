@@ -4,6 +4,7 @@
   import type { createSettingsStore } from "../settingsStore.svelte";
   import type { createContactsStore } from "../contactsStore.svelte";
   import type { createHouseStore } from "../houseStore.svelte";
+  import type { createConsumableStore } from "../consumableStore.svelte";
   import type { MediaItem } from "./ui/mediaTypes";
   import type { KBEntry } from "../kbStore.svelte";
   import { apiUrl } from "../apiUrl";
@@ -21,6 +22,7 @@
   type SettingsStore = ReturnType<typeof createSettingsStore>;
   type ContactsStore = ReturnType<typeof createContactsStore>;
   type HouseStore = ReturnType<typeof createHouseStore>;
+  type ConsumableStore = ReturnType<typeof createConsumableStore>;
 
   interface Props {
     entry: CostEntry | null;
@@ -28,11 +30,12 @@
     settingsStore: SettingsStore;
     contactsStore: ContactsStore;
     floorStore: HouseStore;
+    consumableStore: ConsumableStore;
     kbEntries?: KBEntry[];
     onclose: () => void;
   }
 
-  let { entry, costsStore, settingsStore, contactsStore, floorStore, kbEntries = [], onclose }: Props = $props();
+  let { entry, costsStore, settingsStore, contactsStore, floorStore, consumableStore, kbEntries = [], onclose }: Props = $props();
 
   let pageLinkPickerOpen = $state(false);
   let pageLinkResolve: ((result: { id: string; title: string } | null) => void) | null = null;
@@ -71,6 +74,7 @@
   let notes = $state("");
   let editingNotes = $state(false);
   let roomId = $state("");
+  let linkedConsumableId = $state("");
 
   $effect(() => {
     categoryId = entry?.categoryId ?? settingsStore.costCategories[0]?.id ?? "";
@@ -82,6 +86,7 @@
     notes = entry?.notes ?? "";
     editingNotes = entry === null;
     roomId = entry?.roomId ?? "";
+    linkedConsumableId = entry?.linkedConsumableId ?? "";
     activeTab = "info";
     confirmDelete = false;
     error = null;
@@ -100,6 +105,9 @@
     settingsStore.costCategories.find(c => c.id === categoryId) ?? null
   );
   const hasUnit = $derived(selectedCategory?.unit != null);
+  const linkedConsumable = $derived(
+    linkedConsumableId ? (consumableStore.consumables.find(c => c.id === linkedConsumableId) ?? null) : null
+  );
   const allRooms = $derived(
     floorStore.floors.flatMap((f: { rooms: { id: string; label: string }[] }) => f.rooms)
   );
@@ -146,9 +154,12 @@
       contactId: contactId || null,
       notes: notes.trim(),
       roomId: roomId || null,
+      linkedConsumableId: linkedConsumableId || null,
     };
+    const touchesStock = !!patch.linkedConsumableId || !!entry?.linkedConsumableId;
     try {
       if (isCreate) { await costsStore.createEntry(patch); } else { await costsStore.updateEntry(entry!.id, patch); }
+      if (touchesStock) await consumableStore.reload();
       onclose();
     } catch (e) {
       error = e instanceof Error ? e.message : $_('costs.entryModal.saveFailed');
@@ -160,8 +171,14 @@
   async function handleDelete(): Promise<void> {
     if (!entry) return;
     deleting = true;
-    try { await costsStore.deleteEntry(entry.id); onclose(); }
-    catch (e) { error = e instanceof Error ? e.message : $_('costs.entryModal.deleteFailed'); deleting = false; }
+    try {
+      await costsStore.deleteEntry(entry.id);
+      if (entry.linkedConsumableId) await consumableStore.reload();
+      onclose();
+    } catch (e) {
+      error = e instanceof Error ? e.message : $_('costs.entryModal.deleteFailed');
+      deleting = false;
+    }
   }
 
   async function handleUpload(files: File[]): Promise<void> {
@@ -236,6 +253,21 @@
       </select>
     </div>
 
+    {#if consumableStore.consumables.length > 0}
+      <div class="row">
+        <label>{$_('costs.entryModal.linkToStock')}</label>
+        <select class="native-input flex-grow" bind:value={linkedConsumableId}>
+          <option value="">{$_('costs.entryModal.noStockLink')}</option>
+          {#each consumableStore.consumables as c}<option value={c.id}>{c.emoji} {c.name}</option>{/each}
+        </select>
+      </div>
+      {#if linkedConsumable && quantity && parseFloat(quantity) > 0}
+        <div class="link-hint">
+          📦 {$_('costs.entryModal.stockImpact', { values: { qty: quantity, unit: linkedConsumable.unit, name: linkedConsumable.name } })}
+        </div>
+      {/if}
+    {/if}
+
     <div class="row col">
       <label>{$_('chores.editModal.notes')}</label>
       <MarkdownEditor
@@ -309,6 +341,11 @@
   select.native-input { cursor: pointer; }
   .num-input { width: 120px; }
   .error { color: var(--danger); font-size: 11px; margin-top: 4px; font-family: var(--font-sans); }
+  .link-hint {
+    font-size: 12px; color: var(--text-muted); background: var(--surface-alt);
+    border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 6px 10px; margin: -6px 0 12px;
+  }
 
   .spacer { flex: 1; }
   .confirm-text { font-size: 11px; color: var(--danger); }

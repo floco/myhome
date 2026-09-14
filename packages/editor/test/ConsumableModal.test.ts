@@ -147,6 +147,47 @@ describe("ConsumableModal — edit mode", () => {
     target.remove();
   });
 
+  it("shows a link icon for transactions tied to a cost entry and navigates on click", async () => {
+    const docWithLink = {
+      version: 1,
+      consumables: [sampleConsumable],
+      transactions: [
+        { id: "t1", consumableId: "c1", delta: 1000, quantityAfter: 1006, note: "", timestamp: "2026-07-02T10:00:00Z", costEntryId: "ce1" },
+        { id: "t2", consumableId: "c1", delta: -6, quantityAfter: 1000, note: "used", timestamp: "2026-07-03T10:00:00Z", costEntryId: null },
+      ],
+    };
+    const store = makeStore(docWithLink);
+    await makeTick();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const onviewcostentry = vi.fn();
+    const comp = mount(ConsumableModal, {
+      target,
+      props: {
+        consumable: sampleConsumable,
+        store,
+        settingsStore: { consumableUnits: ["count"], consumableCategories: [] },
+        onclose: vi.fn(),
+        onviewcostentry,
+      },
+    });
+    await tick();
+    flushSync();
+    const stockTab = Array.from(target.querySelectorAll(".tab-btn")).find((b) =>
+      b.textContent?.includes("Stock"),
+    );
+    stockTab?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+
+    const links = target.querySelectorAll(".tx-link");
+    expect(links.length).toBe(1);
+    (links[0] as HTMLButtonElement).click();
+    expect(onviewcostentry).toHaveBeenCalledWith("ce1");
+
+    unmount(comp);
+    target.remove();
+  });
+
   it("calls onclose when cancel is clicked", async () => {
     const store = makeStore();
     await makeTick();

@@ -43,7 +43,7 @@
     }
     queueMicrotask(() => {
       const el = document.querySelector(`[data-picker-id="${highlightId}"]`);
-      if (el) (el as HTMLElement).scrollIntoView({ block: "nearest", behavior: "smooth" });
+      (el as HTMLElement | null)?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
     });
   });
 

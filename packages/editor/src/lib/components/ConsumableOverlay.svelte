@@ -74,7 +74,9 @@
   }
 
   const placedConsumables = $derived(consumables.filter((c) => c.placement !== null));
-  const badgeScale = $derived(Math.max(0.35, Math.min(1.2, viewport.zoom / 80)));
+  // 2x multiplier -- badges were rendering at roughly half the visual size of the
+  // equivalent chore/inventory/works badges at the same zoom level.
+  const badgeScale = $derived(2 * Math.max(0.35, Math.min(1.2, viewport.zoom / 80)));
 </script>
 
 <svelte:window onpointermove={handlePointerMove} />

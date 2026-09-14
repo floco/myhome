@@ -276,6 +276,7 @@ cost_entries = Table(
     Column("attachments", Text, nullable=False),
     Column("source_module", String),
     Column("source_id", String),
+    Column("linked_consumable_id", String),
 )
 
 # category_id/owner_id/store_id are plain columns, no ForeignKey -- same
@@ -354,6 +355,7 @@ consumable_transactions = Table(
     Column("quantity_after", Float, nullable=False),
     Column("note", String, nullable=False),
     Column("timestamp", String, nullable=False),
+    Column("cost_entry_id", String),
 )
 
 insurance_policies = Table(
