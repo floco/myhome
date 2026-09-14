@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.34.0 - 2026-09-14
+
+- Cost entries can now optionally link to a consumable stock item with a quantity, so recording an order (e.g. 1000L of heating oil) automatically applies it as a stock increase; the stock item's history shows a link back to the cost entry that caused it
+- Fixed "Place on map" not switching the floor plan into edit mode across Chores, Inventory, Costs, Works, and Consumables, which made dragging a newly placed item onto the map silently fail
+- Fixed the Consumables stock summary tiles being crowded against the right edge on desktop
+- Doubled the size of Consumables badges on the floor plan, which were rendering at about half the size of other modules' badges
+
 ## 0.33.0 - 2026-09-13
 
 - Any markdown field (chore instructions, works, inventory, insurance, locations, properties, costs, contacts, house-build tasks, and wiki pages) can now insert a live link to an existing wiki page via a searchable picker
