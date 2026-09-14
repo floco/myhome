@@ -5,6 +5,7 @@
   import type { createSettingsStore } from "../settingsStore.svelte";
   import type { createContactsStore } from "../contactsStore.svelte";
   import type { createHouseStore } from "../houseStore.svelte";
+  import type { createConsumableStore } from "../consumableStore.svelte";
   import type { KBEntry } from "../kbStore.svelte";
   import CostsEntryModal from "./CostsEntryModal.svelte";
   import CostsCategoryModal from "./CostsCategoryModal.svelte";
@@ -23,19 +24,21 @@
   type SettingsStore = ReturnType<typeof createSettingsStore>;
   type ContactsStore = ReturnType<typeof createContactsStore>;
   type HouseStore = ReturnType<typeof createHouseStore>;
+  type ConsumableStore = ReturnType<typeof createConsumableStore>;
 
   interface Props {
     costsStore: CostsStore;
     settingsStore: SettingsStore;
     contactsStore: ContactsStore;
     floorStore: HouseStore;
+    consumableStore: ConsumableStore;
     kbEntries?: KBEntry[];
     onplaceonmap?: (catId: string) => void;
     selectedItemId?: string | null;
     onclearselection?: () => void;
   }
 
-  let { costsStore, settingsStore, contactsStore, floorStore, kbEntries = [], onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
+  let { costsStore, settingsStore, contactsStore, floorStore, consumableStore, kbEntries = [], onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
 
   let modalEntry = $state<CostEntry | "create" | null>(null);
 
@@ -346,6 +349,7 @@
     {settingsStore}
     {contactsStore}
     {floorStore}
+    {consumableStore}
     {kbEntries}
     onclose={() => { modalEntry = null; }}
   />

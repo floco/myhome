@@ -786,6 +786,7 @@
       "updateStock": "Mettre à jour le stock",
       "history": "Historique",
       "noTransactions": "Aucune transaction pour l'instant",
+      "viewCostEntry": "Voir l'entrée de coût liée",
       "sure": "Confirmer ?",
       "deleting": "Suppression…",
       "yesDelete": "Oui, supprimer"
@@ -924,6 +925,9 @@
       "supplier": "Fournisseur",
       "noSupplier": "— Aucun fournisseur —",
       "noRoom": "Aucune zone",
+      "linkToStock": "Lier à un article de stock",
+      "noStockLink": "— Aucun lien de stock —",
+      "stockImpact": "+{qty} {unit} → {name}",
       "notesPlaceholder": "Notes facultatives…",
       "deleteThisEntry": "Supprimer cette entrée ?",
       "categoryRequired": "La catégorie est requise",

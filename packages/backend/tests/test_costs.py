@@ -183,6 +183,94 @@ def test_delete_synced_cost_entry_rejected(client, home_id):
     assert resp2.status_code == 400
 
 
+def _create_consumable(client, home_id, quantity=10.0) -> str:
+    resp = client.post(f"/api/homes/{home_id}/consumables", json={
+        "name": "Heating Oil", "emoji": "🛢️", "unit": "L", "quantity": quantity, "minQuantity": 100.0,
+    })
+    return resp.json()["id"]
+
+
+def test_create_entry_with_linked_consumable_applies_stock_increase(client, home_id):
+    con_id = _create_consumable(client, home_id, quantity=200.0)
+    resp = client.post(f"/api/homes/{home_id}/costs/entries", json={
+        "categoryId": "cat-fuel", "date": "2026-01-01", "totalAmount": 900.0,
+        "quantity": 1000.0, "unitPrice": 0.9, "linkedConsumableId": con_id,
+    })
+    assert resp.status_code == 201
+    entry_id = resp.json()["id"]
+
+    con = client.get(f"/api/homes/{home_id}/consumables").json()
+    item = next(c for c in con["consumables"] if c["id"] == con_id)
+    assert item["quantity"] == 1200.0
+    tx = next(t for t in con["transactions"] if t["consumableId"] == con_id)
+    assert tx["delta"] == 1000.0
+    assert tx["costEntryId"] == entry_id
+
+
+def test_update_entry_linked_quantity_reconciles_stock(client, home_id):
+    con_id = _create_consumable(client, home_id, quantity=200.0)
+    entry_id = client.post(f"/api/homes/{home_id}/costs/entries", json={
+        "categoryId": "cat-fuel", "date": "2026-01-01", "totalAmount": 900.0,
+        "quantity": 1000.0, "linkedConsumableId": con_id,
+    }).json()["id"]
+
+    resp = client.put(f"/api/homes/{home_id}/costs/entries/{entry_id}", json={"quantity": 1500.0})
+    assert resp.status_code == 204
+
+    con = client.get(f"/api/homes/{home_id}/consumables").json()
+    item = next(c for c in con["consumables"] if c["id"] == con_id)
+    assert item["quantity"] == 1700.0
+    txs = [t for t in con["transactions"] if t["costEntryId"] == entry_id]
+    assert len(txs) == 1
+    assert txs[0]["delta"] == 1500.0
+
+
+def test_update_entry_removing_link_reverses_stock(client, home_id):
+    con_id = _create_consumable(client, home_id, quantity=200.0)
+    entry_id = client.post(f"/api/homes/{home_id}/costs/entries", json={
+        "categoryId": "cat-fuel", "date": "2026-01-01", "totalAmount": 900.0,
+        "quantity": 1000.0, "linkedConsumableId": con_id,
+    }).json()["id"]
+
+    resp = client.put(f"/api/homes/{home_id}/costs/entries/{entry_id}", json={"linkedConsumableId": None})
+    assert resp.status_code == 204
+
+    con = client.get(f"/api/homes/{home_id}/consumables").json()
+    item = next(c for c in con["consumables"] if c["id"] == con_id)
+    assert item["quantity"] == 200.0
+    assert [t for t in con["transactions"] if t["costEntryId"] == entry_id] == []
+
+
+def test_delete_entry_reverses_linked_stock(client, home_id):
+    con_id = _create_consumable(client, home_id, quantity=200.0)
+    entry_id = client.post(f"/api/homes/{home_id}/costs/entries", json={
+        "categoryId": "cat-fuel", "date": "2026-01-01", "totalAmount": 900.0,
+        "quantity": 1000.0, "linkedConsumableId": con_id,
+    }).json()["id"]
+
+    resp = client.delete(f"/api/homes/{home_id}/costs/entries/{entry_id}")
+    assert resp.status_code == 204
+
+    con = client.get(f"/api/homes/{home_id}/consumables").json()
+    item = next(c for c in con["consumables"] if c["id"] == con_id)
+    assert item["quantity"] == 200.0
+    assert con["transactions"] == []
+
+
+def test_delete_linked_consumable_clears_cost_entry_link(client, home_id):
+    con_id = _create_consumable(client, home_id, quantity=200.0)
+    entry_id = client.post(f"/api/homes/{home_id}/costs/entries", json={
+        "categoryId": "cat-fuel", "date": "2026-01-01", "totalAmount": 900.0,
+        "quantity": 1000.0, "linkedConsumableId": con_id,
+    }).json()["id"]
+
+    resp = client.delete(f"/api/homes/{home_id}/consumables/{con_id}")
+    assert resp.status_code == 204
+
+    entry = next(e for e in client.get(f"/api/homes/{home_id}/costs").json()["entries"] if e["id"] == entry_id)
+    assert entry["linkedConsumableId"] is None
+
+
 def test_reset_costs_clears_data(client, home_id):
     client.post(f"/api/homes/{home_id}/costs", json={
         "categoryId": "cat-fuel", "date": "2026-01-01", "totalAmount": 100.0,

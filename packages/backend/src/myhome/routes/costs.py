@@ -5,6 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from ..deps import get_current_user_id
 from ..models_costs import CostEntry, CostEntryCreate, CostEntryUpdate, CostsDocument
 from ..persistence_activity import log_activity
+from ..persistence_consumables import (
+    apply_cost_linked_delta,
+    load_consumables,
+    reverse_cost_linked_transactions,
+    save_consumables,
+)
 from ..persistence_costs import (
     delete_all_attachments,
     load_costs,
@@ -16,6 +22,23 @@ router = APIRouter()
 
 def _cost_label(entry: CostEntry) -> str:
     return entry.notes if entry.notes else f"{entry.totalAmount:g}"
+
+
+def _sync_linked_stock(home_id: str, entry: CostEntry) -> None:
+    """Reconcile the consumable stock transaction tied to this cost entry.
+
+    Reverses any previous transaction for this entry, then reapplies one if
+    the entry currently has a link and a quantity -- simplest way to handle
+    create/update/link-change/unlink without tracking a diff.
+    """
+    consumables_doc = load_consumables(home_id)
+    reverse_cost_linked_transactions(consumables_doc, entry.id)
+    if entry.linkedConsumableId and entry.quantity:
+        apply_cost_linked_delta(
+            consumables_doc, entry.linkedConsumableId, entry.quantity,
+            note=f"Cost entry: {_cost_label(entry)}", cost_entry_id=entry.id,
+        )
+    save_consumables(home_id, consumables_doc)
 
 
 @router.get("/api/homes/{home_id}/costs", response_model=CostsDocument)
@@ -32,6 +55,8 @@ def create_entry(
     entry = CostEntry(id=str(uuid.uuid4()), **body.model_dump())
     doc.entries.append(entry)
     save_costs(home_id, doc)
+    if entry.linkedConsumableId:
+        _sync_linked_stock(home_id, entry)
     log_activity(home_id, current_user_id, "costs", "create", _cost_label(entry), entry.id)
     return entry
 
@@ -47,9 +72,12 @@ def update_entry(
         raise HTTPException(status_code=404)
     if entry.sourceModule is not None:
         raise HTTPException(status_code=400, detail=f"This entry is synced from {entry.sourceModule} — edit it there instead")
-    for field, value in body.model_dump(exclude_unset=True).items():
+    changed_fields = body.model_dump(exclude_unset=True)
+    for field, value in changed_fields.items():
         setattr(entry, field, value)
     save_costs(home_id, doc)
+    if "linkedConsumableId" in changed_fields or "quantity" in changed_fields or entry.linkedConsumableId:
+        _sync_linked_stock(home_id, entry)
     log_activity(home_id, current_user_id, "costs", "update", _cost_label(entry), id)
 
 
@@ -64,6 +92,10 @@ def delete_entry(
         raise HTTPException(status_code=404)
     if entry.sourceModule is not None:
         raise HTTPException(status_code=400, detail=f"This entry is synced from {entry.sourceModule} — edit it there instead")
+    if entry.linkedConsumableId:
+        consumables_doc = load_consumables(home_id)
+        reverse_cost_linked_transactions(consumables_doc, id)
+        save_consumables(home_id, consumables_doc)
     doc.entries = [e for e in doc.entries if e.id != id]
     save_costs(home_id, doc)
     delete_all_attachments(home_id, id)

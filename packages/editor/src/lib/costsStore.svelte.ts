@@ -12,6 +12,7 @@ export interface CostEntry {
   notes: string;
   roomId: string | null;
   attachments: string[];
+  linkedConsumableId: string | null;
 }
 
 export interface CostsDocument {

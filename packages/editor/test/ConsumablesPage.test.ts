@@ -185,6 +185,28 @@ describe("ConsumablesPage — stock status summary", () => {
 
     unmount(comp);
   });
+
+  it("gives the chart card and the stat tiles a proportional flex share instead of pinning tiles to a fixed width", async () => {
+    const store = makeStore();
+    await makeTick();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ConsumablesPage, {
+      target,
+      props: {
+        store,
+        settingsStore: { consumableCategories: [], consumableUnits: [] },
+        onplaceonmap: vi.fn(),
+      },
+    });
+    await tick();
+    flushSync();
+
+    const chartCard = target.querySelector(".chart-card-wrap .ui-card") as HTMLElement;
+    expect(chartCard.style.flex).toBe("2 1 260px");
+
+    unmount(comp);
+  });
 });
 
 describe("ConsumablesPage — responsive columns", () => {

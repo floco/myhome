@@ -1,6 +1,9 @@
 # packages/backend/src/myhome/persistence_consumables.py
 from __future__ import annotations
 
+import uuid
+from datetime import datetime, timezone
+
 from sqlalchemy import select
 
 from .db import get_engine
@@ -44,6 +47,7 @@ def load_consumables(home_id: str) -> ConsumableDocument:
         ConsumableTransaction(
             id=r["id"], consumableId=r["consumable_id"], delta=r["delta"],
             quantityAfter=r["quantity_after"], note=r["note"], timestamp=r["timestamp"],
+            costEntryId=r["cost_entry_id"],
         )
         for r in transaction_rows
     ]
@@ -73,6 +77,7 @@ def save_consumables(home_id: str, doc: ConsumableDocument) -> None:
                 {
                     "id": t.id, "home_id": home_id, "order_index": i, "consumable_id": t.consumableId,
                     "delta": t.delta, "quantity_after": t.quantityAfter, "note": t.note, "timestamp": t.timestamp,
+                    "cost_entry_id": t.costEntryId,
                 }
                 for i, t in enumerate(doc.transactions)
             ])
@@ -80,3 +85,35 @@ def save_consumables(home_id: str, doc: ConsumableDocument) -> None:
 
 def reset_consumables(home_id: str) -> None:
     save_consumables(home_id, ConsumableDocument())
+
+
+def apply_cost_linked_delta(
+    doc: ConsumableDocument, consumable_id: str, delta: float, note: str, cost_entry_id: str,
+) -> None:
+    """Record a stock transaction on behalf of a linked cost entry.
+
+    Mutates `doc` in place; the caller is responsible for saving it. Silently
+    no-ops if the consumable no longer exists (e.g. deleted after linking).
+    """
+    item = next((c for c in doc.consumables if c.id == consumable_id), None)
+    if item is None:
+        return
+    item.quantity += delta
+    doc.transactions.append(ConsumableTransaction(
+        id=str(uuid.uuid4()), consumableId=consumable_id, delta=delta,
+        quantityAfter=item.quantity, note=note, timestamp=datetime.now(timezone.utc).isoformat(),
+        costEntryId=cost_entry_id,
+    ))
+
+
+def reverse_cost_linked_transactions(doc: ConsumableDocument, cost_entry_id: str) -> None:
+    """Undo any stock transactions previously recorded for `cost_entry_id`.
+
+    Mutates `doc` in place; the caller is responsible for saving it.
+    """
+    linked = [t for t in doc.transactions if t.costEntryId == cost_entry_id]
+    for tx in linked:
+        item = next((c for c in doc.consumables if c.id == tx.consumableId), None)
+        if item is not None:
+            item.quantity -= tx.delta
+    doc.transactions = [t for t in doc.transactions if t.costEntryId != cost_entry_id]

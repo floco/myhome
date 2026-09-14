@@ -21,11 +21,12 @@
     store: ConsumableStore;
     settingsStore: SettingsStore;
     onplaceonmap?: (id: string) => void;
+    onviewcostentry?: (id: string) => void;
     selectedItemId?: string | null;
     onclearselection?: () => void;
   }
 
-  let { store, settingsStore, onplaceonmap, selectedItemId = null, onclearselection }: Props = $props();
+  let { store, settingsStore, onplaceonmap, onviewcostentry, selectedItemId = null, onclearselection }: Props = $props();
 
   let searchQuery = $state("");
   let categoryFilter = $state("");
@@ -118,7 +119,7 @@
     </div>
   {:else}
     <div class="chart-card-wrap">
-      <Card style="flex:1; min-width:0;">
+      <Card style="flex: 2 1 260px; min-width: 0;">
         <div class="chart-label">{$_('consumables.page.stockStatus', { values: { n: store.consumables.length } })}</div>
         <HorizontalBarChart segments={stockBreakdown} />
       </Card>
@@ -234,6 +235,7 @@
     {settingsStore}
     onclose={() => { showCreate = false; editConsumable = null; }}
     {onplaceonmap}
+    {onviewcostentry}
   />
 {/if}
 
@@ -248,8 +250,8 @@
   .empty-charts p { margin: 0; font-size: 13px; }
 
   .chart-card-wrap { display: flex; gap: var(--space-3); align-items: stretch; padding: var(--space-4); flex-shrink: 0; }
-  .stat-tiles { display: flex; gap: var(--space-3); flex-shrink: 0; }
-  .stat-tiles :global(.ui-stat-tile) { flex: 0 0 140px; }
+  .stat-tiles { display: flex; gap: var(--space-3); flex: 1 1 300px; min-width: 0; }
+  .stat-tiles :global(.ui-stat-tile) { flex: 1 1 0; min-width: 0; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;
     letter-spacing: .06em; margin-bottom: 6px;

@@ -14,6 +14,7 @@ from ..models_consumables import (
 )
 from ..persistence_activity import log_activity
 from ..persistence_consumables import load_consumables, save_consumables
+from ..persistence_costs import clear_linked_consumable, load_costs, save_costs
 
 router = APIRouter()
 
@@ -59,6 +60,9 @@ def delete_consumable(
     doc.consumables = [c for c in doc.consumables if c.id != id]
     doc.transactions = [t for t in doc.transactions if t.consumableId != id]
     save_consumables(home_id, doc)
+    costs_doc = load_costs(home_id)
+    clear_linked_consumable(costs_doc, id)
+    save_costs(home_id, costs_doc)
     log_activity(home_id, current_user_id, "consumables", "delete", item.name, id)
 
 

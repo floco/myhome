@@ -25,6 +25,7 @@ def load_costs(home_id: str) -> CostsDocument:
             quantity=r["quantity"], unitPrice=r["unit_price"], contactId=r["contact_id"],
             notes=r["notes"], roomId=r["room_id"], attachments=json.loads(r["attachments"]),
             sourceModule=r["source_module"], sourceId=r["source_id"],
+            linkedConsumableId=r["linked_consumable_id"],
         )
         for r in rows
     ])
@@ -42,6 +43,7 @@ def save_costs(home_id: str, doc: CostsDocument) -> None:
                     "unit_price": e.unitPrice, "contact_id": e.contactId, "notes": e.notes,
                     "room_id": e.roomId, "attachments": json.dumps(e.attachments),
                     "source_module": e.sourceModule, "source_id": e.sourceId,
+                    "linked_consumable_id": e.linkedConsumableId,
                 }
                 for i, e in enumerate(doc.entries)
             ])
@@ -66,3 +68,13 @@ def delete_all_attachments(home_id: str, entry_id: str) -> None:
 def reset_costs(home_id: str) -> None:
     save_costs(home_id, CostsDocument())
     attachment_storage.delete_all_module_attachments(home_id, _MODULE)
+
+
+def clear_linked_consumable(doc: CostsDocument, consumable_id: str) -> None:
+    """Detach cost entries pointed at a consumable about to be deleted.
+
+    Mutates `doc` in place; the caller is responsible for saving it.
+    """
+    for entry in doc.entries:
+        if entry.linkedConsumableId == consumable_id:
+            entry.linkedConsumableId = None

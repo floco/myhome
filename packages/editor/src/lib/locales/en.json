@@ -786,6 +786,7 @@
       "updateStock": "Update stock",
       "history": "History",
       "noTransactions": "No transactions yet",
+      "viewCostEntry": "View linked cost entry",
       "sure": "Sure?",
       "deleting": "Deleting…",
       "yesDelete": "Yes, delete"
@@ -924,6 +925,9 @@
       "supplier": "Supplier",
       "noSupplier": "— No supplier —",
       "noRoom": "No zone",
+      "linkToStock": "Link to stock item",
+      "noStockLink": "— No stock link —",
+      "stockImpact": "+{qty} {unit} → {name}",
       "notesPlaceholder": "Optional notes…",
       "deleteThisEntry": "Delete this entry?",
       "categoryRequired": "Category is required",

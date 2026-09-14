@@ -51,6 +51,7 @@ describe("CostsPage — external selection", () => {
         settingsStore: makeSettingsStore(),
         contactsStore: makeContactsStore(),
         floorStore: { floors: [] },
+        consumableStore: { consumables: [] },
         selectedItemId: "ce1",
         onclearselection,
       },
@@ -75,6 +76,7 @@ describe("CostsPage — responsive columns", () => {
         settingsStore: makeSettingsStore(),
         contactsStore: makeContactsStore(),
         floorStore: { floors: [] },
+        consumableStore: { consumables: [] },
       },
     });
     flushSync();

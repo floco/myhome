@@ -122,6 +122,14 @@ def _create_legacy_category_tables(conn) -> None:
         "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, assignment_id VARCHAR, "
         "completed_at VARCHAR NOT NULL, scheduled_due VARCHAR NOT NULL, notes VARCHAR NOT NULL)"
     ))
+    # consumable_transactions pre-dates migration 12 (which adds
+    # cost_entry_id here and linked_consumable_id on cost_entries), so
+    # every migration test's snapshot needs it in this old shape too.
+    conn.execute(text(
+        "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+        "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
+        "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL)"
+    ))
 
 
 def test_run_migrations_scopes_cost_categories_by_home(tmp_path):
@@ -288,6 +296,14 @@ def test_run_migrations_adds_insurance_support(tmp_path):
             "INSERT INTO cost_entries (id, home_id, order_index, category_id, date, total_amount, notes, attachments) "
             "VALUES ('c1', 'h1', 0, 'cat-fuel', '2026-01-01', 100.0, '', '[]')"
         ))
+        # consumable_transactions is needed too since this snapshot now also
+        # runs migration 12 (_add_cost_consumable_link_columns) on its way
+        # to CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
+            "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL)"
+        ))
         # chore_assignments is needed too since this snapshot now also runs
         # migration 8 (_add_assignment_label_column) on its way to CURRENT_VERSION.
         conn.execute(text(
@@ -401,6 +417,21 @@ def test_run_migrations_backfills_inventory_category_id(tmp_path):
             "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, assignment_id VARCHAR, "
             "completed_at VARCHAR NOT NULL, scheduled_due VARCHAR NOT NULL, notes VARCHAR NOT NULL)"
         ))
+        # cost_entries/consumable_transactions are needed too since this
+        # snapshot now also runs migration 12
+        # (_add_cost_consumable_link_columns) on its way to CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE cost_entries (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, category_id VARCHAR NOT NULL, date VARCHAR NOT NULL, "
+            "total_amount FLOAT NOT NULL, quantity FLOAT, unit_price FLOAT, contact_id VARCHAR, "
+            "notes VARCHAR NOT NULL, room_id VARCHAR, attachments TEXT NOT NULL, "
+            "source_module VARCHAR, source_id VARCHAR)"
+        ))
+        conn.execute(text(
+            "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
+            "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL)"
+        ))
         conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
         conn.execute(text("INSERT INTO schema_version (version) VALUES (6)"))
 
@@ -468,6 +499,21 @@ def test_run_migrations_adds_label_to_pre_existing_chore_assignments_table(tmp_p
             "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, assignment_id VARCHAR, "
             "completed_at VARCHAR NOT NULL, scheduled_due VARCHAR NOT NULL, notes VARCHAR NOT NULL)"
         ))
+        # cost_entries/consumable_transactions are needed too since this
+        # snapshot now also runs migration 12
+        # (_add_cost_consumable_link_columns) on its way to CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE cost_entries (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, category_id VARCHAR NOT NULL, date VARCHAR NOT NULL, "
+            "total_amount FLOAT NOT NULL, quantity FLOAT, unit_price FLOAT, contact_id VARCHAR, "
+            "notes VARCHAR NOT NULL, room_id VARCHAR, attachments TEXT NOT NULL, "
+            "source_module VARCHAR, source_id VARCHAR)"
+        ))
+        conn.execute(text(
+            "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
+            "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL)"
+        ))
         conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
         conn.execute(text("INSERT INTO schema_version (version) VALUES (7)"))
 
@@ -520,6 +566,21 @@ def test_run_migrations_drops_inventory_legacy_category_column(tmp_path):
             "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, assignment_id VARCHAR, "
             "completed_at VARCHAR NOT NULL, scheduled_due VARCHAR NOT NULL, notes VARCHAR NOT NULL)"
         ))
+        # cost_entries/consumable_transactions are needed too since this
+        # snapshot now also runs migration 12
+        # (_add_cost_consumable_link_columns) on its way to CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE cost_entries (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, category_id VARCHAR NOT NULL, date VARCHAR NOT NULL, "
+            "total_amount FLOAT NOT NULL, quantity FLOAT, unit_price FLOAT, contact_id VARCHAR, "
+            "notes VARCHAR NOT NULL, room_id VARCHAR, attachments TEXT NOT NULL, "
+            "source_module VARCHAR, source_id VARCHAR)"
+        ))
+        conn.execute(text(
+            "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
+            "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL)"
+        ))
         conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
         conn.execute(text("INSERT INTO schema_version (version) VALUES (8)"))
 
@@ -566,6 +627,21 @@ def test_run_migrations_adds_notes_and_attachments_to_pre_existing_locations_tab
             "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, assignment_id VARCHAR, "
             "completed_at VARCHAR NOT NULL, scheduled_due VARCHAR NOT NULL, notes VARCHAR NOT NULL)"
         ))
+        # cost_entries/consumable_transactions are needed too since this
+        # snapshot now also runs migration 12
+        # (_add_cost_consumable_link_columns) on its way to CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE cost_entries (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, category_id VARCHAR NOT NULL, date VARCHAR NOT NULL, "
+            "total_amount FLOAT NOT NULL, quantity FLOAT, unit_price FLOAT, contact_id VARCHAR, "
+            "notes VARCHAR NOT NULL, room_id VARCHAR, attachments TEXT NOT NULL, "
+            "source_module VARCHAR, source_id VARCHAR)"
+        ))
+        conn.execute(text(
+            "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
+            "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL)"
+        ))
         conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
         conn.execute(text("INSERT INTO schema_version (version) VALUES (9)"))
 
@@ -594,6 +670,21 @@ def test_run_migrations_adds_skipped_column_to_pre_existing_chore_completions_ta
             "(id, home_id, order_index, chore_id, assignment_id, completed_at, scheduled_due, notes) "
             "VALUES ('c1', 'h1', 0, 'chore1', NULL, '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z', '')"
         ))
+        # cost_entries/consumable_transactions are needed too since this
+        # snapshot now also runs migration 12
+        # (_add_cost_consumable_link_columns) on its way to CURRENT_VERSION.
+        conn.execute(text(
+            "CREATE TABLE cost_entries (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, category_id VARCHAR NOT NULL, date VARCHAR NOT NULL, "
+            "total_amount FLOAT NOT NULL, quantity FLOAT, unit_price FLOAT, contact_id VARCHAR, "
+            "notes VARCHAR NOT NULL, room_id VARCHAR, attachments TEXT NOT NULL, "
+            "source_module VARCHAR, source_id VARCHAR)"
+        ))
+        conn.execute(text(
+            "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
+            "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL)"
+        ))
         conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
         conn.execute(text("INSERT INTO schema_version (version) VALUES (10)"))
 
@@ -605,3 +696,44 @@ def test_run_migrations_adds_skipped_column_to_pre_existing_chore_completions_ta
 
     assert version == CURRENT_VERSION
     assert row["skipped"] == 0
+
+
+def test_run_migrations_adds_cost_consumable_link_columns(tmp_path):
+    db_path = tmp_path / "legacy.db"
+    engine = create_engine(f"sqlite:///{db_path}")
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE cost_entries (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, category_id VARCHAR NOT NULL, date VARCHAR NOT NULL, "
+            "total_amount FLOAT NOT NULL, quantity FLOAT, unit_price FLOAT, contact_id VARCHAR, "
+            "notes VARCHAR NOT NULL, room_id VARCHAR, attachments TEXT NOT NULL, "
+            "source_module VARCHAR, source_id VARCHAR)"
+        ))
+        conn.execute(text(
+            "INSERT INTO cost_entries (id, home_id, order_index, category_id, date, total_amount, "
+            "quantity, notes, attachments) VALUES "
+            "('c1', 'h1', 0, 'cat-fuel', '2026-01-01', 500.0, 1000.0, '', '[]')"
+        ))
+        conn.execute(text(
+            "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
+            "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL)"
+        ))
+        conn.execute(text(
+            "INSERT INTO consumable_transactions "
+            "(id, home_id, order_index, consumable_id, delta, quantity_after, note, timestamp) "
+            "VALUES ('t1', 'h1', 0, 'con1', 5.0, 10.0, '', '2026-01-01T00:00:00Z')"
+        ))
+        conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
+        conn.execute(text("INSERT INTO schema_version (version) VALUES (11)"))
+
+    run_migrations(engine)
+
+    with engine.connect() as conn:
+        version = conn.execute(text("SELECT version FROM schema_version")).scalar()
+        cost_row = conn.execute(text("SELECT linked_consumable_id FROM cost_entries WHERE id = 'c1'")).mappings().first()
+        tx_row = conn.execute(text("SELECT cost_entry_id FROM consumable_transactions WHERE id = 't1'")).mappings().first()
+
+    assert version == CURRENT_VERSION
+    assert cost_row["linked_consumable_id"] is None
+    assert tx_row["cost_entry_id"] is None

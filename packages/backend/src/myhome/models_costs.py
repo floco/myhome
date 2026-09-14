@@ -15,6 +15,7 @@ class CostEntry(BaseModel):
     attachments: list[str] = []
     sourceModule: str | None = None
     sourceId: str | None = None
+    linkedConsumableId: str | None = None
 
 
 class CostsDocument(BaseModel):
@@ -31,6 +32,7 @@ class CostEntryCreate(BaseModel):
     contactId: str | None = None
     notes: str = ""
     roomId: str | None = None
+    linkedConsumableId: str | None = None
 
 
 class CostEntryUpdate(BaseModel):
@@ -42,3 +44,4 @@ class CostEntryUpdate(BaseModel):
     contactId: str | None = None
     notes: str | None = None
     roomId: str | None = None
+    linkedConsumableId: str | None = None

@@ -23,6 +23,7 @@ export interface ConsumableTransaction {
   quantityAfter: number;
   note: string;
   timestamp: string;
+  costEntryId: string | null;
 }
 
 export interface ConsumableDocument {
