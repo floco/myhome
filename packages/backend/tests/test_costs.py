@@ -205,6 +205,8 @@ def test_create_entry_with_linked_consumable_applies_stock_increase(client, home
     tx = next(t for t in con["transactions"] if t["consumableId"] == con_id)
     assert tx["delta"] == 1000.0
     assert tx["costEntryId"] == entry_id
+    # Backdated to the cost entry's own date, not the moment it was saved.
+    assert tx["timestamp"].startswith("2026-01-01")
 
 
 def test_update_entry_linked_quantity_reconciles_stock(client, home_id):

@@ -89,11 +89,14 @@ def reset_consumables(home_id: str) -> None:
 
 def apply_cost_linked_delta(
     doc: ConsumableDocument, consumable_id: str, delta: float, note: str, cost_entry_id: str,
+    timestamp: str | None = None,
 ) -> None:
     """Record a stock transaction on behalf of a linked cost entry.
 
     Mutates `doc` in place; the caller is responsible for saving it. Silently
     no-ops if the consumable no longer exists (e.g. deleted after linking).
+    `timestamp` lets the caller backdate the transaction to the cost entry's
+    own date instead of the moment it was saved -- defaults to now.
     """
     item = next((c for c in doc.consumables if c.id == consumable_id), None)
     if item is None:
@@ -101,7 +104,8 @@ def apply_cost_linked_delta(
     item.quantity += delta
     doc.transactions.append(ConsumableTransaction(
         id=str(uuid.uuid4()), consumableId=consumable_id, delta=delta,
-        quantityAfter=item.quantity, note=note, timestamp=datetime.now(timezone.utc).isoformat(),
+        quantityAfter=item.quantity, note=note,
+        timestamp=timestamp or datetime.now(timezone.utc).isoformat(),
         costEntryId=cost_entry_id,
     ))
 
