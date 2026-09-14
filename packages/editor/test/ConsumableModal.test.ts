@@ -179,9 +179,14 @@ describe("ConsumableModal — edit mode", () => {
     stockTab?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     flushSync();
 
-    const links = target.querySelectorAll(".tx-link");
-    expect(links.length).toBe(1);
-    (links[0] as HTMLButtonElement).click();
+    // Every row renders a .tx-link slot (disabled/hidden when unlinked) so
+    // the column layout stays identical whether or not a row has a link --
+    // only actually-linked rows should be enabled and clickable.
+    const links = target.querySelectorAll<HTMLButtonElement>(".tx-link");
+    expect(links.length).toBe(2);
+    const enabledLinks = Array.from(links).filter((b) => !b.disabled);
+    expect(enabledLinks.length).toBe(1);
+    enabledLinks[0].click();
     expect(onviewcostentry).toHaveBeenCalledWith("ce1");
 
     unmount(comp);

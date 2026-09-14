@@ -226,6 +226,7 @@
             <div class="history-empty">{$_('consumables.modal.noTransactions')}</div>
           {:else}
             {#each currentTransactions as tx (tx.id)}
+              {@const linkable = !!(tx.costEntryId && onviewcostentry)}
               <div class="tx-row">
                 <span class="tx-delta" class:positive={tx.delta >= 0} class:negative={tx.delta < 0}>
                   {formatDelta(tx.delta)}
@@ -233,9 +234,13 @@
                 <span class="tx-after">→ {tx.quantityAfter}</span>
                 <span class="tx-note">{tx.note || "—"}</span>
                 <span class="tx-ts">{formatDateTime(tx.timestamp)}</span>
-                {#if tx.costEntryId && onviewcostentry}
-                  <button class="tx-link" title={$_('consumables.modal.viewCostEntry')} onclick={() => onviewcostentry!(tx.costEntryId!)}>🧾</button>
-                {/if}
+                <button
+                  class="tx-link"
+                  class:tx-link-hidden={!linkable}
+                  disabled={!linkable}
+                  title={$_('consumables.modal.viewCostEntry')}
+                  onclick={() => { if (linkable) onviewcostentry!(tx.costEntryId!); }}
+                >🧾</button>
                 <button class="tx-del" title={$_('common.delete')} onclick={() => store.deleteTransaction(tx.id)}>✕</button>
               </div>
             {/each}
@@ -310,8 +315,9 @@
   .tx-ts { color: var(--text-faint); font-size: 11px; white-space: nowrap; }
   .tx-del { border: none; background: none; color: var(--text-faint); cursor: pointer; font-size: 10px; padding: 2px 4px; }
   .tx-del:hover { color: var(--danger); }
-  .tx-link { border: none; background: none; cursor: pointer; font-size: 12px; padding: 2px 4px; opacity: 0.7; }
+  .tx-link { border: none; background: none; cursor: pointer; font-size: 12px; padding: 2px 4px; opacity: 0.7; flex-shrink: 0; }
   .tx-link:hover { opacity: 1; }
+  .tx-link-hidden { visibility: hidden; pointer-events: none; }
 
   .spacer { flex: 1; }
   .delete-confirm { font-size: 12px; color: var(--danger); }

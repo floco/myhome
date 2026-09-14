@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -24,6 +25,19 @@ def _cost_label(entry: CostEntry) -> str:
     return entry.notes if entry.notes else f"{entry.totalAmount:g}"
 
 
+def _entry_date_timestamp(entry_date: str) -> str:
+    """Turn a cost entry's `YYYY-MM-DD` date into a full UTC timestamp for its
+    linked stock transaction, keeping the current time-of-day so it sorts
+    sensibly against other same-day transactions (same approach as chores'
+    _resolve_completed_at). Falls back to now if the date is malformed."""
+    now = datetime.now(timezone.utc)
+    try:
+        picked = datetime.strptime(entry_date, "%Y-%m-%d").date()
+    except ValueError:
+        return now.isoformat()
+    return now.replace(year=picked.year, month=picked.month, day=picked.day).isoformat()
+
+
 def _sync_linked_stock(home_id: str, entry: CostEntry) -> None:
     """Reconcile the consumable stock transaction tied to this cost entry.
 
@@ -37,6 +51,7 @@ def _sync_linked_stock(home_id: str, entry: CostEntry) -> None:
         apply_cost_linked_delta(
             consumables_doc, entry.linkedConsumableId, entry.quantity,
             note=f"Cost entry: {_cost_label(entry)}", cost_entry_id=entry.id,
+            timestamp=_entry_date_timestamp(entry.date),
         )
     save_consumables(home_id, consumables_doc)
 
