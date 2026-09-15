@@ -878,8 +878,92 @@ def test_run_migrations_recomputes_consumable_transaction_history(tmp_path):
     assert txs["manual"]["quantity_after"] == 300.0  # ground truth, unchanged
     assert txs["manual"]["delta"] == -1200.0  # 300 - 1500, reconciling real-world loss
     assert con1["quantity"] == 300.0  # final chronological running total
-    # con2's untracked initial 50 is recovered (70 current - 20 recorded delta).
-    assert con2["initial_quantity"] == 50.0
-    assert con2_tx["delta"] == 20.0  # unaffected -- single transaction, no reordering
-    assert con2_tx["quantity_after"] == 70.0
-    assert con2["quantity"] == 70.0
+    # Migration 13 alone would recover con2's untracked initial 50 (70
+    # current - 20 recorded delta), but migration 14 (which also runs here,
+    # since this snapshot starts below CURRENT_VERSION) can't tell a real
+    # untracked seed apart from migration-13-era phantom drift once a
+    # consumable has any transaction, so it resets the seed to 0 and lets
+    # the manual transaction's ground-truth quantity_after absorb the gap.
+    assert con2["initial_quantity"] == 0.0
+    assert con2_tx["delta"] == 70.0  # 70 - 0, absorbing the reset seed
+    assert con2_tx["quantity_after"] == 70.0  # ground truth, unchanged
+    assert con2["quantity"] == 70.0  # live current stock unaffected either way
+
+
+def test_run_migrations_resets_phantom_initial_quantity(tmp_path):
+    # Reproduces a real reported bug: after migration 13 ran, a consumable's
+    # history showed an unexplained non-zero starting point at its oldest
+    # entry (e.g. "starts at 6000 for no reason"). Root cause: before
+    # delete_transaction was fixed to recompute quantity, deleting a
+    # transaction left a permanent surplus baked into the consumable's
+    # quantity, which migration 13's initial_quantity backfill then
+    # preserved as a phantom "untracked seed". This snapshot starts
+    # *already at* schema_version 13 (post-migration-13, with the phantom
+    # seed already baked in) to verify migration 14 resets it to 0 and
+    # recomputes -- without disturbing the live current quantity, which a
+    # later manual reading already anchors correctly.
+    db_path = tmp_path / "legacy.db"
+    engine = create_engine(f"sqlite:///{db_path}")
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE consumables (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+            "unit VARCHAR NOT NULL, quantity FLOAT NOT NULL, min_quantity FLOAT NOT NULL, "
+            "category_id VARCHAR, description VARCHAR NOT NULL, placement_floor_id VARCHAR, "
+            "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT, "
+            "initial_quantity FLOAT NOT NULL DEFAULT 0)"
+        ))
+        conn.execute(text(
+            "INSERT INTO consumables (id, home_id, order_index, name, emoji, unit, quantity, "
+            "min_quantity, description, initial_quantity) VALUES "
+            "('con1', 'h1', 0, 'Mazout', '🛢️', 'L', 360.0, 100.0, '', 4500.0)"
+        ))
+        conn.execute(text(
+            "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
+            "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL, "
+            "cost_entry_id VARCHAR)"
+        ))
+        # Already "corrected" by migration 13 against the phantom 4500 seed:
+        # each row's quantity_after = 4500 + cumulative cost-linked deltas.
+        rows = [
+            ("t1", 1820.0, 6320.0, "2024-05-01T00:00:00Z", "ce1"),
+            ("t2", 2000.0, 8320.0, "2025-05-02T00:00:00Z", "ce2"),
+            ("t3", 1500.0, 9820.0, "2025-12-09T00:00:00Z", "ce3"),
+            ("t4", 1000.0, 10820.0, "2026-09-14T06:24:00Z", "ce4"),
+            ("t5", -10460.0, 360.0, "2026-09-14T07:07:00Z", None),
+        ]
+        for i, (tx_id, delta, qty_after, ts, cost_entry_id) in enumerate(rows):
+            conn.execute(
+                text(
+                    "INSERT INTO consumable_transactions "
+                    "(id, home_id, order_index, consumable_id, delta, quantity_after, note, timestamp, cost_entry_id) "
+                    "VALUES (:id, 'h1', :i, 'con1', :delta, :qty_after, '', :ts, :cost_entry_id)"
+                ),
+                {"id": tx_id, "i": i, "delta": delta, "qty_after": qty_after, "ts": ts, "cost_entry_id": cost_entry_id},
+            )
+        conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
+        conn.execute(text("INSERT INTO schema_version (version) VALUES (13)"))
+
+    run_migrations(engine)
+
+    with engine.connect() as conn:
+        version = conn.execute(text("SELECT version FROM schema_version")).scalar()
+        con = conn.execute(text("SELECT quantity, initial_quantity FROM consumables WHERE id = 'con1'")).mappings().first()
+        txs = {
+            r["id"]: r for r in conn.execute(
+                text("SELECT id, delta, quantity_after FROM consumable_transactions WHERE consumable_id = 'con1'")
+            ).mappings().all()
+        }
+
+    assert version == CURRENT_VERSION
+    assert con["initial_quantity"] == 0.0
+    assert txs["t1"]["quantity_after"] == 1820.0
+    assert txs["t2"]["quantity_after"] == 3820.0
+    assert txs["t3"]["quantity_after"] == 5320.0
+    assert txs["t4"]["quantity_after"] == 6320.0
+    assert txs["t4"]["delta"] == 1000.0  # cost-linked deltas are ground truth, unchanged
+    assert txs["t5"]["quantity_after"] == 360.0  # manual ground truth, unchanged
+    assert txs["t5"]["delta"] == -5960.0  # recomputed against the corrected running total
+    # The live current stock is unaffected -- still anchored by the manual reading.
+    assert con["quantity"] == 360.0

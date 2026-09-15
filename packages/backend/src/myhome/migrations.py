@@ -25,7 +25,7 @@ from .schema import (
     work_categories,
 )
 
-CURRENT_VERSION = 13
+CURRENT_VERSION = 14
 
 
 def _drop_kb_folders_table(conn: Connection) -> None:
@@ -271,6 +271,62 @@ def _recompute_consumable_transaction_history(conn: Connection) -> None:
         )
 
 
+def _reset_consumable_phantom_initial_quantity(conn: Connection) -> None:
+    # Migration 13's initial_quantity backfill reverse-derived an "untracked
+    # seed" from each consumable's pre-migration quantity minus the sum of
+    # its transaction deltas -- which assumed that sum was trustworthy. It
+    # wasn't: before this fix, delete_transaction removed a transaction
+    # without ever adjusting the consumable's live quantity to compensate
+    # (a separate, older bug), so any consumable that ever had a transaction
+    # deleted was carrying a permanent leftover surplus/deficit baked into
+    # its quantity. Migration 13 then locked that phantom amount in as
+    # initial_quantity, which shows up as an unexplained non-zero starting
+    # point at the oldest end of the stock history.
+    #
+    # There's no way to tell a real untracked seed (e.g. one set via the MCP
+    # create_consumable tool) apart from this kind of phantom drift once a
+    # consumable has any transaction at all, so for any such consumable
+    # reset the seed to 0 and recompute -- a manual update naturally
+    # absorbs any real historical drift into its next reconciling delta.
+    # Consumables with no transactions are untouched: their quantity IS
+    # their untracked seed, nothing here could have polluted it.
+    consumable_ids = [
+        r[0] for r in conn.execute(
+            text("SELECT DISTINCT consumable_id FROM consumable_transactions")
+        ).all()
+    ]
+    for consumable_id in consumable_ids:
+        conn.execute(
+            text("UPDATE consumables SET initial_quantity = 0 WHERE id = :id"),
+            {"id": consumable_id},
+        )
+        rows = conn.execute(
+            text(
+                "SELECT id, delta, quantity_after, cost_entry_id FROM consumable_transactions "
+                "WHERE consumable_id = :cid ORDER BY timestamp"
+            ),
+            {"cid": consumable_id},
+        ).all()
+        running = 0.0
+        for tx_id, delta, quantity_after, cost_entry_id in rows:
+            if cost_entry_id is not None:
+                running += delta
+                conn.execute(
+                    text("UPDATE consumable_transactions SET quantity_after = :q WHERE id = :id"),
+                    {"q": running, "id": tx_id},
+                )
+            else:
+                conn.execute(
+                    text("UPDATE consumable_transactions SET delta = :d WHERE id = :id"),
+                    {"d": quantity_after - running, "id": tx_id},
+                )
+                running = quantity_after
+        conn.execute(
+            text("UPDATE consumables SET quantity = :q WHERE id = :id"),
+            {"q": running, "id": consumable_id},
+        )
+
+
 MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (2, _drop_kb_folders_table),
     (3, _add_ha_user_id_column),
@@ -284,6 +340,7 @@ MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (11, _add_chore_completion_skipped_column),
     (12, _add_cost_consumable_link_columns),
     (13, _recompute_consumable_transaction_history),
+    (14, _reset_consumable_phantom_initial_quantity),
 ]
 
 
