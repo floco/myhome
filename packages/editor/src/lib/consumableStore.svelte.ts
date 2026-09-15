@@ -14,6 +14,7 @@ export interface Consumable {
   categoryId: string | null;
   description: string;
   placement: ConsumablePlacement | null;
+  initialQuantity: number;
 }
 
 export interface ConsumableTransaction {
@@ -70,7 +71,7 @@ export function createConsumableStore(getHomeId: () => string | null = () => nul
   }
 
   async function createConsumable(
-    data: Omit<Consumable, "id" | "placement">,
+    data: Omit<Consumable, "id" | "placement" | "initialQuantity">,
   ): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");
@@ -85,7 +86,7 @@ export function createConsumableStore(getHomeId: () => string | null = () => nul
 
   async function updateConsumable(
     id: string,
-    patch: Partial<Omit<Consumable, "id" | "placement">>,
+    patch: Partial<Omit<Consumable, "id" | "placement" | "initialQuantity">>,
   ): Promise<void> {
     const homeId = getHomeId();
     if (!homeId) throw new Error("No active home");

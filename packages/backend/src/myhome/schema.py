@@ -343,6 +343,7 @@ consumables = Table(
     Column("placement_room_id", String),
     Column("placement_x", Float),
     Column("placement_y", Float),
+    Column("initial_quantity", Float, nullable=False, server_default="0"),
 )
 
 consumable_transactions = Table(

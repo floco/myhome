@@ -25,7 +25,7 @@ from .schema import (
     work_categories,
 )
 
-CURRENT_VERSION = 12
+CURRENT_VERSION = 13
 
 
 def _drop_kb_folders_table(conn: Connection) -> None:
@@ -217,6 +217,60 @@ def _add_cost_consumable_link_columns(conn: Connection) -> None:
     conn.execute(text("ALTER TABLE consumable_transactions ADD COLUMN cost_entry_id VARCHAR"))
 
 
+def _recompute_consumable_transaction_history(conn: Connection) -> None:
+    # Retroactively fixes consumable stock histories corrupted by the
+    # cost-to-stock linking feature (migration 12): a linked transaction's
+    # quantityAfter (and a manual update's delta) was computed from whatever
+    # the consumable's quantity happened to be at INSERTION time, not from
+    # true chronological (date) order -- since a linked transaction's
+    # timestamp can be backdated to the cost entry's own date, this produced
+    # nonsensical running totals whenever entries were added out of date
+    # order. Also adds initial_quantity, backfilled from each consumable's
+    # pre-migration quantity minus the sum of its (pre-migration, still
+    # creation-order-correct) transaction deltas -- a telescoping sum, so
+    # this recovers any quantity set at creation time with no transaction of
+    # its own (e.g. via the MCP create_consumable tool).
+    #
+    # Walks every consumable's transactions oldest-to-newest and recomputes
+    # them with the same ground-truth-by-type rule persistence_consumables.
+    # recompute_consumable_transactions() uses going forward: a cost-linked
+    # transaction's delta is ground truth (quantity derived); a manual
+    # update's quantity_after is ground truth (delta derived).
+    conn.execute(text("ALTER TABLE consumables ADD COLUMN initial_quantity FLOAT NOT NULL DEFAULT 0"))
+    consumables = conn.execute(text("SELECT id, quantity FROM consumables")).all()
+    for consumable_id, current_quantity in consumables:
+        rows = conn.execute(
+            text(
+                "SELECT id, delta, quantity_after, cost_entry_id FROM consumable_transactions "
+                "WHERE consumable_id = :cid ORDER BY timestamp"
+            ),
+            {"cid": consumable_id},
+        ).all()
+        initial_quantity = current_quantity - sum(r[1] for r in rows)
+        conn.execute(
+            text("UPDATE consumables SET initial_quantity = :iq WHERE id = :id"),
+            {"iq": initial_quantity, "id": consumable_id},
+        )
+        running = initial_quantity
+        for tx_id, delta, quantity_after, cost_entry_id in rows:
+            if cost_entry_id is not None:
+                running += delta
+                conn.execute(
+                    text("UPDATE consumable_transactions SET quantity_after = :q WHERE id = :id"),
+                    {"q": running, "id": tx_id},
+                )
+            else:
+                conn.execute(
+                    text("UPDATE consumable_transactions SET delta = :d WHERE id = :id"),
+                    {"d": quantity_after - running, "id": tx_id},
+                )
+                running = quantity_after
+        conn.execute(
+            text("UPDATE consumables SET quantity = :q WHERE id = :id"),
+            {"q": running, "id": consumable_id},
+        )
+
+
 MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (2, _drop_kb_folders_table),
     (3, _add_ha_user_id_column),
@@ -229,6 +283,7 @@ MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (10, _add_locations_notes_and_attachments),
     (11, _add_chore_completion_skipped_column),
     (12, _add_cost_consumable_link_columns),
+    (13, _recompute_consumable_transaction_history),
 ]
 
 

@@ -122,9 +122,17 @@ def _create_legacy_category_tables(conn) -> None:
         "order_index INTEGER NOT NULL, chore_id VARCHAR NOT NULL, assignment_id VARCHAR, "
         "completed_at VARCHAR NOT NULL, scheduled_due VARCHAR NOT NULL, notes VARCHAR NOT NULL)"
     ))
-    # consumable_transactions pre-dates migration 12 (which adds
-    # cost_entry_id here and linked_consumable_id on cost_entries), so
-    # every migration test's snapshot needs it in this old shape too.
+    # consumables/consumable_transactions pre-date migration 12 (which adds
+    # cost_entry_id/linked_consumable_id) and migration 13 (which recomputes
+    # every consumable's history), so every migration test's snapshot needs
+    # them in this old shape too.
+    conn.execute(text(
+        "CREATE TABLE consumables (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+        "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+        "unit VARCHAR NOT NULL, quantity FLOAT NOT NULL, min_quantity FLOAT NOT NULL, "
+        "category_id VARCHAR, description VARCHAR NOT NULL, placement_floor_id VARCHAR, "
+        "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
+    ))
     conn.execute(text(
         "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
         "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
@@ -300,6 +308,13 @@ def test_run_migrations_adds_insurance_support(tmp_path):
         # runs migration 12 (_add_cost_consumable_link_columns) on its way
         # to CURRENT_VERSION.
         conn.execute(text(
+            "CREATE TABLE consumables (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+            "unit VARCHAR NOT NULL, quantity FLOAT NOT NULL, min_quantity FLOAT NOT NULL, "
+            "category_id VARCHAR, description VARCHAR NOT NULL, placement_floor_id VARCHAR, "
+            "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
+        ))
+        conn.execute(text(
             "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
             "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
             "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL)"
@@ -428,6 +443,13 @@ def test_run_migrations_backfills_inventory_category_id(tmp_path):
             "source_module VARCHAR, source_id VARCHAR)"
         ))
         conn.execute(text(
+            "CREATE TABLE consumables (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+            "unit VARCHAR NOT NULL, quantity FLOAT NOT NULL, min_quantity FLOAT NOT NULL, "
+            "category_id VARCHAR, description VARCHAR NOT NULL, placement_floor_id VARCHAR, "
+            "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
+        ))
+        conn.execute(text(
             "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
             "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
             "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL)"
@@ -510,6 +532,13 @@ def test_run_migrations_adds_label_to_pre_existing_chore_assignments_table(tmp_p
             "source_module VARCHAR, source_id VARCHAR)"
         ))
         conn.execute(text(
+            "CREATE TABLE consumables (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+            "unit VARCHAR NOT NULL, quantity FLOAT NOT NULL, min_quantity FLOAT NOT NULL, "
+            "category_id VARCHAR, description VARCHAR NOT NULL, placement_floor_id VARCHAR, "
+            "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
+        ))
+        conn.execute(text(
             "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
             "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
             "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL)"
@@ -577,6 +606,13 @@ def test_run_migrations_drops_inventory_legacy_category_column(tmp_path):
             "source_module VARCHAR, source_id VARCHAR)"
         ))
         conn.execute(text(
+            "CREATE TABLE consumables (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+            "unit VARCHAR NOT NULL, quantity FLOAT NOT NULL, min_quantity FLOAT NOT NULL, "
+            "category_id VARCHAR, description VARCHAR NOT NULL, placement_floor_id VARCHAR, "
+            "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
+        ))
+        conn.execute(text(
             "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
             "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
             "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL)"
@@ -638,6 +674,13 @@ def test_run_migrations_adds_notes_and_attachments_to_pre_existing_locations_tab
             "source_module VARCHAR, source_id VARCHAR)"
         ))
         conn.execute(text(
+            "CREATE TABLE consumables (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+            "unit VARCHAR NOT NULL, quantity FLOAT NOT NULL, min_quantity FLOAT NOT NULL, "
+            "category_id VARCHAR, description VARCHAR NOT NULL, placement_floor_id VARCHAR, "
+            "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
+        ))
+        conn.execute(text(
             "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
             "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
             "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL)"
@@ -681,6 +724,13 @@ def test_run_migrations_adds_skipped_column_to_pre_existing_chore_completions_ta
             "source_module VARCHAR, source_id VARCHAR)"
         ))
         conn.execute(text(
+            "CREATE TABLE consumables (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+            "unit VARCHAR NOT NULL, quantity FLOAT NOT NULL, min_quantity FLOAT NOT NULL, "
+            "category_id VARCHAR, description VARCHAR NOT NULL, placement_floor_id VARCHAR, "
+            "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
+        ))
+        conn.execute(text(
             "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
             "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
             "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL)"
@@ -715,6 +765,13 @@ def test_run_migrations_adds_cost_consumable_link_columns(tmp_path):
             "('c1', 'h1', 0, 'cat-fuel', '2026-01-01', 500.0, 1000.0, '', '[]')"
         ))
         conn.execute(text(
+            "CREATE TABLE consumables (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+            "unit VARCHAR NOT NULL, quantity FLOAT NOT NULL, min_quantity FLOAT NOT NULL, "
+            "category_id VARCHAR, description VARCHAR NOT NULL, placement_floor_id VARCHAR, "
+            "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
+        ))
+        conn.execute(text(
             "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
             "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
             "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL)"
@@ -737,3 +794,92 @@ def test_run_migrations_adds_cost_consumable_link_columns(tmp_path):
     assert version == CURRENT_VERSION
     assert cost_row["linked_consumable_id"] is None
     assert tx_row["cost_entry_id"] is None
+
+
+def test_run_migrations_recomputes_consumable_transaction_history(tmp_path):
+    # Reproduces the real bug: a linked cost-entry transaction's date can be
+    # backdated relative to when it was actually created, so quantity_after
+    # values computed at insertion time (in creation order) no longer match
+    # a correct running total in chronological (date) order. Simulates a
+    # consumable whose creation order was manual-set(300), then a cost-linked
+    # entry dated *before* it (2026-01-01), then another dated in between
+    # (2026-02-01) -- each originally stored as a naive running total on top
+    # of whatever the "current" quantity was when it was inserted.
+    db_path = tmp_path / "legacy.db"
+    engine = create_engine(f"sqlite:///{db_path}")
+    with engine.begin() as conn:
+        conn.execute(text(
+            "CREATE TABLE consumables (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, name VARCHAR NOT NULL, emoji VARCHAR NOT NULL, "
+            "unit VARCHAR NOT NULL, quantity FLOAT NOT NULL, min_quantity FLOAT NOT NULL, "
+            "category_id VARCHAR, description VARCHAR NOT NULL, placement_floor_id VARCHAR, "
+            "placement_room_id VARCHAR, placement_x FLOAT, placement_y FLOAT)"
+        ))
+        # con2 has an untracked initial quantity (e.g. set via the MCP
+        # create_consumable tool) with no transaction of its own for it --
+        # the backfill must recover it rather than assuming a zero baseline.
+        conn.execute(text(
+            "INSERT INTO consumables (id, home_id, order_index, name, emoji, unit, quantity, "
+            "min_quantity, description) VALUES "
+            "('con1', 'h1', 0, 'Heating Oil', '🛢️', 'L', 1800.0, 100.0, ''), "
+            "('con2', 'h1', 1, 'Batteries', '🔋', 'count', 70.0, 4.0, '')"
+        ))
+        conn.execute(text(
+            "CREATE TABLE consumable_transactions (id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, "
+            "order_index INTEGER NOT NULL, consumable_id VARCHAR NOT NULL, delta FLOAT NOT NULL, "
+            "quantity_after FLOAT NOT NULL, note VARCHAR NOT NULL, timestamp VARCHAR NOT NULL, "
+            "cost_entry_id VARCHAR)"
+        ))
+        conn.execute(text(
+            "INSERT INTO consumable_transactions "
+            "(id, home_id, order_index, consumable_id, delta, quantity_after, note, timestamp, cost_entry_id) "
+            "VALUES ('manual', 'h1', 0, 'con1', 300.0, 300.0, 'niveau ce jour', '2026-03-01T00:00:00Z', NULL)"
+        ))
+        conn.execute(text(
+            "INSERT INTO consumable_transactions "
+            "(id, home_id, order_index, consumable_id, delta, quantity_after, note, timestamp, cost_entry_id) "
+            "VALUES ('ce1', 'h1', 1, 'con1', 1000.0, 1300.0, 'Cost entry: 900', '2026-01-01T00:00:00Z', 'entry1')"
+        ))
+        conn.execute(text(
+            "INSERT INTO consumable_transactions "
+            "(id, home_id, order_index, consumable_id, delta, quantity_after, note, timestamp, cost_entry_id) "
+            "VALUES ('ce2', 'h1', 2, 'con1', 500.0, 1800.0, 'Cost entry: 450', '2026-02-01T00:00:00Z', 'entry2')"
+        ))
+        conn.execute(text(
+            "INSERT INTO consumable_transactions "
+            "(id, home_id, order_index, consumable_id, delta, quantity_after, note, timestamp, cost_entry_id) "
+            "VALUES ('con2-tx', 'h1', 3, 'con2', 20.0, 70.0, 'used 20', '2026-04-01T00:00:00Z', NULL)"
+        ))
+        conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
+        conn.execute(text("INSERT INTO schema_version (version) VALUES (12)"))
+
+    run_migrations(engine)
+
+    with engine.connect() as conn:
+        version = conn.execute(text("SELECT version FROM schema_version")).scalar()
+        con1 = conn.execute(text("SELECT quantity, initial_quantity FROM consumables WHERE id = 'con1'")).mappings().first()
+        con2 = conn.execute(text("SELECT quantity, initial_quantity FROM consumables WHERE id = 'con2'")).mappings().first()
+        txs = {
+            r["id"]: r for r in conn.execute(
+                text("SELECT id, delta, quantity_after FROM consumable_transactions WHERE consumable_id = 'con1'")
+            ).mappings().all()
+        }
+        con2_tx = conn.execute(
+            text("SELECT delta, quantity_after FROM consumable_transactions WHERE id = 'con2-tx'")
+        ).mappings().first()
+
+    assert version == CURRENT_VERSION
+    # Chronological order: ce1 (Jan) -> ce2 (Feb) -> manual (Mar).
+    assert con1["initial_quantity"] == 0.0  # no untracked seed for con1
+    assert txs["ce1"]["delta"] == 1000.0  # ground truth, unchanged
+    assert txs["ce1"]["quantity_after"] == 1000.0  # 0 + 1000
+    assert txs["ce2"]["delta"] == 500.0  # ground truth, unchanged
+    assert txs["ce2"]["quantity_after"] == 1500.0  # 1000 + 500
+    assert txs["manual"]["quantity_after"] == 300.0  # ground truth, unchanged
+    assert txs["manual"]["delta"] == -1200.0  # 300 - 1500, reconciling real-world loss
+    assert con1["quantity"] == 300.0  # final chronological running total
+    # con2's untracked initial 50 is recovered (70 current - 20 recorded delta).
+    assert con2["initial_quantity"] == 50.0
+    assert con2_tx["delta"] == 20.0  # unaffected -- single transaction, no reordering
+    assert con2_tx["quantity_after"] == 70.0
+    assert con2["quantity"] == 70.0

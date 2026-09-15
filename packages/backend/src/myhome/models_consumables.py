@@ -23,6 +23,10 @@ class Consumable(BaseModel):
     categoryId: str | None = None
     description: str = ""
     placement: ConsumablePlacement | None = None
+    # The quantity set at creation, before any transaction exists -- the
+    # baseline recompute_consumable_transactions() walks forward from, since
+    # that initial stock was never itself recorded as a transaction.
+    initialQuantity: float = 0.0
 
 
 class ConsumableTransaction(BaseModel):
