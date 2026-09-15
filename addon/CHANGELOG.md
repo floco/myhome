@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.34.3 - 2026-09-15
+
+- Fixed a consumable's stock history showing an unexplained non-zero starting point at its oldest entry — a one-time fix corrects any consumable whose history was affected by a since-fixed bug where deleting a transaction didn't adjust its live stock total
+
 ## 0.34.2 - 2026-09-15
 
 - Fixed the Consumables stock history not being sorted by date (most recent first)
