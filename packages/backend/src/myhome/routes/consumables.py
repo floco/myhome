@@ -13,7 +13,11 @@ from ..models_consumables import (
     StockUpdate,
 )
 from ..persistence_activity import log_activity
-from ..persistence_consumables import load_consumables, save_consumables
+from ..persistence_consumables import (
+    load_consumables,
+    recompute_consumable_transactions,
+    save_consumables,
+)
 from ..persistence_costs import clear_linked_consumable, load_costs, save_costs
 
 router = APIRouter()
@@ -30,7 +34,7 @@ def create_consumable(
     current_user_id: str = Depends(get_current_user_id),
 ) -> Consumable:
     doc = load_consumables(home_id)
-    item = Consumable(id=str(uuid.uuid4()), **body.model_dump())
+    item = Consumable(id=str(uuid.uuid4()), initialQuantity=body.quantity, **body.model_dump())
     doc.consumables.append(item)
     save_consumables(home_id, doc)
     log_activity(home_id, current_user_id, "consumables", "create", item.name, item.id)
@@ -85,17 +89,15 @@ def update_stock(
     item = next((c for c in doc.consumables if c.id == id), None)
     if not item:
         raise HTTPException(status_code=404)
-    delta = body.quantity - item.quantity
-    item.quantity = body.quantity
-    tx = ConsumableTransaction(
+    doc.transactions.append(ConsumableTransaction(
         id=str(uuid.uuid4()),
         consumableId=id,
-        delta=delta,
+        delta=0.0,
         quantityAfter=body.quantity,
         note=body.note,
         timestamp=datetime.now(timezone.utc).isoformat(),
-    )
-    doc.transactions.append(tx)
+    ))
+    recompute_consumable_transactions(doc, id)
     save_consumables(home_id, doc)
     log_activity(home_id, current_user_id, "consumables", "update", item.name, id)
 
@@ -103,8 +105,10 @@ def update_stock(
 @router.delete("/api/homes/{home_id}/consumable-transactions/{id}", status_code=204)
 def delete_transaction(home_id: str, id: str) -> None:
     doc = load_consumables(home_id)
-    before = len(doc.transactions)
-    doc.transactions = [t for t in doc.transactions if t.id != id]
-    if len(doc.transactions) == before:
+    tx = next((t for t in doc.transactions if t.id == id), None)
+    if tx is None:
         raise HTTPException(status_code=404)
+    consumable_id = tx.consumableId
+    doc.transactions = [t for t in doc.transactions if t.id != id]
+    recompute_consumable_transactions(doc, consumable_id)
     save_consumables(home_id, doc)

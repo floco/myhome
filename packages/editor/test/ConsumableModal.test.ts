@@ -193,6 +193,51 @@ describe("ConsumableModal — edit mode", () => {
     target.remove();
   });
 
+  it("sorts the history by date descending regardless of insertion order, and hides the time", async () => {
+    // Backdated transactions can be inserted in any order (e.g. a cost entry
+    // linked to a past date, added after a more recent manual update), so
+    // display order must come from the timestamp, not array order.
+    const jumbledDoc = {
+      version: 1,
+      consumables: [sampleConsumable],
+      transactions: [
+        { id: "old", consumableId: "c1", delta: 1000, quantityAfter: 1000, note: "", timestamp: "2023-12-02T05:25:00Z", costEntryId: "ce-old" },
+        { id: "newest", consumableId: "c1", delta: 360, quantityAfter: 360, note: "niveau ce jour", timestamp: "2026-09-14T19:07:00Z", costEntryId: null },
+        { id: "middle", consumableId: "c1", delta: 500, quantityAfter: 1500, note: "", timestamp: "2025-05-02T06:24:00Z", costEntryId: "ce-mid" },
+      ],
+    };
+    const store = makeStore(jumbledDoc);
+    await makeTick();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ConsumableModal, {
+      target,
+      props: {
+        consumable: sampleConsumable,
+        store,
+        settingsStore: { consumableUnits: ["count"], consumableCategories: [] },
+        onclose: vi.fn(),
+      },
+    });
+    await tick();
+    flushSync();
+    const stockTab = Array.from(target.querySelectorAll(".tab-btn")).find((b) =>
+      b.textContent?.includes("Stock"),
+    );
+    stockTab?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+
+    const rows = Array.from(target.querySelectorAll(".tx-row"));
+    const notes = rows.map((r) => r.querySelector(".tx-note")?.textContent);
+    expect(notes).toEqual(["niveau ce jour", "—", "—"]);
+
+    const timestamps = rows.map((r) => r.querySelector(".tx-ts")?.textContent ?? "");
+    expect(timestamps.every((t) => !/\d+:\d+/.test(t))).toBe(true);
+
+    unmount(comp);
+    target.remove();
+  });
+
   it("calls onclose when cancel is clicked", async () => {
     const store = makeStore();
     await makeTick();

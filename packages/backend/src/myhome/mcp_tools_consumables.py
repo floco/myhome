@@ -7,7 +7,11 @@ from mcp.server.fastmcp import Context
 
 from .mcp_server import _require_role, _resolve_home_id, mcp
 from .models_consumables import Consumable, ConsumableTransaction
-from .persistence_consumables import load_consumables, save_consumables
+from .persistence_consumables import (
+    load_consumables,
+    recompute_consumable_transactions,
+    save_consumables,
+)
 
 
 def _list_consumables_impl(home_id: str | None) -> dict:
@@ -30,6 +34,7 @@ def _create_consumable_impl(
     item = Consumable(
         id=str(uuid.uuid4()), name=name, emoji=emoji, unit=unit, quantity=quantity,
         minQuantity=min_quantity, categoryId=category_id, description=description,
+        initialQuantity=quantity,
     )
     doc.consumables.append(item)
     save_consumables(resolved, doc)
@@ -67,13 +72,11 @@ def _adjust_consumable_stock_impl(home_id: str | None, consumable_id: str, quant
     item = next((c for c in doc.consumables if c.id == consumable_id), None)
     if item is None:
         raise ValueError(f"Unknown consumable_id {consumable_id!r}")
-    delta = quantity - item.quantity
-    item.quantity = quantity
-    tx = ConsumableTransaction(
-        id=str(uuid.uuid4()), consumableId=consumable_id, delta=delta,
+    doc.transactions.append(ConsumableTransaction(
+        id=str(uuid.uuid4()), consumableId=consumable_id, delta=0.0,
         quantityAfter=quantity, note=note, timestamp=datetime.now(timezone.utc).isoformat(),
-    )
-    doc.transactions.append(tx)
+    ))
+    recompute_consumable_transactions(doc, consumable_id)
     save_consumables(resolved, doc)
     return item.model_dump()
 

@@ -33,6 +33,7 @@ def load_consumables(home_id: str) -> ConsumableDocument:
         Consumable(
             id=r["id"], name=r["name"], emoji=r["emoji"], unit=r["unit"], quantity=r["quantity"],
             minQuantity=r["min_quantity"], categoryId=r["category_id"], description=r["description"],
+            initialQuantity=r["initial_quantity"],
             placement=(
                 ConsumablePlacement(
                     floorId=r["placement_floor_id"], roomId=r["placement_room_id"],
@@ -65,6 +66,7 @@ def save_consumables(home_id: str, doc: ConsumableDocument) -> None:
                     "id": c.id, "home_id": home_id, "order_index": i, "name": c.name, "emoji": c.emoji,
                     "unit": c.unit, "quantity": c.quantity, "min_quantity": c.minQuantity,
                     "category_id": c.categoryId, "description": c.description,
+                    "initial_quantity": c.initialQuantity,
                     "placement_floor_id": c.placement.floorId if c.placement else None,
                     "placement_room_id": c.placement.roomId if c.placement else None,
                     "placement_x": c.placement.position.x if c.placement else None,
@@ -87,6 +89,43 @@ def reset_consumables(home_id: str) -> None:
     save_consumables(home_id, ConsumableDocument())
 
 
+def recompute_consumable_transactions(doc: ConsumableDocument, consumable_id: str) -> None:
+    """Recompute delta/quantityAfter for one consumable's transactions in true
+    chronological (date) order, and update its live quantity to match.
+
+    Needed because transactions can be backdated -- a cost entry linked to a
+    stock increase can carry any date -- so insertion order no longer matches
+    chronological order. The running total must walk transactions oldest to
+    newest rather than trusting whatever was computed at insertion time.
+
+    Ground truth differs by transaction type:
+    - Cost-linked transactions (costEntryId set): `delta` is ground truth
+      (the quantity from the cost entry); `quantityAfter` is derived.
+    - Manual stock updates (costEntryId is None): `quantityAfter` is ground
+      truth (the absolute value the user set); `delta` is derived as the gap
+      needed to reconcile with the true prior running total -- which also
+      naturally captures real-world usage/loss between manual readings.
+
+    Mutates `doc` in place; the caller is responsible for saving it.
+    """
+    item = next((c for c in doc.consumables if c.id == consumable_id), None)
+    if item is None:
+        return
+    txs = sorted(
+        (t for t in doc.transactions if t.consumableId == consumable_id),
+        key=lambda t: t.timestamp,
+    )
+    running = item.initialQuantity
+    for tx in txs:
+        if tx.costEntryId is not None:
+            running += tx.delta
+            tx.quantityAfter = running
+        else:
+            tx.delta = tx.quantityAfter - running
+            running = tx.quantityAfter
+    item.quantity = running
+
+
 def apply_cost_linked_delta(
     doc: ConsumableDocument, consumable_id: str, delta: float, note: str, cost_entry_id: str,
     timestamp: str | None = None,
@@ -101,13 +140,13 @@ def apply_cost_linked_delta(
     item = next((c for c in doc.consumables if c.id == consumable_id), None)
     if item is None:
         return
-    item.quantity += delta
     doc.transactions.append(ConsumableTransaction(
         id=str(uuid.uuid4()), consumableId=consumable_id, delta=delta,
-        quantityAfter=item.quantity, note=note,
+        quantityAfter=0.0, note=note,
         timestamp=timestamp or datetime.now(timezone.utc).isoformat(),
         costEntryId=cost_entry_id,
     ))
+    recompute_consumable_transactions(doc, consumable_id)
 
 
 def reverse_cost_linked_transactions(doc: ConsumableDocument, cost_entry_id: str) -> None:
@@ -115,9 +154,7 @@ def reverse_cost_linked_transactions(doc: ConsumableDocument, cost_entry_id: str
 
     Mutates `doc` in place; the caller is responsible for saving it.
     """
-    linked = [t for t in doc.transactions if t.costEntryId == cost_entry_id]
-    for tx in linked:
-        item = next((c for c in doc.consumables if c.id == tx.consumableId), None)
-        if item is not None:
-            item.quantity -= tx.delta
+    affected = {t.consumableId for t in doc.transactions if t.costEntryId == cost_entry_id}
     doc.transactions = [t for t in doc.transactions if t.costEntryId != cost_entry_id]
+    for consumable_id in affected:
+        recompute_consumable_transactions(doc, consumable_id)

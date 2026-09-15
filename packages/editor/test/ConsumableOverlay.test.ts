@@ -8,7 +8,7 @@ afterEach(() => vi.unstubAllGlobals());
 function makeConsumable(overrides: Partial<Consumable> = {}): Consumable {
   return {
     id: "c1", name: "Dish Soap", emoji: "🧴", unit: "mL", quantity: 5,
-    minQuantity: 2, categoryId: null, description: "",
+    minQuantity: 2, categoryId: null, description: "", initialQuantity: 0,
     placement: { floorId: "f1", roomId: null, position: { x: 1, y: 2 } },
     ...overrides,
   };

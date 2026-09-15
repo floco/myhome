@@ -259,6 +259,32 @@ def test_delete_entry_reverses_linked_stock(client, home_id):
     assert con["transactions"] == []
 
 
+def test_linked_entries_created_out_of_date_order_recompute_chronologically(client, home_id):
+    # Reproduces the real bug: a linked cost entry's date can be backdated,
+    # so creation order no longer matches chronological order. Create the
+    # later-dated entry FIRST, then an earlier-dated one -- both
+    # transactions' running totals must reflect true date order, not
+    # creation order.
+    con_id = _create_consumable(client, home_id, quantity=0.0)
+    client.post(f"/api/homes/{home_id}/costs/entries", json={
+        "categoryId": "cat-fuel", "date": "2026-03-01", "totalAmount": 450.0,
+        "quantity": 500.0, "linkedConsumableId": con_id,
+    })
+    client.post(f"/api/homes/{home_id}/costs/entries", json={
+        "categoryId": "cat-fuel", "date": "2026-01-01", "totalAmount": 900.0,
+        "quantity": 1000.0, "linkedConsumableId": con_id,
+    })
+
+    con = client.get(f"/api/homes/{home_id}/consumables").json()
+    item = next(c for c in con["consumables"] if c["id"] == con_id)
+    txs = sorted(
+        (t for t in con["transactions"] if t["consumableId"] == con_id),
+        key=lambda t: t["timestamp"],
+    )
+    assert [t["quantityAfter"] for t in txs] == [1000.0, 1500.0]
+    assert item["quantity"] == 1500.0
+
+
 def test_delete_linked_consumable_clears_cost_entry_link(client, home_id):
     con_id = _create_consumable(client, home_id, quantity=200.0)
     entry_id = client.post(f"/api/homes/{home_id}/costs/entries", json={

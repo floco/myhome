@@ -2,7 +2,7 @@
   import { _ } from "svelte-i18n";
   import type { createConsumableStore, Consumable } from "../consumableStore.svelte";
   import type { createSettingsStore } from "../settingsStore.svelte";
-  import { formatDateTime } from "../dateFormat";
+  import { formatDate } from "../dateFormat";
   import Modal from "./ui/Modal.svelte";
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
@@ -54,7 +54,9 @@
   let stockSaving = $state(false);
 
   const currentTransactions = $derived(
-    consumable ? store.transactionsFor(consumable.id).slice().reverse() : [],
+    consumable
+      ? store.transactionsFor(consumable.id).slice().sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+      : [],
   );
 
   const resolvedUnit = $derived(unit === CUSTOM_SENTINEL ? customUnit : unit);
@@ -128,7 +130,7 @@
 
 </script>
 
-<Modal open={true} title={isCreate ? $_('consumables.page.addConsumable') : (consumable?.name ?? "")} {onclose}>
+<Modal open={true} title={isCreate ? $_('consumables.page.addConsumable') : (consumable?.name ?? "")} {onclose} width="560px">
   {#snippet children()}
     <div class="tabs">
       <button
@@ -233,7 +235,7 @@
                 </span>
                 <span class="tx-after">→ {tx.quantityAfter}</span>
                 <span class="tx-note">{tx.note || "—"}</span>
-                <span class="tx-ts">{formatDateTime(tx.timestamp)}</span>
+                <span class="tx-ts">{formatDate(tx.timestamp)}</span>
                 <button
                   class="tx-link"
                   class:tx-link-hidden={!linkable}
@@ -285,11 +287,11 @@
   .tab-btn.active { border-bottom-color: var(--accent); color: var(--text); }
 
   .form { display: flex; flex-direction: column; gap: var(--space-3); }
-  .row { display: flex; gap: var(--space-2); }
+  .row { display: flex; gap: var(--space-2); flex-wrap: wrap; }
   .field { display: flex; flex-direction: column; gap: 4px; }
-  .field.grow { flex: 1; }
+  .field.grow { flex: 1; min-width: 180px; }
   .field.short { width: 80px; flex-shrink: 0; }
-  label { font-size: 11px; font-weight: 600; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; }
+  label { font-size: 11px; font-weight: 600; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
   .native-select, .native-textarea {
     background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
     padding: 8px 10px; border-radius: var(--radius-md); font-size: 13px;
