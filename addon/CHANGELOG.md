@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.34.2 - 2026-09-15
+
+- Fixed the Consumables stock history not being sorted by date (most recent first)
+- Fixed the stock history's +/- amounts and running totals being wrong whenever a transaction was backdated relative to when it was created (e.g. a linked cost entry dated in the past) — an automatic one-time fix corrects any already-affected history on upgrade
+- The stock history now shows dates without a time
+- Fixed the "set new quantity" and "note" fields in the stock-update form misaligning when the quantity label wraps to two lines, and widened the modal
+
 ## 0.34.1 - 2026-09-14
 
 - Fixed a linked cost entry's stock transaction using today's date instead of the cost entry's own date
