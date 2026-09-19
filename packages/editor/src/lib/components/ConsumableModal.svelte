@@ -7,6 +7,7 @@
   import Button from "./ui/Button.svelte";
   import Input from "./ui/Input.svelte";
   import EmojiPicker from "./ui/EmojiPicker.svelte";
+  import ConsumableStockChart from "./ConsumableStockChart.svelte";
 
   type ConsumableStore = ReturnType<typeof createConsumableStore>;
   type SettingsStore = Pick<
@@ -33,7 +34,7 @@
     settingsStore.consumableUnits?.length ? settingsStore.consumableUnits : DEFAULT_UNITS,
   );
 
-  let activeTab = $state<"details" | "stock">("details");
+  let activeTab = $state<"details" | "stock" | "evolution">("details");
 
   let name = $state(consumable?.name ?? "");
   let emoji = $state(consumable?.emoji ?? "🛒");
@@ -144,6 +145,11 @@
           class:active={activeTab === "stock"}
           onclick={() => { activeTab = "stock"; }}
         >{$_('consumables.page.stock')}</button>
+        <button
+          class="tab-btn"
+          class:active={activeTab === "evolution"}
+          onclick={() => { activeTab = "evolution"; }}
+        >{$_('consumables.modal.evolution')}</button>
       {/if}
     </div>
 
@@ -249,6 +255,15 @@
           {/if}
         </div>
       </div>
+
+    {:else if activeTab === "evolution"}
+      <div class="evolution-section">
+        <ConsumableStockChart
+          transactions={currentTransactions}
+          unit={consumable?.unit ?? ""}
+          minQuantity={consumable?.minQuantity ?? 0}
+        />
+      </div>
     {/if}
   {/snippet}
 
@@ -302,6 +317,7 @@
   .form-error { color: var(--danger); font-size: 12px; }
 
   .stock-section { display: flex; flex-direction: column; gap: var(--space-3); }
+  .evolution-section { display: flex; flex-direction: column; }
   .current-qty { font-size: 13px; color: var(--text-muted); }
   .update-form { display: flex; flex-direction: column; gap: var(--space-2); }
 
