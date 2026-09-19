@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.35.0 - 2026-09-19
+
+- Added an "Evolution" tab to the Consumables stock modal showing a chart of the stock quantity over time, with a hover tooltip and a marker for the minimum-quantity threshold
+
 ## 0.34.3 - 2026-09-15
 
 - Fixed a consumable's stock history showing an unexplained non-zero starting point at its oldest entry — a one-time fix corrects any consumable whose history was affected by a since-fixed bug where deleting a transaction didn't adjust its live stock total
