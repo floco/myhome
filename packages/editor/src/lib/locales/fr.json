@@ -787,6 +787,8 @@
       "history": "Historique",
       "noTransactions": "Aucune transaction pour l'instant",
       "viewCostEntry": "Voir l'entrée de coût liée",
+      "evolution": "Évolution",
+      "notEnoughHistory": "Pas encore assez d'historique pour un graphique",
       "sure": "Confirmer ?",
       "deleting": "Suppression…",
       "yesDelete": "Oui, supprimer"

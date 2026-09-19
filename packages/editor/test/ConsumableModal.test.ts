@@ -121,6 +121,69 @@ describe("ConsumableModal — edit mode", () => {
     target.remove();
   });
 
+  it("shows an Evolution tab that renders the stock chart", async () => {
+    const store = makeStore();
+    await makeTick();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ConsumableModal, {
+      target,
+      props: {
+        consumable: sampleConsumable,
+        store,
+        settingsStore: { consumableUnits: ["count"], consumableCategories: [] },
+        onclose: vi.fn(),
+      },
+    });
+    await tick();
+    flushSync();
+    const evolutionTab = Array.from(target.querySelectorAll(".tab-btn")).find((b) =>
+      b.textContent?.includes("Evolution"),
+    );
+    expect(evolutionTab).toBeTruthy();
+    evolutionTab?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+    // sampleDoc has a single transaction -- not enough to chart.
+    expect(target.querySelector(".chart-empty")).not.toBeNull();
+    unmount(comp);
+    target.remove();
+  });
+
+  it("renders the chart in the Evolution tab once there are at least 2 transactions", async () => {
+    const docWithHistory = {
+      version: 1,
+      consumables: [sampleConsumable],
+      transactions: [
+        { id: "t1", consumableId: "c1", delta: 6, quantityAfter: 6, note: "", timestamp: "2026-07-01T00:00:00Z", costEntryId: null },
+        { id: "t2", consumableId: "c1", delta: -2, quantityAfter: 4, note: "", timestamp: "2026-07-05T00:00:00Z", costEntryId: null },
+      ],
+    };
+    const store = makeStore(docWithHistory);
+    await makeTick();
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(ConsumableModal, {
+      target,
+      props: {
+        consumable: sampleConsumable,
+        store,
+        settingsStore: { consumableUnits: ["count"], consumableCategories: [] },
+        onclose: vi.fn(),
+      },
+    });
+    await tick();
+    flushSync();
+    const evolutionTab = Array.from(target.querySelectorAll(".tab-btn")).find((b) =>
+      b.textContent?.includes("Evolution"),
+    );
+    evolutionTab?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    flushSync();
+    expect(target.querySelector(".chart-empty")).toBeNull();
+    expect(target.querySelectorAll("svg circle").length).toBe(2);
+    unmount(comp);
+    target.remove();
+  });
+
   it("shows transaction history in Stock tab", async () => {
     const store = makeStore();
     await makeTick();
