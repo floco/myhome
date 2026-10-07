@@ -977,7 +977,7 @@ describe("MarkdownEditor — gallery list rendering", () => {
     target.remove();
   });
 
-  it("leaves a single-item linked-image list as a normal list, not a gallery", () => {
+  it("renders even a single linked-image list item as a one-card gallery (no bullet)", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const app = mount(MarkdownEditor, {
@@ -985,8 +985,8 @@ describe("MarkdownEditor — gallery list rendering", () => {
       props: { value: "- [![Site A](https://a.example.com/img.png)](https://a.example.com) Description A\n", editing: false },
     });
     flushSync();
-    expect(target.querySelector(".kb-gallery")).toBeNull();
-    expect(target.querySelector(".md-preview ul")).not.toBeNull();
+    expect(target.querySelectorAll(".kb-gallery-item").length).toBe(1);
+    expect(target.querySelector(".md-preview ul")).toBeNull();
     unmount(app);
     target.remove();
   });

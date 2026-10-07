@@ -181,11 +181,13 @@
     const title = document.createElement("span");
     title.className = "kb-gallery-title";
     title.textContent = item.alt;
+    title.setAttribute("title", item.alt);
     figcaption.appendChild(title);
     if (item.description) {
       const desc = document.createElement("span");
       desc.className = "kb-gallery-desc";
       desc.textContent = item.description;
+      desc.setAttribute("title", item.description);
       figcaption.appendChild(desc);
     }
     figure.appendChild(figcaption);
@@ -193,15 +195,16 @@
   }
 
   // A <ul>/<ol> renders as a .kb-gallery grid only when EVERY item matches the
-  // gallery-item shape and there are at least 2 -- a single linked image, or a
-  // list mixing in ordinary text items, is left as a normal list rather than
-  // partially (and surprisingly) converted.
+  // gallery-item shape -- a list mixing in ordinary text items is left as a
+  // normal list rather than partially (and surprisingly) converted. Even a
+  // single matching item converts, so it never shows as a bare bullet with a
+  // full-size inline image.
   function renderGalleryListsInHtml(html: string): string {
     const template = document.createElement("template");
     template.innerHTML = html;
     template.content.querySelectorAll("ul, ol").forEach((list) => {
       const items = Array.from(list.children).filter((c) => c.tagName === "LI");
-      if (items.length < 2) return;
+      if (items.length === 0) return;
       const parsed = items.map(parseGalleryListItem);
       if (parsed.some((p) => p === null)) return;
       const grid = document.createElement("div");
@@ -678,24 +681,32 @@
   .md-preview :global(.kb-bookmark-favicon) { width: 14px; height: 14px; border-radius: 2px; }
   .md-preview :global(.kb-bookmark-image) { width: 120px; flex-shrink: 0; object-fit: cover; }
 
+  /* auto-fill + a fixed minmax keeps every card the same size (grid tracks,
+     unlike flex-grow, never stretch to fill leftover row space) while still
+     fitting as many columns as the container allows -- at least 5 on desktop
+     and iPad width, narrowing down to ~3 on a phone. */
   .md-preview :global(.kb-gallery) {
-    display: flex; flex-wrap: wrap; gap: 10px; margin: 0.5em 0; padding: 0;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+    gap: 8px; margin: 0.5em 0; padding: 0; list-style: none;
   }
   .md-preview :global(.kb-gallery-item) {
-    flex: 1 1 160px; max-width: 220px; margin: 0;
+    margin: 0; display: flex; flex-direction: column;
     border: 1px solid var(--border); border-radius: var(--radius-md);
     overflow: hidden; background: var(--surface-alt);
   }
   .md-preview :global(.kb-gallery-item a) { display: block; }
   .md-preview :global(.kb-gallery-item img) {
-    display: block; width: 100%; height: 120px; object-fit: cover;
+    display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover;
   }
   .md-preview :global(.kb-gallery-item figcaption) {
-    display: flex; flex-direction: column; gap: 2px; padding: 8px 10px;
+    display: flex; flex-direction: column; gap: 2px; padding: 6px 8px;
   }
-  .md-preview :global(.kb-gallery-title) { color: var(--text); font-weight: 600; font-size: 12px; }
+  .md-preview :global(.kb-gallery-title) {
+    color: var(--text); font-weight: 600; font-size: 11px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
   .md-preview :global(.kb-gallery-desc) {
-    color: var(--text-muted); font-size: 11px;
+    color: var(--text-muted); font-size: 10px;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
 </style>
