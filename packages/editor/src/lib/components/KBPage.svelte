@@ -52,6 +52,15 @@
   let bookmarkFetching = $state(false);
   let bookmarkError = $state<string | null>(null);
   let bookmarkResolve: ((html: string | null) => void) | null = null;
+  let galleryModalOpen = $state(false);
+  let galleryUrl = $state("");
+  let galleryTitle = $state("");
+  let galleryDescription = $state("");
+  let galleryImage = $state("");
+  let galleryFetching = $state(false);
+  let galleryError = $state<string | null>(null);
+  type GalleryItem = { url: string; image: string; title: string; description: string };
+  let galleryResolve: ((item: GalleryItem | null) => void) | null = null;
   let pageLinkPickerOpen = $state(false);
   let pageLinkResolve: ((result: { id: string; title: string } | null) => void) | null = null;
   let sidebarExpanded = $state(false);
@@ -324,6 +333,47 @@
     } finally {
       bookmarkFetching = false;
     }
+  }
+
+  function handleInsertGalleryImage(): Promise<GalleryItem | null> {
+    galleryUrl = "";
+    galleryTitle = "";
+    galleryDescription = "";
+    galleryImage = "";
+    galleryError = null;
+    galleryModalOpen = true;
+    return new Promise((resolve) => { galleryResolve = resolve; });
+  }
+
+  function closeGalleryModal(result: GalleryItem | null): void {
+    galleryModalOpen = false;
+    galleryResolve?.(result);
+    galleryResolve = null;
+  }
+
+  async function handleFetchGalleryPreview(): Promise<void> {
+    const url = galleryUrl.trim();
+    if (!url) { galleryError = $_('kb.page.galleryUrlRequired'); return; }
+    galleryFetching = true;
+    galleryError = null;
+    try {
+      const preview = await store.fetchLinkPreview(url);
+      galleryTitle = preview.title;
+      galleryDescription = preview.description;
+      galleryImage = preview.image ?? "";
+    } catch (e) {
+      galleryError = e instanceof Error ? e.message : $_('kb.page.galleryFetchFailed');
+    } finally {
+      galleryFetching = false;
+    }
+  }
+
+  function handleConfirmGallery(): void {
+    const url = galleryUrl.trim();
+    if (!url) { galleryError = $_('kb.page.galleryUrlRequired'); return; }
+    closeGalleryModal({
+      url, image: galleryImage.trim(), title: galleryTitle.trim(), description: galleryDescription.trim(),
+    });
   }
 
   function isDraftDirty(): boolean {
@@ -711,6 +761,7 @@
             onSlashPage={handleSlashPage}
             onInsertBookmark={handleInsertBookmark}
             onInsertPageLink={handleInsertPageLink}
+            onInsertGalleryImage={handleInsertGalleryImage}
           />
         {:else}
           <MediaGallery
@@ -765,13 +816,44 @@
 <Modal open={bookmarkModalOpen} title={$_('kb.page.bookmarkModalTitle')} onclose={() => closeBookmarkModal(null)} width="420px">
   <Input placeholder={$_('kb.page.bookmarkUrlPlaceholder')} bind:value={bookmarkUrl} />
   {#if bookmarkError}
-    <p class="bookmark-error">{bookmarkError}</p>
+    <p class="field-error">{bookmarkError}</p>
   {/if}
   {#snippet footer()}
     <Button variant="ghost" onclick={() => closeBookmarkModal(null)}>{$_('common.cancel')}</Button>
     <Button variant="primary" disabled={bookmarkFetching} onclick={handleConfirmBookmark}>
       {bookmarkFetching ? $_('kb.page.bookmarkFetching') : $_('kb.page.bookmarkInsert')}
     </Button>
+  {/snippet}
+</Modal>
+
+<Modal open={galleryModalOpen} title={$_('kb.page.galleryModalTitle')} onclose={() => closeGalleryModal(null)} width="420px">
+  <div class="modal-field">
+    <span class="modal-label">{$_('kb.page.galleryUrlLabel')}</span>
+    <div class="gallery-url-row">
+      <Input placeholder={$_('kb.page.galleryUrlPlaceholder')} bind:value={galleryUrl} />
+      <Button variant="ghost" disabled={galleryFetching} onclick={handleFetchGalleryPreview}>
+        {galleryFetching ? $_('kb.page.galleryFetching') : $_('kb.page.galleryFetchPreview')}
+      </Button>
+    </div>
+  </div>
+  <div class="modal-field">
+    <span class="modal-label">{$_('kb.page.galleryTitleLabel')}</span>
+    <Input placeholder={$_('kb.page.galleryTitlePlaceholder')} bind:value={galleryTitle} />
+  </div>
+  <div class="modal-field">
+    <span class="modal-label">{$_('kb.page.galleryDescriptionLabel')}</span>
+    <Input placeholder={$_('kb.page.galleryDescriptionPlaceholder')} bind:value={galleryDescription} />
+  </div>
+  <div class="modal-field">
+    <span class="modal-label">{$_('kb.page.galleryImageLabel')}</span>
+    <Input placeholder={$_('kb.page.galleryImagePlaceholder')} bind:value={galleryImage} />
+  </div>
+  {#if galleryError}
+    <p class="field-error">{galleryError}</p>
+  {/if}
+  {#snippet footer()}
+    <Button variant="ghost" onclick={() => closeGalleryModal(null)}>{$_('common.cancel')}</Button>
+    <Button variant="primary" onclick={handleConfirmGallery}>{$_('kb.page.galleryInsert')}</Button>
   {/snippet}
 </Modal>
 
@@ -892,5 +974,11 @@
     to { transform: rotate(360deg); }
   }
 
-  .bookmark-error { color: var(--danger); font-size: 12px; margin: 6px 0 0; }
+  .field-error { color: var(--danger); font-size: 12px; margin: 6px 0 0; }
+
+  .modal-field { display: flex; flex-direction: column; gap: 4px; }
+  .modal-field + .modal-field { margin-top: var(--space-3); }
+  .modal-label { font-size: 11px; color: var(--text-muted); }
+  .gallery-url-row { display: flex; gap: var(--space-2); }
+  .gallery-url-row :global(.ui-input) { flex: 1; }
 </style>

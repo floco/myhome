@@ -49,6 +49,7 @@
     onSlashPage?: () => Promise<{ id: string; title: string } | null>;
     onInsertBookmark?: () => Promise<string | null>;
     onInsertPageLink?: () => Promise<{ id: string; title: string } | null>;
+    onInsertGalleryImage?: () => Promise<{ url: string; image: string; title: string; description: string } | null>;
   }
 
   let {
@@ -63,6 +64,7 @@
     onSlashPage,
     onInsertBookmark,
     onInsertPageLink,
+    onInsertGalleryImage,
   }: Props = $props();
 
   const effectivePlaceholder = $derived(placeholder ?? $_('markdownEditor.defaultPlaceholder'));
@@ -121,13 +123,104 @@
     return template.innerHTML;
   }
 
+  interface GalleryItem {
+    url: string | null;
+    image: string;
+    alt: string;
+    description: string;
+  }
+
+  // A gallery list item is `[![alt](image)](url) trailing text` (or a bare
+  // `![alt](image)` with no link). Loose lists (a blank line between items)
+  // wrap each item's inline content in its own <p>; unwrap that first so both
+  // forms are recognized the same way.
+  function parseGalleryListItem(li: Element): GalleryItem | null {
+    const container = li.children.length === 1 && li.children[0].tagName === "P" ? li.children[0] : li;
+    const first = container.children[0];
+    if (!first) return null;
+    let anchor: Element | null = null;
+    let img: Element | null = null;
+    if (first.tagName === "A" && first.children.length === 1 && first.children[0].tagName === "IMG") {
+      anchor = first;
+      img = first.children[0];
+    } else if (first.tagName === "IMG") {
+      img = first;
+    } else {
+      return null;
+    }
+    const description = Array.from(container.childNodes)
+      .filter((n) => n !== first)
+      .map((n) => n.textContent ?? "")
+      .join("")
+      .trim();
+    return {
+      url: anchor?.getAttribute("href") ?? null,
+      image: img.getAttribute("src") ?? "",
+      alt: img.getAttribute("alt") ?? "",
+      description,
+    };
+  }
+
+  function buildGalleryFigure(item: GalleryItem): HTMLElement {
+    const figure = document.createElement("figure");
+    figure.className = "kb-gallery-item";
+    const img = document.createElement("img");
+    img.setAttribute("src", item.image);
+    img.setAttribute("alt", item.alt);
+    if (item.url) {
+      const a = document.createElement("a");
+      a.setAttribute("href", item.url);
+      a.setAttribute("target", "_blank");
+      a.setAttribute("rel", "noopener noreferrer");
+      a.appendChild(img);
+      figure.appendChild(a);
+    } else {
+      figure.appendChild(img);
+    }
+    const figcaption = document.createElement("figcaption");
+    const title = document.createElement("span");
+    title.className = "kb-gallery-title";
+    title.textContent = item.alt;
+    figcaption.appendChild(title);
+    if (item.description) {
+      const desc = document.createElement("span");
+      desc.className = "kb-gallery-desc";
+      desc.textContent = item.description;
+      figcaption.appendChild(desc);
+    }
+    figure.appendChild(figcaption);
+    return figure;
+  }
+
+  // A <ul>/<ol> renders as a .kb-gallery grid only when EVERY item matches the
+  // gallery-item shape and there are at least 2 -- a single linked image, or a
+  // list mixing in ordinary text items, is left as a normal list rather than
+  // partially (and surprisingly) converted.
+  function renderGalleryListsInHtml(html: string): string {
+    const template = document.createElement("template");
+    template.innerHTML = html;
+    template.content.querySelectorAll("ul, ol").forEach((list) => {
+      const items = Array.from(list.children).filter((c) => c.tagName === "LI");
+      if (items.length < 2) return;
+      const parsed = items.map(parseGalleryListItem);
+      if (parsed.some((p) => p === null)) return;
+      const grid = document.createElement("div");
+      grid.className = "kb-gallery";
+      parsed.forEach((item) => grid.appendChild(buildGalleryFigure(item as GalleryItem)));
+      list.replaceWith(grid);
+    });
+    return template.innerHTML;
+  }
+
   // marked() is sync here (no async extensions); cast to string is safe.
   // ADD_ATTR: DOMPurify strips target="_blank" by default -- needed so bookmark
   // cards (and any other link) open in a new tab instead of navigating the SPA away.
   const renderedHtml = $derived(
     value.trim()
       ? resolveKbLinksInHtml(
-          externalizeLinksInHtml(DOMPurify.sanitize(marked(value) as string, { ADD_ATTR: ["target"] })),
+          renderGalleryListsInHtml(
+            externalizeLinksInHtml(DOMPurify.sanitize(marked(value) as string, { ADD_ATTR: ["target"] })),
+          ),
         )
       : "",
   );
@@ -202,6 +295,32 @@
     if (!onInsertPageLink) return;
     const page = await onInsertPageLink();
     if (page) insert(`[${page.title}](#/kb/${page.id})`);
+  }
+
+  function buildGalleryListItem(item: { url: string; image: string; title: string; description: string }): string {
+    const alt = sanitizeAlt(item.title);
+    const url = safeUrl(item.url);
+    const image = safeUrl(item.image);
+    const description = item.description.replace(/\n/g, " ").trim();
+    const line = `- [![${alt}](<${image}>)](<${url}>)`;
+    return description ? `${line} ${description}` : line;
+  }
+
+  // Inserts text as its own line: no leading newline is needed right after
+  // another inserted line (keeping consecutive gallery items in one tight
+  // list, with no blank line between them), but a leading newline is added
+  // when the cursor sits mid-paragraph so the item doesn't glue onto existing text.
+  function insertOwnLine(text: string): void {
+    if (!textareaEl) return;
+    const s = textareaEl.selectionStart;
+    const needsLeadingNewline = s > 0 && value[s - 1] !== "\n";
+    insert(`${needsLeadingNewline ? "\n" : ""}${text}\n`, "", "");
+  }
+
+  async function handleInsertGalleryImage(): Promise<void> {
+    if (!onInsertGalleryImage) return;
+    const item = await onInsertGalleryImage();
+    if (item) insertOwnLine(buildGalleryListItem(item));
   }
 
   interface ListContinuation {
@@ -390,6 +509,15 @@
         onclick={handleInsertBookmark}
       >🔖</button>
     {/if}
+    {#if onInsertGalleryImage}
+      <span class="tb-sep" aria-hidden="true"></span>
+      <button
+        class="tb-btn"
+        type="button"
+        title={$_('markdownEditor.insertGalleryImage')}
+        onclick={handleInsertGalleryImage}
+      >🖼️</button>
+    {/if}
   </div>
   <textarea
     class="md-editor"
@@ -549,4 +677,25 @@
   }
   .md-preview :global(.kb-bookmark-favicon) { width: 14px; height: 14px; border-radius: 2px; }
   .md-preview :global(.kb-bookmark-image) { width: 120px; flex-shrink: 0; object-fit: cover; }
+
+  .md-preview :global(.kb-gallery) {
+    display: flex; flex-wrap: wrap; gap: 10px; margin: 0.5em 0; padding: 0;
+  }
+  .md-preview :global(.kb-gallery-item) {
+    flex: 1 1 160px; max-width: 220px; margin: 0;
+    border: 1px solid var(--border); border-radius: var(--radius-md);
+    overflow: hidden; background: var(--surface-alt);
+  }
+  .md-preview :global(.kb-gallery-item a) { display: block; }
+  .md-preview :global(.kb-gallery-item img) {
+    display: block; width: 100%; height: 120px; object-fit: cover;
+  }
+  .md-preview :global(.kb-gallery-item figcaption) {
+    display: flex; flex-direction: column; gap: 2px; padding: 8px 10px;
+  }
+  .md-preview :global(.kb-gallery-title) { color: var(--text); font-weight: 600; font-size: 12px; }
+  .md-preview :global(.kb-gallery-desc) {
+    color: var(--text-muted); font-size: 11px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
 </style>

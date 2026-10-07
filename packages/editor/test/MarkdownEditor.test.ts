@@ -835,6 +835,189 @@ describe("MarkdownEditor — bookmark insert", () => {
   });
 });
 
+describe("MarkdownEditor — gallery image insert", () => {
+  it("does not show the gallery-insert button when onInsertGalleryImage is omitted", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true } });
+    flushSync();
+    expect(target.querySelector('[title="Insert gallery image"]')).toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("shows the gallery-insert button when onInsertGalleryImage is provided", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const onInsertGalleryImage = async () => null;
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true, onInsertGalleryImage } });
+    flushSync();
+    expect(target.querySelector('[title="Insert gallery image"]')).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking the gallery-insert button inserts a gallery list item at the cursor", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const onInsertGalleryImage = async () => ({
+      url: "https://example.com",
+      image: "https://example.com/thumb.png",
+      title: "Example Site",
+      description: "A short description.",
+    });
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true, onInsertGalleryImage } });
+    flushSync();
+    (target.querySelector('[title="Insert gallery image"]') as HTMLButtonElement).click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe(
+      "- [![Example Site](<https://example.com/thumb.png>)](<https://example.com>) A short description.\n",
+    );
+    unmount(app);
+    target.remove();
+  });
+
+  it("omits trailing text when the description is empty", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const onInsertGalleryImage = async () => ({
+      url: "https://example.com",
+      image: "https://example.com/thumb.png",
+      title: "Example Site",
+      description: "",
+    });
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true, onInsertGalleryImage } });
+    flushSync();
+    (target.querySelector('[title="Insert gallery image"]') as HTMLButtonElement).click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("- [![Example Site](<https://example.com/thumb.png>)](<https://example.com>)\n");
+    unmount(app);
+    target.remove();
+  });
+
+  it("clicking the gallery-insert button does nothing when onInsertGalleryImage resolves to null", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const onInsertGalleryImage = async () => null;
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true, onInsertGalleryImage } });
+    flushSync();
+    (target.querySelector('[title="Insert gallery image"]') as HTMLButtonElement).click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("");
+    unmount(app);
+    target.remove();
+  });
+
+  it("two consecutive inserts produce adjacent list lines with no blank line between them", async () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    let n = 0;
+    const onInsertGalleryImage = async () => {
+      n += 1;
+      return { url: `https://example.com/${n}`, image: `https://example.com/${n}.png`, title: `Site ${n}`, description: "" };
+    };
+    const app = mount(MarkdownEditor, { target, props: { value: "", editing: true, onInsertGalleryImage } });
+    flushSync();
+    const btn = target.querySelector('[title="Insert gallery image"]') as HTMLButtonElement;
+    btn.click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    btn.click();
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe(
+      "- [![Site 1](<https://example.com/1.png>)](<https://example.com/1>)\n" +
+      "- [![Site 2](<https://example.com/2.png>)](<https://example.com/2>)\n",
+    );
+    unmount(app);
+    target.remove();
+  });
+});
+
+describe("MarkdownEditor — gallery list rendering", () => {
+  const galleryMarkdown =
+    "- [![Site A](https://a.example.com/img.png)](https://a.example.com) Description A\n" +
+    "- [![Site B](https://b.example.com/img.png)](https://b.example.com) Description B\n";
+
+  it("renders a list of 2+ linked-image items as a .kb-gallery grid", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: galleryMarkdown, editing: false } });
+    flushSync();
+    const gallery = target.querySelector(".kb-gallery");
+    expect(gallery).not.toBeNull();
+    const items = target.querySelectorAll(".kb-gallery-item");
+    expect(items.length).toBe(2);
+    const first = items[0];
+    expect(first.querySelector("img")?.getAttribute("src")).toBe("https://a.example.com/img.png");
+    expect(first.querySelector("a")?.getAttribute("href")).toBe("https://a.example.com");
+    expect(first.querySelector(".kb-gallery-title")?.textContent).toBe("Site A");
+    expect(first.querySelector(".kb-gallery-desc")?.textContent).toBe("Description A");
+    expect(target.querySelector(".md-preview ul")).toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("gallery links open in a new tab", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, { target, props: { value: galleryMarkdown, editing: false } });
+    flushSync();
+    const link = target.querySelector(".kb-gallery-item a");
+    expect(link?.getAttribute("target")).toBe("_blank");
+    expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
+    unmount(app);
+    target.remove();
+  });
+
+  it("leaves a single-item linked-image list as a normal list, not a gallery", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const app = mount(MarkdownEditor, {
+      target,
+      props: { value: "- [![Site A](https://a.example.com/img.png)](https://a.example.com) Description A\n", editing: false },
+    });
+    flushSync();
+    expect(target.querySelector(".kb-gallery")).toBeNull();
+    expect(target.querySelector(".md-preview ul")).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("leaves the whole list untouched if any item doesn't match the gallery-item pattern", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const mixed = galleryMarkdown + "- just a plain text item\n";
+    const app = mount(MarkdownEditor, { target, props: { value: mixed, editing: false } });
+    flushSync();
+    expect(target.querySelector(".kb-gallery")).toBeNull();
+    expect(target.querySelector(".md-preview ul")).not.toBeNull();
+    unmount(app);
+    target.remove();
+  });
+
+  it("renders a gallery item with no description without a .kb-gallery-desc element", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const noDesc =
+      "- [![Site A](https://a.example.com/img.png)](https://a.example.com)\n" +
+      "- [![Site B](https://b.example.com/img.png)](https://b.example.com)\n";
+    const app = mount(MarkdownEditor, { target, props: { value: noDesc, editing: false } });
+    flushSync();
+    const items = target.querySelectorAll(".kb-gallery-item");
+    expect(items[0].querySelector(".kb-gallery-desc")).toBeNull();
+    unmount(app);
+    target.remove();
+  });
+});
+
 describe("MarkdownEditor — table editor", () => {
   it("shows the Table toolbar button", () => {
     const target = document.createElement("div");

@@ -745,6 +745,85 @@ describe("KBPage — insert bookmark", () => {
   });
 });
 
+describe("KBPage — insert gallery image", () => {
+  it("fetches a preview, lets fields be edited, and inserts a gallery list item at the cursor", async () => {
+    const entries = [makeEntry({ content: "" })];
+    const { target, comp } = await setup(entries, { selectedItemId: "e1" });
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
+    flushSync();
+    (target.querySelector('[title="Insert gallery image"]') as HTMLButtonElement).click();
+    flushSync();
+    const modal = target.querySelector(".ui-modal") as HTMLElement;
+    expect(modal).not.toBeNull();
+    const inputs = modal.querySelectorAll(".ui-input");
+    const [urlInput, titleInput, descriptionInput, imageInput] = Array.from(inputs) as HTMLInputElement[];
+
+    urlInput.value = "https://example.com";
+    urlInput.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+    const fetchBtn = Array.from(modal.querySelectorAll("button")).find((b) => b.textContent?.includes("Fetch")) as HTMLElement;
+    fetchBtn.click();
+    await tick(); flushSync();
+    // Fake backend echoes the url back as the title for a stateless preview fetch.
+    expect(titleInput.value).toBe("https://example.com");
+
+    imageInput.value = "https://example.com/thumb.png";
+    imageInput.dispatchEvent(new Event("input", { bubbles: true }));
+    descriptionInput.value = "A nice example site.";
+    descriptionInput.dispatchEvent(new Event("input", { bubbles: true }));
+    flushSync();
+
+    const insertBtn = Array.from(modal.querySelectorAll("button")).find((b) => b.textContent?.includes("Insert")) as HTMLElement;
+    insertBtn.click();
+    await tick(); flushSync(); await tick(); flushSync();
+    expect(target.querySelector(".ui-modal")).toBeNull();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe(
+      "- [![https://example.com](<https://example.com/thumb.png>)](<https://example.com>) A nice example site.\n",
+    );
+    unmount(comp); target.remove();
+  });
+
+  it("Cancel closes the modal without inserting anything", async () => {
+    const entries = [makeEntry({ content: "" })];
+    const { target, comp } = await setup(entries, { selectedItemId: "e1" });
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
+    flushSync();
+    (target.querySelector('[title="Insert gallery image"]') as HTMLButtonElement).click();
+    flushSync();
+    const modal = target.querySelector(".ui-modal") as HTMLElement;
+    const cancelBtn = Array.from(modal.querySelectorAll("button")).find((b) => b.textContent === "Cancel") as HTMLElement;
+    cancelBtn.click();
+    flushSync();
+    expect(target.querySelector(".ui-modal")).toBeNull();
+    const textarea = target.querySelector("textarea.md-editor") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("");
+    unmount(comp); target.remove();
+  });
+
+  it("shows an error and does not insert when URL is empty", async () => {
+    const entries = [makeEntry({ content: "" })];
+    const { target, comp } = await setup(entries, { selectedItemId: "e1" });
+    (target.querySelector(".md-preview") as HTMLElement).dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true }),
+    );
+    flushSync();
+    (target.querySelector('[title="Insert gallery image"]') as HTMLButtonElement).click();
+    flushSync();
+    const modal = target.querySelector(".ui-modal") as HTMLElement;
+    const insertBtn = Array.from(modal.querySelectorAll("button")).find((b) => b.textContent?.includes("Insert")) as HTMLElement;
+    insertBtn.click();
+    flushSync();
+    expect(target.querySelector(".ui-modal")).not.toBeNull();
+    expect(target.textContent).toContain("A URL is required");
+    unmount(comp); target.remove();
+  });
+});
+
 describe("KBPage — insert page link", () => {
   it("opens a page picker, and selecting a page inserts a link at the cursor", async () => {
     const entries = [
