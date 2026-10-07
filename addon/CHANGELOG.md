@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.36.0 - 2026-10-07
+
+- Added a markdown-driven link gallery to the Knowledge Base editor: a new toolbar button fetches a link preview and inserts a gallery item, and 2+ consecutive items render as a grid of image cards with a title and short description
+
 ## 0.35.0 - 2026-09-19
 
 - Added an "Evolution" tab to the Consumables stock modal showing a chart of the stock quantity over time, with a hover tooltip and a marker for the minimum-quantity threshold
