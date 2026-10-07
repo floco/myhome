@@ -991,14 +991,30 @@ describe("MarkdownEditor — gallery list rendering", () => {
     target.remove();
   });
 
-  it("leaves the whole list untouched if any item doesn't match the gallery-item pattern", () => {
+  it("converts only the matching run when a plain item follows in the same list, leaving the plain item in a normal list", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     const mixed = galleryMarkdown + "- just a plain text item\n";
     const app = mount(MarkdownEditor, { target, props: { value: mixed, editing: false } });
     flushSync();
-    expect(target.querySelector(".kb-gallery")).toBeNull();
-    expect(target.querySelector(".md-preview ul")).not.toBeNull();
+    expect(target.querySelectorAll(".kb-gallery-item").length).toBe(2);
+    const plainList = target.querySelector(".md-preview ul");
+    expect(plainList).not.toBeNull();
+    expect(plainList?.textContent).toContain("just a plain text item");
+    unmount(app);
+    target.remove();
+  });
+
+  it("converts the gallery run even when an unrelated plain bullet list follows elsewhere in the document (marked merges same-marker lists separated by a blank line into one <ul>)", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const value = galleryMarkdown + "\n- unrelated note one\n- unrelated note two\n";
+    const app = mount(MarkdownEditor, { target, props: { value, editing: false } });
+    flushSync();
+    expect(target.querySelectorAll(".kb-gallery-item").length).toBe(2);
+    const plainList = target.querySelector(".md-preview ul");
+    expect(plainList?.textContent).toContain("unrelated note one");
+    expect(plainList?.textContent).toContain("unrelated note two");
     unmount(app);
     target.remove();
   });

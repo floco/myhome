@@ -194,11 +194,16 @@
     return figure;
   }
 
-  // A <ul>/<ol> renders as a .kb-gallery grid only when EVERY item matches the
-  // gallery-item shape -- a list mixing in ordinary text items is left as a
-  // normal list rather than partially (and surprisingly) converted. Even a
-  // single matching item converts, so it never shows as a bare bullet with a
-  // full-size inline image.
+  // Each maximal run of consecutive matching <li>s becomes a .kb-gallery grid;
+  // runs of non-matching items are kept as a normal <ul>/<ol>, preserving
+  // order. A single-item run still converts, so it never shows as a bare
+  // bullet with a full-size inline image.
+  //
+  // Splitting by run (rather than requiring the whole list to match) matters
+  // because marked merges separate bullet lists that share a marker and are
+  // only blank-line apart into ONE <ul> -- so an unrelated plain list placed
+  // near a gallery elsewhere in the document can otherwise end up as extra
+  // <li>s in the same <ul>, which would silently block the whole conversion.
   function renderGalleryListsInHtml(html: string): string {
     const template = document.createElement("template");
     template.innerHTML = html;
@@ -206,11 +211,31 @@
       const items = Array.from(list.children).filter((c) => c.tagName === "LI");
       if (items.length === 0) return;
       const parsed = items.map(parseGalleryListItem);
-      if (parsed.some((p) => p === null)) return;
-      const grid = document.createElement("div");
-      grid.className = "kb-gallery";
-      parsed.forEach((item) => grid.appendChild(buildGalleryFigure(item as GalleryItem)));
-      list.replaceWith(grid);
+      if (parsed.every((p) => p === null)) return;
+
+      const fragment = document.createDocumentFragment();
+      let plainList: Element | null = null;
+      let i = 0;
+      while (i < items.length) {
+        if (parsed[i] === null) {
+          if (!plainList) {
+            plainList = document.createElement(list.tagName);
+            fragment.appendChild(plainList);
+          }
+          plainList.appendChild(items[i]);
+          i++;
+          continue;
+        }
+        plainList = null;
+        const grid = document.createElement("div");
+        grid.className = "kb-gallery";
+        while (i < items.length && parsed[i] !== null) {
+          grid.appendChild(buildGalleryFigure(parsed[i] as GalleryItem));
+          i++;
+        }
+        fragment.appendChild(grid);
+      }
+      list.replaceWith(fragment);
     });
     return template.innerHTML;
   }
@@ -683,11 +708,18 @@
 
   /* auto-fill + a fixed minmax keeps every card the same size (grid tracks,
      unlike flex-grow, never stretch to fill leftover row space) while still
-     fitting as many columns as the container allows -- at least 5 on desktop
-     and iPad width, narrowing down to ~3 on a phone. */
+     fitting as many columns as the container allows -- ~3 per row on a
+     phone, bumped to roughly double the card size (fewer columns, but each
+     one bigger) from tablet width up. */
   .md-preview :global(.kb-gallery) {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
     gap: 8px; margin: 0.5em 0; padding: 0; list-style: none;
+  }
+  @media (min-width: 700px) {
+    .md-preview :global(.kb-gallery) {
+      grid-template-columns: repeat(auto-fill, minmax(164px, 1fr));
+      gap: 12px;
+    }
   }
   .md-preview :global(.kb-gallery-item) {
     margin: 0; display: flex; flex-direction: column;
@@ -701,12 +733,21 @@
   .md-preview :global(.kb-gallery-item figcaption) {
     display: flex; flex-direction: column; gap: 2px; padding: 6px 8px;
   }
+  @media (min-width: 700px) {
+    .md-preview :global(.kb-gallery-item figcaption) { padding: 8px 10px; gap: 3px; }
+  }
   .md-preview :global(.kb-gallery-title) {
     color: var(--text); font-weight: 600; font-size: 11px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  @media (min-width: 700px) {
+    .md-preview :global(.kb-gallery-title) { font-size: 13px; }
+  }
   .md-preview :global(.kb-gallery-desc) {
     color: var(--text-muted); font-size: 10px;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  @media (min-width: 700px) {
+    .md-preview :global(.kb-gallery-desc) { font-size: 12px; }
   }
 </style>
