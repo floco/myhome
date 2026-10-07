@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.37.0 - 2026-10-07
+
+- Fixed the Knowledge Base link gallery's card layout: cards are now uniformly sized in a responsive grid (around 7 per row on desktop, 4 on iPad portrait, 3 on mobile), and a single gallery item now renders as a card instead of a bare bulleted link
+
 ## 0.36.0 - 2026-10-07
 
 - Added a markdown-driven link gallery to the Knowledge Base editor: a new toolbar button fetches a link preview and inserts a gallery item, and 2+ consecutive items render as a grid of image cards with a title and short description
