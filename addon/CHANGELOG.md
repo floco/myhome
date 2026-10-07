@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.38.0 - 2026-10-07
+
+- Fixed the Knowledge Base link gallery failing to render when an unrelated plain bullet list elsewhere on the page got merged with it by the markdown parser — the gallery now converts correctly regardless of nearby lists
+- Increased the link gallery's card size on desktop and iPad (roughly 2x larger)
+
 ## 0.37.0 - 2026-10-07
 
 - Fixed the Knowledge Base link gallery's card layout: cards are now uniformly sized in a responsive grid (around 7 per row on desktop, 4 on iPad portrait, 3 on mobile), and a single gallery item now renders as a card instead of a bare bulleted link
