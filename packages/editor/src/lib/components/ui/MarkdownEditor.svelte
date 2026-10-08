@@ -213,6 +213,13 @@
       const parsed = items.map(parseGalleryListItem);
       if (parsed.every((p) => p === null)) return;
 
+      // An <ol> run that doesn't start at the first item must carry its
+      // resumed ordinal explicitly (the original list's own start attribute,
+      // offset by how many items precede this run), or a fresh <ol> would
+      // silently renumber it from 1.
+      const isOrdered = list.tagName === "OL";
+      const baseStart = isOrdered ? parseInt(list.getAttribute("start") ?? "1", 10) : 1;
+
       const fragment = document.createDocumentFragment();
       let plainList: Element | null = null;
       let i = 0;
@@ -220,6 +227,7 @@
         if (parsed[i] === null) {
           if (!plainList) {
             plainList = document.createElement(list.tagName);
+            if (isOrdered) plainList.setAttribute("start", String(baseStart + i));
             fragment.appendChild(plainList);
           }
           plainList.appendChild(items[i]);
