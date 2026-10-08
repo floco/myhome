@@ -1019,6 +1019,36 @@ describe("MarkdownEditor — gallery list rendering", () => {
     target.remove();
   });
 
+  it("preserves ordinal numbering when a plain run follows a gallery item in an ordered list", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const value =
+      "1. [![Site A](https://a.example.com/img.png)](https://a.example.com) Desc A\n" +
+      "2. plain text item\n";
+    const app = mount(MarkdownEditor, { target, props: { value, editing: false } });
+    flushSync();
+    expect(target.querySelectorAll(".kb-gallery-item").length).toBe(1);
+    const plainList = target.querySelector(".md-preview ol");
+    expect(plainList?.getAttribute("start")).toBe("2");
+    expect(plainList?.textContent).toContain("plain text item");
+    unmount(app);
+    target.remove();
+  });
+
+  it("accounts for the original list's own start attribute when renumbering a trailing plain run", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const value =
+      "5. [![Site A](https://a.example.com/img.png)](https://a.example.com) Desc A\n" +
+      "6. plain text item\n";
+    const app = mount(MarkdownEditor, { target, props: { value, editing: false } });
+    flushSync();
+    const plainList = target.querySelector(".md-preview ol");
+    expect(plainList?.getAttribute("start")).toBe("6");
+    unmount(app);
+    target.remove();
+  });
+
   it("renders a gallery item with no description without a .kb-gallery-desc element", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
