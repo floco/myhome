@@ -38,6 +38,30 @@
   let activeTab = $state<"list" | "suggestions">("list");
   let searchesModalOpen = $state(false);
 
+  // The external runner adds suggestions in the background: refresh the inbox
+  // (and its tab badge) when it's opened, when the page becomes visible again,
+  // and periodically while it's on screen.
+  const SUGGESTIONS_REFRESH_MS = 60_000;
+
+  function refreshSuggestions(): void {
+    if (searchStore && document.visibilityState === "visible") void searchStore.reload();
+  }
+
+  function selectTab(id: string): void {
+    activeTab = id as "list" | "suggestions";
+    if (activeTab === "suggestions") refreshSuggestions();
+  }
+
+  $effect(() => {
+    if (!searchStore) return;
+    const timer = setInterval(refreshSuggestions, SUGGESTIONS_REFRESH_MS);
+    document.addEventListener("visibilitychange", refreshSuggestions);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshSuggestions);
+    };
+  });
+
   $effect(() => {
     if (selectedItemId) {
       const found = store.properties.find((p) => p.id === selectedItemId);
@@ -122,7 +146,7 @@
           },
         ]}
         active={activeTab}
-        onchange={(id) => { activeTab = id as "list" | "suggestions"; }}
+        onchange={selectTab}
       />
     </div>
   {/if}
