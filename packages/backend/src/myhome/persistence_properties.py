@@ -10,6 +10,7 @@ from . import attachment_storage
 from .attachment_storage import generate_pdf_thumbnail
 from .db import get_engine
 from .models_properties import Property, PropertiesDocument
+from .persistence_property_search import reset_property_search
 from .schema import properties as properties_table
 
 _MODULE = "properties"
@@ -70,4 +71,5 @@ def delete_all_attachments(home_id: str, property_id: str) -> None:
 
 def reset_properties(home_id: str) -> None:
     save_properties(home_id, PropertiesDocument())
+    reset_property_search(home_id)
     attachment_storage.delete_all_module_attachments(home_id, _MODULE)

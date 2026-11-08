@@ -17,6 +17,7 @@ from .mcp_app import mcp_asgi_app
 from .mcp_server import mcp
 from .notification_scheduler import notification_digest_loop
 from .persistence_mcp import load_mcp_config
+from .property_search_cleanup import property_search_cleanup_loop
 from .routes import activity, attachments, attachments_tokens, auth, backup, build, chores, consumables, contacts, costs, ha, homes, house, insurance, inventory, kb, locations, mcp_config, modules, notifications, properties, property_search, settings, svg, system, works
 
 
@@ -28,11 +29,13 @@ async def _lifespan(app: FastAPI):
     async with mcp.session_manager.run():
         digest_task = asyncio.create_task(notification_digest_loop())
         backup_task = asyncio.create_task(scheduled_backup_loop())
+        cleanup_task = asyncio.create_task(property_search_cleanup_loop())
         try:
             yield
         finally:
             digest_task.cancel()
             backup_task.cancel()
+            cleanup_task.cancel()
 
 
 app = FastAPI(title="MyHome Backend", version="0.1.0", lifespan=_lifespan)
