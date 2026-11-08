@@ -43,6 +43,14 @@ def latest_slot(s: PropertySearch, now: datetime) -> datetime | None:
     return None
 
 
+STALE_ERROR_PREFIX = "stale:"
+
+
+def _is_stale_failure(r: PropertySearchRun) -> bool:
+    """A run the runner never reported back on (crash/kill): retry like a usage limit."""
+    return r.status == "failed" and (r.error or "").startswith(STALE_ERROR_PREFIX)
+
+
 def is_due(s: PropertySearch, runs_for_slot: list[PropertySearchRun], now: datetime) -> tuple[bool, str | None]:
     if s.runRequestedAt:
         slot_key = f"manual:{s.runRequestedAt}"
@@ -54,8 +62,9 @@ def is_due(s: PropertySearch, runs_for_slot: list[PropertySearchRun], now: datet
             return (False, None)
         slot_key = slot.isoformat()
     same = [r for r in runs_for_slot if r.slot == slot_key]
-    if any(r.status in ("succeeded", "failed", "running") for r in same):
+    retryable = [r for r in same if r.status == "usage_limited" or _is_stale_failure(r)]
+    if any(r.status in ("succeeded", "failed", "running") and r not in retryable for r in same):
         return (False, None)
-    if sum(1 for r in same if r.status == "usage_limited") >= MAX_USAGE_LIMIT_RETRIES:
+    if len(retryable) >= MAX_USAGE_LIMIT_RETRIES:
         return (False, None)
     return (True, slot_key)

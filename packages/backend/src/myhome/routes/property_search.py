@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from ..deps import get_current_user_id, require_auth
 from ..models_properties import Property
@@ -21,6 +21,7 @@ from ..models_property_search import (
 from ..persistence_activity import log_activity
 from ..persistence_properties import load_properties, save_properties
 from .. import persistence_property_search as ps
+from .. import property_search_ingest as ingest
 from ..property_search_schedule import local_now
 
 router = APIRouter()
@@ -155,3 +156,37 @@ def put_config(
             patch[key] = patch[key].strip()
     ps.save_config(home_id, cfg.model_copy(update=patch))
     return _config_out(home_id)
+
+
+# ── Runner API (provider-neutral; Bearer API token with role >= normal) ──────
+
+@router.post("/api/property-search/runner/claim")
+def runner_claim(current_user: tuple[str, str] = require_auth("normal")):
+    claim = ingest.claim_next()
+    if claim is None:
+        return Response(status_code=204)
+    return claim
+
+
+@router.post("/api/property-search/runner/runs/{run_id}/complete")
+def runner_complete(
+    run_id: str, body: ingest.RunnerComplete, current_user: tuple[str, str] = require_auth("normal"),
+) -> dict:
+    try:
+        return ingest.complete_run(run_id, body)
+    except ingest.RunNotFound:
+        raise HTTPException(status_code=404)
+    except ingest.RunNotRunning:
+        raise HTTPException(status_code=409, detail="Run is not running")
+
+
+@router.post("/api/property-search/runner/runs/{run_id}/fail", status_code=204)
+def runner_fail(
+    run_id: str, body: ingest.RunnerFail, current_user: tuple[str, str] = require_auth("normal"),
+) -> None:
+    try:
+        ingest.fail_run(run_id, body)
+    except ingest.RunNotFound:
+        raise HTTPException(status_code=404)
+    except ingest.RunNotRunning:
+        raise HTTPException(status_code=409, detail="Run is not running")

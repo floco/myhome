@@ -90,3 +90,11 @@ def test_local_now_falls_back_to_utc(monkeypatch):
     assert local_now().utcoffset() == timedelta(0)
     monkeypatch.delenv("TZ")
     assert local_now().utcoffset() == timedelta(0)
+
+
+def test_stale_failed_run_is_retryable():
+    now = datetime(2026, 11, 8, 9, 0, tzinfo=UTC)
+    slot = datetime(2026, 11, 8, 8, 0, tzinfo=UTC).isoformat()
+    stale = PropertySearchRun(id="r", searchId="s1", slot=slot, startedAt=slot, status="failed", error="stale: no result after 2 h")
+    assert is_due(_s(), [stale], now)[0] is True
+    assert is_due(_s(), [stale] * 3, now) == (False, None)
