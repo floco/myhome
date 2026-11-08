@@ -1601,7 +1601,7 @@
         />
 
       {:else if currentRoute === "#/settings"}
-        <SettingsPage store={settingsStore} {authStore} importFromDonetick={choreStore.importFromDonetick} {reloadAllStores} />
+        <SettingsPage store={settingsStore} {authStore} importFromDonetick={choreStore.importFromDonetick} {reloadAllStores} {propertySearchStore} />
 
       {:else if currentRoute === "#/locations"}
         <LocationsPage store={locationsStore} kbEntries={kbStore.entries} />

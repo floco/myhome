@@ -155,3 +155,45 @@ describe("SettingsPage — nav shell", () => {
     unmount(app);
   });
 });
+
+describe("SettingsPage — AI property search group", () => {
+  let target: HTMLDivElement;
+  const originalFetch = globalThis.fetch;
+  const searchStore = {
+    loadConfig: vi.fn().mockResolvedValue({ retentionDays: 30, brevoApiKeySet: false, senderEmail: "", senderName: "My Home", recipients: [], appBaseUrl: "" }),
+    saveConfig: vi.fn(), sendTestEmail: vi.fn(),
+  };
+
+  beforeEach(() => {
+    target = document.createElement("div");
+    document.body.appendChild(target);
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    target.remove();
+    homesStore._reset();
+  });
+
+  it("is shown to admins and opens the panel", async () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin"), importFromDonetick: vi.fn(async () => 0), propertySearchStore: searchStore } as any });
+    flushSync();
+    const item = [...target.querySelectorAll(".nav-item")].find((b) => b.textContent?.includes("AI property search")) as HTMLButtonElement;
+    expect(item).toBeDefined();
+    item.click();
+    flushSync();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(searchStore.loadConfig).toHaveBeenCalled();
+    expect(target.textContent).toContain("Connect the runner");
+    unmount(app);
+  });
+
+  it("is hidden from non-admins", () => {
+    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("normal"), importFromDonetick: vi.fn(async () => 0), propertySearchStore: searchStore } as any });
+    flushSync();
+    const labels = [...target.querySelectorAll(".nav-item")].map((b) => b.textContent);
+    expect(labels.some((l) => l?.includes("AI property search"))).toBe(false);
+    unmount(app);
+  });
+});

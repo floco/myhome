@@ -13,6 +13,8 @@
   import SettingsBackup from "./settings/SettingsBackup.svelte";
   import SettingsActivityLog from "./settings/SettingsActivityLog.svelte";
   import SettingsAbout from "./settings/SettingsAbout.svelte";
+  import SettingsPropertySearch from "./settings/SettingsPropertySearch.svelte";
+  import type { createPropertySearchStore } from "../propertySearchStore.svelte";
 
   type SettingsStore = ReturnType<typeof createSettingsStore>;
   type AuthStore = ReturnType<typeof createAuthStore>;
@@ -22,8 +24,9 @@
     authStore: AuthStore;
     importFromDonetick: (token: string, url: string) => Promise<number>;
     reloadAllStores?: () => void;
+    propertySearchStore?: Pick<ReturnType<typeof createPropertySearchStore>, "loadConfig" | "saveConfig" | "sendTestEmail">;
   }
-  let { store, authStore, importFromDonetick, reloadAllStores }: Props = $props();
+  let { store, authStore, importFromDonetick, reloadAllStores, propertySearchStore }: Props = $props();
 
   interface SettingsGroupDef {
     id: string;
@@ -38,6 +41,7 @@
     { id: "notifications", icon: "🔔" },
     { id: "security", icon: "🔐" },
     { id: "integrations", icon: "🔌", adminOnly: true },
+    { id: "propertySearch", icon: "🔎", adminOnly: true },
     { id: "backup", icon: "💾" },
     { id: "activity", icon: "📜" },
     { id: "about", icon: "ℹ️" },
@@ -46,6 +50,7 @@
   const visibleGroups = $derived(
     ALL_GROUPS
       .filter((g) => !g.adminOnly || authStore.user?.role === "admin")
+      .filter((g) => g.id !== "propertySearch" || propertySearchStore !== undefined)
       .map((g) => ({ ...g, label: $_(`settings.nav.${g.id}`) })),
   );
 
@@ -77,6 +82,8 @@
         <SettingsSecurity {authStore} />
       {:else if activeGroup === "integrations"}
         <SettingsIntegrations {authStore} {importFromDonetick} />
+      {:else if activeGroup === "propertySearch" && propertySearchStore}
+        <SettingsPropertySearch searchStore={propertySearchStore} />
       {:else if activeGroup === "backup"}
         <SettingsBackup />
       {:else if activeGroup === "activity"}
