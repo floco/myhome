@@ -1,3 +1,4 @@
+import re
 import pytest
 from fastapi.testclient import TestClient
 
@@ -75,7 +76,7 @@ def test_accept_creates_property_and_hides_suggestion(client, home_id):
     p = props[0]
     assert p["status"] == "watching" and p["listingUrl"] == "https://a.si/1" and p["type"] == "land"
     assert p["landSize"] == 820 and p["address"] == "Novo Mesto"
-    assert "Matches size and budget" in p["notes"] and "nepremicnine.net" in p["notes"] and "EUR" in p["notes"]
+    assert "Matches size and budget" in p["notes"] and re.search(r"\bnepremicnine\.net\b", p["notes"]) and "EUR" in p["notes"]
     assert client.get(f"/api/homes/{home_id}/property-suggestions").json() == []
     assert client.post(f"/api/homes/{home_id}/property-suggestions/g1/accept").status_code == 409
 

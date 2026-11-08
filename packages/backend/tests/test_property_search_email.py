@@ -1,3 +1,4 @@
+import re
 import httpx
 import pytest
 import respx
@@ -47,10 +48,14 @@ def test_digest_subject_and_link():
     assert "150,000 EUR" in text and "820 m²" in text
 
 
+def _mentions(body: str, host: str) -> bool:
+    return re.search(rf"(?<![\w.]){re.escape(host)}\b", body) is not None
+
+
 def test_digest_contains_sites_and_usage():
     _, html, text = render_digest(_search(), _run(), [_item(), _item("Other")], "")
     for body in (html, text):
-        assert "bolha.com" in body and "nepremicnine.net" in body
+        assert _mentions(body, "bolha.com") and _mentions(body, "nepremicnine.net")
         assert "Weekly: 34% used" in body and "5-hour: n/a" in body and "1,500" in body
     assert text.count("nepremicnine.net") >= 1 and "www.nepremicnine.net" not in text
     assert "#/properties" not in html
