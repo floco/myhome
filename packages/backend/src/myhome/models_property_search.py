@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 Frequency = Literal["daily", "weekly", "monthly"]
 SuggestionStatus = Literal["new", "pinned", "accepted", "rejected"]
@@ -37,6 +37,9 @@ class PropertySearch(_SearchFields):
     lastRunAt: str | None = None
     lastRunStatus: RunStatus | None = None
     lastRunError: str | None = None
+    lastRunNew: int | None = None
+    lastRunDuplicates: int | None = None
+    lastRunEmailError: str | None = None
 
 
 class PropertySearchCreate(_SearchFields):
@@ -56,6 +59,8 @@ class PropertySearchUpdate(BaseModel):
 
 
 class PropertySuggestion(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
     id: str
     searchId: str
     runId: str

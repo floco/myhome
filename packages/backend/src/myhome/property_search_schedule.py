@@ -10,6 +10,7 @@ from .backup_scheduler import _should_run_today
 from .models_property_search import PropertySearch, PropertySearchRun
 
 MAX_USAGE_LIMIT_RETRIES = 3
+USAGE_LIMIT_BACKOFF = timedelta(hours=1)
 _LOOKBACK_DAYS = 62
 
 
@@ -66,5 +67,8 @@ def is_due(s: PropertySearch, runs_for_slot: list[PropertySearchRun], now: datet
     if any(r.status in ("succeeded", "failed", "running") and r not in retryable for r in same):
         return (False, None)
     if len(retryable) >= MAX_USAGE_LIMIT_RETRIES:
+        return (False, None)
+    limited_at = [_parse(r.finishedAt) for r in same if r.status == "usage_limited" and r.finishedAt]
+    if limited_at and now - max(limited_at) < USAGE_LIMIT_BACKOFF:
         return (False, None)
     return (True, slot_key)

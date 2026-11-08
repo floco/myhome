@@ -178,6 +178,7 @@ def complete_run(run_id: str, body: RunnerComplete, now: datetime | None = None)
     run.newCount = len(fresh)
     run.duplicateCount = duplicates
     search.lastRunAt, search.lastRunStatus, search.lastRunError = run.finishedAt, "succeeded", None
+    search.lastRunNew, search.lastRunDuplicates, search.lastRunEmailError = run.newCount, duplicates, None
     with get_engine().begin() as conn:
         ps.insert_suggestions(home_id, fresh, conn=conn)
         ps.add_seen(home_id, seen_rows, conn=conn)
@@ -196,6 +197,7 @@ def fail_run(run_id: str, body: RunnerFail, now: datetime | None = None) -> None
     run.finishedAt = now.isoformat()
     run.usage = body.usage
     search.lastRunAt, search.lastRunStatus, search.lastRunError = run.finishedAt, run.status, run.error
+    search.lastRunNew, search.lastRunDuplicates, search.lastRunEmailError = None, None, None
     with get_engine().begin() as conn:
         ps.update_run(home_id, run, conn=conn)
         ps.update_search(home_id, search, conn=conn)

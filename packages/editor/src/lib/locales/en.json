@@ -1432,6 +1432,7 @@
       "openListing": "Open listing",
       "lastRun": "Last run {when}: {status}",
       "lastRunCounts": "{new} new, {dup} already seen",
+      "emailFailed": "Email not sent: {error}",
       "neverRun": "Not run yet",
       "actionError": "Action failed: {error}"
     },

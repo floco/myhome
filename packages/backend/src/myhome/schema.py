@@ -481,6 +481,9 @@ property_searches = Table(
     Column("last_run_at", String),
     Column("last_run_status", String),
     Column("last_run_error", Text),
+    Column("last_run_new", Integer),
+    Column("last_run_duplicates", Integer),
+    Column("last_run_email_error", Text),
 )
 
 property_suggestions = Table(

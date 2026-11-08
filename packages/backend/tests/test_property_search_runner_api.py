@@ -148,7 +148,11 @@ def test_fail_usage_limit_leaves_search_due(client, home_id):
     r = client.post(f"/api/property-search/runner/runs/{c['runId']}/fail", json={"reason": "usage_limit", "message": "limit"})
     assert r.status_code == 204
     assert ps.get_run(home_id, c["runId"]).status == "usage_limited"
-    assert client.post(CLAIM).status_code == 200  # retried
+    assert client.post(CLAIM).status_code == 204  # backoff: not retried on the next tick
+    run = ps.get_run(home_id, c["runId"])
+    run.finishedAt = (datetime.now(timezone.utc) - timedelta(minutes=61)).isoformat()
+    ps.update_run(home_id, run)
+    assert client.post(CLAIM).status_code == 200  # retried after an hour
 
 
 def test_fail_error_marks_failed(client, home_id):
@@ -169,3 +173,23 @@ def test_normal_token_can_claim(client, home_id):
     token = client.post("/api/auth/tokens", json={"name": "runner", "role": "normal"}).json()["token"]
     tc = TestClient(app)
     assert tc.post(CLAIM, headers={"Authorization": f"Bearer {token}"}).status_code == 204
+
+
+def test_complete_skips_nan_and_infinite_numbers(client, home_id):
+    _search(client, home_id)
+    c = client.post(CLAIM).json()
+    body = ('{"listings": [{"title": "a", "listingUrl": "https://a.si/n", "price": NaN, "landSize": 800},'
+            ' {"title": "b", "listingUrl": "https://a.si/i", "price": 1e400, "landSize": 800},'
+            ' {"title": "c", "listingUrl": "https://a.si/s", "price": "NaN", "landSize": 800},'
+            ' {"title": "ok", "listingUrl": "https://a.si/ok"}]}')
+    r = client.post(f"/api/property-search/runner/runs/{c['runId']}/complete", content=body,
+                    headers={"Content-Type": "application/json"})
+    assert r.status_code == 200 and r.json()["new"] == 1
+
+
+def test_complete_records_counts_on_search(client, home_id):
+    s = _search(client, home_id)
+    c = client.post(CLAIM).json()
+    _complete(client, c["runId"], [_listing(1), _listing(1)])
+    got = ps.get_search(home_id, s["id"])
+    assert got.lastRunNew == 1 and got.lastRunDuplicates == 1 and got.lastRunEmailError is None

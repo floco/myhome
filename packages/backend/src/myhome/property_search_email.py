@@ -122,7 +122,8 @@ def _config_complete(cfg: PropertySearchConfig) -> bool:
     return bool(cfg.brevoApiKey and cfg.senderEmail and cfg.recipients)
 
 
-def _send_and_record(home_id: str, run: PropertySearchRun, rendered: tuple[str, str, str]) -> None:
+def _send_and_record(home_id: str, search: PropertySearch, run: PropertySearchRun,
+                     rendered: tuple[str, str, str]) -> None:
     cfg = ps.load_config(home_id)
     if not _config_complete(cfg):
         return
@@ -132,6 +133,10 @@ def _send_and_record(home_id: str, run: PropertySearchRun, rendered: tuple[str, 
         log.warning("Property search email failed for home %s: %s", home_id, e)
         run.emailError = str(e)[:1000]
         ps.update_run(home_id, run)
+        current = ps.get_search(home_id, search.id)
+        if current is not None:
+            current.lastRunEmailError = run.emailError
+            ps.update_search(home_id, current)
 
 
 def send_digest_if_any(home_id: str, search: PropertySearch, run: PropertySearchRun,
@@ -139,11 +144,11 @@ def send_digest_if_any(home_id: str, search: PropertySearch, run: PropertySearch
     if not items:
         return
     cfg = ps.load_config(home_id)
-    _send_and_record(home_id, run, render_digest(search, run, items, cfg.appBaseUrl))
+    _send_and_record(home_id, search, run, render_digest(search, run, items, cfg.appBaseUrl))
 
 
 def send_failure(home_id: str, search: PropertySearch, run: PropertySearchRun) -> None:
-    _send_and_record(home_id, run, render_failure(search, run))
+    _send_and_record(home_id, search, run, render_failure(search, run))
 
 
 def send_test(home_id: str) -> None:

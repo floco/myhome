@@ -98,3 +98,13 @@ def test_stale_failed_run_is_retryable():
     stale = PropertySearchRun(id="r", searchId="s1", slot=slot, startedAt=slot, status="failed", error="stale: no result after 2 h")
     assert is_due(_s(), [stale], now)[0] is True
     assert is_due(_s(), [stale] * 3, now) == (False, None)
+
+
+def test_usage_limited_retry_waits_an_hour():
+    now = datetime(2026, 11, 8, 9, 0, tzinfo=UTC)
+    slot = datetime(2026, 11, 8, 8, 0, tzinfo=UTC).isoformat()
+    recent = PropertySearchRun(id="r", searchId="s1", slot=slot, startedAt=slot, status="usage_limited",
+                               finishedAt=(now - timedelta(minutes=20)).isoformat())
+    old = recent.model_copy(update={"finishedAt": (now - timedelta(minutes=61)).isoformat()})
+    assert is_due(_s(), [recent], now) == (False, None)
+    assert is_due(_s(), [old], now)[0] is True

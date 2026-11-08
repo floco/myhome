@@ -86,4 +86,15 @@ describe("PropertySuggestionsTab", () => {
     const t = render({ searchStore: store });
     expect(t.querySelector(".runs")?.textContent).toContain("usage limit reached");
   });
+
+  it("shows last run counts and email error", () => {
+    const store = makeSearchStore({
+      searches: [makeSearch({ lastRunAt: "2026-11-08T08:00:00Z", lastRunStatus: "succeeded", lastRunNew: 3,
+        lastRunDuplicates: 2, lastRunEmailError: "Brevo error 401: Key not found" })],
+    });
+    const t = render({ searchStore: store });
+    const runs = t.querySelector(".runs")?.textContent ?? "";
+    expect(runs).toContain("3 new, 2 already seen");
+    expect(runs).toContain("Email not sent: Brevo error 401: Key not found");
+  });
 });

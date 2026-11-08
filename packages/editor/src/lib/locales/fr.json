@@ -1432,6 +1432,7 @@
       "openListing": "Voir l'annonce",
       "lastRun": "Dernière exécution {when} : {status}",
       "lastRunCounts": "{new} nouveau(x), {dup} déjà vu(s)",
+      "emailFailed": "Email non envoyé : {error}",
       "neverRun": "Pas encore exécutée",
       "actionError": "Échec de l'action : {error}"
     },

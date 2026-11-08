@@ -21,6 +21,9 @@ export interface PropertySearch {
   lastRunAt: string | null;
   lastRunStatus: RunStatus | null;
   lastRunError: string | null;
+  lastRunNew?: number | null;
+  lastRunDuplicates?: number | null;
+  lastRunEmailError?: string | null;
 }
 
 export type PropertySearchInput = Pick<

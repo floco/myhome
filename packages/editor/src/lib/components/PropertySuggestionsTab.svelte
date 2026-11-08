@@ -106,7 +106,13 @@
           <strong>{s.name}</strong> —
           {#if s.lastRunAt && s.lastRunStatus}
             {$_("propertySearch.inbox.lastRun", { values: { when: when(s.lastRunAt), status: $_(`propertySearch.status.${s.lastRunStatus}`) } })}
+            {#if s.lastRunNew != null}
+              · {$_("propertySearch.inbox.lastRunCounts", { values: { new: s.lastRunNew, dup: s.lastRunDuplicates ?? 0 } })}
+            {/if}
             {#if s.lastRunError}<span class="err">({s.lastRunError})</span>{/if}
+            {#if s.lastRunEmailError}
+              <span class="err email-err">{$_("propertySearch.inbox.emailFailed", { values: { error: s.lastRunEmailError } })}</span>
+            {/if}
           {:else}
             {$_("propertySearch.inbox.neverRun")}
           {/if}
@@ -172,6 +178,7 @@
   .run-line strong { color: var(--text-muted); font-weight: 600; }
   .run-error { color: var(--danger, #cc3333); }
   .err { margin-left: 4px; }
+  .email-err { color: var(--danger, #cc3333); }
   .action-error { margin: var(--space-2) var(--space-3) 0; font-size: 12px; color: var(--danger, #cc3333); }
   .list { flex: 1; overflow-y: auto; padding: var(--space-3); display: flex; flex-direction: column; gap: var(--space-3); }
   .empty { padding: 32px; text-align: center; color: var(--text-faint); font-size: 13px; }

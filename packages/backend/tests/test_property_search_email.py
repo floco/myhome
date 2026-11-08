@@ -119,6 +119,8 @@ def test_complete_survives_brevo_failure(client, home_id):
     assert resp.status_code == 200
     run = ps.get_run(home_id, run_id)
     assert run.status == "succeeded" and run.emailError and "down" in run.emailError
+    search = ps.get_search(home_id, run.searchId)
+    assert search.lastRunEmailError and "down" in search.lastRunEmailError
 
 
 @respx.mock

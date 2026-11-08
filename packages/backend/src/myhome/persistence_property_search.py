@@ -32,6 +32,8 @@ _SEARCH_COLS = {
     "maxResultsPerRun": "max_results_per_run", "maxListingAgeDays": "max_listing_age_days",
     "createdAt": "created_at", "runRequestedAt": "run_requested_at", "lastRunAt": "last_run_at",
     "lastRunStatus": "last_run_status", "lastRunError": "last_run_error",
+    "lastRunNew": "last_run_new", "lastRunDuplicates": "last_run_duplicates",
+    "lastRunEmailError": "last_run_email_error",
 }
 
 
