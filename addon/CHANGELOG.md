@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.39.0 - 2026-11-08
+
+- Added AI property search to the Properties module: named searches with a free-text prompt (the AI picks the listing sites itself), a daily/weekly/monthly schedule, a maximum number of results per run and a maximum listing age. Results land in a new "Suggestions" inbox where each listing can be accepted (added to Properties as "watching"), kept, or rejected, and a listing is never suggested twice
+- Added an admin-only "AI property search" Settings panel: suggestion retention period with automatic cleanup (kept suggestions are exempt), and Brevo email digests to a shared recipient list showing the new listings, the sites queried and the AI usage
+- The searches are run by an external, AI-provider-neutral runner through a new token-authenticated API; a Claude Code runner is available at https://github.com/floco/property-search-runner
+- Fixed the Home Assistant live-state websocket failing on recent versions of the anyio library
+- Fixed the Knowledge Base link gallery losing ordered-list numbering when it splits an ordered list
+
 ## 0.38.0 - 2026-10-07
 
 - Fixed the Knowledge Base link gallery failing to render when an unrelated plain bullet list elsewhere on the page got merged with it by the markdown parser — the gallery now converts correctly regardless of nearby lists
