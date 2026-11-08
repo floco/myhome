@@ -21,6 +21,7 @@ from ..models_property_search import (
 from ..persistence_activity import log_activity
 from ..persistence_properties import load_properties, save_properties
 from .. import persistence_property_search as ps
+from .. import property_search_email as email
 from .. import property_search_ingest as ingest
 from ..property_search_schedule import local_now
 
@@ -156,6 +157,14 @@ def put_config(
             patch[key] = patch[key].strip()
     ps.save_config(home_id, cfg.model_copy(update=patch))
     return _config_out(home_id)
+
+
+@router.post("/api/homes/{home_id}/property-search-config/test-email", status_code=204)
+def test_email(home_id: str, current_user: tuple[str, str] = require_auth("admin")) -> None:
+    try:
+        email.send_test(home_id)
+    except email.EmailError as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 # ── Runner API (provider-neutral; Bearer API token with role >= normal) ──────

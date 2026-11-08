@@ -16,6 +16,7 @@ from .models_property_search import PropertySearch, PropertySearchRun, PropertyS
 from .persistence_homes import load_homes
 from .persistence_properties import load_properties
 from .property_search_dedup import fingerprint, url_key
+from .property_search_email import send_digest_if_any, send_failure
 from .property_search_schedule import STALE_ERROR_PREFIX, MAX_USAGE_LIMIT_RETRIES, is_due, local_now
 
 log = logging.getLogger(__name__)
@@ -206,12 +207,3 @@ def fail_run(run_id: str, body: RunnerFail, now: datetime | None = None) -> None
         notify = len(limited) >= MAX_USAGE_LIMIT_RETRIES
     if notify:
         send_failure(home_id, search, run)
-
-
-def send_digest_if_any(home_id: str, search: PropertySearch, run: PropertySearchRun,
-                       items: list[PropertySuggestion]) -> None:
-    """Replaced by the Brevo implementation (property_search_email)."""
-
-
-def send_failure(home_id: str, search: PropertySearch, run: PropertySearchRun) -> None:
-    """Replaced by the Brevo implementation (property_search_email)."""
