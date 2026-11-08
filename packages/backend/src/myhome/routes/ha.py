@@ -1,10 +1,10 @@
-import asyncio
 import json
 import os
 import re
 from urllib.parse import quote
 
 import httpx
+import anyio
 import websockets
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from websockets.exceptions import ConnectionClosed
@@ -234,9 +234,9 @@ async def ha_ws(websocket: WebSocket) -> None:
                         "attributes": new_state.get("attributes", {}),
                     })
 
-        async with asyncio.TaskGroup() as tg:
-            tg.create_task(handle_frontend_messages())
-            tg.create_task(handle_upstream_events())
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(handle_frontend_messages)
+            tg.start_soon(handle_upstream_events)
     except* (WebSocketDisconnect, ConnectionClosed):
         pass
     finally:
