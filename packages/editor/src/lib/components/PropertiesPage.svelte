@@ -14,21 +14,29 @@
   import Modal from "./ui/Modal.svelte";
   import FilterButton from "./ui/FilterButton.svelte";
   import AttachmentIcon from "./ui/AttachmentIcon.svelte";
+  import Tabs from "./ui/Tabs.svelte";
+  import PropertySuggestionsTab from "./PropertySuggestionsTab.svelte";
+  import PropertySearchesModal from "./PropertySearchesModal.svelte";
+  import type { createPropertySearchStore } from "../propertySearchStore.svelte";
 
   type PropertiesStore = ReturnType<typeof createPropertiesStore>;
   type LocationsStore = ReturnType<typeof createLocationsStore>;
+  type PropertySearchStore = ReturnType<typeof createPropertySearchStore>;
 
   interface Props {
     store: PropertiesStore;
     locationsStore: LocationsStore;
+    searchStore?: PropertySearchStore;
     kbEntries?: KBEntry[];
     selectedItemId?: string | null;
     onclearselection?: () => void;
   }
 
-  let { store, locationsStore, kbEntries = [], selectedItemId = null, onclearselection }: Props = $props();
+  let { store, locationsStore, searchStore, kbEntries = [], selectedItemId = null, onclearselection }: Props = $props();
 
   let modalProperty = $state<Property | "create" | null>(null);
+  let activeTab = $state<"list" | "suggestions">("list");
+  let searchesModalOpen = $state(false);
 
   $effect(() => {
     if (selectedItemId) {
@@ -100,6 +108,36 @@
 </script>
 
 <div class="page">
+
+  {#if searchStore}
+    <div class="page-tabs">
+      <Tabs
+        tabs={[
+          { id: "list", label: $_("propertySearch.tabs.properties") },
+          {
+            id: "suggestions",
+            label: searchStore.newCount > 0
+              ? $_("propertySearch.tabs.suggestionsCount", { values: { n: searchStore.newCount } })
+              : $_("propertySearch.tabs.suggestions"),
+          },
+        ]}
+        active={activeTab}
+        onchange={(id) => { activeTab = id as "list" | "suggestions"; }}
+      />
+    </div>
+  {/if}
+
+  {#if searchStore && activeTab === "suggestions"}
+  <div class="table-card-wrap">
+    <Card style="display:flex; flex-direction:column; padding:0; overflow:hidden; flex:1; min-height:0;">
+      <PropertySuggestionsTab
+        {searchStore}
+        onaccepted={() => store.reload()}
+        onopensearches={() => { searchesModalOpen = true; }}
+      />
+    </Card>
+  </div>
+  {:else}
 
   {#if store.properties.length === 0}
     <div class="empty-charts">
@@ -203,7 +241,12 @@
     <div class="footer">{$_('properties.page.footer', { values: { n: filteredProperties.length } })}</div>
     </Card>
   </div>
+  {/if}
 </div>
+
+{#if searchStore}
+  <PropertySearchesModal open={searchesModalOpen} {searchStore} onclose={() => { searchesModalOpen = false; }} />
+{/if}
 
 {#if modalProperty !== null}
   <PropertyModal
@@ -225,6 +268,8 @@
   .empty-icon { font-size: 36px; }
   .empty-charts p { margin: 0; font-size: 13px; }
 
+  .page-tabs { padding: var(--space-2) var(--space-4) 0; flex-shrink: 0; }
+  .page-tabs :global(.tab-bar) { margin-bottom: 0; }
   .stat-row-wrap { padding: var(--space-4); flex-shrink: 0; }
   .chart-label {
     font-size: 10px; color: var(--text-faint); text-transform: uppercase;

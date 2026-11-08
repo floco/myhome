@@ -34,6 +34,7 @@
   import { createLocationsStore } from "./lib/locationsStore.svelte";
   import PropertiesPage from "./lib/components/PropertiesPage.svelte";
   import { createPropertiesStore } from "./lib/propertiesStore.svelte";
+  import { createPropertySearchStore } from "./lib/propertySearchStore.svelte";
   import BuildPage from "./lib/components/BuildPage.svelte";
   import TaskModal from "./lib/components/TaskModal.svelte";
   import { createBuildStore } from "./lib/buildStore.svelte";
@@ -95,6 +96,7 @@
   const consumableStore = createConsumableStore(getHomeId);
   const locationsStore = createLocationsStore(getHomeId);
   const propertiesStore = createPropertiesStore(getHomeId);
+  const propertySearchStore = createPropertySearchStore(getHomeId);
   const buildStore = createBuildStore(getHomeId);
   const contactsStore = createContactsStore(getHomeId);
   const insuranceStore = createInsuranceStore(getHomeId);
@@ -120,6 +122,7 @@
     consumableStore.reload();
     locationsStore.reload();
     propertiesStore.reload();
+    propertySearchStore.reload();
     buildStore.reload();
     contactsStore.reload();
     insuranceStore.reload();
@@ -1598,12 +1601,12 @@
         />
 
       {:else if currentRoute === "#/settings"}
-        <SettingsPage store={settingsStore} {authStore} importFromDonetick={choreStore.importFromDonetick} {reloadAllStores} />
+        <SettingsPage store={settingsStore} {authStore} importFromDonetick={choreStore.importFromDonetick} {reloadAllStores} {propertySearchStore} />
 
       {:else if currentRoute === "#/locations"}
         <LocationsPage store={locationsStore} kbEntries={kbStore.entries} />
       {:else if currentRoute === "#/properties"}
-        <PropertiesPage store={propertiesStore} {locationsStore} kbEntries={kbStore.entries} />
+        <PropertiesPage store={propertiesStore} {locationsStore} searchStore={propertySearchStore} kbEntries={kbStore.entries} />
       {:else if currentRoute === "#/build"}
         <BuildPage store={buildStore} onopentask={(taskId) => { openBuildTaskId = taskId; }} />
       {:else if currentRoute === "#/contacts"}

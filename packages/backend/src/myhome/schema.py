@@ -463,6 +463,95 @@ properties = Table(
     Column("attachments", Text, nullable=False),
 )
 
+property_searches = Table(
+    "property_searches", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False, index=True),
+    Column("name", String, nullable=False),
+    Column("prompt", Text, nullable=False),
+    Column("enabled", Boolean, nullable=False),
+    Column("frequency", String, nullable=False),
+    Column("time", String, nullable=False),
+    Column("day_of_week", Integer, nullable=False),
+    Column("day_of_month", Integer, nullable=False),
+    Column("max_results_per_run", Integer, nullable=False),
+    Column("max_listing_age_days", Integer, nullable=False),
+    Column("created_at", String, nullable=False),
+    Column("run_requested_at", String),
+    Column("last_run_at", String),
+    Column("last_run_status", String),
+    Column("last_run_error", Text),
+    Column("last_run_new", Integer),
+    Column("last_run_duplicates", Integer),
+    Column("last_run_email_error", Text),
+)
+
+property_suggestions = Table(
+    "property_suggestions", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False, index=True),
+    Column("search_id", String, ForeignKey("property_searches.id", ondelete="CASCADE"), nullable=False),
+    Column("run_id", String, nullable=False),
+    Column("title", String, nullable=False),
+    Column("type", String),
+    Column("price", Float),
+    Column("currency", String),
+    Column("land_size", Float),
+    Column("built_size", Float),
+    Column("bedrooms", Integer),
+    Column("bathrooms", Integer),
+    Column("location", String, nullable=False),
+    Column("source_site", String, nullable=False),
+    Column("listing_url", String, nullable=False),
+    Column("image_url", String),
+    Column("published_at", String),
+    Column("reason", Text, nullable=False),
+    Column("status", String, nullable=False),
+    Column("created_at", String, nullable=False),
+    Column("accepted_property_id", String),
+)
+
+# Never-again ledger: one row per listing ever suggested. Deliberately NOT
+# FK'd to suggestions/searches and never pruned by retention, so a property
+# that was rejected or cleaned up is still recognised as already seen.
+property_seen = Table(
+    "property_seen", metadata,
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
+    Column("url_key", String, primary_key=True),
+    Column("fingerprint", String, index=True),
+    Column("first_seen_at", String, nullable=False),
+)
+
+property_search_runs = Table(
+    "property_search_runs", metadata,
+    Column("id", String, primary_key=True),
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), nullable=False, index=True),
+    Column("search_id", String, ForeignKey("property_searches.id", ondelete="CASCADE"), nullable=False),
+    Column("slot", String, nullable=False),
+    Column("started_at", String, nullable=False),
+    Column("finished_at", String),
+    Column("status", String, nullable=False),
+    Column("error", Text),
+    Column("email_error", Text),
+    Column("sites", Text, nullable=False),
+    Column("search_queries", Text, nullable=False),
+    Column("usage", Text),
+    Column("received_count", Integer, nullable=False),
+    Column("new_count", Integer, nullable=False),
+    Column("duplicate_count", Integer, nullable=False),
+)
+
+property_search_config = Table(
+    "property_search_config", metadata,
+    Column("home_id", String, ForeignKey("homes.id", ondelete="CASCADE"), primary_key=True),
+    Column("retention_days", Integer, nullable=False),
+    Column("brevo_api_key", String, nullable=False),
+    Column("sender_email", String, nullable=False),
+    Column("sender_name", String, nullable=False),
+    Column("recipients", Text, nullable=False),
+    Column("app_base_url", String, nullable=False),
+)
+
 build_projects = Table(
     "build_projects", metadata,
     Column("id", String, primary_key=True),
