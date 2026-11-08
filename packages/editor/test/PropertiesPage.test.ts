@@ -110,3 +110,38 @@ describe("PropertiesPage — responsive columns", () => {
     unmount(comp);
   });
 });
+
+describe("PropertiesPage — suggestions tab", () => {
+  function makeSearchStore(newCount: number) {
+    return {
+      searches: [], suggestions: [], loaded: true, loadError: null, newCount,
+      accept: vi.fn(), reject: vi.fn(), togglePin: vi.fn(),
+    };
+  }
+
+  it("shows suggestions badge count and switches tab", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(PropertiesPage, {
+      target,
+      props: { store: makeStore([makeProperty()]), locationsStore: makeLocationsStore(), searchStore: makeSearchStore(3) } as any,
+    });
+    flushSync();
+    const tabs = [...target.querySelectorAll(".tab-bar .tab")].map((t) => t.textContent);
+    expect(tabs).toEqual(["Properties", "Suggestions (3)"]);
+    (target.querySelectorAll(".tab-bar .tab")[1] as HTMLButtonElement).click();
+    flushSync();
+    expect(target.querySelector("thead")).toBeNull();
+    expect(target.textContent).toContain("No search defined yet");
+    unmount(comp);
+  });
+
+  it("has no tabs without a search store", () => {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(PropertiesPage, { target, props: { store: makeStore([]), locationsStore: makeLocationsStore() } });
+    flushSync();
+    expect(target.querySelector(".tab-bar")).toBeNull();
+    unmount(comp);
+  });
+});

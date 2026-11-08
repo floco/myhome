@@ -83,11 +83,11 @@ describe("propertySearchStore", () => {
     const out = await store.saveConfig({ retentionDays: 9, recipients: ["a@b.si"] });
     expect(out.retentionDays).toBe(9);
     const call = fetchFn.mock.calls.find((c) => c[1]?.method === "PUT");
-    expect(JSON.parse(call[1].body)).toEqual({ retentionDays: 9, recipients: ["a@b.si"] });
+    expect(JSON.parse(call![1].body)).toEqual({ retentionDays: 9, recipients: ["a@b.si"] });
   });
 
   it("sendTestEmail throws with the server detail", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (_url: string, init?: RequestInit) => {
       if (init?.method === "POST") return { ok: false, status: 502, json: async () => ({ detail: "Brevo error 401: Key not found" }) };
       return { ok: true, status: 200, json: async () => [] };
     }));

@@ -1003,7 +1003,8 @@
       "integrations": "Intégrations",
       "backup": "Sauvegarde et restauration",
       "activity": "Journal d'activité",
-      "about": "À propos"
+      "about": "À propos",
+      "propertySearch": "Recherche de biens IA"
     },
     "general": {
       "home": "Logement",
@@ -1408,6 +1409,95 @@
       "failed": "Échec",
       "saving": "Enregistrement…",
       "submit": "Changer le mot de passe"
+    }
+  },
+  "propertySearch": {
+    "tabs": {
+      "properties": "Biens",
+      "suggestions": "Suggestions",
+      "suggestionsCount": "Suggestions ({n})"
+    },
+    "inbox": {
+      "searches": "Recherches",
+      "allSearches": "Toutes les recherches",
+      "filterSearch": "Recherche",
+      "empty": "Aucune suggestion pour l'instant.",
+      "emptyNoSearch": "Aucune recherche définie — cliquez sur « Recherches » pour en créer une.",
+      "accept": "Accepter (ajouter aux biens)",
+      "pin": "Garder (épingler)",
+      "unpin": "Désépingler",
+      "reject": "Rejeter",
+      "pinned": "Épinglé",
+      "published": "Publiée le {date}",
+      "openListing": "Voir l'annonce",
+      "lastRun": "Dernière exécution {when} : {status}",
+      "lastRunCounts": "{new} nouveau(x), {dup} déjà vu(s)",
+      "neverRun": "Pas encore exécutée",
+      "actionError": "Échec de l'action : {error}"
+    },
+    "status": {
+      "running": "en cours",
+      "succeeded": "réussie",
+      "failed": "échouée",
+      "usage_limited": "limite d'usage atteinte"
+    },
+    "searches": {
+      "title": "Recherches de biens par IA",
+      "new": "Nouvelle recherche",
+      "edit": "Modifier la recherche",
+      "empty": "Aucune recherche.",
+      "name": "Nom",
+      "prompt": "Que cherchez-vous ?",
+      "promptPlaceholder": "ex. Terrains d'au moins 800 m² en Slovénie autour de Novo Mesto, à moins de 200 000 €",
+      "frequency": "Fréquence",
+      "daily": "Quotidienne",
+      "weekly": "Hebdomadaire",
+      "monthly": "Mensuelle",
+      "time": "Heure",
+      "dayOfWeek": "Jour de la semaine",
+      "dayOfMonth": "Jour du mois",
+      "maxResults": "Max. nouvelles annonces par exécution",
+      "maxAge": "Ancienneté max. de l'annonce (jours)",
+      "enabled": "Active",
+      "paused": "En pause",
+      "runNow": "Lancer maintenant",
+      "queued": "En file — elle tournera au prochain passage du runner (≤ 15 min).",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "edit_": "Modifier",
+      "confirmDelete": "Supprimer la recherche « {name} » et ses suggestions ?",
+      "scheduleDaily": "Tous les jours à {time}",
+      "scheduleWeekly": "Chaque {day} à {time}",
+      "scheduleMonthly": "Le {day} de chaque mois à {time}",
+      "day1": "lundi",
+      "day2": "mardi",
+      "day3": "mercredi",
+      "day4": "jeudi",
+      "day5": "vendredi",
+      "day6": "samedi",
+      "day7": "dimanche"
+    },
+    "settings": {
+      "title": "Recherche de biens par IA",
+      "intro": "Réglages communs à toutes les recherches de biens de cette maison.",
+      "retentionDays": "Garder les suggestions non triées pendant (jours)",
+      "retentionHelp": "Les suggestions épinglées ou acceptées sont conservées. Une annonce supprimée n'est jamais reproposée.",
+      "email": "Résumé par email (Brevo)",
+      "brevoApiKey": "Clé API Brevo",
+      "brevoKeySet": "•••• définie — laisser vide pour la garder",
+      "senderEmail": "Email de l'expéditeur",
+      "senderName": "Nom de l'expéditeur",
+      "recipients": "Destinataires (un par ligne ou séparés par des virgules)",
+      "appBaseUrl": "URL de My Home pour les liens des emails (optionnel)",
+      "save": "Enregistrer",
+      "saved": "Enregistré",
+      "testEmail": "Envoyer un email de test",
+      "testSent": "Email de test envoyé",
+      "error": "Erreur : {error}",
+      "runnerTitle": "Connecter le runner",
+      "runnerHelp": "Les recherches sont exécutées par un runner externe (property-search-runner). Exposez le port 8000 de l'add-on, créez un token API avec le rôle « normal » dans Réglages → Sécurité et accès, puis renseignez MYHOME_URL et MYHOME_TOKEN dans config/settings.env du runner.",
+      "runnerLink": "Instructions d'installation du runner"
     }
   }
 }

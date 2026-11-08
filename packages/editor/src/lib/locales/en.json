@@ -1003,7 +1003,8 @@
       "integrations": "Integrations",
       "backup": "Backup & Restore",
       "activity": "Activity Log",
-      "about": "About"
+      "about": "About",
+      "propertySearch": "AI property search"
     },
     "general": {
       "home": "Home",
@@ -1408,6 +1409,95 @@
       "failed": "Failed",
       "saving": "Saving…",
       "submit": "Change password"
+    }
+  },
+  "propertySearch": {
+    "tabs": {
+      "properties": "Properties",
+      "suggestions": "Suggestions",
+      "suggestionsCount": "Suggestions ({n})"
+    },
+    "inbox": {
+      "searches": "Searches",
+      "allSearches": "All searches",
+      "filterSearch": "Search",
+      "empty": "No suggestions yet.",
+      "emptyNoSearch": "No search defined yet — click “Searches” to create one.",
+      "accept": "Accept (add to properties)",
+      "pin": "Keep (pin)",
+      "unpin": "Unpin",
+      "reject": "Reject",
+      "pinned": "Pinned",
+      "published": "Published {date}",
+      "openListing": "Open listing",
+      "lastRun": "Last run {when}: {status}",
+      "lastRunCounts": "{new} new, {dup} already seen",
+      "neverRun": "Not run yet",
+      "actionError": "Action failed: {error}"
+    },
+    "status": {
+      "running": "running",
+      "succeeded": "succeeded",
+      "failed": "failed",
+      "usage_limited": "usage limit reached"
+    },
+    "searches": {
+      "title": "AI property searches",
+      "new": "New search",
+      "edit": "Edit search",
+      "empty": "No searches yet.",
+      "name": "Name",
+      "prompt": "What are you looking for?",
+      "promptPlaceholder": "e.g. Plots of at least 800 m² in Slovenia around Novo Mesto, under €200,000",
+      "frequency": "Frequency",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "time": "Time",
+      "dayOfWeek": "Day of week",
+      "dayOfMonth": "Day of month",
+      "maxResults": "Max new listings per run",
+      "maxAge": "Max listing age (days)",
+      "enabled": "Active",
+      "paused": "Paused",
+      "runNow": "Run now",
+      "queued": "Queued — it will run at the runner's next check (≤ 15 min).",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit_": "Edit",
+      "confirmDelete": "Delete the search “{name}” and its suggestions?",
+      "scheduleDaily": "Daily at {time}",
+      "scheduleWeekly": "Every {day} at {time}",
+      "scheduleMonthly": "Monthly on day {day} at {time}",
+      "day1": "Monday",
+      "day2": "Tuesday",
+      "day3": "Wednesday",
+      "day4": "Thursday",
+      "day5": "Friday",
+      "day6": "Saturday",
+      "day7": "Sunday"
+    },
+    "settings": {
+      "title": "AI property search",
+      "intro": "Settings shared by all property searches of this home.",
+      "retentionDays": "Keep untriaged suggestions for (days)",
+      "retentionHelp": "Pinned and accepted suggestions are kept. A removed listing is still never suggested again.",
+      "email": "Email digest (Brevo)",
+      "brevoApiKey": "Brevo API key",
+      "brevoKeySet": "•••• set — leave empty to keep",
+      "senderEmail": "Sender email",
+      "senderName": "Sender name",
+      "recipients": "Recipients (one per line or comma-separated)",
+      "appBaseUrl": "My Home URL for email links (optional)",
+      "save": "Save",
+      "saved": "Saved",
+      "testEmail": "Send test email",
+      "testSent": "Test email sent",
+      "error": "Error: {error}",
+      "runnerTitle": "Connect the runner",
+      "runnerHelp": "Searches are executed by an external runner (property-search-runner). Expose port 8000 of the add-on, create an API token with role “normal” in Settings → Security & Access, then put MYHOME_URL and MYHOME_TOKEN in the runner's config/settings.env.",
+      "runnerLink": "Runner setup instructions"
     }
   }
 }
