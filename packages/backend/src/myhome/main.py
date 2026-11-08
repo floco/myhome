@@ -17,7 +17,7 @@ from .mcp_app import mcp_asgi_app
 from .mcp_server import mcp
 from .notification_scheduler import notification_digest_loop
 from .persistence_mcp import load_mcp_config
-from .routes import activity, attachments, attachments_tokens, auth, backup, build, chores, consumables, contacts, costs, ha, homes, house, insurance, inventory, kb, locations, mcp_config, modules, notifications, properties, settings, svg, system, works
+from .routes import activity, attachments, attachments_tokens, auth, backup, build, chores, consumables, contacts, costs, ha, homes, house, insurance, inventory, kb, locations, mcp_config, modules, notifications, properties, property_search, settings, svg, system, works
 
 
 @asynccontextmanager
@@ -176,6 +176,7 @@ app.include_router(contacts.router)
 app.include_router(insurance.router)
 app.include_router(locations.router)
 app.include_router(properties.router)
+app.include_router(property_search.router)
 app.include_router(build.router)
 app.include_router(notifications.router)
 app.include_router(mcp_config.router)
