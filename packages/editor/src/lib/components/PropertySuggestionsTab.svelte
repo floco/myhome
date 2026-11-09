@@ -68,19 +68,23 @@
   }
 
   // Older suggestions only have a free-text "town, region, country" location.
-  function place(g: PropertySuggestion): { city: string; country: string } {
+  function place(g: PropertySuggestion): { city: string; region: string; country: string } {
     const parts = (g.location ?? "").split(",").map((p) => p.trim()).filter(Boolean);
     return {
       city: g.city || parts[0] || "",
+      region: g.region || (parts.length >= 3 ? parts[parts.length - 2] : ""),
       country: g.country || (parts.length >= 2 ? parts[parts.length - 1] : ""),
     };
   }
 
-  function tags(g: PropertySuggestion): { kind: "price" | "country" | "city"; text: string }[] {
-    const out: { kind: "price" | "country" | "city"; text: string }[] = [];
+  type TagKind = "price" | "country" | "region" | "city";
+
+  function tags(g: PropertySuggestion): { kind: TagKind; text: string }[] {
+    const out: { kind: TagKind; text: string }[] = [];
     if (g.price != null) out.push({ kind: "price", text: `${fmt(g.price)} ${g.currency ?? "€"}` });
-    const { city, country } = place(g);
+    const { city, region, country } = place(g);
     if (country) out.push({ kind: "country", text: country });
+    if (region) out.push({ kind: "region", text: region });
     if (city) out.push({ kind: "city", text: city });
     return out;
   }

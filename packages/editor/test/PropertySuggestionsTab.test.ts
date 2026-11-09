@@ -144,13 +144,21 @@ describe("PropertySuggestionsTab", () => {
 
     it("shows price, country and city as tags at the top of the card", () => {
       const t = render({ searchStore: makeSearchStore({
-        suggestions: [makeSuggestion({ price: 150000, currency: "EUR", country: "Slovenia", city: "Novo mesto" })],
+        suggestions: [makeSuggestion({ price: 150000, currency: "EUR", country: "Slovenia", region: "Dolenjska", city: "Novo mesto" })],
       }) });
       const card = t.querySelector('[data-testid="suggestion"]')!;
-      expect(tags(card)).toEqual({ price: `${(150000).toLocaleString(undefined, { maximumFractionDigits: 0 })} EUR`, country: "Slovenia", city: "Novo mesto" });
+      expect(tags(card)).toEqual({ price: `${(150000).toLocaleString(undefined, { maximumFractionDigits: 0 })} EUR`, country: "Slovenia", region: "Dolenjska", city: "Novo mesto" });
       expect(card.querySelector(".tags")!.compareDocumentPosition(card.querySelector("a.title")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(card.querySelector(".facts")!.textContent).not.toContain("Novo mesto");
       expect(card.querySelector(".facts")!.textContent).not.toContain("EUR");
+    });
+
+    it("shows tags in price, country, region, city order", () => {
+      const t = render({ searchStore: makeSearchStore({
+        suggestions: [makeSuggestion({ price: 1, country: "Slovenia", region: "Dolenjska", city: "Novo mesto" })],
+      }) });
+      const kinds = [...t.querySelectorAll('[data-testid="suggestion"] .tag')].map((el) => (el as HTMLElement).dataset.tag);
+      expect(kinds).toEqual(["price", "country", "region", "city"]);
     });
 
     it("falls back to the location as city and omits missing tags", () => {
@@ -165,7 +173,7 @@ describe("PropertySuggestionsTab", () => {
         suggestions: [makeSuggestion({ price: null, location: "Velike Brusnice, Novo mesto, Dolenjska, Slovenia" })],
       }) });
       const card = t.querySelector('[data-testid="suggestion"]')!;
-      expect(tags(card)).toEqual({ country: "Slovenia", city: "Velike Brusnice" });
+      expect(tags(card)).toEqual({ country: "Slovenia", region: "Dolenjska", city: "Velike Brusnice" });
       expect(card.querySelector(".facts")!.textContent).toContain("Novo mesto, Dolenjska");
     });
   });

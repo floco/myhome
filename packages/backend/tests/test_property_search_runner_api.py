@@ -198,8 +198,10 @@ def test_complete_records_counts_on_search(client, home_id):
 def test_complete_stores_country_and_city(client, home_id):
     _search(client, home_id)
     c = client.post(CLAIM).json()
-    _complete(client, c["runId"], [_listing(1, country="Slovenia", city="Novo mesto"), _listing(2)])
+    _complete(client, c["runId"], [_listing(1, country="Slovenia", region="Dolenjska", city="Novo mesto"), _listing(2)])
     by_url = {g["listingUrl"]: g for g in client.get(f"/api/homes/{home_id}/property-suggestions").json()}
     assert by_url["https://a.si/oglas/1"]["country"] == "Slovenia"
     assert by_url["https://a.si/oglas/1"]["city"] == "Novo mesto"
+    assert by_url["https://a.si/oglas/1"]["region"] == "Dolenjska"
     assert by_url["https://a.si/oglas/2"]["country"] is None and by_url["https://a.si/oglas/2"]["city"] is None
+    assert by_url["https://a.si/oglas/2"]["region"] is None

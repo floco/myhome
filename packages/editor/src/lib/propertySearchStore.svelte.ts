@@ -45,6 +45,7 @@ export interface PropertySuggestion {
   bathrooms: number | null;
   location: string;
   country?: string | null;
+  region?: string | null;
   city?: string | null;
   sourceSite: string;
   listingUrl: string;

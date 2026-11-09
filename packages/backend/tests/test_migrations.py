@@ -996,9 +996,9 @@ def test_run_migrations_adds_country_and_city_to_property_suggestions(tmp_path):
 
     with engine.connect() as conn:
         version = conn.execute(text("SELECT version FROM schema_version")).scalar()
-        row = conn.execute(text("SELECT title, country, city FROM property_suggestions WHERE id = 'g1'")).mappings().first()
+        row = conn.execute(text("SELECT title, country, region, city FROM property_suggestions WHERE id = 'g1'")).mappings().first()
     assert version == CURRENT_VERSION
-    assert row["title"] == "Plot" and row["country"] is None and row["city"] is None
+    assert row["title"] == "Plot" and row["country"] is None and row["region"] is None and row["city"] is None
 
 
 def test_country_city_migration_is_a_noop_when_columns_already_exist(tmp_path):
@@ -1008,6 +1008,7 @@ def test_country_city_migration_is_a_noop_when_columns_already_exist(tmp_path):
     with engine.begin() as conn:
         _create_v14_property_suggestions(conn)
         conn.execute(text("ALTER TABLE property_suggestions ADD COLUMN country VARCHAR"))
+        conn.execute(text("ALTER TABLE property_suggestions ADD COLUMN region VARCHAR"))
         conn.execute(text("ALTER TABLE property_suggestions ADD COLUMN city VARCHAR"))
         conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
         conn.execute(text("INSERT INTO schema_version (version) VALUES (14)"))
