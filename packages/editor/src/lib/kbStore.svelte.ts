@@ -20,6 +20,11 @@ export interface KBTrashDocument {
   entries: KBEntry[];
 }
 
+/** Defaults for fields older KB documents may lack; anything the server sends wins. */
+const ENTRY_DEFAULTS: Pick<KBEntry, "attachments" | "parentId" | "icon" | "order"> = {
+  attachments: [], parentId: null, icon: "📄", order: 0,
+};
+
 export function createKBStore(getHomeId: () => string | null = () => null) {
   const entries = $state<KBEntry[]>([]);
   const trash = $state<KBEntry[]>([]);
@@ -35,7 +40,7 @@ export function createKBStore(getHomeId: () => string | null = () => null) {
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const doc: KBDocument = await resp.json();
       entries.length = 0;
-      for (const e of doc.entries) entries.push({ attachments: [], parentId: null, icon: "📄", order: 0, ...e });
+      for (const e of doc.entries) entries.push({ ...ENTRY_DEFAULTS, ...e });
       // Keep the trash count fresh (shown in the sidebar "Trash (N)" link)
       // without requiring the user to open Trash first. Every mutating
       // method below calls init(), so a delete/restore/etc. also refreshes

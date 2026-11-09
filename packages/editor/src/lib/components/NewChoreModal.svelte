@@ -63,6 +63,7 @@
         nextDueDate: new Date(nextDue).toISOString(),
         description: "",
         donetickId: null,
+        attachments: [],
       });
       reset();
       onclose();

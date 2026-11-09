@@ -130,7 +130,7 @@
   }
 
   $effect(() => {
-    const _homeId = homesStore.activeHomeId;
+    void homesStore.activeHomeId; // re-run when the active home changes
     reloadAllStores();
   });
 
@@ -497,11 +497,11 @@
   const saveIcon = $derived(
     saveStatus === "saving" ? "⋯" : saveStatus === "saved" ? "✓" : saveStatus === "error" ? "⚠" : "💾"
   );
+  let saveError = $state<string | null>(null);
   const saveTitle = $derived(
     saveStatus === "saving" ? $_('settings.security.saving') : saveStatus === "saved" ? $_('app.floatingToolbar.saved') : saveStatus === "error" ? $_('app.floatingToolbar.saveError', { values: { detail: saveError ? ": " + saveError : "" } }) : $_('common.save')
   );
 
-  let saveError = $state<string | null>(null);
 
   async function handleSave(): Promise<void> {
     saveStatus = "saving";
@@ -520,7 +520,7 @@
   let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
 
   $effect(() => {
-    const _gen = floorStore.generation;
+    void floorStore.generation; // re-run on every floor-plan edit
     if (!floorStore.loaded || !floorStore.isDirty || !homesStore.activeHomeId) return;
     if (autosaveTimer) clearTimeout(autosaveTimer);
     autosaveTimer = setTimeout(() => {

@@ -1,17 +1,16 @@
 <script lang="ts">
   import { _ } from "svelte-i18n";
   import type { FurnitureObject } from "@myhome/geometry";
-  import type { ViewportState } from "../viewportStore.svelte.ts";
+  import type { ViewportState } from "../viewportStore.svelte";
   import type { FurnitureTemplate } from "../furnitureLibrary";
   import { resolveFurnitureSvg } from "../furnitureLibrary";
-  import { worldToScreen } from "../viewportStore.svelte.ts";
+  import { worldToScreen } from "../viewportStore.svelte";
 
   let {
     object,
     template,
     viewport,
     selected = false,
-    tool = "select",
     onselect,
     onbodymousedown,
   }: {
