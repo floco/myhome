@@ -44,6 +44,19 @@ def test_claim_returns_due_search_and_204_when_none(client, home_id):
     assert ps.get_search(home_id, s["id"]).runRequestedAt is None
 
 
+def test_claim_carries_the_search_language(client, home_id):
+    _search(client, home_id, language="fr")
+    assert client.post(CLAIM).json()["language"] == "fr"
+
+
+def test_search_language_defaults_to_english_and_can_be_updated(client, home_id):
+    s = _search(client, home_id)
+    assert s["language"] == "en"
+    assert client.put(f"/api/homes/{home_id}/property-searches/{s['id']}", json={"language": "fr"}).status_code < 300
+    assert client.post(CLAIM).json()["language"] == "fr"
+    assert client.put(f"/api/homes/{home_id}/property-searches/{s['id']}", json={"language": "de"}).status_code == 422
+
+
 def test_claim_twice_returns_204_second_time(client, home_id):
     _search(client, home_id)
     assert client.post(CLAIM).status_code == 200

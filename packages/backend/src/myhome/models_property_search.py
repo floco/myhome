@@ -14,6 +14,7 @@ Frequency = Literal["daily", "weekly", "monthly"]
 SuggestionStatus = Literal["new", "pinned", "accepted", "rejected"]
 RunStatus = Literal["running", "succeeded", "failed", "usage_limited"]
 SuggestionType = Literal["land", "house", "new_build"]
+SearchLanguage = Literal["en", "fr"]
 
 _TIME_PATTERN = r"^([01]\d|2[0-3]):[0-5]\d$"
 
@@ -28,6 +29,7 @@ class _SearchFields(BaseModel):
     dayOfMonth: int = Field(default=1, ge=1, le=31)
     maxResultsPerRun: int = Field(default=10, ge=1, le=50)
     maxListingAgeDays: int = Field(default=7, ge=1, le=365)
+    language: SearchLanguage = "en"
 
 
 class PropertySearch(_SearchFields):
@@ -56,6 +58,7 @@ class PropertySearchUpdate(BaseModel):
     dayOfMonth: int | None = Field(default=None, ge=1, le=31)
     maxResultsPerRun: int | None = Field(default=None, ge=1, le=50)
     maxListingAgeDays: int | None = Field(default=None, ge=1, le=365)
+    language: SearchLanguage | None = None
 
 
 class PropertySuggestion(BaseModel):

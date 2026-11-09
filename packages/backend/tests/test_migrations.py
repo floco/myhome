@@ -1017,3 +1017,47 @@ def test_country_city_migration_is_a_noop_when_columns_already_exist(tmp_path):
 
     with engine.connect() as conn:
         assert conn.execute(text("SELECT version FROM schema_version")).scalar() == CURRENT_VERSION
+
+
+def _create_v15_property_searches(conn):
+    conn.execute(text(
+        "CREATE TABLE property_searches ("
+        "id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, name VARCHAR NOT NULL, prompt TEXT NOT NULL, "
+        "enabled BOOLEAN NOT NULL, frequency VARCHAR NOT NULL, time VARCHAR NOT NULL, day_of_week INTEGER NOT NULL, "
+        "day_of_month INTEGER NOT NULL, max_results_per_run INTEGER NOT NULL, max_listing_age_days INTEGER NOT NULL, "
+        "created_at VARCHAR NOT NULL, run_requested_at VARCHAR, last_run_at VARCHAR, last_run_status VARCHAR, "
+        "last_run_error TEXT, last_run_new INTEGER, last_run_duplicates INTEGER, last_run_email_error TEXT)"
+    ))
+    conn.execute(text(
+        "INSERT INTO property_searches (id, home_id, name, prompt, enabled, frequency, time, day_of_week, "
+        "day_of_month, max_results_per_run, max_listing_age_days, created_at) VALUES ('s1', 'h1', 'Plots', 'land', "
+        "1, 'daily', '08:00', 1, 1, 10, 7, '2026-11-08T00:00:00+00:00')"
+    ))
+
+
+def test_run_migrations_adds_language_to_property_searches(tmp_path):
+    engine = create_engine(f"sqlite:///{tmp_path / 'v15.db'}")
+    with engine.begin() as conn:
+        _create_v15_property_searches(conn)
+        conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
+        conn.execute(text("INSERT INTO schema_version (version) VALUES (15)"))
+
+    run_migrations(engine)
+
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT version FROM schema_version")).scalar() == CURRENT_VERSION
+        assert conn.execute(text("SELECT language FROM property_searches WHERE id = 's1'")).scalar() == "en"
+
+
+def test_language_migration_is_a_noop_when_column_already_exists(tmp_path):
+    engine = create_engine(f"sqlite:///{tmp_path / 'v15b.db'}")
+    with engine.begin() as conn:
+        _create_v15_property_searches(conn)
+        conn.execute(text("ALTER TABLE property_searches ADD COLUMN language VARCHAR NOT NULL DEFAULT 'fr'"))
+        conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
+        conn.execute(text("INSERT INTO schema_version (version) VALUES (15)"))
+
+    run_migrations(engine)
+
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT language FROM property_searches WHERE id = 's1'")).scalar() == "fr"

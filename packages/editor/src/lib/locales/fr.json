@@ -1421,6 +1421,8 @@
       "searches": "Recherches",
       "allSearches": "Toutes les recherches",
       "filterSearch": "Recherche",
+      "filterType": "Type de bien",
+      "allTypes": "Tous les types",
       "sortBy": "Trier",
       "sortPriceAsc": "Prix : le moins cher d'abord",
       "sortPriceDesc": "Prix : le plus cher d'abord",

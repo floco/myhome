@@ -29,7 +29,7 @@ from .schema import (
 _SEARCH_COLS = {
     "id": "id", "name": "name", "prompt": "prompt", "enabled": "enabled", "frequency": "frequency",
     "time": "time", "dayOfWeek": "day_of_week", "dayOfMonth": "day_of_month",
-    "maxResultsPerRun": "max_results_per_run", "maxListingAgeDays": "max_listing_age_days",
+    "maxResultsPerRun": "max_results_per_run", "maxListingAgeDays": "max_listing_age_days", "language": "language",
     "createdAt": "created_at", "runRequestedAt": "run_requested_at", "lastRunAt": "last_run_at",
     "lastRunStatus": "last_run_status", "lastRunError": "last_run_error",
     "lastRunNew": "last_run_new", "lastRunDuplicates": "last_run_duplicates",

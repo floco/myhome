@@ -1421,6 +1421,8 @@
       "searches": "Searches",
       "allSearches": "All searches",
       "filterSearch": "Search",
+      "filterType": "Property type",
+      "allTypes": "All types",
       "sortBy": "Sort",
       "sortPriceAsc": "Price: cheapest first",
       "sortPriceDesc": "Price: most expensive first",

@@ -476,6 +476,7 @@ property_searches = Table(
     Column("day_of_month", Integer, nullable=False),
     Column("max_results_per_run", Integer, nullable=False),
     Column("max_listing_age_days", Integer, nullable=False),
+    Column("language", String, nullable=False, server_default="en"),
     Column("created_at", String, nullable=False),
     Column("run_requested_at", String),
     Column("last_run_at", String),

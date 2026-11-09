@@ -19,6 +19,7 @@
   type SortKey = "priceAsc" | "priceDesc" | "search";
 
   let searchFilter = $state("");
+  let typeFilter = $state<"" | NonNullable<PropertySuggestion["type"]>>("");
   let sortKey = $state<SortKey>("priceAsc");
   let filterModalOpen = $state(false);
   let actionError = $state<string | null>(null);
@@ -42,7 +43,9 @@
   }
 
   const visible = $derived(
-    searchStore.suggestions.filter((g) => !searchFilter || g.searchId === searchFilter).sort(compare),
+    searchStore.suggestions
+      .filter((g) => (!searchFilter || g.searchId === searchFilter) && (!typeFilter || g.type === typeFilter))
+      .sort(compare),
   );
 
   function fmt(n: number): string {
@@ -56,10 +59,14 @@
     return "";
   }
 
+  function placeholderIcon(type: PropertySuggestion["type"]): string {
+    if (type === "land") return "🌳";
+    if (type === "new_build") return "🏗️";
+    return "🏠";
+  }
+
   function facts(g: PropertySuggestion): string[] {
     const out: string[] = [];
-    const t = typeLabel(g.type);
-    if (t) out.push(t);
     if (g.landSize != null) out.push($_("properties.page.landSize", { values: { size: fmt(g.landSize) } }));
     if (g.builtSize != null) out.push($_("properties.page.builtSize", { values: { size: fmt(g.builtSize) } }));
     // Show the full location only when the city tag doesn't already carry it.
@@ -77,11 +84,13 @@
     };
   }
 
-  type TagKind = "price" | "country" | "region" | "city";
+  type TagKind = "price" | "type" | "country" | "region" | "city";
 
   function tags(g: PropertySuggestion): { kind: TagKind; text: string }[] {
     const out: { kind: TagKind; text: string }[] = [];
     if (g.price != null) out.push({ kind: "price", text: `${fmt(g.price)} ${g.currency ?? "€"}` });
+    const type = typeLabel(g.type);
+    if (type) out.push({ kind: "type", text: type });
     const { city, region, country } = place(g);
     if (country) out.push({ kind: "country", text: country });
     if (region) out.push({ kind: "region", text: region });
@@ -131,7 +140,7 @@
       </select>
     </label>
     <span class="spacer"></span>
-    <FilterButton active={searchFilter !== ""} title={$_("common.filters")} onclick={() => { filterModalOpen = true; }} />
+    <FilterButton active={searchFilter !== "" || typeFilter !== ""} title={$_("common.filters")} onclick={() => { filterModalOpen = true; }} />
     <Button variant="secondary" onclick={onopensearches}>🔎 {$_("propertySearch.inbox.searches")}</Button>
   </div>
 
@@ -143,6 +152,15 @@
         {#each searchStore.searches as s (s.id)}
           <option value={s.id}>{s.name}</option>
         {/each}
+      </select>
+    </label>
+    <label class="field">
+      <span>{$_("propertySearch.inbox.filterType")}</span>
+      <select class="native-input" bind:value={typeFilter} data-testid="type-filter">
+        <option value="">{$_("propertySearch.inbox.allTypes")}</option>
+        <option value="land">{$_("properties.type.land")}</option>
+        <option value="house">{$_("properties.type.house")}</option>
+        <option value="new_build">{$_("properties.type.newBuild")}</option>
       </select>
     </label>
   </Modal>
@@ -182,6 +200,8 @@
           {#if g.imageUrl && !brokenImages[g.id]}
             <img class="thumb" src={g.imageUrl} alt="" loading="lazy" referrerpolicy="no-referrer"
               onerror={() => { brokenImages = { ...brokenImages, [g.id]: true }; }} />
+          {:else}
+            <div class="thumb thumb-placeholder" aria-hidden="true">{placeholderIcon(g.type)}</div>
           {/if}
           <div class="body">
             {#if tags(g).length > 0}
@@ -233,6 +253,7 @@
     background: var(--surface-alt); color: var(--text); overflow-wrap: anywhere;
   }
   .tag-price { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast, #fff); }
+  .field + .field { margin-top: var(--space-3); }
   .field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-muted); }
   .native-input {
     background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
@@ -253,6 +274,10 @@
   }
   .card.pinned { border-color: var(--accent); }
   .thumb { width: 96px; height: 72px; object-fit: cover; border-radius: var(--radius-sm); flex-shrink: 0; }
+  .thumb-placeholder {
+    display: flex; align-items: center; justify-content: center; font-size: 32px;
+    background: var(--surface-alt); border: 1px solid var(--border); box-sizing: border-box; opacity: 0.8;
+  }
   .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
   .title-row { display: flex; gap: 4px; align-items: baseline; min-width: 0; }
   .title { color: var(--text); font-weight: 600; font-size: 13px; text-decoration: none; overflow-wrap: anywhere; }
