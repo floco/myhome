@@ -4,7 +4,7 @@ import SettingsPropertySearch from "../src/lib/components/settings/SettingsPrope
 
 const CONFIG = {
   retentionDays: 30, brevoApiKeySet: true, senderEmail: "home@x.si", senderName: "My Home",
-  recipients: ["a@x.si", "b@x.si"], appBaseUrl: "",
+  recipients: ["a@x.si", "b@x.si"], appBaseUrl: "", language: "en",
 };
 
 function makeStore(overrides: Record<string, unknown> = {}) {
@@ -56,6 +56,20 @@ describe("SettingsPropertySearch", () => {
     expect(patch.recipients).toEqual(["x@y.si", "z@y.si", "w@y.si"]);
     expect("brevoApiKey" in patch).toBe(false);
     expect(t.textContent).toContain("Saved");
+  });
+
+  it("loads and saves the results language", async () => {
+    const store = makeStore({ loadConfig: vi.fn().mockResolvedValue({ ...CONFIG, language: "fr" }) });
+    const t = await render(store);
+    const select = q(t, "ps-language") as unknown as HTMLSelectElement;
+    expect(select.value).toBe("fr");
+    expect([...select.options].map((o) => o.value)).toEqual(["en", "fr"]);
+    select.value = "en";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+    click(q(t, "ps-save").closest("button")!);
+    await settle();
+    expect(store.saveConfig.mock.calls[0][0].language).toBe("en");
   });
 
   it("sends a newly typed key", async () => {

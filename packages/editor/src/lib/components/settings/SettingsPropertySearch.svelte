@@ -2,7 +2,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { _ } from "svelte-i18n";
-  import type { createPropertySearchStore, PropertySearchConfig, PropertySearchConfigPatch } from "../../propertySearchStore.svelte";
+  import type { createPropertySearchStore, PropertySearchConfig, PropertySearchConfigPatch, SearchLanguage } from "../../propertySearchStore.svelte";
   import Button from "../ui/Button.svelte";
   import Card from "../ui/Card.svelte";
 
@@ -23,6 +23,7 @@
   let senderName = $state("");
   let recipientsText = $state("");
   let appBaseUrl = $state("");
+  let language = $state<SearchLanguage>("en");
   let saving = $state(false);
   let status = $state<{ kind: "ok" | "error"; text: string } | null>(null);
 
@@ -33,6 +34,7 @@
     senderName = cfg.senderName;
     recipientsText = cfg.recipients.join("\n");
     appBaseUrl = cfg.appBaseUrl;
+    language = cfg.language ?? "en";
   }
 
   function errText(e: unknown): string {
@@ -58,6 +60,7 @@
       senderName: senderName.trim(),
       recipients: recipientsText.split(/[\n,;]/).map((r) => r.trim()).filter(Boolean),
       appBaseUrl: appBaseUrl.trim(),
+      language,
     };
     if (apiKey.trim()) patch.brevoApiKey = apiKey.trim();
     try {
@@ -91,6 +94,15 @@
       <span class="label">{$_("propertySearch.settings.retentionDays")}</span>
       <input class="native-input narrow" type="number" min="1" max="3650" data-testid="ps-retention" bind:value={retentionStr} />
       <span class="hint">{$_("propertySearch.settings.retentionHelp")}</span>
+    </label>
+
+    <label class="field">
+      <span class="label">{$_("propertySearch.settings.language")}</span>
+      <select class="native-input narrow-select" data-testid="ps-language" bind:value={language}>
+        <option value="en">English</option>
+        <option value="fr">Français</option>
+      </select>
+      <span class="hint">{$_("propertySearch.settings.languageHelp")}</span>
     </label>
 
     <h3>{$_("propertySearch.settings.email")}</h3>
@@ -151,6 +163,7 @@
     width: 100%; box-sizing: border-box;
   }
   .native-input.narrow { max-width: 140px; }
+  .native-input.narrow-select { max-width: 220px; }
   .native-input:focus { outline: none; border-color: var(--accent); }
   .actions { display: flex; gap: var(--space-2); justify-content: flex-end; flex-wrap: wrap; }
   .ok { color: var(--success, #33aa66); font-size: 12px; }

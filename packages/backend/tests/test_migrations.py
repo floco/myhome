@@ -1017,3 +1017,43 @@ def test_country_city_migration_is_a_noop_when_columns_already_exist(tmp_path):
 
     with engine.connect() as conn:
         assert conn.execute(text("SELECT version FROM schema_version")).scalar() == CURRENT_VERSION
+
+
+
+def _create_v15_property_search_config(conn):
+    conn.execute(text(
+        "CREATE TABLE property_search_config (home_id VARCHAR PRIMARY KEY, retention_days INTEGER NOT NULL, "
+        "brevo_api_key VARCHAR NOT NULL, sender_email VARCHAR NOT NULL, sender_name VARCHAR NOT NULL, "
+        "recipients TEXT NOT NULL, app_base_url VARCHAR NOT NULL)"
+    ))
+    conn.execute(text(
+        "INSERT INTO property_search_config VALUES ('h1', 30, '', '', 'My Home', '[]', '')"
+    ))
+
+
+def test_run_migrations_adds_language_to_property_search_config(tmp_path):
+    engine = create_engine(f"sqlite:///{tmp_path / 'v15.db'}")
+    with engine.begin() as conn:
+        _create_v15_property_search_config(conn)
+        conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
+        conn.execute(text("INSERT INTO schema_version (version) VALUES (15)"))
+
+    run_migrations(engine)
+
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT version FROM schema_version")).scalar() == CURRENT_VERSION
+        assert conn.execute(text("SELECT language FROM property_search_config WHERE home_id = 'h1'")).scalar() == "en"
+
+
+def test_config_language_migration_is_a_noop_when_column_already_exists(tmp_path):
+    engine = create_engine(f"sqlite:///{tmp_path / 'v15b.db'}")
+    with engine.begin() as conn:
+        _create_v15_property_search_config(conn)
+        conn.execute(text("ALTER TABLE property_search_config ADD COLUMN language VARCHAR NOT NULL DEFAULT 'fr'"))
+        conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
+        conn.execute(text("INSERT INTO schema_version (version) VALUES (15)"))
+
+    run_migrations(engine)
+
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT language FROM property_search_config WHERE home_id = 'h1'")).scalar() == "fr"

@@ -14,6 +14,7 @@ Frequency = Literal["daily", "weekly", "monthly"]
 SuggestionStatus = Literal["new", "pinned", "accepted", "rejected"]
 RunStatus = Literal["running", "succeeded", "failed", "usage_limited"]
 SuggestionType = Literal["land", "house", "new_build"]
+SearchLanguage = Literal["en", "fr"]
 
 _TIME_PATTERN = r"^([01]\d|2[0-3]):[0-5]\d$"
 
@@ -122,6 +123,7 @@ class PropertySearchConfig(BaseModel):
     senderName: str = "My Home"
     recipients: list[str] = []
     appBaseUrl: str = ""
+    language: SearchLanguage = "en"
 
 
 class PropertySearchConfigOut(BaseModel):
@@ -131,6 +133,7 @@ class PropertySearchConfigOut(BaseModel):
     senderName: str
     recipients: list[str]
     appBaseUrl: str
+    language: SearchLanguage
 
 
 class PropertySearchConfigUpdate(BaseModel):
@@ -140,3 +143,4 @@ class PropertySearchConfigUpdate(BaseModel):
     senderName: str | None = None
     recipients: list[str] | None = None
     appBaseUrl: str | None = None
+    language: SearchLanguage | None = None

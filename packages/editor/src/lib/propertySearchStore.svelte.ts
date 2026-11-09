@@ -4,6 +4,7 @@ import type { Property, PropertyType } from "./propertiesStore.svelte";
 export type SearchFrequency = "daily" | "weekly" | "monthly";
 export type SuggestionStatus = "new" | "pinned" | "accepted" | "rejected";
 export type RunStatus = "running" | "succeeded" | "failed" | "usage_limited";
+export type SearchLanguage = "en" | "fr";
 
 export interface PropertySearch {
   id: string;
@@ -88,6 +89,7 @@ export interface PropertySearchConfig {
   senderName: string;
   recipients: string[];
   appBaseUrl: string;
+  language: SearchLanguage;
 }
 
 export type PropertySearchConfigPatch = Partial<Omit<PropertySearchConfig, "brevoApiKeySet">> & { brevoApiKey?: string };

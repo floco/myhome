@@ -553,6 +553,7 @@ property_search_config = Table(
     Column("sender_name", String, nullable=False),
     Column("recipients", Text, nullable=False),
     Column("app_base_url", String, nullable=False),
+    Column("language", String, nullable=False, server_default="en"),
 )
 
 build_projects = Table(

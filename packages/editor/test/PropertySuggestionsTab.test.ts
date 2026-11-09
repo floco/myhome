@@ -147,35 +147,86 @@ describe("PropertySuggestionsTab", () => {
         suggestions: [makeSuggestion({ price: 150000, currency: "EUR", country: "Slovenia", region: "Dolenjska", city: "Novo mesto" })],
       }) });
       const card = t.querySelector('[data-testid="suggestion"]')!;
-      expect(tags(card)).toEqual({ price: `${(150000).toLocaleString(undefined, { maximumFractionDigits: 0 })} EUR`, country: "Slovenia", region: "Dolenjska", city: "Novo mesto" });
+      expect(tags(card)).toEqual({ price: `${(150000).toLocaleString(undefined, { maximumFractionDigits: 0 })} EUR`, type: "Land", country: "Slovenia", region: "Dolenjska", city: "Novo mesto" });
       expect(card.querySelector(".tags")!.compareDocumentPosition(card.querySelector("a.title")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(card.querySelector(".facts")!.textContent).not.toContain("Novo mesto");
       expect(card.querySelector(".facts")!.textContent).not.toContain("EUR");
     });
 
-    it("shows tags in price, country, region, city order", () => {
+    it("shows tags in price, type, country, region, city order", () => {
       const t = render({ searchStore: makeSearchStore({
         suggestions: [makeSuggestion({ price: 1, country: "Slovenia", region: "Dolenjska", city: "Novo mesto" })],
       }) });
       const kinds = [...t.querySelectorAll('[data-testid="suggestion"] .tag')].map((el) => (el as HTMLElement).dataset.tag);
-      expect(kinds).toEqual(["price", "country", "region", "city"]);
+      expect(kinds).toEqual(["price", "type", "country", "region", "city"]);
     });
 
     it("falls back to the location as city and omits missing tags", () => {
       const t = render({ searchStore: makeSearchStore({
-        suggestions: [makeSuggestion({ price: null, country: null, city: null, location: "Novo Mesto" })],
+        suggestions: [makeSuggestion({ type: null, price: null, country: null, city: null, location: "Novo Mesto" })],
       }) });
       expect(tags(t.querySelector('[data-testid="suggestion"]')!)).toEqual({ city: "Novo Mesto" });
     });
 
     it("derives city and country from a 'town, region, country' location", () => {
       const t = render({ searchStore: makeSearchStore({
-        suggestions: [makeSuggestion({ price: null, location: "Velike Brusnice, Novo mesto, Dolenjska, Slovenia" })],
+        suggestions: [makeSuggestion({ type: null, price: null, location: "Velike Brusnice, Novo mesto, Dolenjska, Slovenia" })],
       }) });
       const card = t.querySelector('[data-testid="suggestion"]')!;
       expect(tags(card)).toEqual({ country: "Slovenia", region: "Dolenjska", city: "Velike Brusnice" });
       expect(card.querySelector(".facts")!.textContent).toContain("Novo mesto, Dolenjska");
     });
+
+    it("shows the property type as a tag, not in the facts line", () => {
+      const t = render({ searchStore: makeSearchStore({
+        suggestions: [makeSuggestion({ id: "a", type: "house" }), makeSuggestion({ id: "b", type: "new_build", listingUrl: "https://a.si/b" })],
+      }) });
+      const cards = [...t.querySelectorAll('[data-testid="suggestion"]')];
+      expect(cards.map((c) => tags(c).type)).toEqual(["House", "New build"]);
+      expect(cards[0].querySelector(".facts")?.textContent ?? "").not.toContain("House");
+    });
+  });
+
+  describe("image placeholder", () => {
+    it("shows a same-size placeholder when the listing has no image", () => {
+      const t = render({ searchStore: makeSearchStore({
+        suggestions: [makeSuggestion({ id: "a", imageUrl: null }), makeSuggestion({ id: "b", imageUrl: "https://img/1.jpg", listingUrl: "https://a.si/b" })],
+      }) });
+      const [noImg, withImg] = [...t.querySelectorAll('[data-testid="suggestion"]')];
+      const ph = noImg.querySelector(".thumb.thumb-placeholder");
+      expect(ph).not.toBeNull();
+      expect(ph!.getAttribute("aria-hidden")).toBe("true");
+      expect(withImg.querySelector("img.thumb")).not.toBeNull();
+      expect(withImg.querySelector(".thumb-placeholder")).toBeNull();
+    });
+
+    it("swaps a broken image for the placeholder", () => {
+      const t = render({ searchStore: makeSearchStore({ suggestions: [makeSuggestion({ imageUrl: "https://img/broken.jpg" })] }) });
+      t.querySelector("img.thumb")!.dispatchEvent(new Event("error"));
+      flushSync();
+      expect(t.querySelector("img.thumb")).toBeNull();
+      expect(t.querySelector(".thumb-placeholder")).not.toBeNull();
+    });
+  });
+
+  describe("type filter", () => {
+    it("filters suggestions by property type and marks the filter button active", () => {
+      const t = render({ searchStore: makeSearchStore({
+        suggestions: [
+          makeSuggestion({ id: "a", title: "Plot", type: "land" }),
+          makeSuggestion({ id: "b", title: "Cottage", type: "house", listingUrl: "https://a.si/b" }),
+          makeSuggestion({ id: "c", title: "Unknown", type: null, listingUrl: "https://a.si/c" }),
+        ],
+      }) });
+      (t.querySelector("button[title='Filters']") as HTMLButtonElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      flushSync();
+      const select = document.querySelector('[data-testid="type-filter"]') as HTMLSelectElement;
+      expect([...select.options].map((o) => o.value)).toEqual(["", "land", "house", "new_build"]);
+      expect([...select.options].map((o) => o.textContent?.trim())).toEqual(["All types", "Land", "House", "New build"]);
+      select.value = "house";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      flushSync();
+      expect([...t.querySelectorAll('[data-testid="suggestion"] a.title')].map((a) => a.textContent)).toEqual(["Cottage"]);
+    });
   });
 });
-

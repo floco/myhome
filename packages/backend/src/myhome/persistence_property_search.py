@@ -268,6 +268,7 @@ def load_config(home_id: str) -> PropertySearchConfig:
     return PropertySearchConfig(
         retentionDays=r["retention_days"], brevoApiKey=r["brevo_api_key"], senderEmail=r["sender_email"],
         senderName=r["sender_name"], recipients=json.loads(r["recipients"]), appBaseUrl=r["app_base_url"],
+        language=r["language"],
     )
 
 
@@ -275,6 +276,7 @@ def save_config(home_id: str, cfg: PropertySearchConfig) -> None:
     values = {
         "retention_days": cfg.retentionDays, "brevo_api_key": cfg.brevoApiKey, "sender_email": cfg.senderEmail,
         "sender_name": cfg.senderName, "recipients": json.dumps(cfg.recipients), "app_base_url": cfg.appBaseUrl,
+        "language": cfg.language,
     }
     stmt = sqlite_insert(config_t).values(home_id=home_id, **values).on_conflict_do_update(
         index_elements=[config_t.c.home_id], set_=values,
