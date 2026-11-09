@@ -76,6 +76,22 @@ describe("SettingsCategories", () => {
     unmount(app);
   });
 
+  it("pressing Enter in the unit field adds the unit", async () => {
+    const store = makeStore();
+    const app = mount(SettingsCategories, { target, props: { store } });
+    flushSync();
+    const tab = [...target.querySelectorAll(".tab")].find((b) => b.textContent?.includes("Consumables"))!;
+    (tab as HTMLButtonElement).click();
+    flushSync();
+    const input = target.querySelector('input[placeholder="e.g. tablets"]') as HTMLInputElement;
+    input.value = "boxes";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(store.updateConsumableUnits).toHaveBeenCalledWith(["tablets", "boxes"]);
+    unmount(app);
+  });
+
   it("adding a contact type calls store.updateContactTypes", async () => {
     const store = makeStore();
     const app = mount(SettingsCategories, { target, props: { store } });

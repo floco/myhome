@@ -1637,7 +1637,7 @@
 {/if}
 
   {#if showChangePassword}
-    <Modal title={$_('app.changePassword.title')} onclose={() => { showChangePassword = false; cpError = null; }}>
+    <Modal open={showChangePassword} title={$_('app.changePassword.title')} onclose={() => { showChangePassword = false; cpError = null; }}>
       <div style="display:flex;flex-direction:column;gap:12px;padding:4px 0">
         <Input label={$_('app.changePassword.currentPassword')} type="password" bind:value={cpCurrent} />
         <Input label={$_('app.changePassword.newPassword')} type="password" bind:value={cpNew} />
