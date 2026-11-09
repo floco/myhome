@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.41.0 - 2026-11-09
+
+- AI property search inbox: listings without a photo (or whose photo fails to load) now show a same-size placeholder, so every card has the same layout
+- The property type (land, house, new build) now shows as a tag next to the price, and the inbox filters can narrow suggestions by property type
+- New "Results language" setting (English or French) in Settings → AI property search: the runner writes listing titles, reasons, regions and countries in that language
+
 ## 0.40.0 - 2026-11-09
 
 - AI property search inbox: sort by price (cheapest first by default, or most expensive first) or by search
