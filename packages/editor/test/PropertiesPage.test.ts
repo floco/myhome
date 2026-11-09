@@ -115,9 +115,61 @@ describe("PropertiesPage — suggestions tab", () => {
   function makeSearchStore(newCount: number) {
     return {
       searches: [], suggestions: [], loaded: true, loadError: null, newCount,
-      accept: vi.fn(), reject: vi.fn(), togglePin: vi.fn(),
+      accept: vi.fn(), reject: vi.fn(), togglePin: vi.fn(), reload: vi.fn().mockResolvedValue(undefined),
     };
   }
+
+  function mountWith(searchStore: ReturnType<typeof makeSearchStore>) {
+    const target = document.createElement("div");
+    document.body.appendChild(target);
+    const comp = mount(PropertiesPage, {
+      target,
+      props: { store: makeStore([makeProperty()]), locationsStore: makeLocationsStore(), searchStore } as any,
+    });
+    flushSync();
+    return { target, comp };
+  }
+
+  it("reloads the inbox when the suggestions tab is opened", () => {
+    const searchStore = makeSearchStore(0);
+    const { target, comp } = mountWith(searchStore);
+    searchStore.reload.mockClear();
+    (target.querySelectorAll(".tab-bar .tab")[1] as HTMLButtonElement).click();
+    flushSync();
+    expect(searchStore.reload).toHaveBeenCalledTimes(1);
+    unmount(comp);
+  });
+
+  it("polls the inbox every 60s while visible and stops after unmount", () => {
+    vi.useFakeTimers();
+    try {
+      const searchStore = makeSearchStore(0);
+      const { comp } = mountWith(searchStore);
+      searchStore.reload.mockClear();
+      vi.advanceTimersByTime(60_000);
+      expect(searchStore.reload).toHaveBeenCalledTimes(1);
+      Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true });
+      vi.advanceTimersByTime(60_000);
+      expect(searchStore.reload).toHaveBeenCalledTimes(1);
+      Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+      unmount(comp);
+      vi.advanceTimersByTime(120_000);
+      expect(searchStore.reload).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("reloads the inbox when the page becomes visible again", () => {
+    const searchStore = makeSearchStore(0);
+    const { comp } = mountWith(searchStore);
+    searchStore.reload.mockClear();
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(searchStore.reload).toHaveBeenCalledTimes(1);
+    unmount(comp);
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(searchStore.reload).toHaveBeenCalledTimes(1);
+  });
 
   it("shows suggestions badge count and switches tab", () => {
     const target = document.createElement("div");

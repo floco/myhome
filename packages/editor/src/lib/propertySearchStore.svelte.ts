@@ -123,14 +123,25 @@ export function createPropertySearchStore(getHomeId: () => string | null = () =>
     return { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
   }
 
+  // Background reloads can overlap with each other and with local actions. Each
+  // load (and each local suggestion action) bumps a version; a load only applies
+  // its result if nothing newer happened while it was in flight, so a stale GET
+  // can't resurrect an accepted/rejected suggestion or overwrite fresher data.
+  let searchesVersion = 0;
+  let suggestionsVersion = 0;
+
   async function loadSearches(): Promise<void> {
+    const v = ++searchesVersion;
     const list: PropertySearch[] = await (await request("/property-searches")).json();
+    if (v !== searchesVersion) return;
     searches.length = 0;
     searches.push(...list);
   }
 
   async function loadSuggestions(): Promise<void> {
+    const v = ++suggestionsVersion;
     const list: PropertySuggestion[] = await (await request("/property-suggestions")).json();
+    if (v !== suggestionsVersion) return;
     suggestions.length = 0;
     suggestions.push(...list);
   }
@@ -172,6 +183,7 @@ export function createPropertySearchStore(getHomeId: () => string | null = () =>
   }
 
   function removeLocal(id: string): void {
+    suggestionsVersion++;
     const i = suggestions.findIndex((s) => s.id === id);
     if (i >= 0) suggestions.splice(i, 1);
   }
@@ -189,6 +201,7 @@ export function createPropertySearchStore(getHomeId: () => string | null = () =>
 
   async function togglePin(id: string): Promise<void> {
     await request(`/property-suggestions/${id}/pin`, { method: "POST" });
+    suggestionsVersion++;
     const s = suggestions.find((x) => x.id === id);
     if (s) s.status = s.status === "pinned" ? "new" : "pinned";
   }
