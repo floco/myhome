@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync, tick } from "svelte";
 import LocationModal from "../src/lib/components/LocationModal.svelte";
+import { fake } from "./fixtures/fake";
 
 function makeStore(attachments: string[] = []) {
   return {
@@ -28,7 +29,7 @@ describe("LocationModal", () => {
     const store = makeStore();
     const onclose = vi.fn();
     const el = target();
-    const comp = mount(LocationModal, { target: el, props: { location: null, store, onclose } });
+    const comp = mount(LocationModal, { target: el, props: { location: null, store: fake(store), onclose } });
     flushSync();
     const saveBtn = Array.from(el.querySelectorAll("button")).find((b) => b.textContent?.trim() === "Add") as HTMLButtonElement;
     expect(saveBtn.disabled).toBe(true);
@@ -49,7 +50,7 @@ describe("LocationModal", () => {
     const el = target();
     const comp = mount(LocationModal, {
       target: el,
-      props: { location: store.locations[0], store, onclose: vi.fn() },
+      props: { location: store.locations[0], store: fake(store), onclose: vi.fn() },
     });
     flushSync();
     const nameInput = el.querySelector(".ui-input") as HTMLInputElement;
@@ -65,7 +66,7 @@ describe("LocationModal", () => {
   it("has a Media tab disabled in create mode", () => {
     const store = makeStore();
     const el = target();
-    const comp = mount(LocationModal, { target: el, props: { location: null, store, onclose: vi.fn() } });
+    const comp = mount(LocationModal, { target: el, props: { location: null, store: fake(store), onclose: vi.fn() } });
     flushSync();
     const mediaTab = Array.from(el.querySelectorAll(".tab")).find((t) => t.textContent?.includes("Media")) as HTMLButtonElement;
     expect(mediaTab.disabled).toBe(true);
@@ -75,7 +76,7 @@ describe("LocationModal", () => {
   it("badge count reflects attachments and media tab shows the gallery", async () => {
     const store = makeStore(["photo.jpg"]);
     const el = target();
-    const comp = mount(LocationModal, { target: el, props: { location: store.locations[0], store, onclose: vi.fn() } });
+    const comp = mount(LocationModal, { target: el, props: { location: store.locations[0], store: fake(store), onclose: vi.fn() } });
     flushSync();
     const mediaTab = Array.from(el.querySelectorAll(".tab")).find((t) => t.textContent?.includes("Media")) as HTMLElement;
     expect(mediaTab.textContent).toContain("1");
@@ -88,7 +89,7 @@ describe("LocationModal", () => {
   it("calls store.uploadAttachment for each uploaded file", async () => {
     const store = makeStore();
     const el = target();
-    const comp = mount(LocationModal, { target: el, props: { location: store.locations[0], store, onclose: vi.fn() } });
+    const comp = mount(LocationModal, { target: el, props: { location: store.locations[0], store: fake(store), onclose: vi.fn() } });
     flushSync();
     const mediaTab = Array.from(el.querySelectorAll(".tab")).find((t) => t.textContent?.includes("Media")) as HTMLElement;
     mediaTab.click();

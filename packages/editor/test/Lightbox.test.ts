@@ -2,6 +2,8 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync, tick } from "svelte";
 import Lightbox from "../src/lib/components/ui/Lightbox.svelte";
 import type { MediaItem } from "../src/lib/components/ui/mediaTypes";
+import { fake } from "./fixtures/fake";
+import type { ComponentProps } from "svelte";
 
 function makeItem(overrides: Partial<MediaItem> = {}): MediaItem {
   return {
@@ -17,7 +19,7 @@ function makeItem(overrides: Partial<MediaItem> = {}): MediaItem {
 function setup(props: Record<string, unknown>) {
   const target = document.createElement("div");
   document.body.appendChild(target);
-  const comp = mount(Lightbox, { target, props });
+  const comp = mount(Lightbox, { target, props: fake<ComponentProps<typeof Lightbox>>(props) });
   return { target, comp };
 }
 
@@ -102,7 +104,7 @@ describe("Lightbox — close", () => {
 
   it("calls onclose on Escape key", async () => {
     const onclose = vi.fn();
-    const { target, comp } = setup({ items: [makeItem()], initialIndex: 0, onclose });
+    const { comp } = setup({ items: [makeItem()], initialIndex: 0, onclose });
     await tick(); // wait for onMount to register the keydown listener
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     expect(onclose).toHaveBeenCalledOnce();

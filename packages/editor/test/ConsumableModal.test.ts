@@ -1,16 +1,17 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync, tick } from "svelte";
 import ConsumableModal from "../src/lib/components/ConsumableModal.svelte";
-import { createConsumableStore } from "../src/lib/consumableStore.svelte";
+import { createConsumableStore, type Consumable } from "../src/lib/consumableStore.svelte";
 
 const emptyDoc = { version: 1, consumables: [], transactions: [] };
-const sampleConsumable = {
+const sampleConsumable: Consumable = {
   id: "c1",
   name: "AA Batteries",
   emoji: "🔋",
   unit: "count",
   quantity: 6.0,
   minQuantity: 4.0,
+  initialQuantity: 6.0,
   categoryId: null,
   description: "",
   placement: null,

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import CostsPage from "../src/lib/components/CostsPage.svelte";
 import type { CostEntry } from "../src/lib/costsStore.svelte";
+import { fake } from "./fixtures/fake";
 
 afterEach(() => { document.body.innerHTML = ""; });
 
@@ -9,7 +10,7 @@ function makeEntry(overrides: Partial<CostEntry> = {}): CostEntry {
   return {
     id: "ce1", categoryId: "cat-electricity", date: "2026-01-15",
     totalAmount: 120.5, quantity: null, unitPrice: null,
-    contactId: null, notes: "", roomId: null, attachments: [],
+    contactId: null, notes: "", roomId: null, attachments: [], linkedConsumableId: null,
     ...overrides,
   };
 }
@@ -47,11 +48,11 @@ describe("CostsPage — external selection", () => {
     const comp = mount(CostsPage, {
       target,
       props: {
-        costsStore: makeCostsStore([entry]),
-        settingsStore: makeSettingsStore(),
-        contactsStore: makeContactsStore(),
-        floorStore: { floors: [] },
-        consumableStore: { consumables: [] },
+        costsStore: fake(makeCostsStore([entry])),
+        settingsStore: fake(makeSettingsStore()),
+        contactsStore: fake(makeContactsStore()),
+        floorStore: fake({ floors: [] }),
+        consumableStore: fake({ consumables: [] }),
         selectedItemId: "ce1",
         onclearselection,
       },
@@ -72,11 +73,11 @@ describe("CostsPage — responsive columns", () => {
     const comp = mount(CostsPage, {
       target,
       props: {
-        costsStore: makeCostsStore([makeEntry()]),
-        settingsStore: makeSettingsStore(),
-        contactsStore: makeContactsStore(),
-        floorStore: { floors: [] },
-        consumableStore: { consumables: [] },
+        costsStore: fake(makeCostsStore([makeEntry()])),
+        settingsStore: fake(makeSettingsStore()),
+        contactsStore: fake(makeContactsStore()),
+        floorStore: fake({ floors: [] }),
+        consumableStore: fake({ consumables: [] }),
       },
     });
     flushSync();

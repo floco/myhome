@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import SettingsCategories from "../src/lib/components/settings/SettingsCategories.svelte";
+import { fake } from "./fixtures/fake";
 
 function makeStore() {
   return {
@@ -47,7 +48,7 @@ describe("SettingsCategories", () => {
   });
 
   it("shows the Cost categories tab by default", () => {
-    const app = mount(SettingsCategories, { target, props: { store: makeStore() } });
+    const app = mount(SettingsCategories, { target, props: { store: fake(makeStore()) } });
     flushSync();
     expect(target.textContent).toContain("Cost categories");
     expect(target.textContent).toContain("Electricity");
@@ -56,7 +57,7 @@ describe("SettingsCategories", () => {
   });
 
   it("switches to the Inventory categories tab", () => {
-    const app = mount(SettingsCategories, { target, props: { store: makeStore() } });
+    const app = mount(SettingsCategories, { target, props: { store: fake(makeStore()) } });
     flushSync();
     const tab = [...target.querySelectorAll(".tab")].find((b) => b.textContent === "Inventory categories")!;
     (tab as HTMLButtonElement).click();
@@ -67,7 +68,7 @@ describe("SettingsCategories", () => {
   });
 
   it("switches to the Contact Types tab and shows contact types", () => {
-    const app = mount(SettingsCategories, { target, props: { store: makeStore() } });
+    const app = mount(SettingsCategories, { target, props: { store: fake(makeStore()) } });
     flushSync();
     const tab = [...target.querySelectorAll(".tab")].find((b) => b.textContent === "Contact Types")!;
     (tab as HTMLButtonElement).click();
@@ -78,7 +79,7 @@ describe("SettingsCategories", () => {
 
   it("pressing Enter in the unit field adds the unit", async () => {
     const store = makeStore();
-    const app = mount(SettingsCategories, { target, props: { store } });
+    const app = mount(SettingsCategories, { target, props: { store: fake(store) } });
     flushSync();
     const tab = [...target.querySelectorAll(".tab")].find((b) => b.textContent?.includes("Consumables"))!;
     (tab as HTMLButtonElement).click();
@@ -94,7 +95,7 @@ describe("SettingsCategories", () => {
 
   it("adding a contact type calls store.updateContactTypes", async () => {
     const store = makeStore();
-    const app = mount(SettingsCategories, { target, props: { store } });
+    const app = mount(SettingsCategories, { target, props: { store: fake(store) } });
     flushSync();
     const tab = [...target.querySelectorAll(".tab")].find((b) => b.textContent === "Contact Types")!;
     (tab as HTMLButtonElement).click();
@@ -117,7 +118,7 @@ describe("SettingsCategories", () => {
 
   it("adding a cost category calls store.updateCostCategories", async () => {
     const store = makeStore();
-    const app = mount(SettingsCategories, { target, props: { store } });
+    const app = mount(SettingsCategories, { target, props: { store: fake(store) } });
     flushSync();
     const addBtn = [...target.querySelectorAll("button")].find((b) => b.textContent?.includes("＋ Add"))!;
     addBtn.click();
@@ -136,7 +137,7 @@ describe("SettingsCategories", () => {
   });
 
   it("switches to the Insurance categories tab and shows insurance categories", () => {
-    const app = mount(SettingsCategories, { target, props: { store: makeStore() } });
+    const app = mount(SettingsCategories, { target, props: { store: fake(makeStore()) } });
     flushSync();
     const tab = [...target.querySelectorAll(".tab")].find((b) => b.textContent === "Insurance categories")!;
     (tab as HTMLButtonElement).click();
@@ -147,7 +148,7 @@ describe("SettingsCategories", () => {
 
   it("adding an insurance category calls store.updateInsuranceCategories", async () => {
     const store = makeStore();
-    const app = mount(SettingsCategories, { target, props: { store } });
+    const app = mount(SettingsCategories, { target, props: { store: fake(store) } });
     flushSync();
     const tab = [...target.querySelectorAll(".tab")].find((b) => b.textContent === "Insurance categories")!;
     (tab as HTMLButtonElement).click();
@@ -169,7 +170,7 @@ describe("SettingsCategories", () => {
   });
 
   it("switches to the Consumables tab and shows units and categories", () => {
-    const app = mount(SettingsCategories, { target, props: { store: makeStore() } });
+    const app = mount(SettingsCategories, { target, props: { store: fake(makeStore()) } });
     flushSync();
     const tab = [...target.querySelectorAll(".tab")].find((b) => b.textContent === "Consumables")!;
     (tab as HTMLButtonElement).click();
@@ -180,7 +181,7 @@ describe("SettingsCategories", () => {
   });
 
   it("switches to the Owners tab and shows existing owners", () => {
-    const app = mount(SettingsCategories, { target, props: { store: makeStore() } });
+    const app = mount(SettingsCategories, { target, props: { store: fake(makeStore()) } });
     flushSync();
     const tab = [...target.querySelectorAll(".tab")].find((b) => b.textContent === "Owners")!;
     (tab as HTMLButtonElement).click();
@@ -190,7 +191,7 @@ describe("SettingsCategories", () => {
   });
 
   it("switches to the Stores tab and shows existing stores", () => {
-    const app = mount(SettingsCategories, { target, props: { store: makeStore() } });
+    const app = mount(SettingsCategories, { target, props: { store: fake(makeStore()) } });
     flushSync();
     const tab = [...target.querySelectorAll(".tab")].find((b) => b.textContent === "Stores")!;
     (tab as HTMLButtonElement).click();

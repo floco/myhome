@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync, tick } from "svelte";
 import TaskModal from "../src/lib/components/TaskModal.svelte";
 import { createBuildStore } from "../src/lib/buildStore.svelte";
+import { fake } from "./fixtures/fake";
 
 const HOME = "home-1";
 const getHomeId = () => HOME;
@@ -49,7 +50,7 @@ describe("TaskModal", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
     await waitTick();
-    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: makeContactsStore(), onclose: vi.fn() } });
+    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: fake(makeContactsStore()), onclose: vi.fn() } });
     await tick();
     flushSync();
 
@@ -63,7 +64,7 @@ describe("TaskModal", () => {
   it("shows the resolved i18n title for a seeded task with no override", async () => {
     const { store, target } = setup();
     await waitTick();
-    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: makeContactsStore(), onclose: vi.fn() } });
+    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: fake(makeContactsStore()), onclose: vi.fn() } });
     await tick();
     flushSync();
 
@@ -77,7 +78,7 @@ describe("TaskModal", () => {
   it("shows the validation status field when validationRequired is true", async () => {
     const { store, target } = setup();
     await waitTick();
-    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: makeContactsStore(), onclose: vi.fn() } });
+    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: fake(makeContactsStore()), onclose: vi.fn() } });
     await tick();
     flushSync();
 
@@ -91,7 +92,7 @@ describe("TaskModal", () => {
     const { store, target } = setup();
     await waitTick();
     const onclose = vi.fn();
-    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: makeContactsStore(), onclose } });
+    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: fake(makeContactsStore()), onclose } });
     await tick();
     flushSync();
 
@@ -113,7 +114,7 @@ describe("TaskModal", () => {
   it("saving without editing the title does not send a titleOverride (would freeze translation)", async () => {
     const { store, target } = setup();
     await waitTick();
-    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: makeContactsStore(), onclose: vi.fn() } });
+    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: fake(makeContactsStore()), onclose: vi.fn() } });
     await tick();
     flushSync();
 
@@ -146,7 +147,7 @@ describe("TaskModal", () => {
       { id: "c1", name: "SunTrust Roofing", typeId: "ctype-contractor" },
       { id: "c2", name: "Metro Plumbing", typeId: "ctype-supplier" },
     ]);
-    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore, onclose: vi.fn() } });
+    const comp = mount(TaskModal, { target, props: { task: store.tasks[0], store, contactsStore: fake(contactsStore), onclose: vi.fn() } });
     await tick();
     flushSync();
 

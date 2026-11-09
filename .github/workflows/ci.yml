@@ -26,6 +26,9 @@ jobs:
       - name: Run frontend tests
         run: npm test -w @myhome/editor
 
+      - name: Type-check frontend
+        run: npm run check -w @myhome/editor
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:

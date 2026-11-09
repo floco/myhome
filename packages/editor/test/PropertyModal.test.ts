@@ -3,6 +3,7 @@ import { mount, unmount, flushSync } from "svelte";
 import PropertyModal from "../src/lib/components/PropertyModal.svelte";
 import { homesStore } from "../src/lib/homesStore.svelte";
 import type { Property } from "../src/lib/propertiesStore.svelte";
+import { fake } from "./fixtures/fake";
 
 function makeProperty(overrides: Partial<Property> = {}): Property {
   return {
@@ -45,7 +46,7 @@ describe("PropertyModal", () => {
     const store = makeStore([property]);
     const comp = mount(PropertyModal, {
       target,
-      props: { property, store, locationsStore: makeLocationsStore(), onclose: vi.fn() },
+      props: { property, store, locationsStore: fake(makeLocationsStore()), onclose: vi.fn() },
     });
     flushSync();
 
@@ -56,13 +57,14 @@ describe("PropertyModal", () => {
 
     const link = target.querySelector(".md-preview a") as HTMLAnchorElement | null;
     expect(link?.getAttribute("href")).toBe("https://example.com/listing");
+    unmount(comp);
   });
 
   it("adds and removes pros/cons entries", () => {
     const store = makeStore([]);
     const comp = mount(PropertyModal, {
       target,
-      props: { property: null, store, locationsStore: makeLocationsStore(), onclose: vi.fn() },
+      props: { property: null, store, locationsStore: fake(makeLocationsStore()), onclose: vi.fn() },
     });
     flushSync();
 
@@ -89,7 +91,7 @@ describe("PropertyModal", () => {
     const store = makeStore([makeProperty()]);
     const comp = mount(PropertyModal, {
       target,
-      props: { property: makeProperty(), store, locationsStore: makeLocationsStore(), onclose: vi.fn() },
+      props: { property: makeProperty(), store, locationsStore: fake(makeLocationsStore()), onclose: vi.fn() },
     });
     flushSync();
 
@@ -109,7 +111,7 @@ describe("PropertyModal", () => {
     const onclose = vi.fn();
     const comp = mount(PropertyModal, {
       target,
-      props: { property: null, store, locationsStore: makeLocationsStore(), onclose },
+      props: { property: null, store, locationsStore: fake(makeLocationsStore()), onclose },
     });
     flushSync();
 

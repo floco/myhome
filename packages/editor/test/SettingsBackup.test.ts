@@ -26,7 +26,7 @@ describe("SettingsBackup", () => {
       if (boiler) return Promise.resolve(boiler);
       return Promise.resolve(new Response(null, { status: 200 }));
     });
-    globalThis.fetch = fetchMock;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
     globalThis.URL.createObjectURL = vi.fn().mockReturnValue("blob:fake");
     globalThis.URL.revokeObjectURL = vi.fn();
   });
@@ -54,7 +54,7 @@ describe("SettingsBackup", () => {
         headers: { "Content-Disposition": 'attachment; filename="myhome-backup-2026-06-29.zip"' },
       }));
     });
-    globalThis.fetch = fetchMock;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
     const app = mount(SettingsBackup, { target, props: {} });
     flushSync();
     const btn = [...target.querySelectorAll("button")].find((b) => b.textContent?.includes("Download Backup"))!;
@@ -70,7 +70,7 @@ describe("SettingsBackup", () => {
       if (boiler) return Promise.resolve(boiler);
       return Promise.resolve(new Response(null, { status: 204 }));
     });
-    globalThis.fetch = fetchMock;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
     const app = mount(SettingsBackup, { target, props: {} });
     flushSync();
     const fileInput = target.querySelector('input[type="file"]') as HTMLInputElement;

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync, tick } from "svelte";
 import HomeInventoryWidget from "../src/lib/components/HomeInventoryWidget.svelte";
 import { createInventoryStore } from "../src/lib/inventoryStore.svelte";
+import { fake } from "./fixtures/fake";
 
 const sampleDoc = {
   items: [
@@ -45,7 +46,7 @@ describe("HomeInventoryWidget", () => {
     document.body.appendChild(target);
     const comp = mount(HomeInventoryWidget, {
       target,
-      props: { inventoryStore, settingsStore: makeSettingsStore(), onnavigate: vi.fn() },
+      props: { inventoryStore, settingsStore: fake(makeSettingsStore()), onnavigate: vi.fn() },
     });
     await tick();
     flushSync();
@@ -63,7 +64,7 @@ describe("HomeInventoryWidget", () => {
     document.body.appendChild(target);
     const comp = mount(HomeInventoryWidget, {
       target,
-      props: { inventoryStore, settingsStore: makeSettingsStore(), onnavigate: vi.fn() },
+      props: { inventoryStore, settingsStore: fake(makeSettingsStore()), onnavigate: vi.fn() },
     });
     await tick();
     flushSync();
@@ -85,7 +86,7 @@ describe("HomeInventoryWidget", () => {
     document.body.appendChild(target);
     const comp = mount(HomeInventoryWidget, {
       target,
-      props: { inventoryStore, settingsStore: makeSettingsStore(), onnavigate: vi.fn() },
+      props: { inventoryStore, settingsStore: fake(makeSettingsStore()), onnavigate: vi.fn() },
     });
     await tick();
     flushSync();
@@ -112,7 +113,7 @@ describe("HomeInventoryWidget", () => {
     document.body.appendChild(target);
     const comp = mount(HomeInventoryWidget, {
       target,
-      props: { inventoryStore, settingsStore: makeSettingsStore(manyCategories), onnavigate: vi.fn() },
+      props: { inventoryStore, settingsStore: fake(makeSettingsStore(manyCategories)), onnavigate: vi.fn() },
     });
     await tick();
     flushSync();
@@ -133,7 +134,7 @@ describe("HomeInventoryWidget", () => {
     const onnavigate = vi.fn();
     const comp = mount(HomeInventoryWidget, {
       target,
-      props: { inventoryStore, settingsStore: makeSettingsStore(), onnavigate },
+      props: { inventoryStore, settingsStore: fake(makeSettingsStore()), onnavigate },
     });
     await tick();
     flushSync();

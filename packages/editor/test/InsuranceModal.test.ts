@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import InsuranceModal from "../src/lib/components/InsuranceModal.svelte";
 import type { InsurancePolicy } from "../src/lib/insuranceStore.svelte";
+import { fake } from "./fixtures/fake";
 
 afterEach(() => { document.body.innerHTML = ""; });
 
@@ -55,7 +56,7 @@ describe("InsuranceModal — create", () => {
 
     const comp = mount(InsuranceModal, {
       target,
-      props: { policy: null, store, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore(), onclose: vi.fn() },
+      props: { policy: null, store, settingsStore: fake(makeSettingsStore()), contactsStore: makeContactsStore(), onclose: vi.fn() },
     });
     flushSync();
 
@@ -76,7 +77,7 @@ describe("InsuranceModal — create", () => {
 
     const comp = mount(InsuranceModal, {
       target,
-      props: { policy: null, store, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore(), onclose: vi.fn() },
+      props: { policy: null, store, settingsStore: fake(makeSettingsStore()), contactsStore: makeContactsStore(), onclose: vi.fn() },
     });
     flushSync();
 
@@ -102,7 +103,7 @@ describe("InsuranceModal — create", () => {
 
     const comp = mount(InsuranceModal, {
       target,
-      props: { policy: null, store, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore(), onclose: vi.fn() },
+      props: { policy: null, store, settingsStore: fake(makeSettingsStore()), contactsStore: makeContactsStore(), onclose: vi.fn() },
     });
     flushSync();
 
@@ -131,7 +132,7 @@ describe("InsuranceModal — edit", () => {
 
     const comp = mount(InsuranceModal, {
       target,
-      props: { policy, store, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore(), onclose: vi.fn() },
+      props: { policy, store, settingsStore: fake(makeSettingsStore()), contactsStore: makeContactsStore(), onclose: vi.fn() },
     });
     flushSync();
 

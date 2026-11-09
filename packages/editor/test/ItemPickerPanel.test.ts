@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
-import { readFileSync } from "node:fs";
+import componentSource from "../src/lib/components/ItemPickerPanel.svelte?raw";
 import ItemPickerPanel from "../src/lib/components/ItemPickerPanel.svelte";
 import type { PickerLayer } from "../src/lib/components/ItemPickerPanel.svelte";
 
@@ -192,7 +192,7 @@ describe("ItemPickerPanel", () => {
     // since rows fill nearly the whole list, that made the panel
     // unscrollable on touch. pan-y keeps vertical scroll native while
     // leaving horizontal/diagonal pointer movement free for drag-to-place.
-    const source = readFileSync("src/lib/components/ItemPickerPanel.svelte", "utf-8");
+    const source = componentSource;
     const rule = source.slice(source.indexOf(".item-row {"), source.indexOf(".item-row {") + 300);
     expect(rule).toContain("touch-action: pan-y;");
   });

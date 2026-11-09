@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import InsurancePage from "../src/lib/components/InsurancePage.svelte";
 import type { InsurancePolicy } from "../src/lib/insuranceStore.svelte";
+import { fake } from "./fixtures/fake";
 
 afterEach(() => { document.body.innerHTML = ""; });
 
@@ -55,7 +56,7 @@ describe("InsurancePage — list rendering", () => {
 
     const comp = mount(InsurancePage, {
       target,
-      props: { store, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore() },
+      props: { store, settingsStore: fake(makeSettingsStore()), contactsStore: makeContactsStore() },
     });
     flushSync();
 
@@ -74,7 +75,7 @@ describe("InsurancePage — add policy", () => {
 
     const comp = mount(InsurancePage, {
       target,
-      props: { store, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore() },
+      props: { store, settingsStore: fake(makeSettingsStore()), contactsStore: makeContactsStore() },
     });
     flushSync();
 
@@ -95,7 +96,7 @@ describe("InsurancePage — responsive columns", () => {
     document.body.appendChild(target);
     const comp = mount(InsurancePage, {
       target,
-      props: { store, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore() },
+      props: { store, settingsStore: fake(makeSettingsStore()), contactsStore: makeContactsStore() },
     });
     flushSync();
 

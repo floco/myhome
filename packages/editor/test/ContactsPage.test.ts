@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import ContactsPage from "../src/lib/components/ContactsPage.svelte";
 import type { Contact } from "../src/lib/contactsStore.svelte";
+import { fake } from "./fixtures/fake";
 
 afterEach(() => { document.body.innerHTML = ""; });
 
@@ -30,7 +31,7 @@ describe("ContactsPage", () => {
     const store = makeContactsStore([]);
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const comp = mount(ContactsPage, { target, props: { store, settingsStore: makeSettingsStore() } });
+    const comp = mount(ContactsPage, { target, props: { store: fake(store), settingsStore: fake(makeSettingsStore()) } });
     flushSync();
     expect(target.textContent).toContain("No contacts yet");
     unmount(comp);
@@ -40,7 +41,7 @@ describe("ContactsPage", () => {
     const store = makeContactsStore([makeContact()]);
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const comp = mount(ContactsPage, { target, props: { store, settingsStore: makeSettingsStore() } });
+    const comp = mount(ContactsPage, { target, props: { store: fake(store), settingsStore: fake(makeSettingsStore()) } });
     flushSync();
     expect(target.textContent).toContain("Metro Plumbing");
     const row = Array.from(target.querySelectorAll("tr")).find((r) => r.textContent?.includes("Metro Plumbing")) as HTMLElement;
@@ -56,7 +57,7 @@ describe("ContactsPage — responsive columns", () => {
     const store = makeContactsStore([makeContact()]);
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const comp = mount(ContactsPage, { target, props: { store, settingsStore: makeSettingsStore() } });
+    const comp = mount(ContactsPage, { target, props: { store: fake(store), settingsStore: fake(makeSettingsStore()) } });
     flushSync();
 
     const headers = target.querySelectorAll("thead th");

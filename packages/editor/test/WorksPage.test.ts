@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import WorksPage from "../src/lib/components/WorksPage.svelte";
 import type { Work } from "../src/lib/worksStore.svelte";
+import { fake } from "./fixtures/fake";
 
 afterEach(() => { document.body.innerHTML = ""; });
 
@@ -39,7 +40,7 @@ describe("WorksPage — external selection", () => {
 
     const comp = mount(WorksPage, {
       target,
-      props: { store, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore(), selectedItemId: "w1", onclearselection },
+      props: { store: fake(store), settingsStore: fake(makeSettingsStore()), contactsStore: fake(makeContactsStore()), selectedItemId: "w1", onclearselection },
     });
     flushSync();
 
@@ -59,7 +60,7 @@ describe("WorksPage — timeline click opens modal", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
-    const comp = mount(WorksPage, { target, props: { store, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore() } });
+    const comp = mount(WorksPage, { target, props: { store: fake(store), settingsStore: fake(makeSettingsStore()), contactsStore: fake(makeContactsStore()) } });
     flushSync();
 
     const circle = target.querySelector(".chart-card-wrap circle") as SVGCircleElement;
@@ -79,7 +80,7 @@ describe("WorksPage — responsive columns", () => {
     document.body.appendChild(target);
     const comp = mount(WorksPage, {
       target,
-      props: { store, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore() },
+      props: { store: fake(store), settingsStore: fake(makeSettingsStore()), contactsStore: fake(makeContactsStore()) },
     });
     flushSync();
 

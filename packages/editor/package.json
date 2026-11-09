@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "test": "vitest run",
+    "check": "svelte-check --threshold error",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {

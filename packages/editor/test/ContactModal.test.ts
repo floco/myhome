@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, tick } from "svelte";
 import ContactModal from "../src/lib/components/ContactModal.svelte";
 import type { Contact } from "../src/lib/contactsStore.svelte";
+import { fake } from "./fixtures/fake";
 
 function makeContact(overrides: Partial<Contact> = {}): Contact {
   return {
@@ -40,7 +41,7 @@ describe("ContactModal — notes links", () => {
     document.body.appendChild(target);
     const comp = mount(ContactModal, {
       target,
-      props: { contact, store, settingsStore: makeSettingsStore(), onclose: vi.fn() },
+      props: { contact, store: fake(store), settingsStore: fake(makeSettingsStore()), onclose: vi.fn() },
     });
     await tick();
     await tick();
@@ -57,7 +58,7 @@ describe("ContactModal — usage / delete protection", () => {
     document.body.appendChild(target);
     const comp = mount(ContactModal, {
       target,
-      props: { contact: makeContact(), store, settingsStore: makeSettingsStore(), onclose: vi.fn() },
+      props: { contact: makeContact(), store: fake(store), settingsStore: fake(makeSettingsStore()), onclose: vi.fn() },
     });
     await tick();
     await tick();
@@ -73,7 +74,7 @@ describe("ContactModal — usage / delete protection", () => {
     document.body.appendChild(target);
     const comp = mount(ContactModal, {
       target,
-      props: { contact: makeContact(), store, settingsStore: makeSettingsStore(), onclose: vi.fn() },
+      props: { contact: makeContact(), store: fake(store), settingsStore: fake(makeSettingsStore()), onclose: vi.fn() },
     });
     await tick();
     await tick();

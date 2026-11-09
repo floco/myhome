@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import HomePropertiesWidget from "../src/lib/components/HomePropertiesWidget.svelte";
 import type { Property } from "../src/lib/propertiesStore.svelte";
+import { fake } from "./fixtures/fake";
 
 function makeProperty(overrides: Partial<Property> = {}): Property {
   return {
@@ -23,7 +24,7 @@ describe("HomePropertiesWidget", () => {
   it("renders nothing when there are no properties", () => {
     const store = { properties: [] };
     const el = target();
-    const comp = mount(HomePropertiesWidget, { target: el, props: { propertiesStore: store, onnavigate: vi.fn() } });
+    const comp = mount(HomePropertiesWidget, { target: el, props: { propertiesStore: fake(store), onnavigate: vi.fn() } });
     flushSync();
     expect(el.querySelector(".widget")).toBeNull();
     unmount(comp);
@@ -38,7 +39,7 @@ describe("HomePropertiesWidget", () => {
       ],
     };
     const el = target();
-    const comp = mount(HomePropertiesWidget, { target: el, props: { propertiesStore: store, onnavigate: vi.fn() } });
+    const comp = mount(HomePropertiesWidget, { target: el, props: { propertiesStore: fake(store), onnavigate: vi.fn() } });
     flushSync();
     expect(el.querySelector(".widget")).not.toBeNull();
     expect(el.textContent).toContain("Terreno Norte");
@@ -51,7 +52,7 @@ describe("HomePropertiesWidget", () => {
     const store = { properties: [makeProperty()] };
     const el = target();
     const onnavigate = vi.fn();
-    const comp = mount(HomePropertiesWidget, { target: el, props: { propertiesStore: store, onnavigate } });
+    const comp = mount(HomePropertiesWidget, { target: el, props: { propertiesStore: fake(store), onnavigate } });
     flushSync();
     (el.querySelector(".widget") as HTMLElement).click();
     expect(onnavigate).toHaveBeenCalled();

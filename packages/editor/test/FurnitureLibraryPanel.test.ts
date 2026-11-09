@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
-import { readFileSync } from "node:fs";
+import componentSource from "../src/lib/components/FurnitureLibraryPanel.svelte?raw";
 import FurnitureLibraryPanel from "../src/lib/components/FurnitureLibraryPanel.svelte";
 import { FURNITURE_TEMPLATES } from "../src/lib/furnitureLibrary";
 
@@ -105,7 +105,7 @@ describe("FurnitureLibraryPanel", () => {
     // since items fill nearly the whole grid, that made the list
     // unscrollable on touch. pan-y keeps vertical scroll native while
     // leaving horizontal/diagonal pointer movement free for drag-to-place.
-    const source = readFileSync("src/lib/components/FurnitureLibraryPanel.svelte", "utf-8");
+    const source = componentSource;
     const rule = source.slice(source.indexOf(".furniture-item {"), source.indexOf(".furniture-item {") + 400);
     expect(rule).toContain("touch-action: pan-y;");
   });

@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { mount, unmount } from "svelte";
+import { mount, unmount, createRawSnippet } from "svelte";
 import StatTileRow from "../src/lib/components/ui/StatTileRow.svelte";
-import StatTile from "../src/lib/components/ui/StatTile.svelte";
 
 describe("ui/StatTileRow", () => {
   it("renders its children inside the stat row grid", () => {
@@ -11,10 +10,7 @@ describe("ui/StatTileRow", () => {
     const comp = mount(StatTileRow, {
       target,
       props: {
-        children: () => {
-          const c = mount(StatTile, { target: document.createElement("div"), props: { value: 1, label: "A" } });
-          return c;
-        },
+        children: createRawSnippet(() => ({ render: () => "<div>A</div>" })),
       },
     });
 
@@ -34,7 +30,7 @@ describe("ui/StatTileRow", () => {
       target,
       props: {
         direction: "column",
-        children: () => mount(StatTile, { target: document.createElement("div"), props: { value: 1, label: "A" } }),
+        children: createRawSnippet(() => ({ render: () => "<div>A</div>" })),
       },
     });
 
@@ -51,7 +47,7 @@ describe("ui/StatTileRow", () => {
     const comp = mount(StatTileRow, {
       target,
       props: {
-        children: () => mount(StatTile, { target: document.createElement("div"), props: { value: 1, label: "A" } }),
+        children: createRawSnippet(() => ({ render: () => "<div>A</div>" })),
       },
     });
 

@@ -100,7 +100,7 @@ describe("SettingsGeneral", () => {
     deleteBtn.click();
     flushSync();
     expect(target.querySelector(".ui-modal")).not.toBeNull();
-    const confirmBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Delete")!;
+    const confirmBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Delete") as HTMLButtonElement;
     confirmBtn.click();
     await new Promise((r) => setTimeout(r, 0));
     expect(fetch).toHaveBeenCalledWith("/api/homes/h1", expect.objectContaining({ method: "DELETE" }));
@@ -148,7 +148,7 @@ describe("SettingsGeneral", () => {
     const resetBtn = [...choresRow.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Reset")!;
     resetBtn.click();
     flushSync();
-    const confirmBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Reset")!;
+    const confirmBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Reset") as HTMLButtonElement;
     confirmBtn.click();
     await new Promise((r) => setTimeout(r, 0));
     flushSync();
@@ -167,7 +167,7 @@ describe("SettingsGeneral", () => {
     const resetBtn = [...choresRow.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Reset")!;
     resetBtn.click();
     flushSync();
-    const confirmBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Reset")!;
+    const confirmBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Reset") as HTMLButtonElement;
     confirmBtn.click();
     await new Promise((r) => setTimeout(r, 0));
     expect(reloadAllStores).toHaveBeenCalledOnce();
@@ -184,7 +184,7 @@ describe("SettingsGeneral", () => {
     const resetBtn = [...choresRow.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Reset")!;
     resetBtn.click();
     flushSync();
-    const confirmBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Reset")!;
+    const confirmBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Reset") as HTMLButtonElement;
     confirmBtn.click();
     await new Promise((r) => setTimeout(r, 0));
     expect(reloadAllStores).not.toHaveBeenCalled();

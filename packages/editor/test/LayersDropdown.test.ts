@@ -44,7 +44,7 @@ describe("LayersDropdown — toolbar variant", () => {
     document.body.appendChild(target);
     const comp = mount(LayersDropdown, {
       target,
-      props: { activeLayers: new Set(), ontoggle: vi.fn(), variant: "toolbar" },
+      props: { activeLayers: new Set<string>(), ontoggle: vi.fn(), variant: "toolbar" },
     });
     flushSync();
 

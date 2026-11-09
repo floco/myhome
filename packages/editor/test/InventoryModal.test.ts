@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import InventoryModal from "../src/lib/components/InventoryModal.svelte";
 import type { InventoryItem } from "../src/lib/inventoryStore.svelte";
+import { fake } from "./fixtures/fake";
 
 afterEach(() => { document.body.innerHTML = ""; });
 
@@ -41,7 +42,7 @@ describe("InventoryModal — notes links", () => {
     const app = mount(InventoryModal, {
       target,
       props: {
-        item, store, onclose: vi.fn(),
+        item, store: fake(store), onclose: vi.fn(),
         inventoryCategories: [], owners: [], stores: [],
         oncreatecategory: vi.fn(), oncreateowner: vi.fn(), oncreatestore: vi.fn(),
       },
@@ -62,7 +63,7 @@ describe("InventoryModal — Media tab", () => {
     const app = mount(InventoryModal, {
       target,
       props: {
-        item, store, onclose: vi.fn(),
+        item, store: fake(store), onclose: vi.fn(),
         inventoryCategories: [], owners: [], stores: [],
         oncreatecategory: vi.fn(), oncreateowner: vi.fn(), oncreatestore: vi.fn(),
       },
@@ -81,7 +82,7 @@ describe("InventoryModal — Media tab", () => {
     const app = mount(InventoryModal, {
       target,
       props: {
-        item: null, store, onclose: vi.fn(),
+        item: null, store: fake(store), onclose: vi.fn(),
         inventoryCategories: [], owners: [], stores: [],
         oncreatecategory: vi.fn(), oncreateowner: vi.fn(), oncreatestore: vi.fn(),
       },
@@ -101,7 +102,7 @@ describe("InventoryModal — Media tab", () => {
     const app = mount(InventoryModal, {
       target,
       props: {
-        item, store, onclose: vi.fn(),
+        item, store: fake(store), onclose: vi.fn(),
         inventoryCategories: [], owners: [], stores: [],
         oncreatecategory: vi.fn(), oncreateowner: vi.fn(), oncreatestore: vi.fn(),
       },
@@ -123,7 +124,7 @@ describe("InventoryModal — Media tab", () => {
     const app = mount(InventoryModal, {
       target,
       props: {
-        item, store, onclose: vi.fn(),
+        item, store: fake(store), onclose: vi.fn(),
         inventoryCategories: [], owners: [], stores: [],
         oncreatecategory: vi.fn(), oncreateowner: vi.fn(), oncreatestore: vi.fn(),
       },
@@ -145,7 +146,7 @@ describe("InventoryModal — category/owner/store", () => {
     const app = mount(InventoryModal, {
       target,
       props: {
-        item, store, onclose: vi.fn(),
+        item, store: fake(store), onclose: vi.fn(),
         inventoryCategories: [{ id: "cat-electronics", name: "Electronics" }],
         owners: [{ id: "o1", name: "Alice" }],
         stores: [{ id: "s1", name: "Ikea" }],

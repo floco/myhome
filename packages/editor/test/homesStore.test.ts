@@ -9,10 +9,6 @@ function makeFetch(status: number, body?: unknown) {
   });
 }
 
-async function tick(): Promise<void> {
-  await new Promise((r) => setTimeout(r, 0));
-}
-
 afterEach(() => {
   vi.unstubAllGlobals();
   // Reset singleton state between tests

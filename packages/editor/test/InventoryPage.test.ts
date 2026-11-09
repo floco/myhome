@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import InventoryPage from "../src/lib/components/InventoryPage.svelte";
 import type { InventoryItem } from "../src/lib/inventoryStore.svelte";
+import { fake } from "./fixtures/fake";
 
 afterEach(() => { document.body.innerHTML = ""; });
 
@@ -44,7 +45,7 @@ describe("InventoryPage — category summary", () => {
     const comp = mount(InventoryPage, {
       target,
       props: {
-        store, floorStore: { floors: [] }, ...BASE_PROPS,
+        store: fake(store), floorStore: fake({ floors: [] }), ...BASE_PROPS,
         inventoryCategories: [
           { id: "cat-tools", name: "Tools" },
           { id: "cat-electronics", name: "Electronics" },
@@ -70,7 +71,7 @@ describe("InventoryPage — category summary", () => {
     const comp = mount(InventoryPage, {
       target,
       props: {
-        store, floorStore: { floors: [] }, ...BASE_PROPS,
+        store: fake(store), floorStore: fake({ floors: [] }), ...BASE_PROPS,
         inventoryCategories: Array.from({ length: 12 }, (_, i) => ({ id: `cat-${i}`, name: `Category ${i}` })),
       },
     });
@@ -89,7 +90,7 @@ describe("InventoryPage — category summary", () => {
     const store = makeStore([]);
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const comp = mount(InventoryPage, { target, props: { store, floorStore: { floors: [] }, ...BASE_PROPS } });
+    const comp = mount(InventoryPage, { target, props: { store: fake(store), floorStore: fake({ floors: [] }), ...BASE_PROPS } });
     flushSync();
 
     expect(target.querySelector(".empty-charts")).not.toBeNull();
@@ -110,7 +111,7 @@ describe("InventoryPage — owner/store filters and columns", () => {
     const app = mount(InventoryPage, {
       target,
       props: {
-        store, floorStore: { floors: [] }, ...BASE_PROPS,
+        store: fake(store), floorStore: fake({ floors: [] }), ...BASE_PROPS,
         owners: [{ id: "o1", name: "Alice" }, { id: "o2", name: "Bob" }],
       },
     });
@@ -132,7 +133,7 @@ describe("InventoryPage — responsive columns", () => {
     const store = makeStore([makeItem()]);
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const comp = mount(InventoryPage, { target, props: { store, floorStore: { floors: [] }, ...BASE_PROPS } });
+    const comp = mount(InventoryPage, { target, props: { store: fake(store), floorStore: fake({ floors: [] }), ...BASE_PROPS } });
     flushSync();
 
     const headers = target.querySelectorAll("thead th");
@@ -158,7 +159,7 @@ describe("InventoryPage — attachments column", () => {
     ]);
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const comp = mount(InventoryPage, { target, props: { store, floorStore: { floors: [] }, ...BASE_PROPS } });
+    const comp = mount(InventoryPage, { target, props: { store: fake(store), floorStore: fake({ floors: [] }), ...BASE_PROPS } });
     flushSync();
 
     const rows = target.querySelectorAll("tbody tr");
