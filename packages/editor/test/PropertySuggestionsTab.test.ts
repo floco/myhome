@@ -97,4 +97,77 @@ describe("PropertySuggestionsTab", () => {
     expect(runs).toContain("3 new, 2 already seen");
     expect(runs).toContain("Email not sent: Brevo error 401: Key not found");
   });
+
+  describe("sorting", () => {
+    function store() {
+      return makeSearchStore({
+        searches: [makeSearch({ id: "s1", name: "Zeta plots" }), makeSearch({ id: "s2", name: "Alpha houses" })],
+        suggestions: [
+          makeSuggestion({ id: "a", searchId: "s1", title: "Mid", price: 150000, listingUrl: "https://a.si/a" }),
+          makeSuggestion({ id: "b", searchId: "s2", title: "NoPrice", price: null, listingUrl: "https://a.si/b" }),
+          makeSuggestion({ id: "c", searchId: "s2", title: "Cheap", price: 50000, listingUrl: "https://a.si/c" }),
+          makeSuggestion({ id: "d", searchId: "s1", title: "Pricey", price: 300000, listingUrl: "https://a.si/d" }),
+        ],
+      });
+    }
+    const titles = (t: HTMLElement) =>
+      [...t.querySelectorAll('[data-testid="suggestion"] a.title')].map((a) => a.textContent);
+    function sortBy(t: HTMLElement, value: string) {
+      const sel = t.querySelector('[data-testid="suggestion-sort"]') as HTMLSelectElement;
+      sel.value = value;
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+      flushSync();
+    }
+
+    it("defaults to cheapest first, unknown prices last", () => {
+      const t = render({ searchStore: store() });
+      expect((t.querySelector('[data-testid="suggestion-sort"]') as HTMLSelectElement).value).toBe("priceAsc");
+      expect(titles(t)).toEqual(["Cheap", "Mid", "Pricey", "NoPrice"]);
+    });
+
+    it("sorts most expensive first, unknown prices still last", () => {
+      const t = render({ searchStore: store() });
+      sortBy(t, "priceDesc");
+      expect(titles(t)).toEqual(["Pricey", "Mid", "Cheap", "NoPrice"]);
+    });
+
+    it("sorts by search name, then cheapest first", () => {
+      const t = render({ searchStore: store() });
+      sortBy(t, "search");
+      expect(titles(t)).toEqual(["Cheap", "NoPrice", "Mid", "Pricey"]);
+    });
+  });
+
+  describe("tags", () => {
+    const tags = (card: Element) =>
+      Object.fromEntries([...card.querySelectorAll(".tag")].map((el) => [(el as HTMLElement).dataset.tag, el.textContent?.trim()]));
+
+    it("shows price, country and city as tags at the top of the card", () => {
+      const t = render({ searchStore: makeSearchStore({
+        suggestions: [makeSuggestion({ price: 150000, currency: "EUR", country: "Slovenia", city: "Novo mesto" })],
+      }) });
+      const card = t.querySelector('[data-testid="suggestion"]')!;
+      expect(tags(card)).toEqual({ price: `${(150000).toLocaleString(undefined, { maximumFractionDigits: 0 })} EUR`, country: "Slovenia", city: "Novo mesto" });
+      expect(card.querySelector(".tags")!.compareDocumentPosition(card.querySelector("a.title")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(card.querySelector(".facts")!.textContent).not.toContain("Novo mesto");
+      expect(card.querySelector(".facts")!.textContent).not.toContain("EUR");
+    });
+
+    it("falls back to the location as city and omits missing tags", () => {
+      const t = render({ searchStore: makeSearchStore({
+        suggestions: [makeSuggestion({ price: null, country: null, city: null, location: "Novo Mesto" })],
+      }) });
+      expect(tags(t.querySelector('[data-testid="suggestion"]')!)).toEqual({ city: "Novo Mesto" });
+    });
+
+    it("derives city and country from a 'town, region, country' location", () => {
+      const t = render({ searchStore: makeSearchStore({
+        suggestions: [makeSuggestion({ price: null, location: "Velike Brusnice, Novo mesto, Dolenjska, Slovenia" })],
+      }) });
+      const card = t.querySelector('[data-testid="suggestion"]')!;
+      expect(tags(card)).toEqual({ country: "Slovenia", city: "Velike Brusnice" });
+      expect(card.querySelector(".facts")!.textContent).toContain("Novo mesto, Dolenjska");
+    });
+  });
 });
+

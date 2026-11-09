@@ -501,6 +501,8 @@ property_suggestions = Table(
     Column("bedrooms", Integer),
     Column("bathrooms", Integer),
     Column("location", String, nullable=False),
+    Column("country", String),
+    Column("city", String),
     Column("source_site", String, nullable=False),
     Column("listing_url", String, nullable=False),
     Column("image_url", String),

@@ -73,6 +73,8 @@ class PropertySuggestion(BaseModel):
     bedrooms: int | None = None
     bathrooms: int | None = None
     location: str = ""
+    country: str | None = None
+    city: str | None = None
     sourceSite: str = ""
     listingUrl: str
     imageUrl: str | None = None

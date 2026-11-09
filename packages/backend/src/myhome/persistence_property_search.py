@@ -92,7 +92,8 @@ def delete_search(home_id: str, search_id: str) -> bool:
 _SUGG_COLS = {
     "id": "id", "searchId": "search_id", "runId": "run_id", "title": "title", "type": "type",
     "price": "price", "currency": "currency", "landSize": "land_size", "builtSize": "built_size",
-    "bedrooms": "bedrooms", "bathrooms": "bathrooms", "location": "location", "sourceSite": "source_site",
+    "bedrooms": "bedrooms", "bathrooms": "bathrooms", "location": "location", "country": "country",
+    "city": "city", "sourceSite": "source_site",
     "listingUrl": "listing_url", "imageUrl": "image_url", "publishedAt": "published_at", "reason": "reason",
     "status": "status", "createdAt": "created_at", "acceptedPropertyId": "accepted_property_id",
 }

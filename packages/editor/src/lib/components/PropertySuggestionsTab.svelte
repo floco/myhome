@@ -16,15 +16,33 @@
 
   let { searchStore, onaccepted, onopensearches }: Props = $props();
 
+  type SortKey = "priceAsc" | "priceDesc" | "search";
+
   let searchFilter = $state("");
+  let sortKey = $state<SortKey>("priceAsc");
   let filterModalOpen = $state(false);
   let actionError = $state<string | null>(null);
   let busyId = $state<string | null>(null);
   let brokenImages = $state<Record<string, boolean>>({});
 
   const searchNames = $derived(new Map(searchStore.searches.map((s) => [s.id, s.name])));
+  // Unknown prices always sink to the bottom, whichever direction.
+  function byPrice(a: PropertySuggestion, b: PropertySuggestion, dir: 1 | -1): number {
+    if (a.price == null || b.price == null) return a.price == null ? (b.price == null ? 0 : 1) : -1;
+    return (a.price - b.price) * dir;
+  }
+
+  function compare(a: PropertySuggestion, b: PropertySuggestion): number {
+    if (sortKey === "priceDesc") return byPrice(a, b, -1);
+    if (sortKey === "search") {
+      const byName = (searchNames.get(a.searchId) ?? "").localeCompare(searchNames.get(b.searchId) ?? "");
+      if (byName !== 0) return byName;
+    }
+    return byPrice(a, b, 1);
+  }
+
   const visible = $derived(
-    searchStore.suggestions.filter((g) => !searchFilter || g.searchId === searchFilter),
+    searchStore.suggestions.filter((g) => !searchFilter || g.searchId === searchFilter).sort(compare),
   );
 
   function fmt(n: number): string {
@@ -42,10 +60,28 @@
     const out: string[] = [];
     const t = typeLabel(g.type);
     if (t) out.push(t);
-    if (g.price != null) out.push(`${fmt(g.price)} ${g.currency ?? "€"}`);
     if (g.landSize != null) out.push($_("properties.page.landSize", { values: { size: fmt(g.landSize) } }));
     if (g.builtSize != null) out.push($_("properties.page.builtSize", { values: { size: fmt(g.builtSize) } }));
-    if (g.location) out.push(g.location);
+    // Show the full location only when the city tag doesn't already carry it.
+    if (g.location && g.location !== place(g).city) out.push(g.location);
+    return out;
+  }
+
+  // Older suggestions only have a free-text "town, region, country" location.
+  function place(g: PropertySuggestion): { city: string; country: string } {
+    const parts = (g.location ?? "").split(",").map((p) => p.trim()).filter(Boolean);
+    return {
+      city: g.city || parts[0] || "",
+      country: g.country || (parts.length >= 2 ? parts[parts.length - 1] : ""),
+    };
+  }
+
+  function tags(g: PropertySuggestion): { kind: "price" | "country" | "city"; text: string }[] {
+    const out: { kind: "price" | "country" | "city"; text: string }[] = [];
+    if (g.price != null) out.push({ kind: "price", text: `${fmt(g.price)} ${g.currency ?? "€"}` });
+    const { city, country } = place(g);
+    if (country) out.push({ kind: "country", text: country });
+    if (city) out.push({ kind: "city", text: city });
     return out;
   }
 
@@ -82,6 +118,14 @@
 
 <div class="suggestions">
   <div class="toolbar">
+    <label class="sort">
+      <span>{$_("propertySearch.inbox.sortBy")}</span>
+      <select class="native-input sort-select" bind:value={sortKey} data-testid="suggestion-sort">
+        <option value="priceAsc">{$_("propertySearch.inbox.sortPriceAsc")}</option>
+        <option value="priceDesc">{$_("propertySearch.inbox.sortPriceDesc")}</option>
+        <option value="search">{$_("propertySearch.inbox.sortSearch")}</option>
+      </select>
+    </label>
     <span class="spacer"></span>
     <FilterButton active={searchFilter !== ""} title={$_("common.filters")} onclick={() => { filterModalOpen = true; }} />
     <Button variant="secondary" onclick={onopensearches}>🔎 {$_("propertySearch.inbox.searches")}</Button>
@@ -136,11 +180,18 @@
               onerror={() => { brokenImages = { ...brokenImages, [g.id]: true }; }} />
           {/if}
           <div class="body">
+            {#if tags(g).length > 0}
+              <div class="tags">
+                {#each tags(g) as tag (tag.kind)}
+                  <span class="tag tag-{tag.kind}" data-tag={tag.kind}>{tag.text}</span>
+                {/each}
+              </div>
+            {/if}
             <div class="title-row">
               {#if g.status === "pinned"}<span class="pin" title={$_("propertySearch.inbox.pinned")}>📌</span>{/if}
               <a class="title" href={g.listingUrl} target="_blank" rel="noopener noreferrer">{g.title}</a>
             </div>
-            <div class="facts">{facts(g).join(" · ")}</div>
+            {#if facts(g).length > 0}<div class="facts">{facts(g).join(" · ")}</div>{/if}
             {#if g.reason}<p class="reason">{g.reason}</p>{/if}
             <div class="meta">
               {g.sourceSite}
@@ -168,6 +219,16 @@
     background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
   }
   .spacer { flex: 1; }
+  .sort { display: flex; align-items: center; gap: var(--space-2); font-size: 12px; color: var(--text-muted); min-width: 0; flex: 0 1 auto; }
+  .sort-select { width: auto; min-width: 0; max-width: 100%; padding: 6px 10px; }
+  .toolbar > :global(button) { flex-shrink: 0; white-space: nowrap; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag {
+    display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px;
+    font-size: 14px; font-weight: 600; line-height: 1.3; border: 1px solid var(--border);
+    background: var(--surface-alt); color: var(--text); overflow-wrap: anywhere;
+  }
+  .tag-price { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast, #fff); }
   .field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-muted); }
   .native-input {
     background: var(--surface-alt); border: 1px solid var(--border); color: var(--text);
@@ -197,6 +258,7 @@
   .meta { font-size: 11px; color: var(--text-faint); overflow-wrap: anywhere; }
   .actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
   @media (max-width: 700px) {
+    .sort > span { display: none; }
     .card { flex-wrap: wrap; }
     .thumb { width: 100%; height: 140px; }
     .actions { flex-direction: row; width: 100%; justify-content: flex-end; }
