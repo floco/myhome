@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.40.0 - 2026-11-09
+
+- AI property search inbox: sort by price (cheapest first by default, or most expensive first) or by search
+- Each suggestion now starts with large tags for the price, country, region and city (older suggestions take them from their location)
+- The suggestions inbox and its tab count now refresh on their own (when the tab is opened, when the page becomes visible again, and every minute) instead of only after a browser reload, and a refresh can no longer bring back a suggestion you just accepted, rejected or pinned
+
 ## 0.39.0 - 2026-11-08
 
 - Added AI property search to the Properties module: named searches with a free-text prompt (the AI picks the listing sites itself), a daily/weekly/monthly schedule, a maximum number of results per run and a maximum listing age. Results land in a new "Suggestions" inbox where each listing can be accepted (added to Properties as "watching"), kept, or rejected, and a listing is never suggested twice
