@@ -25,7 +25,7 @@ from .schema import (
     work_categories,
 )
 
-CURRENT_VERSION = 14
+CURRENT_VERSION = 15
 
 
 def _drop_kb_folders_table(conn: Connection) -> None:
@@ -327,6 +327,17 @@ def _reset_consumable_phantom_initial_quantity(conn: Connection) -> None:
         )
 
 
+def _add_property_suggestion_place_columns(conn: Connection) -> None:
+    # create_all() runs before migrations, so a database older than the
+    # property-search feature already got the table with these columns.
+    existing = {r[1] for r in conn.execute(text("PRAGMA table_info(property_suggestions)"))}
+    if not existing:  # no table yet: create_all() will build it with the columns
+        return
+    for column in ("country", "region", "city"):
+        if column not in existing:
+            conn.execute(text(f"ALTER TABLE property_suggestions ADD COLUMN {column} VARCHAR"))
+
+
 MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (2, _drop_kb_folders_table),
     (3, _add_ha_user_id_column),
@@ -341,6 +352,7 @@ MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (12, _add_cost_consumable_link_columns),
     (13, _recompute_consumable_transaction_history),
     (14, _reset_consumable_phantom_initial_quantity),
+    (15, _add_property_suggestion_place_columns),
 ]
 
 

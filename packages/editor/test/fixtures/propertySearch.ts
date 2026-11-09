@@ -11,7 +11,7 @@ export function makeSearch(o: Partial<PropertySearch> = {}): PropertySearch {
 export function makeSuggestion(o: Partial<PropertySuggestion> = {}): PropertySuggestion {
   return {
     id: "g1", searchId: "s1", runId: "r1", title: "Nice plot", type: "land", price: 150000, currency: "EUR",
-    landSize: 820, builtSize: null, bedrooms: null, bathrooms: null, location: "Novo Mesto",
+    landSize: 820, builtSize: null, bedrooms: null, bathrooms: null, location: "Novo Mesto", country: null, region: null, city: null,
     sourceSite: "nepremicnine.net", listingUrl: "https://a.si/1", imageUrl: null, publishedAt: "2026-11-07",
     reason: "fits", status: "new", createdAt: "2026-11-08T08:00:00Z", acceptedPropertyId: null, ...o,
   };

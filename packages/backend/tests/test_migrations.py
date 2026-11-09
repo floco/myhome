@@ -967,3 +967,53 @@ def test_run_migrations_resets_phantom_initial_quantity(tmp_path):
     assert txs["t5"]["delta"] == -5960.0  # recomputed against the corrected running total
     # The live current stock is unaffected -- still anchored by the manual reading.
     assert con["quantity"] == 360.0
+
+
+def _create_v14_property_suggestions(conn):
+    conn.execute(text(
+        "CREATE TABLE property_suggestions ("
+        "id VARCHAR PRIMARY KEY, home_id VARCHAR NOT NULL, search_id VARCHAR NOT NULL, run_id VARCHAR NOT NULL, "
+        "title VARCHAR NOT NULL, type VARCHAR, price FLOAT, currency VARCHAR, land_size FLOAT, built_size FLOAT, "
+        "bedrooms INTEGER, bathrooms INTEGER, location VARCHAR NOT NULL, source_site VARCHAR NOT NULL, "
+        "listing_url VARCHAR NOT NULL, image_url VARCHAR, published_at VARCHAR, reason TEXT NOT NULL, "
+        "status VARCHAR NOT NULL, created_at VARCHAR NOT NULL, accepted_property_id VARCHAR)"
+    ))
+    conn.execute(text(
+        "INSERT INTO property_suggestions (id, home_id, search_id, run_id, title, location, source_site, "
+        "listing_url, reason, status, created_at) VALUES ('g1', 'h1', 's1', 'r1', 'Plot', 'Novo Mesto', 'a.si', "
+        "'https://a.si/1', '', 'new', '2026-11-08T00:00:00+00:00')"
+    ))
+
+
+def test_run_migrations_adds_country_and_city_to_property_suggestions(tmp_path):
+    engine = create_engine(f"sqlite:///{tmp_path / 'v14.db'}")
+    with engine.begin() as conn:
+        _create_v14_property_suggestions(conn)
+        conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
+        conn.execute(text("INSERT INTO schema_version (version) VALUES (14)"))
+
+    run_migrations(engine)
+
+    with engine.connect() as conn:
+        version = conn.execute(text("SELECT version FROM schema_version")).scalar()
+        row = conn.execute(text("SELECT title, country, region, city FROM property_suggestions WHERE id = 'g1'")).mappings().first()
+    assert version == CURRENT_VERSION
+    assert row["title"] == "Plot" and row["country"] is None and row["region"] is None and row["city"] is None
+
+
+def test_country_city_migration_is_a_noop_when_columns_already_exist(tmp_path):
+    # A pre-0.39 database gets property_suggestions straight from create_all()
+    # (with the new columns) before migrations run at version 14.
+    engine = create_engine(f"sqlite:///{tmp_path / 'v14b.db'}")
+    with engine.begin() as conn:
+        _create_v14_property_suggestions(conn)
+        conn.execute(text("ALTER TABLE property_suggestions ADD COLUMN country VARCHAR"))
+        conn.execute(text("ALTER TABLE property_suggestions ADD COLUMN region VARCHAR"))
+        conn.execute(text("ALTER TABLE property_suggestions ADD COLUMN city VARCHAR"))
+        conn.execute(text("CREATE TABLE schema_version (version INTEGER NOT NULL)"))
+        conn.execute(text("INSERT INTO schema_version (version) VALUES (14)"))
+
+    run_migrations(engine)
+
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT version FROM schema_version")).scalar() == CURRENT_VERSION
