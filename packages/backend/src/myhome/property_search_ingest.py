@@ -96,7 +96,7 @@ def claim_next(now: datetime | None = None) -> dict | None:
                 return {
                     "runId": run.id, "homeId": home.id, "searchId": s.id, "name": s.name, "prompt": s.prompt,
                     "maxResultsPerRun": s.maxResultsPerRun, "maxListingAgeDays": s.maxListingAgeDays,
-                    "language": s.language,
+                    "language": ps.load_config(home.id).language,
                     "today": now.date().isoformat(), "seen": ps.recent_seen(home.id, SEEN_IN_CLAIM),
                 }
     return None

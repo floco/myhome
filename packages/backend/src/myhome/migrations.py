@@ -338,10 +338,10 @@ def _add_property_suggestion_place_columns(conn: Connection) -> None:
             conn.execute(text(f"ALTER TABLE property_suggestions ADD COLUMN {column} VARCHAR"))
 
 
-def _add_property_search_language_column(conn: Connection) -> None:
-    existing = {r[1] for r in conn.execute(text("PRAGMA table_info(property_searches)"))}
+def _add_property_search_config_language_column(conn: Connection) -> None:
+    existing = {r[1] for r in conn.execute(text("PRAGMA table_info(property_search_config)"))}
     if existing and "language" not in existing:
-        conn.execute(text("ALTER TABLE property_searches ADD COLUMN language VARCHAR NOT NULL DEFAULT 'en'"))
+        conn.execute(text("ALTER TABLE property_search_config ADD COLUMN language VARCHAR NOT NULL DEFAULT 'en'"))
 
 
 MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
@@ -359,7 +359,7 @@ MIGRATIONS: list[tuple[int, Callable[[Connection], None]]] = [
     (13, _recompute_consumable_transaction_history),
     (14, _reset_consumable_phantom_initial_quantity),
     (15, _add_property_suggestion_place_columns),
-    (16, _add_property_search_language_column),
+    (16, _add_property_search_config_language_column),
 ]
 
 

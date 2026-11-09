@@ -1490,6 +1490,8 @@
       "intro": "Réglages communs à toutes les recherches de biens de cette maison.",
       "retentionDays": "Garder les suggestions non triées pendant (jours)",
       "retentionHelp": "Les suggestions épinglées ou acceptées sont conservées. Une annonce supprimée n'est jamais reproposée.",
+      "language": "Langue des résultats",
+      "languageHelp": "Langue utilisée par le runner pour les titres, les raisons, les régions et les pays des annonces.",
       "email": "Résumé par email (Brevo)",
       "brevoApiKey": "Clé API Brevo",
       "brevoKeySet": "•••• définie — laisser vide pour la garder",

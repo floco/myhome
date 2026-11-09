@@ -29,7 +29,6 @@ class _SearchFields(BaseModel):
     dayOfMonth: int = Field(default=1, ge=1, le=31)
     maxResultsPerRun: int = Field(default=10, ge=1, le=50)
     maxListingAgeDays: int = Field(default=7, ge=1, le=365)
-    language: SearchLanguage = "en"
 
 
 class PropertySearch(_SearchFields):
@@ -58,7 +57,6 @@ class PropertySearchUpdate(BaseModel):
     dayOfMonth: int | None = Field(default=None, ge=1, le=31)
     maxResultsPerRun: int | None = Field(default=None, ge=1, le=50)
     maxListingAgeDays: int | None = Field(default=None, ge=1, le=365)
-    language: SearchLanguage | None = None
 
 
 class PropertySuggestion(BaseModel):
@@ -125,6 +123,7 @@ class PropertySearchConfig(BaseModel):
     senderName: str = "My Home"
     recipients: list[str] = []
     appBaseUrl: str = ""
+    language: SearchLanguage = "en"
 
 
 class PropertySearchConfigOut(BaseModel):
@@ -134,6 +133,7 @@ class PropertySearchConfigOut(BaseModel):
     senderName: str
     recipients: list[str]
     appBaseUrl: str
+    language: SearchLanguage
 
 
 class PropertySearchConfigUpdate(BaseModel):
@@ -143,3 +143,4 @@ class PropertySearchConfigUpdate(BaseModel):
     senderName: str | None = None
     recipients: list[str] | None = None
     appBaseUrl: str | None = None
+    language: SearchLanguage | None = None

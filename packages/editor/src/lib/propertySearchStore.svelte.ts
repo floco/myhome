@@ -1,17 +1,10 @@
 // packages/editor/src/lib/propertySearchStore.svelte.ts
-import { locale } from "svelte-i18n";
-import { get } from "svelte/store";
 import type { Property, PropertyType } from "./propertiesStore.svelte";
 
 export type SearchFrequency = "daily" | "weekly" | "monthly";
 export type SuggestionStatus = "new" | "pinned" | "accepted" | "rejected";
 export type RunStatus = "running" | "succeeded" | "failed" | "usage_limited";
 export type SearchLanguage = "en" | "fr";
-
-/** The runner writes titles and reasons in the UI language current when the search was last saved. */
-function uiLanguage(): SearchLanguage {
-  return (get(locale) ?? "").toLowerCase().startsWith("fr") ? "fr" : "en";
-}
 
 export interface PropertySearch {
   id: string;
@@ -24,7 +17,6 @@ export interface PropertySearch {
   dayOfMonth: number;
   maxResultsPerRun: number;
   maxListingAgeDays: number;
-  language?: SearchLanguage;
   createdAt: string;
   runRequestedAt: string | null;
   lastRunAt: string | null;
@@ -97,6 +89,7 @@ export interface PropertySearchConfig {
   senderName: string;
   recipients: string[];
   appBaseUrl: string;
+  language: SearchLanguage;
 }
 
 export type PropertySearchConfigPatch = Partial<Omit<PropertySearchConfig, "brevoApiKeySet">> & { brevoApiKey?: string };
@@ -168,12 +161,12 @@ export function createPropertySearchStore(getHomeId: () => string | null = () =>
   }
 
   async function createSearch(data: PropertySearchInput): Promise<void> {
-    await request("/property-searches", jsonInit("POST", { ...data, language: uiLanguage() }));
+    await request("/property-searches", jsonInit("POST", data));
     await loadSearches();
   }
 
   async function updateSearch(id: string, patch: Partial<PropertySearchInput>): Promise<void> {
-    await request(`/property-searches/${id}`, jsonInit("PUT", { ...patch, language: uiLanguage() }));
+    await request(`/property-searches/${id}`, jsonInit("PUT", patch));
     await loadSearches();
   }
 

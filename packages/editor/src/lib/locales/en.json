@@ -1490,6 +1490,8 @@
       "intro": "Settings shared by all property searches of this home.",
       "retentionDays": "Keep untriaged suggestions for (days)",
       "retentionHelp": "Pinned and accepted suggestions are kept. A removed listing is still never suggested again.",
+      "language": "Results language",
+      "languageHelp": "Language the runner uses for listing titles, reasons, regions and countries.",
       "email": "Email digest (Brevo)",
       "brevoApiKey": "Brevo API key",
       "brevoKeySet": "•••• set — leave empty to keep",

@@ -1,5 +1,4 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { locale } from "svelte-i18n";
 import { createPropertySearchStore } from "../src/lib/propertySearchStore.svelte";
 import { makeSearch, makeSuggestion } from "./fixtures/propertySearch";
 
@@ -22,28 +21,6 @@ function routedFetch(routes: Record<string, unknown>) {
 }
 
 describe("propertySearchStore", () => {
-  it("sends the current UI language when creating and updating a search", async () => {
-    const fetchFn = routedFetch({
-      [`GET /api/homes/${HOME}/property-searches`]: [],
-      [`GET /api/homes/${HOME}/property-suggestions`]: [],
-      [`POST /api/homes/${HOME}/property-searches`]: makeSearch(),
-      [`PUT /api/homes/${HOME}/property-searches/s1`]: {},
-    });
-    vi.stubGlobal("fetch", fetchFn);
-    const store = createPropertySearchStore(() => HOME);
-    await tick();
-    locale.set("fr");
-    await store.createSearch({ name: "A", prompt: "p", enabled: true, frequency: "daily", time: "08:00",
-      dayOfWeek: 1, dayOfMonth: 1, maxResultsPerRun: 10, maxListingAgeDays: 7 });
-    locale.set("en");
-    await store.updateSearch("s1", { enabled: false });
-    const bodies = fetchFn.mock.calls
-      .filter(([, init]) => init?.method === "POST" || init?.method === "PUT")
-      .map(([, init]) => JSON.parse(init.body));
-    expect(bodies[0].language).toBe("fr");
-    expect(bodies[1]).toEqual({ enabled: false, language: "en" });
-  });
-
   it("init loads searches and suggestions", async () => {
     vi.stubGlobal("fetch", routedFetch({
       [`GET /api/homes/${HOME}/property-searches`]: [makeSearch()],

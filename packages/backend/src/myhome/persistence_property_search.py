@@ -29,7 +29,7 @@ from .schema import (
 _SEARCH_COLS = {
     "id": "id", "name": "name", "prompt": "prompt", "enabled": "enabled", "frequency": "frequency",
     "time": "time", "dayOfWeek": "day_of_week", "dayOfMonth": "day_of_month",
-    "maxResultsPerRun": "max_results_per_run", "maxListingAgeDays": "max_listing_age_days", "language": "language",
+    "maxResultsPerRun": "max_results_per_run", "maxListingAgeDays": "max_listing_age_days",
     "createdAt": "created_at", "runRequestedAt": "run_requested_at", "lastRunAt": "last_run_at",
     "lastRunStatus": "last_run_status", "lastRunError": "last_run_error",
     "lastRunNew": "last_run_new", "lastRunDuplicates": "last_run_duplicates",
@@ -268,6 +268,7 @@ def load_config(home_id: str) -> PropertySearchConfig:
     return PropertySearchConfig(
         retentionDays=r["retention_days"], brevoApiKey=r["brevo_api_key"], senderEmail=r["sender_email"],
         senderName=r["sender_name"], recipients=json.loads(r["recipients"]), appBaseUrl=r["app_base_url"],
+        language=r["language"],
     )
 
 
@@ -275,6 +276,7 @@ def save_config(home_id: str, cfg: PropertySearchConfig) -> None:
     values = {
         "retention_days": cfg.retentionDays, "brevo_api_key": cfg.brevoApiKey, "sender_email": cfg.senderEmail,
         "sender_name": cfg.senderName, "recipients": json.dumps(cfg.recipients), "app_base_url": cfg.appBaseUrl,
+        "language": cfg.language,
     }
     stmt = sqlite_insert(config_t).values(home_id=home_id, **values).on_conflict_do_update(
         index_elements=[config_t.c.home_id], set_=values,

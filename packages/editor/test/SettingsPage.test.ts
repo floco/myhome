@@ -160,7 +160,7 @@ describe("SettingsPage — AI property search group", () => {
   let target: HTMLDivElement;
   const originalFetch = globalThis.fetch;
   const searchStore = {
-    loadConfig: vi.fn().mockResolvedValue({ retentionDays: 30, brevoApiKeySet: false, senderEmail: "", senderName: "My Home", recipients: [], appBaseUrl: "" }),
+    loadConfig: vi.fn().mockResolvedValue({ retentionDays: 30, brevoApiKeySet: false, senderEmail: "", senderName: "My Home", recipients: [], appBaseUrl: "", language: "en" }),
     saveConfig: vi.fn(), sendTestEmail: vi.fn(),
   };
 
