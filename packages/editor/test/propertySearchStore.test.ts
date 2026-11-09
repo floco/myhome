@@ -95,4 +95,96 @@ describe("propertySearchStore", () => {
     await tick();
     await expect(store.sendTestEmail()).rejects.toThrow("Key not found");
   });
+
+  describe("stale reloads", () => {
+    type Pending = { url: string; resolve: (body: unknown) => void };
+
+    // GET suggestions calls are held until released; everything else answers immediately.
+    function heldFetch(routes: Record<string, unknown>) {
+      const held: Pending[] = [];
+      const fn = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        const method = init?.method ?? "GET";
+        if (method === "GET" && url.endsWith("/property-suggestions")) {
+          return new Promise((resolve) => {
+            held.push({ url, resolve: (body) => resolve({ ok: true, status: 200, json: async () => body }) });
+          });
+        }
+        const key = `${method} ${url}`;
+        const match = Object.keys(routes).find((k) => key.startsWith(k));
+        return Promise.resolve({ ok: !!match, status: match ? 200 : 404, json: async () => (match ? routes[match] : undefined) });
+      });
+      return { fn, held };
+    }
+
+    async function loadedStore(held: Pending[], initial: unknown[]) {
+      const store = createPropertySearchStore(() => HOME);
+      await tick();
+      held.shift()!.resolve(initial);
+      await tick();
+      return store;
+    }
+
+    it("a reload started before accept does not bring the suggestion back", async () => {
+      const { fn, held } = heldFetch({
+        [`GET /api/homes/${HOME}/property-searches`]: [],
+        [`POST /api/homes/${HOME}/property-suggestions/g1/accept`]: { id: "p1" },
+      });
+      vi.stubGlobal("fetch", fn);
+      const store = await loadedStore(held, [makeSuggestion()]);
+      const reloading = store.reload();
+      await tick();
+      await store.accept("g1");
+      held.shift()!.resolve([makeSuggestion()]);
+      await reloading;
+      expect(store.suggestions).toEqual([]);
+      expect(store.newCount).toBe(0);
+    });
+
+    it("a reload started before reject does not bring the suggestion back", async () => {
+      const { fn, held } = heldFetch({
+        [`GET /api/homes/${HOME}/property-searches`]: [],
+        [`POST /api/homes/${HOME}/property-suggestions/g1/reject`]: {},
+      });
+      vi.stubGlobal("fetch", fn);
+      const store = await loadedStore(held, [makeSuggestion()]);
+      const reloading = store.reload();
+      await tick();
+      await store.reject("g1");
+      held.shift()!.resolve([makeSuggestion()]);
+      await reloading;
+      expect(store.suggestions).toEqual([]);
+    });
+
+    it("a reload started before pin does not undo the pin", async () => {
+      const { fn, held } = heldFetch({
+        [`GET /api/homes/${HOME}/property-searches`]: [],
+        [`POST /api/homes/${HOME}/property-suggestions/g1/pin`]: {},
+      });
+      vi.stubGlobal("fetch", fn);
+      const store = await loadedStore(held, [makeSuggestion()]);
+      const reloading = store.reload();
+      await tick();
+      await store.togglePin("g1");
+      held.shift()!.resolve([makeSuggestion()]);
+      await reloading;
+      expect(store.suggestions[0].status).toBe("pinned");
+    });
+
+    it("an older reload finishing last does not overwrite a newer one", async () => {
+      const { fn, held } = heldFetch({ [`GET /api/homes/${HOME}/property-searches`]: [] });
+      vi.stubGlobal("fetch", fn);
+      const store = await loadedStore(held, []);
+      const first = store.reload();
+      await tick();
+      const second = store.reload();
+      await tick();
+      const [older, newer] = held.splice(0, 2);
+      newer.resolve([makeSuggestion({ id: "fresh" })]);
+      await second;
+      older.resolve([]);
+      await first;
+      expect(store.suggestions.map((s) => s.id)).toEqual(["fresh"]);
+    });
+  });
 });
+
