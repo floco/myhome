@@ -45,7 +45,7 @@ function mockMobileViewport(): void {
     media: query,
     addEventListener: () => {},
     removeEventListener: () => {},
-  })) as typeof window.matchMedia;
+  })) as unknown as typeof window.matchMedia;
 }
 
 /** Draw a closed wall loop through the given world-space corners (repeat the

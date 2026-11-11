@@ -131,7 +131,7 @@
     dropIndicator = { id: entry.id, position };
   }
 
-  function handlePointerDrop(e: PointerEvent, entry: KBEntry): void {
+  function handlePointerDrop(_e: PointerEvent, entry: KBEntry): void {
     const draggedId = dragging;
     const indicator = dropIndicator;
     dropIndicator = null;

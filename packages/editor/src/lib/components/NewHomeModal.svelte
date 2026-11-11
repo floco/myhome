@@ -35,7 +35,7 @@
   }
 </script>
 
-<Modal {open} title={$_('nav.newHomeModal.title')} onclose={required ? undefined : onclose}>
+<Modal {open} title={$_('nav.newHomeModal.title')} onclose={required ? () => {} : onclose}>
   <div class="form">
     <Input label={$_('nav.newHomeModal.nameLabel')} bind:value={name} placeholder={$_('nav.newHomeModal.namePlaceholder')} />
 

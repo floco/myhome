@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync, createRawSnippet } from "svelte";
 import SortableTable from "../src/lib/components/ui/SortableTable.svelte";
 import type { Column } from "../src/lib/components/ui/SortableTable.types";
+import { fake } from "./fixtures/fake";
 
 interface Row {
   id: string;
@@ -41,7 +42,7 @@ describe("ui/SortableTable", () => {
     document.body.appendChild(target);
     const comp = mount(SortableTable, {
       target,
-      props: { columns: baseColumns(), rows: baseRows(), rowKey: (r: Row) => r.id },
+      props: { columns: fake(baseColumns()), rows: baseRows(), rowKey: fake((r: Row) => r.id) },
     });
     flushSync();
 
@@ -56,7 +57,7 @@ describe("ui/SortableTable", () => {
     document.body.appendChild(target);
     const comp = mount(SortableTable, {
       target,
-      props: { columns: baseColumns(), rows: baseRows(), rowKey: (r: Row) => r.id },
+      props: { columns: fake(baseColumns()), rows: baseRows(), rowKey: fake((r: Row) => r.id) },
     });
     flushSync();
 
@@ -84,7 +85,7 @@ describe("ui/SortableTable", () => {
     document.body.appendChild(target);
     const comp = mount(SortableTable, {
       target,
-      props: { columns: baseColumns(), rows: baseRows(), rowKey: (r: Row) => r.id },
+      props: { columns: fake(baseColumns()), rows: baseRows(), rowKey: fake((r: Row) => r.id) },
     });
     flushSync();
 
@@ -102,7 +103,7 @@ describe("ui/SortableTable", () => {
     document.body.appendChild(target);
     const comp = mount(SortableTable, {
       target,
-      props: { columns: baseColumns(), rows: baseRows(), rowKey: (r: Row) => r.id },
+      props: { columns: fake(baseColumns()), rows: baseRows(), rowKey: fake((r: Row) => r.id) },
     });
     flushSync();
 
@@ -121,7 +122,7 @@ describe("ui/SortableTable", () => {
     ];
     const comp = mount(SortableTable, {
       target,
-      props: { columns, rows: baseRows(), rowKey: (r: Row) => r.id },
+      props: { columns: fake(columns), rows: baseRows(), rowKey: fake((r: Row) => r.id) },
     });
     flushSync();
 
@@ -139,7 +140,7 @@ describe("ui/SortableTable", () => {
     ];
     const comp = mount(SortableTable, {
       target,
-      props: { columns, rows: baseRows(), rowKey: (r: Row) => r.id },
+      props: { columns: fake(columns), rows: baseRows(), rowKey: fake((r: Row) => r.id) },
     });
     flushSync();
 
@@ -158,7 +159,7 @@ describe("ui/SortableTable", () => {
     const rowClick = vi.fn();
     const comp = mount(SortableTable, {
       target,
-      props: { columns: baseColumns(), rows: baseRows(), rowKey: (r: Row) => r.id, rowClick },
+      props: { columns: fake(baseColumns()), rows: baseRows(), rowKey: fake((r: Row) => r.id), rowClick },
     });
     flushSync();
 
@@ -174,7 +175,7 @@ describe("ui/SortableTable", () => {
     document.body.appendChild(target);
     const comp = mount(SortableTable, {
       target,
-      props: { columns: baseColumns(), rows: [], rowKey: (r: Row) => r.id, emptyMessage: "Nothing here" },
+      props: { columns: fake(baseColumns()), rows: [], rowKey: fake((r: Row) => r.id), emptyMessage: "Nothing here" },
     });
     flushSync();
 
@@ -191,9 +192,9 @@ describe("ui/SortableTable", () => {
     const comp = mount(SortableTable, {
       target,
       props: {
-        columns: baseColumns(),
+        columns: fake(baseColumns()),
         rows: baseRows(),
-        rowKey: (r: Row) => r.id,
+        rowKey: fake((r: Row) => r.id),
         defaultSort: { key: "qty", direction: "asc" },
       },
     });
@@ -213,7 +214,7 @@ describe("ui/SortableTable", () => {
     }));
     const comp = mount(SortableTable, {
       target,
-      props: { columns: baseColumns(), rows: baseRows(), rowKey: (r: Row) => r.id, extraRow },
+      props: { columns: fake(baseColumns()), rows: baseRows(), rowKey: fake((r: Row) => r.id), extraRow },
     });
     flushSync();
 
@@ -233,11 +234,11 @@ describe("ui/SortableTable", () => {
     const comp = mount(SortableTable, {
       target,
       props: {
-        columns: baseColumns(),
+        columns: fake(baseColumns()),
         rows: baseRows(),
-        rowKey: (r: Row) => r.id,
-        isRowExpanded: (r: Row) => r.id === "a",
-        expandedRow,
+        rowKey: fake((r: Row) => r.id),
+        isRowExpanded: fake((r: Row) => r.id === "a"),
+        expandedRow: fake(expandedRow),
       },
     });
     flushSync();
@@ -259,7 +260,7 @@ describe("ui/SortableTable", () => {
     ];
     const comp = mount(SortableTable, {
       target,
-      props: { columns, rows: baseRows(), rowKey: (r: Row) => r.id },
+      props: { columns: fake(columns), rows: baseRows(), rowKey: fake((r: Row) => r.id) },
     });
     flushSync();
 

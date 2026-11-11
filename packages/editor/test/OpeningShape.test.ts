@@ -3,6 +3,8 @@ import { mount, unmount, flushSync } from "svelte";
 import OpeningShape from "../src/lib/components/OpeningShape.svelte";
 import { DEFAULT_VIEWPORT } from "../src/lib/viewportStore.svelte";
 import type { Wall, Opening } from "@myhome/geometry";
+import { fake } from "./fixtures/fake";
+import type { ComponentProps } from "svelte";
 
 const wall: Wall = { id: "w1", type: "wall", start: { x: 0, y: 0 }, end: { x: 4, y: 0 }, thickness: 0.1 };
 
@@ -22,7 +24,7 @@ function setup(props: Record<string, unknown>) {
   document.body.appendChild(target);
   app = mount(OpeningShape, {
     target,
-    props: { wall, viewport: { ...DEFAULT_VIEWPORT }, ...props },
+    props: fake<ComponentProps<typeof OpeningShape>>({ wall, viewport: { ...DEFAULT_VIEWPORT }, ...props }),
   });
   flushSync();
 }

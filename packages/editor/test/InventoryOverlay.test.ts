@@ -7,9 +7,9 @@ afterEach(() => vi.unstubAllGlobals());
 
 function makeItem(overrides: Partial<InventoryItem> = {}): InventoryItem {
   return {
-    id: "i1", name: "TV", emoji: "📺", category: "", brand: null,
+    id: "i1", name: "TV", emoji: "📺", categoryId: null, ownerId: null, storeId: null, brand: null,
     model: null, serialNumber: null, purchaseDate: null,
-    purchasePrice: null, warrantyExpiryDate: null, notes: "",
+    purchasePrice: null, warrantyExpiryDate: null, notes: "", attachments: [],
     placement: { floorId: "f1", roomId: null, position: { x: 1, y: 2 } },
     ...overrides,
   };

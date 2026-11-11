@@ -33,7 +33,7 @@ describe("SettingsSecurity", () => {
       if (url === "/api/auth/oidc/config") return Promise.resolve({ ok: true, json: async () => defaultOidcConfig() });
       return Promise.resolve(new Response(null, { status: 200 }));
     });
-    globalThis.fetch = fetchMock;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
   }
 
   beforeEach(() => {
@@ -84,11 +84,11 @@ describe("SettingsSecurity", () => {
     nameInput.value = "Test";
     nameInput.dispatchEvent(new Event("input", { bubbles: true }));
     flushSync();
-    const createBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Create")!;
+    const createBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Create") as HTMLButtonElement;
     createBtn.click();
     await new Promise((r) => setTimeout(r, 0));
     const postCalls = fetchMock.mock.calls.filter(
-      ([url, opts]: [string, RequestInit | undefined]) => url === "/api/auth/tokens" && opts?.method === "POST",
+      ([url, opts]) => url === "/api/auth/tokens" && opts?.method === "POST",
     );
     expect(postCalls.length).toBe(1);
     unmount(app);
@@ -112,12 +112,12 @@ describe("SettingsSecurity", () => {
     (inputs[1] as HTMLInputElement).value = "bobpassword1";
     inputs[1].dispatchEvent(new Event("input", { bubbles: true }));
     flushSync();
-    const createBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.includes("Create user"))!;
+    const createBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.includes("Create user")) as HTMLButtonElement;
     createBtn.click();
     await new Promise((r) => setTimeout(r, 0));
     flushSync();
     const postCalls = fetchMock.mock.calls.filter(
-      ([url, opts]: [string, RequestInit | undefined]) => url === "/api/auth/users" && opts?.method === "POST",
+      ([url, opts]) => url === "/api/auth/users" && opts?.method === "POST",
     );
     expect(postCalls.length).toBe(1);
     unmount(app);

@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import PropertiesPage from "../src/lib/components/PropertiesPage.svelte";
 import type { Property } from "../src/lib/propertiesStore.svelte";
+import { fake } from "./fixtures/fake";
 
 function makeProperty(overrides: Partial<Property> = {}): Property {
   return {
@@ -34,7 +35,7 @@ describe("PropertiesPage — external selection", () => {
 
     const comp = mount(PropertiesPage, {
       target,
-      props: { store, locationsStore: makeLocationsStore(), selectedItemId: "p1", onclearselection },
+      props: { store, locationsStore: fake(makeLocationsStore()), selectedItemId: "p1", onclearselection },
     });
     flushSync();
 
@@ -54,7 +55,7 @@ describe("PropertiesPage — filters", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
-    const comp = mount(PropertiesPage, { target, props: { store, locationsStore: makeLocationsStore() } });
+    const comp = mount(PropertiesPage, { target, props: { store, locationsStore: fake(makeLocationsStore()) } });
     flushSync();
 
     (target.querySelector('button[aria-label="Filters"]') as HTMLButtonElement).click();
@@ -78,7 +79,7 @@ describe("PropertiesPage — add property", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
 
-    const comp = mount(PropertiesPage, { target, props: { store, locationsStore: makeLocationsStore() } });
+    const comp = mount(PropertiesPage, { target, props: { store, locationsStore: fake(makeLocationsStore()) } });
     flushSync();
 
     const addBtn = target.querySelector('button[title="Add property"]') as HTMLButtonElement;
@@ -96,7 +97,7 @@ describe("PropertiesPage — responsive columns", () => {
     const store = makeStore([makeProperty()]);
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const comp = mount(PropertiesPage, { target, props: { store, locationsStore: makeLocationsStore() } });
+    const comp = mount(PropertiesPage, { target, props: { store, locationsStore: fake(makeLocationsStore()) } });
     flushSync();
 
     const headers = target.querySelectorAll("thead th");
@@ -191,7 +192,7 @@ describe("PropertiesPage — suggestions tab", () => {
   it("has no tabs without a search store", () => {
     const target = document.createElement("div");
     document.body.appendChild(target);
-    const comp = mount(PropertiesPage, { target, props: { store: makeStore([]), locationsStore: makeLocationsStore() } });
+    const comp = mount(PropertiesPage, { target, props: { store: makeStore([]), locationsStore: fake(makeLocationsStore()) } });
     flushSync();
     expect(target.querySelector(".tab-bar")).toBeNull();
     unmount(comp);

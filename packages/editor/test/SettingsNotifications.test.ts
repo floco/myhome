@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import SettingsNotifications from "../src/lib/components/settings/SettingsNotifications.svelte";
+import { fake } from "./fixtures/fake";
 
 function makeStore() {
   return {
@@ -26,7 +27,7 @@ describe("SettingsNotifications", () => {
   });
 
   it("renders current settings and reflects the enabled toggle", () => {
-    const app = mount(SettingsNotifications, { target, props: { store: makeStore() } });
+    const app = mount(SettingsNotifications, { target, props: { store: fake(makeStore()) } });
     flushSync();
     const heading = Array.from(target.querySelectorAll("h2")).find((h) => h.textContent === "Notifications");
     expect(heading).toBeDefined();
@@ -35,7 +36,7 @@ describe("SettingsNotifications", () => {
   });
 
   it("hides push fields until 'Send a daily digest' is checked", () => {
-    const app = mount(SettingsNotifications, { target, props: { store: makeStore() } });
+    const app = mount(SettingsNotifications, { target, props: { store: fake(makeStore()) } });
     flushSync();
     const labels = Array.from(target.querySelectorAll(".modal-label")).map((el) => el.textContent);
     expect(labels).not.toContain("HA notify service");
@@ -44,7 +45,7 @@ describe("SettingsNotifications", () => {
 
   it("saves edited settings via store.updateNotificationSettings", async () => {
     const store = makeStore();
-    const app = mount(SettingsNotifications, { target, props: { store } });
+    const app = mount(SettingsNotifications, { target, props: { store: fake(store) } });
     flushSync();
     const enableToggle = target.querySelector(".notif-enable-toggle") as HTMLInputElement;
     enableToggle.click();

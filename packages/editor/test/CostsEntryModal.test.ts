@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import CostsEntryModal from "../src/lib/components/CostsEntryModal.svelte";
 import type { CostEntry } from "../src/lib/costsStore.svelte";
+import { fake } from "./fixtures/fake";
 
 afterEach(() => { document.body.innerHTML = ""; });
 
@@ -9,7 +10,7 @@ function makeEntry(overrides: Partial<CostEntry> = {}): CostEntry {
   return {
     id: "c1", categoryId: "cat-electricity", date: "2026-01-15",
     totalAmount: 120.5, quantity: null, unitPrice: null,
-    contactId: null, notes: "", roomId: null, attachments: [], ...overrides,
+    contactId: null, notes: "", roomId: null, attachments: [], linkedConsumableId: null, ...overrides,
   };
 }
 
@@ -57,7 +58,7 @@ describe("CostsEntryModal — notes links", () => {
     const costsStore = makeCostsStore([entry]);
     const app = mount(CostsEntryModal, {
       target,
-      props: { entry, costsStore, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore(), floorStore: makeFloorStore(), consumableStore: makeConsumableStore(), onclose: vi.fn() },
+      props: { entry, costsStore: fake(costsStore), settingsStore: fake(makeSettingsStore()), contactsStore: fake(makeContactsStore()), floorStore: fake(makeFloorStore()), consumableStore: fake(makeConsumableStore()), onclose: vi.fn() },
     });
     flushSync();
     const link = target.querySelector(".md-preview a") as HTMLAnchorElement | null;
@@ -74,7 +75,7 @@ describe("CostsEntryModal — Media tab", () => {
     const costsStore = makeCostsStore([entry]);
     const app = mount(CostsEntryModal, {
       target,
-      props: { entry, costsStore, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore(), floorStore: makeFloorStore(), consumableStore: makeConsumableStore(), onclose: vi.fn() },
+      props: { entry, costsStore: fake(costsStore), settingsStore: fake(makeSettingsStore()), contactsStore: fake(makeContactsStore()), floorStore: fake(makeFloorStore()), consumableStore: fake(makeConsumableStore()), onclose: vi.fn() },
     });
     flushSync();
     const tabs = Array.from(target.querySelectorAll(".tab")).map(t => t.textContent?.trim());
@@ -89,7 +90,7 @@ describe("CostsEntryModal — Media tab", () => {
     const costsStore = makeCostsStore();
     const app = mount(CostsEntryModal, {
       target,
-      props: { entry: null, costsStore, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore(), floorStore: makeFloorStore(), consumableStore: makeConsumableStore(), onclose: vi.fn() },
+      props: { entry: null, costsStore: fake(costsStore), settingsStore: fake(makeSettingsStore()), contactsStore: fake(makeContactsStore()), floorStore: fake(makeFloorStore()), consumableStore: fake(makeConsumableStore()), onclose: vi.fn() },
     });
     flushSync();
     const mediaTab = Array.from(target.querySelectorAll(".tab"))
@@ -105,7 +106,7 @@ describe("CostsEntryModal — Media tab", () => {
     const costsStore = makeCostsStore([entry]);
     const app = mount(CostsEntryModal, {
       target,
-      props: { entry, costsStore, settingsStore: makeSettingsStore(), contactsStore: makeContactsStore(), floorStore: makeFloorStore(), consumableStore: makeConsumableStore(), onclose: vi.fn() },
+      props: { entry, costsStore: fake(costsStore), settingsStore: fake(makeSettingsStore()), contactsStore: fake(makeContactsStore()), floorStore: fake(makeFloorStore()), consumableStore: fake(makeConsumableStore()), onclose: vi.fn() },
     });
     flushSync();
     const mediaTab = Array.from(target.querySelectorAll(".tab"))
@@ -129,10 +130,10 @@ describe("CostsEntryModal — link to stock", () => {
     const app = mount(CostsEntryModal, {
       target,
       props: {
-        entry: null, costsStore,
-        settingsStore: { costCategories: [{ id: "cat-fuel", name: "Fuel", emoji: "🛢", color: "#46c", unit: "L" }], workCategories: [] },
-        contactsStore: makeContactsStore(), floorStore: makeFloorStore(),
-        consumableStore: makeConsumableStoreWithItems(), onclose: vi.fn(),
+        entry: null, costsStore: fake(costsStore),
+        settingsStore: fake({ costCategories: [{ id: "cat-fuel", name: "Fuel", emoji: "🛢", color: "#46c", unit: "L" }], workCategories: [] }),
+        contactsStore: fake(makeContactsStore()), floorStore: fake(makeFloorStore()),
+        consumableStore: fake(makeConsumableStoreWithItems()), onclose: vi.fn(),
       },
     });
     flushSync();
@@ -172,9 +173,9 @@ describe("CostsEntryModal — link to stock", () => {
     const app = mount(CostsEntryModal, {
       target,
       props: {
-        entry: null, costsStore, settingsStore: makeSettingsStore(),
-        contactsStore: makeContactsStore(), floorStore: makeFloorStore(),
-        consumableStore: makeConsumableStore(), onclose: vi.fn(),
+        entry: null, costsStore: fake(costsStore), settingsStore: fake(makeSettingsStore()),
+        contactsStore: fake(makeContactsStore()), floorStore: fake(makeFloorStore()),
+        consumableStore: fake(makeConsumableStore()), onclose: vi.fn(),
       },
     });
     flushSync();

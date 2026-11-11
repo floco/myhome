@@ -9,6 +9,7 @@ function makeChore(name: string, emoji: string): Chore {
     name,
     emoji,
     periodDays: 7,
+    attachments: [],
     frequencyType: "interval",
     frequency: 7,
     frequencyMetadata: {},

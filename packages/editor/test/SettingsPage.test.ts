@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import SettingsPage from "../src/lib/components/SettingsPage.svelte";
 import { homesStore } from "../src/lib/homesStore.svelte";
+import { fake } from "./fixtures/fake";
 
 function makeStore() {
   return {
@@ -53,7 +54,7 @@ describe("SettingsPage — nav shell", () => {
   });
 
   it("shows the General panel by default", () => {
-    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore(), importFromDonetick: vi.fn(async () => 0) } });
+    const app = mount(SettingsPage, { target, props: { store: fake(makeStore()), authStore: makeAuthStore(), importFromDonetick: vi.fn(async () => 0) } });
     flushSync();
     expect(target.textContent).toContain("Home");
     expect(target.textContent).toContain("Modules");
@@ -61,7 +62,7 @@ describe("SettingsPage — nav shell", () => {
   });
 
   it("shows all 9 groups for an admin, including Localization, Integrations, Activity Log, and About", () => {
-    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin"), importFromDonetick: vi.fn(async () => 0) } });
+    const app = mount(SettingsPage, { target, props: { store: fake(makeStore()), authStore: makeAuthStore("admin"), importFromDonetick: vi.fn(async () => 0) } });
     flushSync();
     const labels = [...target.querySelectorAll(".nav-item")].map((b) => b.textContent);
     expect(labels.some((l) => l?.includes("General"))).toBe(true);
@@ -77,7 +78,7 @@ describe("SettingsPage — nav shell", () => {
   });
 
   it("places Localization immediately after General in the nav order", () => {
-    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin"), importFromDonetick: vi.fn(async () => 0) } });
+    const app = mount(SettingsPage, { target, props: { store: fake(makeStore()), authStore: makeAuthStore("admin"), importFromDonetick: vi.fn(async () => 0) } });
     flushSync();
     const labels = [...target.querySelectorAll(".nav-item")].map((b) => b.textContent?.trim());
     const generalIdx = labels.findIndex((l) => l?.includes("General"));
@@ -86,7 +87,7 @@ describe("SettingsPage — nav shell", () => {
   });
 
   it("switching to Localization via the nav shows the language and date format fields", () => {
-    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore(), importFromDonetick: vi.fn(async () => 0) } });
+    const app = mount(SettingsPage, { target, props: { store: fake(makeStore()), authStore: makeAuthStore(), importFromDonetick: vi.fn(async () => 0) } });
     flushSync();
     const localizationBtn = [...target.querySelectorAll<HTMLButtonElement>(".nav-item")].find((b) => b.textContent?.includes("Localization"))!;
     localizationBtn.click();
@@ -97,7 +98,7 @@ describe("SettingsPage — nav shell", () => {
   });
 
   it("shows About for a non-admin too", () => {
-    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("normal"), importFromDonetick: vi.fn(async () => 0) } });
+    const app = mount(SettingsPage, { target, props: { store: fake(makeStore()), authStore: makeAuthStore("normal"), importFromDonetick: vi.fn(async () => 0) } });
     flushSync();
     const labels = [...target.querySelectorAll(".nav-item")].map((b) => b.textContent);
     expect(labels.some((l) => l?.includes("About"))).toBe(true);
@@ -105,7 +106,7 @@ describe("SettingsPage — nav shell", () => {
   });
 
   it("hides Integrations for a non-admin, but keeps Security & Access and Activity Log", () => {
-    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("normal"), importFromDonetick: vi.fn(async () => 0) } });
+    const app = mount(SettingsPage, { target, props: { store: fake(makeStore()), authStore: makeAuthStore("normal"), importFromDonetick: vi.fn(async () => 0) } });
     flushSync();
     const labels = [...target.querySelectorAll(".nav-item")].map((b) => b.textContent);
     expect(labels.some((l) => l?.includes("Integrations"))).toBe(false);
@@ -115,7 +116,7 @@ describe("SettingsPage — nav shell", () => {
   });
 
   it("switching to Categories via the nav shows the category sub-tabs", () => {
-    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore(), importFromDonetick: vi.fn(async () => 0) } });
+    const app = mount(SettingsPage, { target, props: { store: fake(makeStore()), authStore: makeAuthStore(), importFromDonetick: vi.fn(async () => 0) } });
     flushSync();
     const categoriesBtn = [...target.querySelectorAll<HTMLButtonElement>(".nav-item")].find((b) => b.textContent?.includes("Categories"))!;
     categoriesBtn.click();
@@ -126,7 +127,7 @@ describe("SettingsPage — nav shell", () => {
   });
 
   it("the mobile dropdown lists the same groups as the sidebar", () => {
-    const app = mount(SettingsPage, { target, props: { store: makeStore(), authStore: makeAuthStore("admin"), importFromDonetick: vi.fn(async () => 0) } });
+    const app = mount(SettingsPage, { target, props: { store: fake(makeStore()), authStore: makeAuthStore("admin"), importFromDonetick: vi.fn(async () => 0) } });
     flushSync();
     const sidebarCount = target.querySelectorAll(".nav-item").length;
     const dropdownCount = target.querySelectorAll(".nav-select option").length;
@@ -141,14 +142,14 @@ describe("SettingsPage — nav shell", () => {
     const reloadAllStores = vi.fn();
     const app = mount(SettingsPage, {
       target,
-      props: { store: makeStore(), authStore: makeAuthStore(), importFromDonetick: vi.fn(async () => 0), reloadAllStores },
+      props: { store: fake(makeStore()), authStore: makeAuthStore(), importFromDonetick: vi.fn(async () => 0), reloadAllStores },
     });
     flushSync();
     const choresRow = [...target.querySelectorAll(".module-row")].find((r) => r.textContent?.includes("Chores"))!;
     const resetBtn = [...choresRow.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Reset")!;
     resetBtn.click();
     flushSync();
-    const confirmBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Reset")!;
+    const confirmBtn = [...target.querySelectorAll(".ui-modal button")].find((b) => b.textContent?.trim() === "Reset") as HTMLButtonElement;
     confirmBtn.click();
     await new Promise((r) => setTimeout(r, 0));
     expect(reloadAllStores).toHaveBeenCalledOnce();

@@ -28,7 +28,7 @@ describe("SettingsIntegrations", () => {
       if (url === "/api/mcp/config") return Promise.resolve({ ok: true, json: async () => ({ enabled: false }) });
       return Promise.resolve(new Response(null, { status: 200 }));
     });
-    globalThis.fetch = fetchMock;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
   });
 
   afterEach(() => {

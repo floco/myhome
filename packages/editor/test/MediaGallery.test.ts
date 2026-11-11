@@ -2,6 +2,8 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, flushSync } from "svelte";
 import MediaGallery from "../src/lib/components/ui/MediaGallery.svelte";
 import type { MediaItem } from "../src/lib/components/ui/mediaTypes";
+import { fake } from "./fixtures/fake";
+import type { ComponentProps } from "svelte";
 
 function makeItem(overrides: Partial<MediaItem> = {}): MediaItem {
   return {
@@ -17,7 +19,7 @@ function makeItem(overrides: Partial<MediaItem> = {}): MediaItem {
 function setup(props: Record<string, unknown>) {
   const target = document.createElement("div");
   document.body.appendChild(target);
-  const comp = mount(MediaGallery, { target, props });
+  const comp = mount(MediaGallery, { target, props: fake<ComponentProps<typeof MediaGallery>>(props) });
   return { target, comp };
 }
 

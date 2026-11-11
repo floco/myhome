@@ -18,7 +18,7 @@ describe("SettingsActivityLog", () => {
       }
       return Promise.resolve(new Response(null, { status: 200 }));
     });
-    globalThis.fetch = fetchMock;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
   });
 
   afterEach(() => {

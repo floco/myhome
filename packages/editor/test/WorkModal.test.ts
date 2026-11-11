@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { mount, unmount, tick } from "svelte";
 import WorkModal from "../src/lib/components/WorkModal.svelte";
+import { fake } from "./fixtures/fake";
 
 function makeStore(attachments: string[] = []) {
   return {
@@ -32,10 +33,10 @@ function setup(attachments: string[] = []) {
   const comp = mount(WorkModal, {
     target,
     props: {
-      work,
-      store,
-      settingsStore: makeSettingsStore(),
-      contactsStore: makeContactsStore(),
+      work: fake(work),
+      store: fake(store),
+      settingsStore: fake(makeSettingsStore()),
+      contactsStore: fake(makeContactsStore()),
       onclose: vi.fn(),
     },
   });

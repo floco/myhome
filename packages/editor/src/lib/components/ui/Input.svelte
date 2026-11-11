@@ -1,14 +1,23 @@
 <!-- packages/editor/src/lib/components/ui/Input.svelte -->
 <script lang="ts">
-  interface Props {
+  import type { HTMLInputAttributes } from "svelte/elements";
+
+  interface Props extends Omit<HTMLInputAttributes, "value" | "class"> {
     value?: string;
-    placeholder?: string;
-    type?: string;
+    /** Optional visible label; the input is wrapped in a <label> so clicking it focuses the field. */
+    label?: string;
   }
-  let { value = $bindable(""), placeholder = "", type = "text" }: Props = $props();
+  let { value = $bindable(""), placeholder = "", type = "text", label, ...rest }: Props = $props();
 </script>
 
-<input class="ui-input" {type} {placeholder} bind:value />
+{#if label}
+  <label class="ui-input-field">
+    <span class="ui-input-label">{label}</span>
+    <input class="ui-input" {type} {placeholder} bind:value {...rest} />
+  </label>
+{:else}
+  <input class="ui-input" {type} {placeholder} bind:value {...rest} />
+{/if}
 
 <style>
   .ui-input {
@@ -25,4 +34,9 @@
   }
   .ui-input:focus { outline: none; border-color: var(--accent); }
   .ui-input::placeholder { color: var(--text-faint); }
+  .ui-input-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .ui-input-label {
+    font-size: 0.75rem; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
 </style>

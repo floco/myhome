@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { Floor, Point, FurnitureObject } from "@myhome/geometry";
-  import type { ViewportState } from "../viewportStore.svelte.ts";
+  import type { ViewportState } from "../viewportStore.svelte";
   import type { ToolType } from "../toolStore.svelte";
   import type { HaEntityState } from "../haStateStore.svelte";
   import { computeSnap, allEndpoints } from "../drawingTool";
   import { SNAP_RADIUS_PX, hitTestWall, HIT_RADIUS_PX, findAdjacentWall } from "../geometry-helpers";
-  import { worldToScreen } from "../viewportStore.svelte.ts";
+  import { worldToScreen } from "../viewportStore.svelte";
   import { getTemplate } from "../furnitureLibrary";
   import Grid from "./Grid.svelte";
   import WallShape from "./WallShape.svelte";
@@ -68,9 +68,9 @@
     onselectopening?: (id: string | null) => void;
     ondragopeninghandlestart?: (openingId: string, side: "start" | "end") => void;
     onselectfurniture?: (id: string | null) => void;
-    onmovefurniturestart?: (id: string, e: MouseEvent) => void;
-    onresizefurniturestart?: (id: string, corner: string, e: MouseEvent) => void;
-    onrotatefurniturestart?: (id: string, e: MouseEvent) => void;
+    onmovefurniturestart?: (id: string, e: PointerEvent) => void;
+    onresizefurniturestart?: (id: string, corner: string, e: PointerEvent) => void;
+    onrotatefurniturestart?: (id: string, e: PointerEvent) => void;
     tool?: ToolType;
     showGrid?: boolean;
     drawPoints?: Point[];

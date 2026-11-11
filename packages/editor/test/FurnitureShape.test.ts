@@ -4,6 +4,8 @@ import FurnitureShape from "../src/lib/components/FurnitureShape.svelte";
 import { DEFAULT_VIEWPORT } from "../src/lib/viewportStore.svelte";
 import type { FurnitureObject } from "@myhome/geometry";
 import { getTemplate } from "../src/lib/furnitureLibrary";
+import { fake } from "./fixtures/fake";
+import type { ComponentProps } from "svelte";
 
 const VP = { ...DEFAULT_VIEWPORT };
 
@@ -26,7 +28,7 @@ describe("FurnitureShape", () => {
     svg = document.createElementNS("http://www.w3.org/2000/svg", "svg") as SVGSVGElement;
     target.appendChild(svg);
     document.body.appendChild(target);
-    app = mount(FurnitureShape, { target: svg, props });
+    app = mount(FurnitureShape, { target: svg, props: fake<ComponentProps<typeof FurnitureShape>>(props) });
     flushSync();
     return svg;
   }

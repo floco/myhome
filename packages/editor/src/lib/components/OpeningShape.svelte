@@ -2,7 +2,7 @@
   import { _ } from "svelte-i18n";
   import type { Wall, Opening } from "@myhome/geometry";
   import { chooseSweepFlag } from "@myhome/geometry";
-  import { worldToScreen, type ViewportState } from "../viewportStore.svelte.ts";
+  import { worldToScreen, type ViewportState } from "../viewportStore.svelte";
   import type { ToolType } from "../toolStore.svelte";
   import type { HaEntityState } from "../haStateStore.svelte";
 
