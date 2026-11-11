@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.41.1 - 2026-11-11
+
+- Fixed the "Change password" menu entry, which did not open its dialog
+- The change-password and new-home fields now show their labels again
+- Pressing Enter in Settings → Categories now adds a consumable unit, and the consumable minimum quantity field accepts decimals again
+- A home that must be created first can no longer be dismissed with Escape (it used to throw an error)
+
 ## 0.41.0 - 2026-11-09
 
 - AI property search inbox: listings without a photo (or whose photo fails to load) now show a same-size placeholder, so every card has the same layout
